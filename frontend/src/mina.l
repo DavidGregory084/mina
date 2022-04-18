@@ -1,7 +1,5 @@
 %%
-\s+ ;
-
-\d "DIGIT"
+\p{Pattern_White_Space} ;
 
 \( "LPAREN"
 \) "RPAREN"
@@ -16,8 +14,9 @@
 \. "DOT"
 , "COMMA"
 : "COLON"
-; "SEMI"
+; "SEMICOLON"
 = "EQ"
+@ "AT"
 
 \-> "ARROW"
 
@@ -32,5 +31,9 @@ data "DATA"
 match "MATCH"
 with "WITH"
 
-true "TRUE"
-false "FALSE"
+([0-9][0-9_]*[0-9]|[0-9])\.([0-9][0-9_]*[0-9]|[0-9])([eE][+\-]([0-9][0-9_]*[0-9]|[0-9]))?[dDfF]? "LITERAL_FLOAT"
+([1-9][0-9]*|0)[lL]? "LITERAL_INT"
+'[^'\r\n\\]' "LITERAL_CHAR"
+(true|false) "LITERAL_BOOLEAN"
+"[^"\\]*" "LITERAL_STRING"
+(\p{XID_Start}\p{XID_Continue}*|\p{XID_Continue}+) "IDENTIFIER"
