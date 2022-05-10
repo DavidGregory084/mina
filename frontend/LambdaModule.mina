@@ -1,0 +1,14 @@
+module Test/Mina/LambdaModule {
+   import Foo/Bar/Baz
+   import Foo/Bar/Bonzo.foo
+   import Foo/Bar/Bonzo.{ flurp, flarp, florp }
+
+   let y = (a) -> a
+   let x = (y) 
+   let foo = if (a) then 1 else 2
+
+   let bar = match 1 with {
+      case foo -> 1
+      case bar -> 2
+   }
+}

@@ -1,1 +1,1 @@
-rootProject.name = "mina-lang-backend"
+rootProject.name = "mina-server"

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Mina",
+  "scopeName": "source.mina",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#literals"
+    },
+    {
+      "include": "#entities"
+    },
+    {
+      "include": "#symbols"
+    },
+    {
+      "include": "#names"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "match": "(//.*)",
+          "name": "comment.line.double-slash.mina"
+        },
+        {
+          "begin": "(/\\*)",
+          "beginCaptures": {
+            "1": {
+              "name": "comment.block.mina"
+            }
+          },
+          "end": "(\\*/)",
+          "endCaptures": {
+            "1": {
+              "name": "comment.block.mina"
+            }
+          },
+          "name": "comment.block.mina"
+        }
+      ]
+    },
+    "symbols": {
+      "patterns": [
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment.mina"
+        },
+        {
+          "match": "\\{",
+          "name": "punctuation.brackets.curly.mina"
+        },
+        {
+          "match": "\\}",
+          "name": "punctuation.brackets.curly.mina"
+        },
+        {
+          "match": "\\[",
+          "name": "punctuation.brackets.square.mina"
+        },
+        {
+          "match": "\\]",
+          "name": "punctuation.brackets.square.mina"
+        },
+        {
+          "match": "<",
+          "name": "punctuation.brackets.angle.mina"
+        },
+        {
+          "match": ">",
+          "name": "punctuation.brackets.angle.mina"
+        },
+        {
+          "match": "\\(",
+          "name": "punctuation.brackets.round.mina"
+        },
+        {
+          "match": "\\)",
+          "name": "punctuation.brackets.round.mina"
+        },
+        {
+          "match": "/",
+          "name": "punctuation.separator.package.mina"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(if|then|else)\\b",
+          "name": "keyword.control.conditional.mina"
+        },
+        {
+          "match": "\\b(match|with|case)\\b",
+          "name": "keyword.control.matching.mina"
+        },
+        {
+          "match": "\\b(module)\\b",
+          "name": "keyword.other.module.mina"
+        },
+        {
+          "match": "\\b(import)\\b",
+          "name": "keyword.other.import.mina"
+        },
+        {
+          "match": "->",
+          "name": "storage.type.function.arrow.mina"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.mina",
+      "begin": "\"",
+      "end": "\""
+    },
+    "literals": {
+      "patterns": [
+        {
+          "match": "\\b\\d+[lL]?",
+          "name": "constant.numeric.integer.mina"
+        },
+        {
+          "name": "constant.character.mina",
+          "begin": "'",
+          "end": "'"
+        }
+      ]
+    },
+    "names": {
+      "patterns": [
+        {
+          "include": "#symbols"
+        },
+        {
+          "match": "\\b(\\p{XID_Start}\\p{XID_Continue}*)(?=/)",
+          "captures": {
+            "1": {
+              "name": "entity.name.namespace.mina"
+            }
+          }
+        },
+        {
+          "match": "(?<=/)\\b(\\p{XID_Start}\\p{XID_Continue}*)\\b",
+          "captures": {
+            "1": {
+              "name": "entity.name.class.mina"
+            }
+          }
+        },
+        {
+          "match": "(?<=\\.)\\b(\\p{XID_Start}\\p{XID_Continue}*)\\b",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.mina"
+            }
+          }
+        }
+      ]
+    },
+    "entities": {
+      "patterns": [
+        {
+          "begin": "\\b(let)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.other.let.mina"
+            }
+          },
+          "end": "(?=\\=)",
+          "endCaptures": {
+            "1": {
+              "name": "keyword.operator.assignment.mina"
+            }
+          },
+          "patterns": [
+            {
+              "match": "\\b(\\p{XID_Start}\\p{XID_Continue}*)\\b",
+              "captures": {
+                "1": {
+                  "name": "entity.name.function.mina"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

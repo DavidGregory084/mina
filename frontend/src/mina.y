@@ -1,4 +1,5 @@
 %start compilation_unit
+
 %epp MODULE "module"
 %epp DATA "data"
 %epp LET "let"
@@ -11,6 +12,7 @@
 %epp LPAREN "("
 %epp RPAREN ")"
 %epp RSLASH "/"
+%epp COMMA ","
 %epp EQ "="
 
 %epp IDENTIFIER "<identifier>"
@@ -19,43 +21,61 @@
 %epp LITERAL_FLOAT "<floating point literal>"
 %epp LITERAL_CHAR "<character literal>"
 %epp LITERAL_STRING "<string literal>"
+
 %%
-compilation_unit : module ;
 
-module : "MODULE" qualified_id "LBRACE" declarations_opt "RBRACE" ;
+/* File */
+compilation_unit : module | compilation_unit module ;
 
-qualified_id : "IDENTIFIER" | qualified_id "RSLASH" "IDENTIFIER" ;
+/* Module */
+module : "MODULE" module_id "LBRACE" imports declarations "RBRACE" ;
 
-declarations_opt : | declarations ;
+/* Imports */
+imports : | imports import;
 
-declarations : declaration | declarations declaration ;
+import
+	: "IMPORT" module_id
+	| "IMPORT" module_id "DOT" "IDENTIFIER"
+	| "IMPORT" module_id "DOT" "LBRACE" symbols "RBRACE";
 
-declaration : let_declaration ;
+symbols : "IDENTIFIER" | symbols "COMMA" "IDENTIFIER" ;
+
+/* Declarations */
+declarations : | declarations declaration ;
+
+declaration : let_declaration | data_declaration ;
 
 data_declaration : "DATA" "IDENTIFIER" "LBRACE" "RBRACE" ;
 
 let_declaration : "LET" "IDENTIFIER" "EQ" expr ;
 
-expr : if | literal | reference | paren_expr ;
-
-/* expr : inner_expr applications_opt ;
-
-inner_expr : if | literal | reference | paren_expr ; */
-
-/* applications_opt : | applications ;
-
-applications : application | applications application ;
-
-application : "LPAREN" arguments_opt "RPAREN" ; */
-
-arguments_opt : | arguments ;
-
-arguments: expr | arguments "COMMA" expr ;
+/* Expressions */
+expr : expr_not_ref | reference ;
+expr_not_ref : if | lambda | literal | applicable_expr_not_ref ;
 
 if : "IF" expr "THEN" expr "ELSE" expr ;
 
+lambda : "IDENTIFIER" "ARROW" expr | lambda_params "ARROW" expr ;
+
+ids : "IDENTIFIER" "COMMA" "IDENTIFIER" | ids "COMMA" "IDENTIFIER" ;
+
+lambda_params : "LPAREN" "RPAREN" | "LPAREN" "IDENTIFIER" "RPAREN" | "LPAREN" ids "RPAREN" ;
+
 literal : "LITERAL_BOOLEAN" | "LITERAL_INT" | "LITERAL_FLOAT" | "LITERAL_CHAR" | "LITERAL_STRING" ;
 
-reference : "IDENTIFIER" ;
+applicable_expr : applicable_expr_not_ref | reference ;
+applicable_expr_not_ref
+	: "LPAREN" expr_not_ref "RPAREN"
+	| "LPAREN" reference "RPAREN"
+	| "LPAREN" "IDENTIFIER" "RPAREN"
+	| applicable_expr application ;
 
-paren_expr : "LPAREN" expr "RPAREN" ;
+reference : reference_not_id | "IDENTIFIER" ;
+reference_not_id : module_id "DOT" "IDENTIFIER" ;
+
+module_id : module_id_not_id | "IDENTIFIER" ;
+module_id_not_id : module_id "RSLASH" "IDENTIFIER" ;
+
+application : "LPAREN" arguments "RPAREN" ;
+
+arguments: | expr | arguments "COMMA" expr ;

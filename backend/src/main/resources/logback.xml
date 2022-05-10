@@ -1,0 +1,39 @@
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.OnErrorConsoleStatusListener" />
+
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook" />
+
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator" />
+
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FOLDER:-log}/mina-server.log</file>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FOLDER:-log}/mina-server-%d{yyyy-MM-dd}-%i.log</fileNamePattern>
+            <maxHistory>1</maxHistory>
+            <maxFileSize>100MB</maxFileSize>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE" />
+    </appender>
+
+    <logger name="sun.rmi" level="INFO" />
+    <logger name="javax.management.remote.rmi" level="INFO" />
+
+    <root level="DEBUG">
+        <appender-ref ref="ASYNC_FILE" />
+        <appender-ref ref="STDERR" />
+    </root>
+</configuration>

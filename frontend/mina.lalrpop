@@ -1,0 +1,62 @@
+grammar;
+
+pub CompilationUnit: () = {
+    Module => ()
+};
+
+pub Module: () = {
+    "module" ModuleIdent "{" Declaration* "}" => ()
+};
+
+pub Declaration: () = {
+    "let" Ident "=" Expr => (),
+    "data" Ident "{" "}" => ()
+};
+
+pub Expr: () = {
+    If => (),
+    // Lambda => (),
+    ApplicableExpr => ()
+};
+
+pub If: () = {
+    "if" Expr "then" Expr "else" Expr => (),
+};
+
+// pub Lambda: () = {
+//     "(" LambdaParams ")" "->" Expr => ()
+// };
+
+// pub LambdaParams: () = {
+//     => (),
+//     Ident => (),
+//     LambdaParams "," Ident => ()
+// };
+
+pub ApplicableExpr: () = {
+    QualifiedIdent => (),
+    "(" Expr ")" => (),
+    ApplicableExpr Application => ()
+};
+
+pub Application: () = {
+    "(" Arguments ")" => ()
+};
+
+pub Arguments: () = {
+    => (),
+    Expr => (),
+    Arguments "," Expr => ()
+};
+
+pub ModuleIdent: () = {
+    ModuleIdent "/" Ident => (),
+    Ident => ()
+};
+
+pub QualifiedIdent: () = {
+    ModuleIdent "." Ident => (),
+    Ident => ()
+};
+
+Ident: () = r"\p{XID_Start}\p{XID_Continue}*" => ();

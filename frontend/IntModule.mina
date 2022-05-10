@@ -1,0 +1,7 @@
+module Test/Mina/IntModule {
+   let x = 42
+   let c = '4'
+   let z = true
+   let y = (if (a) then 1 else 4)(12)(14)
+   let foo = bar
+}

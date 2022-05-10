@@ -17,6 +17,8 @@
 ; "SEMICOLON"
 = "EQ"
 @ "AT"
+\* "MULT"
+\+ "PLUS"
 
 \-> "ARROW"
 

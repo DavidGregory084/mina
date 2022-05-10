@@ -1,11 +1,10 @@
 use std::io::{self, BufRead, Result, Write};
 
 use lrlex::lrlex_mod;
-use lrpar::Lexer;
-// use lrpar::lrpar_mod;
+use lrpar::lrpar_mod;
 
 lrlex_mod!("mina.l");
-// lrpar_mod!("mina.y");
+lrpar_mod!("mina.y");
 
 fn main() -> Result<()> {
     let lexerdef = mina_l::lexerdef();
@@ -15,17 +14,17 @@ fn main() -> Result<()> {
         io::stdout().flush()?;
 
         match stdin.lock().lines().next() {
-            Some(Ok(ref l)) => {
-                if l.trim().is_empty() {
+            Some(Ok(ref line)) => {
+                if line.trim().is_empty() {
                     continue;
                 }
 
-                let lexer = lexerdef.lexer(l);
+                let lexer = lexerdef.lexer(line);
+                let errs = mina_y::parse(&lexer);
 
-                lexer.iter().for_each(|result| match result {
-                    Ok(lexeme) => println!("{:?}", lexeme),
-                    Err(err) => println!("{:?}", err),
-                });
+                for err in errs {
+                    println!("{}", err.pp(&lexer, &mina_y::token_epp));
+                }
             }
             _ => break,
         }
