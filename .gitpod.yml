@@ -1,5 +1,5 @@
 tasks:
-  - init: (cd vscodeplugin && npm i)
+  - init: (cd vscode-plugin && npm i)
 
 image:
   file: .gitpod.Dockerfile
