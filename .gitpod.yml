@@ -1,2 +1,15 @@
+tasks:
+  - init: (cd vscodeplugin && npm i)
+
 image:
   file: .gitpod.Dockerfile
+
+vscode:
+  extensions:
+    - editorconfig.editorconfig
+    - redhat.java
+    - vscjava.vscode-gradle
+    - zxh404.vscode-proto3
+    - mindaro-dev.file-downloader
+    - daohong-emilio.yash
+    - mike-lischke.vscode-antlr4
