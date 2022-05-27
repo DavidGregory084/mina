@@ -14,6 +14,7 @@ import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
+  TransportKind,
 } from "vscode-languageclient/node";
 
 import { findRuntimes } from "jdk-utils";
@@ -74,9 +75,8 @@ export async function activate(context: ExtensionContext) {
         "-cp",
         getServerClasspath.stdout,
         "org.mina_lang.main.Server",
-        "--stdio",
       ],
-      // transport: TransportKind.pipe
+      transport: TransportKind.pipe
     };
 
     const clientOptions: LanguageClientOptions = {
