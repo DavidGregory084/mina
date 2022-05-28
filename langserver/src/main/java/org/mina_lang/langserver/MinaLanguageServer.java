@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
-
     private Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
 
     private ThreadFactory threadFactory = new ThreadFactoryBuilder()
@@ -82,7 +81,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         } else {
             var error = isShutdown()
                     ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
-                    : new ResponseError(ResponseErrorCode.serverNotInitialized, "Server was not initialized", null);
+                    : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
             var result = new CompletableFuture<A>();
             result.completeExceptionally(new ResponseErrorException(error));
             return result;
@@ -97,7 +96,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         } else {
             var error = isShutdown()
                     ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
-                    : new ResponseError(ResponseErrorCode.serverNotInitialized, "Server was not initialized", null);
+                    : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
             var result = new CompletableFuture<A>();
             result.completeExceptionally(new ResponseErrorException(error));
             return result;

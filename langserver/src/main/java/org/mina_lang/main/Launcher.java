@@ -23,7 +23,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "Mina Language Server", version = BuildInfo.version, mixinStandardHelpOptions = true)
-public class Server implements Callable<Void> {
+public class Launcher implements Callable<Void> {
 
     @ArgGroup(exclusive = true, multiplicity = "1")
     private Transport transport;
@@ -45,7 +45,7 @@ public class Server implements Callable<Void> {
     }
 
     public static void main(String[] args) throws IOException {
-        int exitCode = new CommandLine(new Server()).execute(args);
+        int exitCode = new CommandLine(new Launcher()).execute(args);
         System.exit(exitCode);
     }
 
@@ -62,7 +62,7 @@ public class Server implements Callable<Void> {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
-        var logger = LoggerFactory.getLogger(Server.class);
+        var logger = LoggerFactory.getLogger(Launcher.class);
 
         Thread.setDefaultUncaughtExceptionHandler((t, ex) -> {
             logger.error("Uncaught exception in thread " + t.getName(), ex);

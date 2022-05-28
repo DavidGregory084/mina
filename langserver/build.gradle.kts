@@ -6,6 +6,7 @@ plugins {
     `ivy-publish`
     id("com.google.protobuf") version "0.8.18"
     id("com.opencastsoftware.gradle.buildinfo") version "0.1.0"
+    id("com.github.ben-manes.versions") version "0.42.0"
 }
 
 repositories {
@@ -18,37 +19,47 @@ version = "0.1.0-SNAPSHOT"
 
 val antlrVersion = "4.10.1"
 val picocliVersion = "4.6.3"
+val guiceVersion = "5.1.0"
 val junixSocketVersion = "2.4.0"
 val eclipseCollectionsVersion = "11.0.0"
 val caffeineVersion = "3.1.0"
-val lsp4jVersion = "0.12.0"
+val lsp4jVersion = "0.14.0"
 val protobufVersion = "3.20.0"
 val slf4jVersion = "1.7.36"
 val logbackVersion = "1.2.11"
 val junitVersion = "5.8.2"
 
 dependencies {
-    antlr("org.antlr:antlr4:${antlrVersion}")
-
+    // Command Line Arg Parsing
     implementation("info.picocli:picocli:${picocliVersion}")
 
+    // Dependency Injection
+    implementation("com.google.inject:guice:${guiceVersion}")
+
+    // Immutable Collections
+    implementation("org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}")
+    implementation("org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}")
+
+    // Unix Socket Support
     implementation("com.kohlschutter.junixsocket:junixsocket-core:${junixSocketVersion}@pom") {
         isTransitive = true
     }
 
-    implementation("org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}")
-    implementation("org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}")
-
-    implementation("com.github.ben-manes.caffeine:caffeine:${caffeineVersion}")
-    
-    implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
-
+    // Language Server Protocol
     implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:${lsp4jVersion}")
 
+    // Syntax Tree Parsing
+    antlr("org.antlr:antlr4:${antlrVersion}")
+
+    // Syntax Tree Serialization
+    implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
+
+    // Logging
     implementation("org.slf4j:slf4j-api:${slf4jVersion}")
     implementation("org.slf4j:jul-to-slf4j:${slf4jVersion}")
     runtimeOnly("ch.qos.logback:logback-classic:${logbackVersion}")
 
+    // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
 }
 
