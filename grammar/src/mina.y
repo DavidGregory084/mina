@@ -50,8 +50,8 @@ data_declaration : "DATA" "IDENTIFIER" "LBRACE" "RBRACE" ;
 let_declaration : "LET" "IDENTIFIER" "EQ" expr ;
 
 /* Expressions */
-expr : expr_not_ref | reference ;
-expr_not_ref : if | lambda | literal | applicable_expr_not_ref ;
+expr : expr_not_id | "IDENTIFIER" ;
+expr_not_id : if | lambda | literal | applicable_expr_not_id ;
 
 if : "IF" expr "THEN" expr "ELSE" expr ;
 
@@ -63,14 +63,14 @@ lambda_params : "LPAREN" "RPAREN" | "LPAREN" "IDENTIFIER" "RPAREN" | "LPAREN" id
 
 literal : "LITERAL_BOOLEAN" | "LITERAL_INT" | "LITERAL_FLOAT" | "LITERAL_CHAR" | "LITERAL_STRING" ;
 
-applicable_expr : applicable_expr_not_ref | reference ;
-applicable_expr_not_ref
-	: "LPAREN" expr_not_ref "RPAREN"
-	| "LPAREN" reference "RPAREN"
+applicable_expr : applicable_expr_not_id | "IDENTIFIER" ;
+
+applicable_expr_not_id
+	: "LPAREN" expr_not_id "RPAREN"
 	| "LPAREN" "IDENTIFIER" "RPAREN"
+	| reference_not_id
 	| applicable_expr application ;
 
-reference : reference_not_id | "IDENTIFIER" ;
 reference_not_id : module_id "DOT" "IDENTIFIER" ;
 
 module_id : module_id_not_id | "IDENTIFIER" ;
