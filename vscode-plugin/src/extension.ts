@@ -45,11 +45,8 @@ export async function activate(context: ExtensionContext) {
             "coursier.jar",
             context,
             cancellationToken,
-            (downloadedBytes, totalBytes) =>
-              progress.report({
-                message: "Downloading coursier JAR",
-                increment: Math.round((downloadedBytes / totalBytes) * 100),
-              })
+            (_downloadedBytes, _totalBytes) =>
+              progress.report({ message: "Downloading coursier JAR" })
           );
         }
       ));
@@ -69,6 +66,7 @@ export async function activate(context: ExtensionContext) {
     );
 
     const serverOptions: ServerOptions = {
+      transport: TransportKind.pipe,
       command: javaExecutable,
       args: [
         `-DLOG_FOLDER=${context.logUri.fsPath}`,
@@ -76,7 +74,6 @@ export async function activate(context: ExtensionContext) {
         getServerClasspath.stdout,
         "org.mina_lang.main.Server",
       ],
-      transport: TransportKind.pipe
     };
 
     const clientOptions: LanguageClientOptions = {
@@ -104,7 +101,7 @@ export async function activate(context: ExtensionContext) {
   }
 }
 
-export function deactivate() {
+export async function deactivate() {
   if (!client) {
     return;
   } else {

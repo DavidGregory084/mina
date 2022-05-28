@@ -13,3 +13,4 @@ vscode:
     - mindaro-dev.file-downloader
     - daohong-emilio.yash
     - mike-lischke.vscode-antlr4
+    - esbenp.prettier-vscode
