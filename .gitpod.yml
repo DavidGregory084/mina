@@ -1,5 +1,6 @@
 tasks:
-  - init: (cd vscode-plugin && npm i && npm run compile) && (cd langserver && ./gradlew publish)
+  - before: (cd langserver && ./gradlew publish)
+  - init: (cd vscode-plugin && npm i && npm run compile)
 
 image:
   file: .gitpod.Dockerfile
