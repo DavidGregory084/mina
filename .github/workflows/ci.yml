@@ -40,24 +40,18 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            frontend/target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          
-      - name: Build Frontend
-        working-directory: frontend
-        run: cargo build
-          
-      - name: Build Backend
+      - name: Build Language Server
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: backend
           arguments: build
           
+      - name: Build VS Code Extension
+        if: runner.os == 'Linux'
+        working-directory: vscode-plugin
+        run: $(echo "xvfb-run ---auto-servernum") npm run test --silent
+
+      - name: Build VS Code Extension
+        if: runner.os != 'Linux'
+        working-directory: vscode-plugin
+        run: npm run test --silent
