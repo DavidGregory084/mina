@@ -29,10 +29,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 17
+          node-version: 16
 
       - name: Setup Protobuf Compiler
-        uses: arduino/setup-protoc@v1.1.2
+        uses: arduino/setup-protoc@v1
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +50,13 @@ jobs:
         with:
           build-root-directory: langserver
           arguments: build
-          
+
+      - name: Publish Language Server
+        uses: gradle/gradle-build-action@v2
+        with:
+          build-root-directory: langserver
+          arguments: publish
+
       - name: Build VS Code Extension
         if: runner.os == 'Linux'
         working-directory: vscode-plugin
