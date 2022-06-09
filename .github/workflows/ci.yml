@@ -43,7 +43,7 @@ jobs:
       - name: Build Language Server
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: backend
+          build-root-directory: langserver
           arguments: build
           
       - name: Build VS Code Extension
