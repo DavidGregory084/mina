@@ -25,7 +25,12 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
-          
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 17
+
       - name: Setup Protobuf Compiler
         uses: arduino/setup-protoc@v1.1.2
         with:
@@ -49,9 +54,9 @@ jobs:
       - name: Build VS Code Extension
         if: runner.os == 'Linux'
         working-directory: vscode-plugin
-        run: $(echo "xvfb-run ---auto-servernum") npm run test --silent
+        run: npm install && xvfb-run -a npm run test --silent
 
       - name: Build VS Code Extension
         if: runner.os != 'Linux'
         working-directory: vscode-plugin
-        run: npm run test --silent
+        run: npm install && npm run test --silent
