@@ -15,3 +15,5 @@ vscode:
     - daohong-emilio.yash
     - mike-lischke.vscode-antlr4
     - esbenp.prettier-vscode
+    - karlito40.fix-irregular-whitespace
+    - viktorzetterstrom.non-breaking-space-highlighter
