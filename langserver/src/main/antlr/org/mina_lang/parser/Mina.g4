@@ -16,12 +16,28 @@ dataDeclaration: DATA ID LBRACE RBRACE;
 
 letDeclaration: LET ID EQ expr;
 
-expr: ifExpr | lambdaExpr | literal | applicableExpr;
+expr: ifExpr | lambdaExpr | matchExpr | literal | applicableExpr;
 
 ifExpr: IF expr THEN expr ELSE expr;
 
 lambdaExpr: lambdaParams ARROW expr;
 lambdaParams: ID | LPAREN RPAREN | LPAREN (ID COMMA)* ID RPAREN;
+
+matchExpr : MATCH expr WITH matchBlock ;
+
+matchBlock : LBRACE matchCase* RBRACE ;
+
+matchCase : CASE pattern ARROW expr ;
+
+pattern : ID | constructorPattern ;
+
+constructorPattern: patternAlias? qualifiedId LBRACE fieldPatterns? RBRACE ;
+
+fieldPatterns : (fieldPattern COMMA)* fieldPattern ;
+
+fieldPattern : ID (COLON pattern)? ;
+
+patternAlias : ID AT ;
 
 applicableExpr: parenExpr | qualifiedId | applicableExpr application;
 
@@ -41,36 +57,56 @@ qualifiedId: (moduleId DOT)? ID;
 
 WHITESPACE: WS+ -> skip;
 
+// Package separator
+RSLASH: '/';
+
+// Module header
 MODULE: 'module';
 IMPORT: 'import';
+
+// Top level declarations
 DATA: 'data';
 LET: 'let';
+
+// Control statements
 IF: 'if';
 THEN: 'then';
 ELSE: 'else';
 
-RSLASH: '/';
+MATCH: 'match';
+WITH: 'with';
+CASE: 'case';
 
+// Block and application delimiters
 LBRACE: '{';
 RBRACE: '}';
 LPAREN: '(';
 RPAREN: ')';
 
+// Operators
 EQ: '=';
 DOT: '.';
 COMMA: ',';
 ARROW: '->';
+AT: '@';
+SEMICOLON: ';';
+COLON: ':';
 
+// Boolean literals
 TRUE: 'true';
 FALSE: 'false';
 
-ID: ID_START ID_CONTINUE*;
-
+// String and char literals
 SQUOTE: '\'';
 DQUOTE: '"';
 
-LITERAL_INT: DECIMAL_NUMERAL INTEGER_SUFFIX?;
 LITERAL_CHAR: SQUOTE SINGLE_CHAR SQUOTE;
+
+// Numeric literals
+LITERAL_INT: DECIMAL_NUMERAL INTEGER_SUFFIX?;
+
+// Identifiers
+ID: ID_START ID_CONTINUE*;
 
 fragment WS: [\p{Pattern_White_Space}];
 
