@@ -29,13 +29,11 @@ lambdaExpr: lambdaParams ARROW expr;
 
 lambdaParams: ID | LPAREN RPAREN | LPAREN (ID COMMA)* ID RPAREN;
 
-matchExpr : MATCH expr WITH matchBlock ;
-
-matchBlock : LBRACE matchCase* RBRACE ;
+matchExpr : MATCH expr WITH LBRACE matchCase* RBRACE;
 
 matchCase : CASE pattern ARROW expr ;
 
-pattern : ID | constructorPattern ;
+pattern : ID | literal | constructorPattern ;
 
 constructorPattern: patternAlias? qualifiedId LBRACE fieldPatterns? RBRACE ;
 

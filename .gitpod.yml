@@ -1,5 +1,5 @@
 tasks:
-  - before: (cd langserver && ./gradlew publish)
+  - before: (cd lang-server && ./gradlew publish)
   - init: (cd vscode-plugin && npm i && npm run compile)
 
 image:

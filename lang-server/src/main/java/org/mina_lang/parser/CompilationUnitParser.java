@@ -314,7 +314,7 @@ public class CompilationUnitParser {
         public ExprNode visitMatchExpr(MatchExprContext ctx) {
             var scrutineeNode = visitNullable(ctx.expr());
             var matchCaseVisitor = new MatchCaseVisitor(this, collector);
-            var cases = visitRepeated(ctx.matchBlock().matchCase(), matchCaseVisitor);
+            var cases = visitRepeated(ctx.matchCase(), matchCaseVisitor);
             var node = new MatchNode(scrutineeNode, cases);
             collector.add(Tuples.pair(contextRange(ctx), node));
             return node;
