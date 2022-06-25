@@ -1,26 +1,32 @@
 grammar Mina;
 
+// Files
 compilationUnit: module* EOF;
 
+// Modules
 module: MODULE moduleId LBRACE importDeclaration* declaration* RBRACE;
 
+// Imports
 importDeclaration : IMPORT importSelector;
 
 importSelector : moduleId | moduleId DOT ID | moduleId DOT LBRACE importSymbols RBRACE;
 
 importSymbols : (ID COMMA)* ID ;
 
+// Declarations
 declaration: dataDeclaration | letDeclaration;
 
 dataDeclaration: DATA ID LBRACE RBRACE;
 
 letDeclaration: LET ID EQ expr;
 
+// Expressions
 expr: ifExpr | lambdaExpr | matchExpr | literal | applicableExpr;
 
 ifExpr: IF expr THEN expr ELSE expr;
 
 lambdaExpr: lambdaParams ARROW expr;
+
 lambdaParams: ID | LPAREN RPAREN | LPAREN (ID COMMA)* ID RPAREN;
 
 matchExpr : MATCH expr WITH matchBlock ;
@@ -45,12 +51,14 @@ application : LPAREN RPAREN | LPAREN (expr COMMA)* expr RPAREN;
 
 parenExpr: LPAREN expr RPAREN;
 
+// Literals
 literal: literalBoolean | literalInt | literalChar;
 
 literalBoolean: TRUE | FALSE;
 literalInt: LITERAL_INT;
 literalChar: LITERAL_CHAR;
 
+// Identifiers
 packageId: (ID RSLASH)* ID;
 moduleId: (packageId RSLASH)? ID;
 qualifiedId: (moduleId DOT)? ID;

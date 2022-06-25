@@ -21,9 +21,11 @@ import org.eclipse.lsp4j.TextDocumentItem;
 import org.mina_lang.langserver.MinaSyntaxNodeCollector;
 import org.mina_lang.parser.MinaParser.ApplicableExprContext;
 import org.mina_lang.parser.MinaParser.CompilationUnitContext;
+import org.mina_lang.parser.MinaParser.ConstructorPatternContext;
 import org.mina_lang.parser.MinaParser.DataDeclarationContext;
 import org.mina_lang.parser.MinaParser.DeclarationContext;
 import org.mina_lang.parser.MinaParser.ExprContext;
+import org.mina_lang.parser.MinaParser.FieldPatternContext;
 import org.mina_lang.parser.MinaParser.IfExprContext;
 import org.mina_lang.parser.MinaParser.ImportDeclarationContext;
 import org.mina_lang.parser.MinaParser.ImportSelectorContext;
@@ -33,16 +35,24 @@ import org.mina_lang.parser.MinaParser.LiteralBooleanContext;
 import org.mina_lang.parser.MinaParser.LiteralCharContext;
 import org.mina_lang.parser.MinaParser.LiteralContext;
 import org.mina_lang.parser.MinaParser.LiteralIntContext;
+import org.mina_lang.parser.MinaParser.MatchCaseContext;
+import org.mina_lang.parser.MinaParser.MatchExprContext;
 import org.mina_lang.parser.MinaParser.ModuleContext;
 import org.mina_lang.parser.MinaParser.ModuleIdContext;
 import org.mina_lang.parser.MinaParser.PackageIdContext;
 import org.mina_lang.parser.MinaParser.ParenExprContext;
+import org.mina_lang.parser.MinaParser.PatternAliasContext;
+import org.mina_lang.parser.MinaParser.PatternContext;
 import org.mina_lang.parser.MinaParser.QualifiedIdContext;
 import org.mina_lang.syntax.ApplyNode;
+import org.mina_lang.syntax.CaseNode;
 import org.mina_lang.syntax.CompilationUnitNode;
+import org.mina_lang.syntax.ConstructorPatternNode;
 import org.mina_lang.syntax.DataDeclarationNode;
 import org.mina_lang.syntax.DeclarationNode;
 import org.mina_lang.syntax.ExprNode;
+import org.mina_lang.syntax.FieldPatternNode;
+import org.mina_lang.syntax.IdPatternNode;
 import org.mina_lang.syntax.IfExprNode;
 import org.mina_lang.syntax.ImportNode;
 import org.mina_lang.syntax.LambdaExprNode;
@@ -50,8 +60,11 @@ import org.mina_lang.syntax.LetDeclarationNode;
 import org.mina_lang.syntax.LiteralBooleanNode;
 import org.mina_lang.syntax.LiteralCharNode;
 import org.mina_lang.syntax.LiteralIntNode;
+import org.mina_lang.syntax.MatchNode;
 import org.mina_lang.syntax.ModuleNode;
 import org.mina_lang.syntax.ParamNode;
+import org.mina_lang.syntax.PatternNode;
+import org.mina_lang.syntax.QualifiedIdNode;
 import org.mina_lang.syntax.ReferenceNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -236,7 +249,7 @@ public class CompilationUnitParser {
 
         @Override
         public DeclarationNode visitDataDeclaration(DataDeclarationContext ctx) {
-            var name = ctx.ID().getText();
+            var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var node = new DataDeclarationNode(name);
             collector.add(Tuples.pair(contextRange(ctx), node));
             return node;
@@ -244,7 +257,7 @@ public class CompilationUnitParser {
 
         @Override
         public DeclarationNode visitLetDeclaration(LetDeclarationContext ctx) {
-            var name = ctx.ID().getText();
+            var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
 
             var exprVisitor = new ExprVisitor(collector);
             var expr = exprVisitor.visitNullable(ctx.expr());
@@ -272,7 +285,8 @@ public class CompilationUnitParser {
 
         @Override
         public ExprNode visitExpr(ExprContext ctx) {
-            return visitAlternatives(ctx.ifExpr(), ctx.lambdaExpr(), ctx.literal(), ctx.applicableExpr());
+            return visitAlternatives(ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.literal(),
+                    ctx.applicableExpr());
         }
 
         @Override
@@ -292,6 +306,16 @@ public class CompilationUnitParser {
                     .collect(Collectors2.toImmutableList());
             var bodyNode = visitNullable(ctx.expr());
             var node = new LambdaExprNode(params, bodyNode);
+            collector.add(Tuples.pair(contextRange(ctx), node));
+            return node;
+        }
+
+        @Override
+        public ExprNode visitMatchExpr(MatchExprContext ctx) {
+            var scrutineeNode = visitNullable(ctx.expr());
+            var matchCaseVisitor = new MatchCaseVisitor(this, collector);
+            var cases = visitRepeated(ctx.matchBlock().matchCase(), matchCaseVisitor);
+            var node = new MatchNode(scrutineeNode, cases);
             collector.add(Tuples.pair(contextRange(ctx), node));
             return node;
         }
@@ -323,21 +347,9 @@ public class CompilationUnitParser {
 
         @Override
         public ExprNode visitQualifiedId(QualifiedIdContext ctx) {
-            var modId = Optional.ofNullable(ctx.moduleId());
-            var packageId = modId.map(mod -> mod.packageId());
-
-            var pkg = packageId.map(pkgId -> {
-                return pkgId.ID().stream()
-                        .map(node -> node.getText())
-                        .collect(Collectors2.toImmutableList());
-            }).orElse(Lists.immutable.empty());
-
-            var pkgWithModName = modId.map(mod -> pkg.newWith(mod.ID().getText()));
-
-            var node = new ReferenceNode(pkgWithModName.orElse(pkg), ctx.ID().getText());
-
+            var idVisitor = new QualifiedIdVisitor(collector);
+            var node = new ReferenceNode(idVisitor.visitNullable(ctx));
             collector.add(Tuples.pair(contextRange(ctx), node));
-
             return node;
         }
 
@@ -379,6 +391,129 @@ public class CompilationUnitParser {
             var intExpr = ctx.LITERAL_INT();
             var node = new LiteralIntNode(Integer.parseInt(intExpr.getText()));
             collector.add(Tuples.pair(contextRange(ctx), node));
+            return node;
+        }
+
+    }
+
+    private static class MatchCaseVisitor extends Visitor<CaseNode> {
+
+        private ExprVisitor exprVisitor;
+        private MinaSyntaxNodeCollector collector;
+
+        public MatchCaseVisitor(ExprVisitor exprVisitor, MinaSyntaxNodeCollector collector) {
+            this.exprVisitor = exprVisitor;
+            this.collector = collector;
+        }
+
+        @Override
+        public CaseNode visitMatchCase(MatchCaseContext ctx) {
+            var patternVisitor = new PatternVisitor(collector);
+            var patternNode = patternVisitor.visitNullable(ctx.pattern());
+            var consequentNode = exprVisitor.visitNullable(ctx.expr());
+            var node = new CaseNode(patternNode, consequentNode);
+            collector.add(Tuples.pair(contextRange(ctx), node));
+            return node;
+        }
+    }
+
+    private static class PatternVisitor extends Visitor<PatternNode> {
+
+        private MinaSyntaxNodeCollector collector;
+
+        public PatternVisitor(MinaSyntaxNodeCollector collector) {
+            this.collector = collector;
+        }
+
+        @Override
+        public PatternNode visitPattern(PatternContext ctx) {
+            var id = ctx.ID();
+            if (id != null) {
+                var node = new IdPatternNode(id.getText());
+                collector.add(Tuples.pair(contextRange(ctx), node));
+                return node;
+            }
+
+            return visitNullable(ctx.constructorPattern());
+        }
+
+        @Override
+        public PatternNode visitConstructorPattern(ConstructorPatternContext ctx) {
+            var idVisitor = new QualifiedIdVisitor(collector);
+
+            var id = idVisitor.visitNullable(ctx.qualifiedId());
+
+            var alias = Optional.ofNullable(ctx.patternAlias())
+                    .map(PatternAliasContext::ID)
+                    .map(TerminalNode::getText);
+
+            var fieldPatternVisitor = new FieldPatternVisitor(collector, this);
+
+            var fieldPatterns = ctx.fieldPatterns();
+            var fields = Lists.immutable.<FieldPatternNode>empty();
+            if (fieldPatterns != null) {
+                fields = visitRepeated(fieldPatterns.fieldPattern(), fieldPatternVisitor);
+            }
+
+            var node = new ConstructorPatternNode(id, alias, fields);
+            collector.add(Tuples.pair(contextRange(ctx), node));
+
+            return node;
+        }
+
+    }
+
+    private static class FieldPatternVisitor extends Visitor<FieldPatternNode> {
+
+        private MinaSyntaxNodeCollector collector;
+        private PatternVisitor patternVisitor;
+
+        public FieldPatternVisitor(MinaSyntaxNodeCollector collector, PatternVisitor patternVisitor) {
+            this.collector = collector;
+            this.patternVisitor = patternVisitor;
+        }
+
+        @Override
+        public FieldPatternNode visitFieldPattern(FieldPatternContext ctx) {
+            var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
+            var pattern = patternVisitor.visitNullable(ctx.pattern());
+            var node = new FieldPatternNode(id, pattern);
+            collector.add(Tuples.pair(contextRange(ctx), node));
+            return node;
+        }
+    }
+
+    private static class QualifiedIdVisitor extends Visitor<QualifiedIdNode> {
+
+        private MinaSyntaxNodeCollector collector;
+
+        public QualifiedIdVisitor(MinaSyntaxNodeCollector collector) {
+            this.collector = collector;
+        }
+
+        @Override
+        public QualifiedIdNode visitQualifiedId(QualifiedIdContext ctx) {
+            var modId = Optional.ofNullable(ctx.moduleId());
+            var packageId = modId.map(ModuleIdContext::packageId);
+
+            var pkg = packageId.map(pkgId -> {
+                return pkgId.ID().stream()
+                        .map(node -> node.getText())
+                        .collect(Collectors2.toImmutableList());
+            }).orElse(Lists.immutable.empty());
+
+            var pkgWithModName = modId
+                    .map(ModuleIdContext::ID)
+                    .map(id -> pkg.newWith(id.getText()));
+
+            var id = Optional.ofNullable(ctx.ID())
+                .map(TerminalNode::getText)
+                .orElse(null);
+
+            var node = new QualifiedIdNode(pkgWithModName.orElse(pkg), id);
+
+            collector.add(Tuples.pair(contextRange(ctx), node));
+
             return node;
         }
 

@@ -69,7 +69,7 @@ buildInfo {
 }
 
 application {
-    mainClass.set("org.mina_lang.main.Server")
+    mainClass.set("org.mina_lang.main.Launcher")
 }
 
 tasks.withType<Test> {
