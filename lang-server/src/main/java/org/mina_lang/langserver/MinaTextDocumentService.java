@@ -20,6 +20,7 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.util.Ranges;
 import org.mina_lang.langserver.semantic.tokens.MinaSemanticTokensParser;
 import org.mina_lang.parser.CompilationUnitParser;
+import org.mina_lang.parser.SyntaxNodeCollector;
 import org.mina_lang.syntax.SyntaxNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class MinaTextDocumentService implements TextDocumentService {
             hoverRanges.addHoverRanges(params, hoversFuture);
             var parsingFuture = CompletableFuture.supplyAsync(() -> {
                 var diagnosticCollector = new MinaDiagnosticCollector();
-                var syntaxNodeCollector = new MinaSyntaxNodeCollector();
+                var syntaxNodeCollector = new SyntaxNodeCollector();
                 try {
                     var syntaxTree = CompilationUnitParser.parse(document, syntaxNodeCollector, diagnosticCollector);
                     hoversFuture.complete(syntaxNodeCollector.getSyntaxNodes());
@@ -72,7 +73,7 @@ public class MinaTextDocumentService implements TextDocumentService {
             hoverRanges.updateHoverRanges(params, hoversFuture);
             var parsingFuture = CompletableFuture.supplyAsync(() -> {
                 var diagnosticCollector = new MinaDiagnosticCollector();
-                var syntaxNodeCollector = new MinaSyntaxNodeCollector();
+                var syntaxNodeCollector = new SyntaxNodeCollector();
                 try {
                     var syntaxTree = CompilationUnitParser.parse(newDocument, syntaxNodeCollector, diagnosticCollector);
                     hoversFuture.complete(syntaxNodeCollector.getSyntaxNodes());

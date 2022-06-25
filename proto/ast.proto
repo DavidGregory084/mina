@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package mina.proto;
+package mina.syntax.proto;
 
 option java_multiple_files = true;
 option java_outer_classname = "SyntaxNode";
@@ -257,7 +257,7 @@ message Expr {
     LiteralInt int = 2;
     LiteralLong long = 3;
     LiteralFloat flt = 4;
-    LiteralDouble dbl = 5; 
+    LiteralDouble dbl = 5;
     LiteralBoolean boolean = 6;
     LiteralString str = 7;
     LiteralChar char = 8;
