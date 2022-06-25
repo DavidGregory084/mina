@@ -43,3 +43,17 @@ protobuf {
         artifact = "com.google.protobuf:protoc:${protobufVersion}"
     }
 }
+
+publishing {
+    publications {
+        create<IvyPublication>("ivyLocal") {
+            from(components["java"])
+        }
+    }
+    repositories {
+        ivy {
+            url = uri("${System.getProperty("user.home")}/.ivy2/local")
+            layout("ivy")
+        }
+    }
+}

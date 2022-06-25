@@ -45,3 +45,17 @@ java {
 tasks.generateGrammarSource {
     arguments = arguments + listOf("-visitor", "-no-listener", "-package", "org.mina_lang.parser")
 }
+
+publishing {
+    publications {
+        create<IvyPublication>("ivyLocal") {
+            from(components["java"])
+        }
+    }
+    repositories {
+        ivy {
+            url = uri("${System.getProperty("user.home")}/.ivy2/local")
+            layout("ivy")
+        }
+    }
+}

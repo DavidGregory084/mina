@@ -17,3 +17,17 @@ dependencies {
 tasks.named<Test>("test") {
     useJUnitPlatform()
 }
+
+publishing {
+    publications {
+        create<IvyPublication>("ivyLocal") {
+            from(components["java"])
+        }
+    }
+    repositories {
+        ivy {
+            url = uri("${System.getProperty("user.home")}/.ivy2/local")
+            layout("ivy")
+        }
+    }
+}
