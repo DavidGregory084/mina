@@ -72,7 +72,7 @@ export async function activate(context: ExtensionContext) {
         `-DLOG_FOLDER=${context.logUri.fsPath}`,
         "-cp",
         getServerClasspath.stdout,
-        "org.mina_lang.main.Launcher",
+        "org.mina_lang.langserver.Launcher",
       ],
     };
 

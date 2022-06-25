@@ -1,4 +1,4 @@
-package org.mina_lang.main;
+package org.mina_lang.langserver;
 
 import java.io.File;
 import java.io.IOException;
