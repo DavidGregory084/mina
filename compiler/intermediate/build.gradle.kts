@@ -2,6 +2,7 @@ import com.google.protobuf.gradle.*
 
 plugins {
     `java-library`
+    `ivy-publish`
     id("com.google.protobuf") version "0.8.18"
 }
 
