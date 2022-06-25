@@ -3,6 +3,7 @@ import com.google.protobuf.gradle.*
 plugins {
     `java-library`
     `ivy-publish`
+    jacoco
     id("com.google.protobuf") version "0.8.18"
 }
 
@@ -15,8 +16,9 @@ group = "org.mina-lang"
 version = "0.1.0-SNAPSHOT"
 
 val eclipseCollectionsVersion = "11.0.0"
-val junitVersion = "5.8.2"
 val protobufVersion = "3.20.0"
+val junitVersion = "5.8.2"
+val jacocoVersion = "0.8.8"
 
 dependencies {
     // Immutable Collections
@@ -37,6 +39,14 @@ tasks.named<Test>("test") {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+}
+
+jacoco {
+    toolVersion = "${jacocoVersion}"
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 protobuf {

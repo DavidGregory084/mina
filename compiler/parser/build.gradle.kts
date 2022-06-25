@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     `ivy-publish`
+    jacoco
     antlr
 }
 
@@ -13,8 +14,9 @@ version = "0.1.0-SNAPSHOT"
 
 val antlrVersion = "4.10.1"
 val eclipseCollectionsVersion = "11.0.0"
-val junitVersion = "5.8.2"
 val lsp4jVersion = "0.14.0"
+val junitVersion = "5.8.2"
+val jacocoVersion = "0.8.8"
 
 dependencies {
     // Immutable Collections
@@ -43,8 +45,16 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+jacoco {
+    toolVersion = "${jacocoVersion}"
+}
+
 tasks.generateGrammarSource {
     arguments = arguments + listOf("-visitor", "-no-listener", "-package", "org.mina_lang.parser")
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 publishing {

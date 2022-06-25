@@ -18,7 +18,6 @@ import org.eclipse.collections.impl.tuple.Tuples;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentItem;
-import org.mina_lang.parser.SyntaxNodeCollector;
 import org.mina_lang.parser.MinaParser.ApplicableExprContext;
 import org.mina_lang.parser.MinaParser.CompilationUnitContext;
 import org.mina_lang.parser.MinaParser.ConstructorPatternContext;

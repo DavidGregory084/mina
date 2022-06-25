@@ -1,6 +1,7 @@
 plugins {
     application
     `ivy-publish`
+    jacoco
     id("com.opencastsoftware.gradle.buildinfo") version "0.1.0"
     id("com.github.ben-manes.versions") version "0.42.0"
 }
@@ -21,6 +22,7 @@ val lsp4jVersion = "0.14.0"
 val slf4jVersion = "1.7.36"
 val logbackVersion = "1.2.11"
 val junitVersion = "5.8.2"
+val jacocoVersion = "0.8.8"
 
 dependencies {
     // Command Line Arg Parsing
@@ -72,6 +74,14 @@ tasks.withType<Test> {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+}
+
+jacoco {
+    toolVersion = "${jacocoVersion}"
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 publishing {
