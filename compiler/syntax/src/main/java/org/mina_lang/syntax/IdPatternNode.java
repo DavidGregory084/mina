@@ -1,5 +1,5 @@
 package org.mina_lang.syntax;
 
-public record IdPatternNode(String name) implements PatternNode {
-    
+public record IdPatternNode<A>(Meta<A> meta, String name) implements PatternNode<A> {
+
 }

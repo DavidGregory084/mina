@@ -45,6 +45,18 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
+      - name: Build Common Module
+        uses: gradle/gradle-build-action@v2
+        with:
+          build-root-directory: compiler/common
+          arguments: build
+
+      - name: Publish Common Module
+        uses: gradle/gradle-build-action@v2
+        with:
+          build-root-directory: compiler/common
+          arguments: publish
+
       - name: Build Syntax Module
         uses: gradle/gradle-build-action@v2
         with:

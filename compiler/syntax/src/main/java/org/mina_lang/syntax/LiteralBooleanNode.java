@@ -1,5 +1,5 @@
 package org.mina_lang.syntax;
 
-public record LiteralBooleanNode(boolean value) implements LiteralNode {
-    
+public record LiteralBooleanNode<A>(Meta<A> meta, boolean value) implements LiteralNode<A> {
+
 }

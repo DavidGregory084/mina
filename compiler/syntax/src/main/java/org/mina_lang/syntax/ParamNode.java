@@ -1,5 +1,5 @@
 package org.mina_lang.syntax;
 
-public record ParamNode(String name) implements SyntaxNode {
-    
+public record ParamNode<A>(Meta<A> meta, String name) implements SyntaxNode<A> {
+
 }

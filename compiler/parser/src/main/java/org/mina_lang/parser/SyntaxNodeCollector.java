@@ -7,14 +7,14 @@ import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.lsp4j.Range;
 import org.mina_lang.syntax.SyntaxNode;
 
-public class SyntaxNodeCollector {
-    MutableList<Pair<Range, SyntaxNode>> syntaxNodes = Lists.mutable.empty();
+public class SyntaxNodeCollector<A> {
+    MutableList<Pair<Range, SyntaxNode<A>>> syntaxNodes = Lists.mutable.empty();
 
-    public void add(Pair<Range, SyntaxNode> node) {
+    public void add(Pair<Range, SyntaxNode<A>> node) {
         syntaxNodes.add(node);
     }
 
-    public ImmutableList<Pair<Range, SyntaxNode>> getSyntaxNodes() {
+    public ImmutableList<Pair<Range, SyntaxNode<A>>> getSyntaxNodes() {
         return syntaxNodes.toImmutable();
     }
 }

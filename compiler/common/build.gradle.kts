@@ -1,37 +1,20 @@
-import com.google.protobuf.gradle.*
-
 plugins {
     `java-library`
     `ivy-publish`
     jacoco
-    id("com.google.protobuf") version "0.8.18"
 }
 
 repositories {
-    maven("https://maven-central.storage-download.googleapis.com/maven2/")
     mavenCentral()
 }
 
 group = "org.mina-lang"
 version = "0.1.0-SNAPSHOT"
 
-val eclipseCollectionsVersion = "11.0.0"
-val lsp4jVersion = "0.14.0"
-val protobufVersion = "3.20.0"
 val junitVersion = "5.8.2"
 val jacocoVersion = "0.8.8"
 
 dependencies {
-    // Immutable Collections
-    implementation("org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}")
-    implementation("org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}")
-
-    // Language Server Protocol (for Ranges and Positions)
-    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:${lsp4jVersion}")
-
-    // Syntax Tree Serialization
-    implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
-
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
 }
@@ -51,12 +34,6 @@ jacoco {
 
 tasks.test {
     finalizedBy(tasks.jacocoTestReport)
-}
-
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:${protobufVersion}"
-    }
 }
 
 publishing {

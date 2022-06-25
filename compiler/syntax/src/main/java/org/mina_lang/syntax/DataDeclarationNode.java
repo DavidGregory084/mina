@@ -1,5 +1,5 @@
 package org.mina_lang.syntax;
 
-public record DataDeclarationNode(String name) implements DeclarationNode {
-    
+public record DataDeclarationNode<A>(Meta<A> meta, String name) implements DeclarationNode<A> {
+
 }
