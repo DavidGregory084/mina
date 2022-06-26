@@ -49,73 +49,73 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/common
-          arguments: build
+          arguments: build --scan
 
       - name: Publish Common Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/common
-          arguments: publish
+          arguments: publish --scan
 
       - name: Build Syntax Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/syntax
-          arguments: build
+          arguments: build --scan
 
       - name: Publish Syntax Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/syntax
-          arguments: publish
+          arguments: publish --scan
 
       - name: Build Parser Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/parser
-          arguments: build
+          arguments: build --scan
 
       - name: Publish Parser Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/parser
-          arguments: publish
+          arguments: publish --scan
 
       - name: Build Intermediate Language Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/intermediate
-          arguments: build
+          arguments: build --scan
 
       - name: Publish Intermediate Language Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/intermediate
-          arguments: publish
+          arguments: publish --scan
 
       - name: Build JVM Codegen Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/jvm
-          arguments: build
+          arguments: build --scan
 
       - name: Publish JVM Codegen Module
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: compiler/jvm
-          arguments: publish
+          arguments: publish --scan
 
       - name: Build Language Server
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: lang-server
-          arguments: build
+          arguments: build --scan
 
       - name: Publish Language Server
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: lang-server
-          arguments: publish
+          arguments: publish --scan
 
       - name: Build VS Code Extension
         if: runner.os == 'Linux'
