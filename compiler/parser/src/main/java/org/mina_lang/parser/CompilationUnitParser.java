@@ -9,6 +9,7 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.collections.api.factory.Lists;
@@ -81,6 +82,16 @@ public class CompilationUnitParser {
         parser.addErrorListener(errorListener);
         var visitor = new CompilationUnitVisitor();
         return visitor.visit(parser.compilationUnit());
+    }
+
+    public static Range tokenRange(Token token) {
+        var tokenLine = token.getLine() - 1;
+        var startChar = token.getCharPositionInLine();
+        var startPos = new Position(tokenLine, startChar);
+        var tokenLength = token.getText().length();
+        var endChar = startChar + tokenLength;
+        var endPos = new Position(tokenLength, endChar);
+        return new Range(startPos, endPos);
     }
 
     public static Range contextRange(ParserRuleContext ctx) {
@@ -254,11 +265,14 @@ public class CompilationUnitParser {
         public ExprNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
             var params = ctx.lambdaParams().ID().stream()
                     .map(param -> {
-                        var meta = new Meta<Void>(contextRange(param), null);
-                        return new ParamNode<Void>(param.getText())
+                        var symbol = param.getSymbol();
+                        var meta = new Meta<Void>(tokenRange(symbol), null);
+                        return new ParamNode<Void>(meta, param.getText());
                     })
                     .collect(Collectors2.toImmutableList());
+
             var bodyNode = visitNullable(ctx.expr());
+
             var meta = new Meta<Void>(contextRange(ctx), null);
             var node = new LambdaExprNode<Void>(meta, params, bodyNode);
             return node;
@@ -269,7 +283,8 @@ public class CompilationUnitParser {
             var scrutineeNode = visitNullable(ctx.expr());
             var matchCaseVisitor = new MatchCaseVisitor(this);
             var cases = visitRepeated(ctx.matchCase(), matchCaseVisitor);
-            var node = new MatchNode<Void>(scrutineeNode, cases);
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new MatchNode<Void>(meta, scrutineeNode, cases);
             return node;
         }
 
@@ -285,7 +300,8 @@ public class CompilationUnitParser {
 
             if (applicableExprNode != null) {
                 var args = visitRepeated(ctx.application().expr(), this);
-                var node = new ApplyNode<Void>(applicableExprNode, args);
+                var meta = new Meta<Void>(contextRange(ctx), null);
+                var node = new ApplyNode<Void>(meta, applicableExprNode, args);
                 return node;
             }
 
@@ -300,7 +316,8 @@ public class CompilationUnitParser {
         @Override
         public ExprNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
             var idVisitor = new QualifiedIdVisitor();
-            var node = new ReferenceNode<Void>(idVisitor.visitNullable(ctx));
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new ReferenceNode<Void>(meta, idVisitor.visitNullable(ctx));
             return node;
         }
 
@@ -312,14 +329,16 @@ public class CompilationUnitParser {
         @Override
         public ExprNode<Void> visitLiteralBoolean(LiteralBooleanContext ctx) {
             var trueExpr = ctx.TRUE();
+            var meta = new Meta<Void>(contextRange(ctx), null);
+
             if (trueExpr != null) {
-                var node = new LiteralBooleanNode<Void>(true);
+                var node = new LiteralBooleanNode<Void>(meta, true);
                 return node;
             }
 
             var falseExpr = ctx.FALSE();
             if (falseExpr != null) {
-                var node = new LiteralBooleanNode<Void>(false);
+                var node = new LiteralBooleanNode<Void>(meta, false);
                 return node;
             }
 
@@ -330,14 +349,16 @@ public class CompilationUnitParser {
         public ExprNode<Void> visitLiteralChar(LiteralCharContext ctx) {
             var charExpr = ctx.LITERAL_CHAR();
             var charValue = charExpr.getText().charAt(1);
-            var node = new LiteralCharNode<Void>(charValue);
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new LiteralCharNode<Void>(meta, charValue);
             return node;
         }
 
         @Override
         public ExprNode<Void> visitLiteralInt(LiteralIntContext ctx) {
             var intExpr = ctx.LITERAL_INT();
-            var node = new LiteralIntNode<Void>(Integer.parseInt(intExpr.getText()));
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new LiteralIntNode<Void>(meta, Integer.parseInt(intExpr.getText()));
             return node;
         }
 
@@ -356,7 +377,8 @@ public class CompilationUnitParser {
             var patternVisitor = new PatternVisitor();
             var patternNode = patternVisitor.visitNullable(ctx.pattern());
             var consequentNode = exprVisitor.visitNullable(ctx.expr());
-            var node = new CaseNode<Void>(patternNode, consequentNode);
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new CaseNode<Void>(meta, patternNode, consequentNode);
             return node;
         }
     }
@@ -367,7 +389,8 @@ public class CompilationUnitParser {
         public PatternNode<Void> visitPattern(PatternContext ctx) {
             var id = ctx.ID();
             if (id != null) {
-                var node = new IdPatternNode<Void>(id.getText());
+                var meta = new Meta<Void>(contextRange(ctx), null);
+                var node = new IdPatternNode<Void>(meta, id.getText());
                 return node;
             }
 
@@ -392,7 +415,8 @@ public class CompilationUnitParser {
                 fields = visitRepeated(fieldPatterns.fieldPattern(), fieldPatternVisitor);
             }
 
-            var node = new ConstructorPatternNode<Void>(id, alias, fields);
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new ConstructorPatternNode<Void>(meta, id, alias, fields);
 
             return node;
         }
@@ -411,7 +435,8 @@ public class CompilationUnitParser {
         public FieldPatternNode<Void> visitFieldPattern(FieldPatternContext ctx) {
             var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var pattern = patternVisitor.visitNullable(ctx.pattern());
-            var node = new FieldPatternNode<Void>(id, pattern);
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new FieldPatternNode<Void>(meta, id, pattern);
             return node;
         }
     }
@@ -433,10 +458,11 @@ public class CompilationUnitParser {
                     .map(id -> pkg.newWith(id.getText()));
 
             var id = Optional.ofNullable(ctx.ID())
-                .map(TerminalNode::getText)
-                .orElse(null);
+                    .map(TerminalNode::getText)
+                    .orElse(null);
 
-            var node = new QualifiedIdNode<Void>(pkgWithModName.orElse(pkg), id);
+            var meta = new Meta<Void>(contextRange(ctx), null);
+            var node = new QualifiedIdNode<Void>(meta, pkgWithModName.orElse(pkg), id);
 
             return node;
         }
