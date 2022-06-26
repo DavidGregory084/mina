@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.mina_lang.BuildInfo;
-import org.mina_lang.langserver.MinaLanguageServer;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 import org.slf4j.LoggerFactory;

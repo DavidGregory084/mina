@@ -8,9 +8,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import org.eclipse.lsp4j.HoverOptions;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
@@ -34,6 +31,8 @@ import org.mina_lang.BuildInfo;
 import org.mina_lang.langserver.semantic.tokens.MinaSemanticTokens;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
@@ -129,11 +128,6 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             var tokenOptions = new SemanticTokensWithRegistrationOptions(tokenLegend, true, false);
 
             serverCapabilities.setSemanticTokensProvider(tokenOptions);
-
-            var hoverOptions = new HoverOptions();
-            hoverOptions.setWorkDoneProgress(false);
-
-            serverCapabilities.setHoverProvider(hoverOptions);
 
             cancelToken.checkCanceled();
 

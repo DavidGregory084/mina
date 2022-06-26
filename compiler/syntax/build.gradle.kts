@@ -26,8 +26,8 @@ dependencies {
     implementation("org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}")
     implementation("org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}")
 
-    // Language Server Protocol (for Ranges and Positions)
-    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:${lsp4jVersion}")
+    // Common Definitions
+    implementation("org.mina-lang:common:${version}")
 
     // Syntax Tree Serialization
     implementation("com.google.protobuf:protobuf-java:${protobufVersion}")

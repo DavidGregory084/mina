@@ -9,17 +9,17 @@ import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.mina_lang.syntax.CompilationUnitNode;
 
 public class MinaSyntaxTrees {
-    private final ConcurrentHashMap<String, CompletableFuture<CompilationUnitNode>> syntaxTrees = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<CompilationUnitNode<Void>>> syntaxTrees = new ConcurrentHashMap<>();
 
-    public CompletableFuture<CompilationUnitNode> get(String uri) {
+    public CompletableFuture<CompilationUnitNode<Void>> get(String uri) {
         return syntaxTrees.get(uri);
     }
 
-    public void addSyntaxTree(DidOpenTextDocumentParams params, CompletableFuture<CompilationUnitNode> parsingFuture) {
+    public void addSyntaxTree(DidOpenTextDocumentParams params, CompletableFuture<CompilationUnitNode<Void>> parsingFuture) {
         syntaxTrees.put(params.getTextDocument().getUri(), parsingFuture);
     }
 
-    public void updateSyntaxTree(DidChangeTextDocumentParams params, CompletableFuture<CompilationUnitNode> parsingFuture) {
+    public void updateSyntaxTree(DidChangeTextDocumentParams params, CompletableFuture<CompilationUnitNode<Void>> parsingFuture) {
         syntaxTrees.put(params.getTextDocument().getUri(), parsingFuture);
     }
 

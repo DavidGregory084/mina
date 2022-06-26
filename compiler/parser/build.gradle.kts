@@ -26,8 +26,8 @@ dependencies {
     // Syntax Tree Parsing
     antlr("org.antlr:antlr4:${antlrVersion}")
 
-    // Language Server Protocol (for Ranges and Positions)
-    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:${lsp4jVersion}")
+    // Common Definitions
+    implementation("org.mina-lang:common:${version}")
 
     // Syntax Tree Definitions
     implementation("org.mina-lang:syntax:${version}")
