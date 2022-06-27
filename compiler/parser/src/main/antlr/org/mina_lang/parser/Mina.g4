@@ -1,5 +1,10 @@
 grammar Mina;
 
+@header {
+	import java.text.Normalizer;
+	import java.text.Normalizer.Form;
+}
+
 // Files
 compilationUnit: module* EOF;
 
@@ -9,7 +14,7 @@ module: MODULE moduleId LBRACE importDeclaration* declaration* RBRACE;
 // Imports
 importDeclaration : IMPORT importSelector;
 
-importSelector : moduleId | moduleId DOT ID | moduleId DOT LBRACE importSymbols RBRACE;
+importSelector : moduleId (DOT ID)? | moduleId DOT LBRACE importSymbols RBRACE;
 
 importSymbols : (ID COMMA)* ID ;
 
@@ -57,8 +62,7 @@ literalInt: LITERAL_INT;
 literalChar: LITERAL_CHAR;
 
 // Identifiers
-packageId: (ID RSLASH)* ID;
-moduleId: (packageId RSLASH)? ID;
+moduleId: (ID RSLASH)* ID;
 qualifiedId: (moduleId DOT)? ID;
 
 WHITESPACE: WS+ -> skip;
@@ -88,8 +92,10 @@ LBRACE: '{';
 RBRACE: '}';
 LPAREN: '(';
 RPAREN: ')';
+LSQUARE : '[';
+RSQUARE : ']';
 
-// Operators
+// Reserved operators
 EQ: '=';
 DOT: '.';
 COMMA: ',';
@@ -111,10 +117,10 @@ LITERAL_CHAR: SQUOTE SINGLE_CHAR SQUOTE;
 // Numeric literals
 LITERAL_INT: DECIMAL_NUMERAL INTEGER_SUFFIX?;
 
-// Identifiers
-ID: ID_START ID_CONTINUE*;
+// Identifiers (normalized)
+ID: ID_START ID_CONTINUE* { setText(Normalizer.normalize(getText(), Form.NFKC)); };
 
-fragment WS: [\p{Pattern_White_Space}];
+fragment WS: [ \t\r\n];
 
 fragment ID_START: [_\p{XID_Start}];
 fragment ID_CONTINUE: [\p{XID_Continue}];

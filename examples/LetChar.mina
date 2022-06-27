@@ -1,0 +1,3 @@
+module Mina/Examples/LetChar {
+    let char = 'a'
+}

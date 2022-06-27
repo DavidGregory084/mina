@@ -33,7 +33,6 @@ import org.mina_lang.parser.MinaParser.LiteralContext;
 import org.mina_lang.parser.MinaParser.LiteralIntContext;
 import org.mina_lang.parser.MinaParser.ModuleContext;
 import org.mina_lang.parser.MinaParser.ModuleIdContext;
-import org.mina_lang.parser.MinaParser.PackageIdContext;
 import org.mina_lang.parser.MinaParser.ParenExprContext;
 import org.mina_lang.parser.MinaParser.QualifiedIdContext;
 
@@ -142,23 +141,25 @@ public class MinaSemanticTokensParser {
 
         @Override
         public IntStream visitModuleId(ModuleIdContext ctx) {
-            var packageIdTokens = visitNullable(ctx.packageId());
-
-            var moduleNameToken = createToken(ctx.ID(), SemanticTokenTypes.Class, SemanticTokenModifiers.Declaration);
-
-            return Stream.of(
-                    packageIdTokens,
-                    moduleNameToken).flatMapToInt(x -> x);
-        }
-
-        @Override
-        public IntStream visitPackageId(PackageIdContext ctx) {
-            return ctx.ID().stream()
-                    .flatMapToInt(pkgSegment -> {
-                        return createToken(pkgSegment,
+            var packageTokens = ctx.ID().stream()
+                    .limit(ctx.ID().size() - 1)
+                    .flatMapToInt(id -> {
+                        return createToken(id,
                                 SemanticTokenTypes.Namespace,
                                 SemanticTokenModifiers.Declaration);
                     });
+
+            var moduleNameToken = ctx.ID().stream()
+                    .skip(ctx.ID().size() - 1)
+                    .flatMapToInt(id -> {
+                        return createToken(id,
+                                SemanticTokenTypes.Class,
+                                SemanticTokenModifiers.Declaration);
+                    });
+
+            return Stream.of(
+                    packageTokens,
+                    moduleNameToken).flatMapToInt(x -> x);
         }
 
         @Override

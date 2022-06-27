@@ -132,6 +132,10 @@
           "name": "constant.character.mina",
           "begin": "'",
           "end": "'"
+        },
+        {
+          "match": "\\b(true|false)\\b",
+          "name": "constant.other.mina"
         }
       ]
     },

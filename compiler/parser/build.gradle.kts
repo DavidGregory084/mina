@@ -16,6 +16,7 @@ val antlrVersion = "4.10.1"
 val eclipseCollectionsVersion = "11.0.0"
 val lsp4jVersion = "0.14.0"
 val junitVersion = "5.8.2"
+val hamcrestVersion = "2.2"
 val jacocoVersion = "0.8.8"
 
 dependencies {
@@ -34,6 +35,7 @@ dependencies {
 
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
+    testImplementation("org.hamcrest:hamcrest:${hamcrestVersion}")
 }
 
 tasks.named<Test>("test") {

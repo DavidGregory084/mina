@@ -1,0 +1,3 @@
+module Mina/Examples/LetBool {
+    let bool = true
+}
