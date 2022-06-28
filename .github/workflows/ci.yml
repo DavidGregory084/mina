@@ -48,7 +48,6 @@ jobs:
       - name: Build Gradle Modules
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: lang-server
           arguments: build --info
 
       - name: Publish Gradle Modules
