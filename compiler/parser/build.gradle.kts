@@ -1,23 +1,12 @@
 plugins {
     `java-library`
-    `ivy-publish`
-    jacoco
+    `java-project-convention`
     antlr
 }
-
-repositories {
-    mavenCentral()
-}
-
-group = "org.mina-lang"
-version = "0.1.0-SNAPSHOT"
 
 val antlrVersion = "4.10.1"
 val eclipseCollectionsVersion = "11.0.0"
 val lsp4jVersion = "0.14.0"
-val junitVersion = "5.8.2"
-val hamcrestVersion = "2.2"
-val jacocoVersion = "0.8.8"
 
 dependencies {
     // Immutable Collections
@@ -28,51 +17,12 @@ dependencies {
     antlr("org.antlr:antlr4:${antlrVersion}")
 
     // Common Definitions
-    implementation("org.mina-lang:common:${version}")
+    implementation(project(":compiler:common"))
 
     // Syntax Tree Definitions
-    implementation("org.mina-lang:syntax:${version}")
-
-    // Testing
-    testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
-    testImplementation("org.hamcrest:hamcrest:${hamcrestVersion}")
-}
-
-tasks.named<Test>("test") {
-    useJUnitPlatform()
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-
-jacoco {
-    toolVersion = "${jacocoVersion}"
+    implementation(project(":compiler:syntax"))
 }
 
 tasks.generateGrammarSource {
     arguments = arguments + listOf("-visitor", "-no-listener", "-package", "org.mina_lang.parser")
-}
-
-tasks.test {
-    finalizedBy(tasks.jacocoTestReport)
-}
-
-publishing {
-    publications {
-        create<IvyPublication>("ivyLocal") {
-            from(components["java"])
-        }
-    }
-    repositories {
-        ivy {
-            url = uri("${System.getProperty("user.home")}/.ivy2/local")
-            layout("ivy")
-        }
-    }
 }

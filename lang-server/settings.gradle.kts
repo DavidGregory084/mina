@@ -1,4 +1,4 @@
 rootProject.name = "mina-server"
 
-includeBuild("../compiler/parser")
-includeBuild("../compiler/syntax")
+include(":compiler:parser")
+include(":compiler:syntax")

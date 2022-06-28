@@ -1,2 +1,9 @@
+.antlr/
+.gradle/
 .idea/
 .vscode/
+.vscode-test/
+bin/
+build/
+node_modules/
+out/

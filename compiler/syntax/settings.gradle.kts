@@ -1,3 +1,1 @@
-rootProject.name = "syntax"
-
-includeBuild("../common")
+include(":compiler:common")

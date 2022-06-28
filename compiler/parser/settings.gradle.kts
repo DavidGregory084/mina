@@ -1,4 +1,2 @@
-rootProject.name = "parser"
-
-includeBuild("../common")
-includeBuild("../syntax")
+include(":compiler:common")
+include(":compiler:syntax")

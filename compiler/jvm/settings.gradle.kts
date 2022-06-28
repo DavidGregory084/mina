@@ -1,3 +1,1 @@
-rootProject.name = "jvm"
-
-includeBuild("../intermediate")
+include(":compiler:intermediate")
