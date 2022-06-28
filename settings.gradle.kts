@@ -1,6 +1,7 @@
 rootProject.name = "mina"
 
 include("gradle-plugin")
+project(":gradle-plugin").name = "mina-gradle-plugin"
 
 // Common data structures
 include("compiler:common")

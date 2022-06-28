@@ -60,7 +60,7 @@ export async function activate(context: ExtensionContext) {
         `"${coursierJar.fsPath}"`,
         "fetch",
         "--classpath",
-        "org.mina-lang:mina-server:0.1.0-SNAPSHOT",
+        "org.mina-lang:lang-server:0.1.0-SNAPSHOT",
       ],
       { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
     );
