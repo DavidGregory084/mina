@@ -4,12 +4,9 @@ plugins {
     `java-protobuf-convention`
 }
 
-val eclipseCollectionsVersion = "11.0.0"
-
 dependencies {
     // Immutable Collections
-    implementation("org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}")
-    implementation("org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}")
+    implementation(libs.bundles.eclipse.collections)
 
     // Common Definitions
     implementation(project(":compiler:common"))

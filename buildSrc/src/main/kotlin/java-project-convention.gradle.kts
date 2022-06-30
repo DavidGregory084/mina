@@ -2,6 +2,7 @@ plugins {
     java
     `ivy-publish`
     jacoco
+    id("com.github.ben-manes.versions")
 }
 
 repositories {
