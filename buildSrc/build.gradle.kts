@@ -9,6 +9,6 @@ repositories {
 }
 
 dependencies {
-    implementation("com.google.protobuf:protobuf-gradle-plugin:0.8.18")
-    implementation("com.github.ben-manes:gradle-versions-plugin:0.42.0")
+    implementation(libs.protobufPlugin)
+    implementation(libs.gradleVersionsPlugin)
 }

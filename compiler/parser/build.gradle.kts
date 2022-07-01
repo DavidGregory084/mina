@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     // Immutable Collections
-    implementation(libs.bundles.eclipse.collections)
+    implementation(libs.bundles.eclipseCollections)
 
     // Syntax Tree Parsing
     antlr(libs.antlr)

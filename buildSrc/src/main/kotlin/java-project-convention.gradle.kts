@@ -12,6 +12,7 @@ repositories {
 group = "org.mina-lang"
 version = "0.1.0-SNAPSHOT"
 
+// Can't use version catalog accessors due to https://github.com/gradle/gradle/issues/15383
 val junitVersion = "5.8.2"
 val hamcrestVersion = "2.2"
 val jacocoVersion = "0.8.8"

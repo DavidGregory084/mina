@@ -7,11 +7,8 @@ repositories {
     mavenCentral()
 }
 
-val junitVersion = "5.8.2"
-val jacocoVersion = "0.8.8"
-
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
+    testImplementation(libs.junitJupiter)
 }
 
 gradlePlugin {
@@ -54,7 +51,7 @@ tasks.withType<JavaCompile> {
 }
 
 jacoco {
-    toolVersion = "${jacocoVersion}"
+    toolVersion = libs.versions.jacoco.get()
 }
 
 tasks.test {

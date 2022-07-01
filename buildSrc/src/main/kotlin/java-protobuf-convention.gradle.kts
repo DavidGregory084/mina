@@ -9,6 +9,7 @@ repositories {
     maven("https://maven-central.storage-download.googleapis.com/maven2/")
 }
 
+// Can't use version catalog accessors due to https://github.com/gradle/gradle/issues/15383
 val protobufVersion = "3.20.0"
 
 dependencies {
