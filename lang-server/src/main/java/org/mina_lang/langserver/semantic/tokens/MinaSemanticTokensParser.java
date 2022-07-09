@@ -1,40 +1,24 @@
 package org.mina_lang.langserver.semantic.tokens;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.eclipse.lsp4j.SemanticTokenModifiers;
-import org.eclipse.lsp4j.SemanticTokenTypes;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.mina_lang.parser.MinaBaseVisitor;
 import org.mina_lang.parser.MinaLexer;
 import org.mina_lang.parser.MinaParser;
-import org.mina_lang.parser.MinaParser.ApplicableExprContext;
-import org.mina_lang.parser.MinaParser.ApplicationContext;
-import org.mina_lang.parser.MinaParser.CompilationUnitContext;
-import org.mina_lang.parser.MinaParser.DataDeclarationContext;
-import org.mina_lang.parser.MinaParser.DeclarationContext;
-import org.mina_lang.parser.MinaParser.ExprContext;
-import org.mina_lang.parser.MinaParser.IfExprContext;
-import org.mina_lang.parser.MinaParser.ImportDeclarationContext;
-import org.mina_lang.parser.MinaParser.ImportSelectorContext;
-import org.mina_lang.parser.MinaParser.ImportSymbolsContext;
-import org.mina_lang.parser.MinaParser.LambdaExprContext;
-import org.mina_lang.parser.MinaParser.LambdaParamsContext;
-import org.mina_lang.parser.MinaParser.LetDeclarationContext;
-import org.mina_lang.parser.MinaParser.LiteralBooleanContext;
-import org.mina_lang.parser.MinaParser.LiteralContext;
-import org.mina_lang.parser.MinaParser.LiteralIntContext;
-import org.mina_lang.parser.MinaParser.ModuleContext;
-import org.mina_lang.parser.MinaParser.ModuleIdContext;
-import org.mina_lang.parser.MinaParser.ParenExprContext;
-import org.mina_lang.parser.MinaParser.QualifiedIdContext;
+import org.mina_lang.parser.MinaParser.*;
+
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static org.eclipse.lsp4j.SemanticTokenModifiers.*;
+import static org.eclipse.lsp4j.SemanticTokenTypes.*;
 
 public class MinaSemanticTokensParser {
     public static List<Integer> parseTokens(TextDocumentItem document) {
@@ -113,24 +97,30 @@ public class MinaSemanticTokensParser {
                     .orElse(IntStream.empty());
         }
 
+        public IntStream visitRepeated(List<? extends ParseTree> trees) {
+            return trees.stream().map(ctx -> visit(ctx)).flatMapToInt(x -> x);
+        }
+
+        public <A extends RuleContext, B extends RuleContext> IntStream visitNullableRepeated(A tree,
+                Function<A, List<B>> rule) {
+            return tree == null ? IntStream.empty()
+                    : rule.apply(tree).stream().map(ctx -> visit(ctx)).flatMapToInt(x -> x);
+        }
+
         @Override
         public IntStream visitCompilationUnit(CompilationUnitContext ctx) {
-            return ctx.module().stream().flatMapToInt(mod -> {
-                return visit(mod);
-            });
+            return visitRepeated(ctx.module());
         }
 
         @Override
         public IntStream visitModule(ModuleContext ctx) {
-            var moduleToken = createToken(ctx.MODULE(), SemanticTokenTypes.Keyword, SemanticTokenModifiers.Declaration);
+            var moduleToken = createToken(ctx.MODULE(), Keyword, Declaration);
 
             var moduleIdTokens = visitNullable(ctx.moduleId());
 
-            var importSelectorTokens = ctx.importDeclaration().stream()
-                    .flatMapToInt(imp -> visitImportDeclaration(imp));
+            var importSelectorTokens = visitRepeated(ctx.importDeclaration());
 
-            var declarationTokens = ctx.declaration().stream()
-                    .flatMapToInt(decl -> visitDeclaration(decl));
+            var declarationTokens = visitRepeated(ctx.declaration());
 
             return Stream.of(
                     moduleToken,
@@ -141,21 +131,18 @@ public class MinaSemanticTokensParser {
 
         @Override
         public IntStream visitModuleId(ModuleIdContext ctx) {
-            var packageTokens = ctx.ID().stream()
-                    .limit(ctx.ID().size() - 1)
-                    .flatMapToInt(id -> {
-                        return createToken(id,
-                                SemanticTokenTypes.Namespace,
-                                SemanticTokenModifiers.Declaration);
+            var idNodes = ctx.ID();
+            var separatorsCount = idNodes.size() - 1;
+
+            var packageTokens = IntStream.range(0, separatorsCount)
+                    .flatMap(idx -> {
+                        var idToken = createToken(ctx.ID(idx), Namespace, Declaration);
+                        var rslashToken = idx == separatorsCount ? IntStream.empty()
+                                : createToken(ctx.RSLASH(idx), Operator);
+                        return Stream.of(idToken, rslashToken).flatMapToInt(x -> x);
                     });
 
-            var moduleNameToken = ctx.ID().stream()
-                    .skip(ctx.ID().size() - 1)
-                    .flatMapToInt(id -> {
-                        return createToken(id,
-                                SemanticTokenTypes.Class,
-                                SemanticTokenModifiers.Declaration);
-                    });
+            var moduleNameToken = createToken(ctx.ID(idNodes.size()), Class, Declaration);
 
             return Stream.of(
                     packageTokens,
@@ -164,7 +151,7 @@ public class MinaSemanticTokensParser {
 
         @Override
         public IntStream visitImportDeclaration(ImportDeclarationContext ctx) {
-            var importToken = createToken(ctx.IMPORT(), SemanticTokenTypes.Keyword);
+            var importToken = createToken(ctx.IMPORT(), Keyword);
 
             var selectorTokens = visitNullable(ctx.importSelector());
 
@@ -176,7 +163,7 @@ public class MinaSemanticTokensParser {
         @Override
         public IntStream visitImportSelector(ImportSelectorContext ctx) {
             var moduleIdTokens = visitNullable(ctx.moduleId());
-            var symbolToken = createToken(ctx.ID(), SemanticTokenTypes.Variable);
+            var symbolToken = createToken(ctx.ID(), Variable);
             var importSymbolsTokens = visitNullable(ctx.importSymbols());
 
             return Stream.of(
@@ -189,7 +176,7 @@ public class MinaSemanticTokensParser {
         public IntStream visitImportSymbols(ImportSymbolsContext ctx) {
             return ctx.ID().stream()
                     .flatMapToInt(sym -> {
-                        return createToken(sym, SemanticTokenTypes.Variable);
+                        return createToken(sym, Function);
                     });
         }
 
@@ -200,9 +187,9 @@ public class MinaSemanticTokensParser {
 
         @Override
         public IntStream visitLetDeclaration(LetDeclarationContext ctx) {
-            var letToken = createToken(ctx.LET(), SemanticTokenTypes.Keyword, SemanticTokenModifiers.Declaration);
+            var letToken = createToken(ctx.LET(), Keyword, Declaration);
 
-            var nameToken = createToken(ctx.ID(), SemanticTokenTypes.Function, SemanticTokenModifiers.Declaration);
+            var nameToken = createToken(ctx.ID(), Function, Declaration, Static, Readonly);
 
             var exprTokens = visitNullable(ctx.expr());
 
@@ -214,16 +201,17 @@ public class MinaSemanticTokensParser {
 
         @Override
         public IntStream visitExpr(ExprContext ctx) {
-            return visitAlternatives(ctx.ifExpr(), ctx.lambdaExpr(), ctx.literal(), ctx.applicableExpr());
+            return visitAlternatives(ctx.ifExpr(), ctx.matchExpr(), ctx.lambdaExpr(), ctx.literal(),
+                    ctx.applicableExpr());
         }
 
         @Override
         public IntStream visitIfExpr(IfExprContext ctx) {
-            var ifToken = createToken(ctx.IF(), SemanticTokenTypes.Keyword);
+            var ifToken = createToken(ctx.IF(), Keyword);
             var conditionTokens = visitNullable(ctx.expr(0));
-            var thenToken = createToken(ctx.THEN(), SemanticTokenTypes.Keyword);
+            var thenToken = createToken(ctx.THEN(), Keyword);
             var consequentTokens = visitNullable(ctx.expr(1));
-            var elseToken = createToken(ctx.ELSE(), SemanticTokenTypes.Keyword);
+            var elseToken = createToken(ctx.ELSE(), Keyword);
             var alternativeTokens = visitNullable(ctx.expr(2));
 
             return Stream.of(
@@ -238,7 +226,7 @@ public class MinaSemanticTokensParser {
         @Override
         public IntStream visitLambdaExpr(LambdaExprContext ctx) {
             var paramTokens = visitNullable(ctx.lambdaParams());
-            var arrowToken = createToken(ctx.ARROW(), SemanticTokenTypes.Operator);
+            var arrowToken = createToken(ctx.ARROW(), Operator);
             var bodyTokens = visitNullable(ctx.expr());
 
             return Stream.of(
@@ -251,25 +239,26 @@ public class MinaSemanticTokensParser {
         public IntStream visitLambdaParams(LambdaParamsContext ctx) {
             return ctx.ID().stream()
                     .flatMapToInt(param -> {
-                        return createToken(param, SemanticTokenTypes.Parameter);
+                        return createToken(param, Parameter);
                     });
         }
 
         @Override
         public IntStream visitLiteral(LiteralContext ctx) {
-            return visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalInt());
+            return visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(), ctx.literalInt(),
+                    ctx.literalFloat());
         }
 
         @Override
         public IntStream visitLiteralBoolean(LiteralBooleanContext ctx) {
             var trueLiteral = ctx.TRUE();
             if (trueLiteral != null) {
-                return createToken(ctx.TRUE(), SemanticTokenTypes.EnumMember, SemanticTokenModifiers.DefaultLibrary);
+                return createToken(ctx.TRUE(), EnumMember, DefaultLibrary);
             }
 
             var falseLiteral = ctx.FALSE();
             if (falseLiteral != null) {
-                return createToken(ctx.FALSE(), SemanticTokenTypes.EnumMember, SemanticTokenModifiers.DefaultLibrary);
+                return createToken(ctx.FALSE(), EnumMember, DefaultLibrary);
             }
 
             return IntStream.empty();
@@ -277,7 +266,22 @@ public class MinaSemanticTokensParser {
 
         @Override
         public IntStream visitLiteralInt(LiteralIntContext ctx) {
-            return createToken(ctx.LITERAL_INT(), SemanticTokenTypes.Number);
+            return createToken(ctx.LITERAL_INT(), Number);
+        }
+
+        @Override
+        public IntStream visitLiteralChar(LiteralCharContext ctx) {
+            return createToken(ctx.LITERAL_CHAR(), Number);
+        }
+
+        @Override
+        public IntStream visitLiteralFloat(LiteralFloatContext ctx) {
+            return createToken(ctx.LITERAL_FLOAT(), Number);
+        }
+
+        @Override
+        public IntStream visitLiteralString(LiteralStringContext ctx) {
+            return createToken(ctx.LITERAL_STRING(), String);
         }
 
         @Override
@@ -309,26 +313,75 @@ public class MinaSemanticTokensParser {
         @Override
         public IntStream visitQualifiedId(QualifiedIdContext ctx) {
             var moduleIdTokens = visitNullable(ctx.moduleId());
-            var idTokens = createToken(ctx.ID(), SemanticTokenTypes.Variable);
-
-            return Stream.of(
-                    moduleIdTokens,
-                    idTokens).flatMapToInt(x -> x);
+            var dotTokens = createToken(ctx.DOT(), Operator);
+            var idTokens = createToken(ctx.ID(), Function);
+            return Stream.of(moduleIdTokens, dotTokens, idTokens).flatMapToInt(x -> x);
         }
 
         @Override
         public IntStream visitApplication(ApplicationContext ctx) {
-            return ctx.expr().stream()
-                    .flatMapToInt(expr -> visit(expr));
+            return visitRepeated(ctx.expr());
         }
 
         @Override
         public IntStream visitDataDeclaration(DataDeclarationContext ctx) {
-            var dataToken = createToken(ctx.DATA(), SemanticTokenTypes.Keyword, SemanticTokenModifiers.Declaration);
-
-            return Stream.of(
-                    dataToken).flatMapToInt(x -> x);
+            var dataToken = createToken(ctx.DATA(), Keyword, Declaration);
+            return Stream.of(dataToken).flatMapToInt(x -> x);
         }
 
+        @Override
+        public IntStream visitConstructorPattern(ConstructorPatternContext ctx) {
+            var aliasTokens = visitNullable(ctx.patternAlias());
+            var idTokens = visitNullable(ctx.qualifiedId());
+            var fieldTokens = visitNullableRepeated(ctx.fieldPatterns(), FieldPatternsContext::fieldPattern);
+            return Stream.of(aliasTokens, idTokens, fieldTokens).flatMapToInt(x -> x);
+        }
+
+        @Override
+        public IntStream visitFieldPattern(FieldPatternContext ctx) {
+            var idTokens = createToken(ctx.ID(), Variable);
+            var patternTokens = visitNullable(ctx.pattern());
+            return Stream.of(idTokens, patternTokens).flatMapToInt(x -> x);
+        }
+
+        @Override
+        public IntStream visitIdPattern(IdPatternContext ctx) {
+            var aliasTokens = visitNullable(ctx.patternAlias());
+            var idTokens = createToken(ctx.ID(), Variable);
+            return Stream.of(aliasTokens, idTokens).flatMapToInt(x -> x);
+        }
+
+        @Override
+        public IntStream visitLiteralPattern(LiteralPatternContext ctx) {
+            var aliasTokens = visitNullable(ctx.patternAlias());
+            var literalTokens = visitNullable(ctx.literal());
+            return Stream.of(aliasTokens, literalTokens).flatMapToInt(x -> x);
+        }
+
+        @Override
+        public IntStream visitMatchCase(MatchCaseContext ctx) {
+            var patternTokens = visitNullable(ctx.pattern());
+            var consequentTokens = visitNullable(ctx.expr());
+            return Stream.of(patternTokens, consequentTokens).flatMapToInt(x -> x);
+        }
+
+        @Override
+        public IntStream visitMatchExpr(MatchExprContext ctx) {
+            var scrutineeTokens = visitNullable(ctx.expr());
+            var casesTokens = visitRepeated(ctx.matchCase());
+            return Stream.of(scrutineeTokens, casesTokens).flatMapToInt(x -> x);
+        }
+
+        @Override
+        public IntStream visitPattern(PatternContext ctx) {
+            return visitAlternatives(ctx.idPattern(), ctx.literalPattern(), ctx.constructorPattern());
+        }
+
+        @Override
+        public IntStream visitPatternAlias(PatternAliasContext ctx) {
+            var idTokens = createToken(ctx.ID(), Variable);
+            var atTokens = createToken(ctx.AT(), Operator);
+            return Stream.of(idTokens, atTokens).flatMapToInt(x -> x);
+        }
     }
 }

@@ -1,41 +1,36 @@
 package org.mina_lang.langserver;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-
-import org.eclipse.lsp4j.InitializeParams;
-import org.eclipse.lsp4j.InitializeResult;
-import org.eclipse.lsp4j.InitializedParams;
-import org.eclipse.lsp4j.SemanticTokensLegend;
-import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
-import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.ServerInfo;
-import org.eclipse.lsp4j.TextDocumentSyncKind;
-import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
-import org.eclipse.lsp4j.services.LanguageClient;
-import org.eclipse.lsp4j.services.LanguageClientAware;
-import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.lsp4j.services.TextDocumentService;
-import org.eclipse.lsp4j.services.WorkspaceService;
+import org.eclipse.lsp4j.services.*;
 import org.mina_lang.BuildInfo;
 import org.mina_lang.langserver.semantic.tokens.MinaSemanticTokens;
+import org.mina_lang.parser.CompilationUnitParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+
+@Singleton
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
+
+    private LanguageClient client;
+    private MinaTextDocumentService documentService;
+    private MinaWorkspaceService workspaceService;
+
+    private AtomicBoolean initialized = new AtomicBoolean(false);
+    private AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(true)
@@ -47,14 +42,11 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
     private ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
 
-    private AtomicBoolean initialized = new AtomicBoolean(false);
-    private AtomicBoolean shutdown = new AtomicBoolean(false);
-
-    private LanguageClient client;
-
-    private TextDocumentService documentService = new MinaTextDocumentService(this);
-
-    private WorkspaceService workspaceService = new MinaWorkspaceService(this);
+    @Inject
+    public MinaLanguageServer(CompilationUnitParser parser) {
+        this.documentService = new MinaTextDocumentService(this, parser);
+        this.workspaceService = new MinaWorkspaceService(this);
+    }
 
     public boolean isInitialized() {
         return initialized.get();

@@ -1,5 +1,6 @@
 [versions]
 antlr = "4.10.1"
+apacheCommonsText = "1.9"
 eclipseCollections = "11.0.0"
 gradleVersions = "0.42.0"
 guice = "5.1.0"
@@ -16,6 +17,7 @@ slf4j = "1.7.36"
 
 [libraries]
 antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
+apacheCommonsText = { module = "org.apache.commons:commons-text", version.ref = "apacheCommonsText" }
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipseCollections" }
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipseCollections" }
 gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }

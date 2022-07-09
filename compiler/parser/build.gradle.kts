@@ -8,6 +8,12 @@ dependencies {
     // Immutable Collections
     implementation(libs.bundles.eclipseCollections)
 
+    // String escaping
+    implementation(libs.apacheCommonsText)
+
+    // Dependency injection
+    implementation(libs.guice)
+
     // Syntax Tree Parsing
     antlr(libs.antlr)
 

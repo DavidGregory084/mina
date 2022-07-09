@@ -1,25 +1,21 @@
 package org.mina_lang.langserver;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-
+import com.google.inject.Guice;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.mina_lang.BuildInfo;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
-
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import java.io.*;
+import java.net.Socket;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 @Command(name = "Mina Language Server", version = BuildInfo.version, mixinStandardHelpOptions = true)
 public class Launcher implements Callable<Void> {
@@ -49,7 +45,8 @@ public class Launcher implements Callable<Void> {
     }
 
     private Void listenOn(InputStream in, OutputStream out) throws InterruptedException, ExecutionException {
-        var server = new MinaLanguageServer();
+        var injector = Guice.createInjector();
+        var server = injector.getInstance(MinaLanguageServer.class);
         var errWriter = new PrintWriter(System.err);
         var launcher = LSPLauncher.createServerLauncher(server, in, out, true, errWriter);
         server.connect(launcher.getRemoteProxy());

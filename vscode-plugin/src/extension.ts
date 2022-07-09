@@ -1,4 +1,5 @@
 import * as child_process from "child_process";
+import * as os from "os";
 import * as path from "path";
 import * as util from "util";
 
@@ -7,18 +8,18 @@ import {
   ProgressLocation,
   Uri,
   window,
-  workspace,
+  workspace
 } from "vscode";
 
 import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
-  TransportKind,
+  TransportKind
 } from "vscode-languageclient/node";
 
-import { findRuntimes } from "jdk-utils";
 import { getApi } from "@microsoft/vscode-file-downloader-api";
+import { findRuntimes } from "jdk-utils";
 
 let client: LanguageClient;
 
@@ -65,11 +66,26 @@ export async function activate(context: ExtensionContext) {
       { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
     );
 
+    // As per [https://access.redhat.com/documentation/en-us/openjdk/11/html/using_shenandoah_garbage_collector_with_openjdk_11/shenandoah-gc-basic-configuration]
+    const gcOptions = [
+        "-XX:+UseShenandoahGC",
+        "-XX:+AlwaysPreTouch",
+        "-XX:+UseLargePages",
+        "-XX:+UseNUMA",
+        "-XX:-UseBiasedLocking",
+        "-XX:+DisableExplicitGC",
+    ];
+
+    if (os.type() === "Linux") {
+      gcOptions.push("-XX:+UseTransparentHugePages");
+    }
+
     const serverOptions: ServerOptions = {
       transport: TransportKind.pipe,
       command: javaExecutable,
       args: [
         `-DLOG_FOLDER=${context.logUri.fsPath}`,
+        ...gcOptions,
         "-cp",
         getServerClasspath.stdout,
         "org.mina_lang.langserver.Launcher",

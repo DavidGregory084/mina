@@ -1,86 +1,48 @@
 package org.mina_lang.parser;
 
-import java.text.Normalizer;
-import java.text.Normalizer.Form;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import org.antlr.v4.runtime.ANTLRErrorListener;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
+import com.google.inject.Provider;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.text.StringEscapeUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.collector.Collectors2;
 import org.mina_lang.common.Position;
 import org.mina_lang.common.Range;
-import org.mina_lang.parser.MinaParser.ApplicableExprContext;
-import org.mina_lang.parser.MinaParser.CompilationUnitContext;
-import org.mina_lang.parser.MinaParser.ConstructorPatternContext;
-import org.mina_lang.parser.MinaParser.DataDeclarationContext;
-import org.mina_lang.parser.MinaParser.DeclarationContext;
-import org.mina_lang.parser.MinaParser.ExprContext;
-import org.mina_lang.parser.MinaParser.FieldPatternContext;
-import org.mina_lang.parser.MinaParser.IfExprContext;
-import org.mina_lang.parser.MinaParser.ImportDeclarationContext;
-import org.mina_lang.parser.MinaParser.ImportSelectorContext;
-import org.mina_lang.parser.MinaParser.LambdaExprContext;
-import org.mina_lang.parser.MinaParser.LetDeclarationContext;
-import org.mina_lang.parser.MinaParser.LiteralBooleanContext;
-import org.mina_lang.parser.MinaParser.LiteralCharContext;
-import org.mina_lang.parser.MinaParser.LiteralContext;
-import org.mina_lang.parser.MinaParser.LiteralIntContext;
-import org.mina_lang.parser.MinaParser.MatchCaseContext;
-import org.mina_lang.parser.MinaParser.MatchExprContext;
-import org.mina_lang.parser.MinaParser.ModuleContext;
-import org.mina_lang.parser.MinaParser.ModuleIdContext;
-import org.mina_lang.parser.MinaParser.ParenExprContext;
-import org.mina_lang.parser.MinaParser.PatternAliasContext;
-import org.mina_lang.parser.MinaParser.PatternContext;
-import org.mina_lang.parser.MinaParser.QualifiedIdContext;
-import org.mina_lang.syntax.ApplyNode;
-import org.mina_lang.syntax.CaseNode;
-import org.mina_lang.syntax.CompilationUnitNode;
-import org.mina_lang.syntax.ConstructorPatternNode;
-import org.mina_lang.syntax.DataDeclarationNode;
-import org.mina_lang.syntax.DeclarationNode;
-import org.mina_lang.syntax.ExprNode;
-import org.mina_lang.syntax.FieldPatternNode;
-import org.mina_lang.syntax.IdPatternNode;
-import org.mina_lang.syntax.IfExprNode;
-import org.mina_lang.syntax.ImportNode;
-import org.mina_lang.syntax.LambdaExprNode;
-import org.mina_lang.syntax.LetDeclarationNode;
-import org.mina_lang.syntax.LiteralBooleanNode;
-import org.mina_lang.syntax.LiteralCharNode;
-import org.mina_lang.syntax.LiteralIntNode;
-import org.mina_lang.syntax.MatchNode;
-import org.mina_lang.syntax.Meta;
-import org.mina_lang.syntax.ModuleNode;
-import org.mina_lang.syntax.ParamNode;
-import org.mina_lang.syntax.PatternNode;
-import org.mina_lang.syntax.QualifiedIdNode;
-import org.mina_lang.syntax.ReferenceNode;
-import org.mina_lang.syntax.SyntaxNode;
+import org.mina_lang.parser.MinaParser.*;
+import org.mina_lang.syntax.*;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class CompilationUnitParser {
 
-    public static CompilationUnitNode<Void> parse(String source, ANTLRErrorListener errorListener) {
+    private Provider<CompilationUnitVisitor> compilationUnitVisitor;
+
+    @Inject
+    public CompilationUnitParser(Provider<CompilationUnitVisitor> compilationUnitVisitor) {
+        this.compilationUnitVisitor = compilationUnitVisitor;
+    }
+
+    public CompilationUnitNode<Void> parse(String source, ANTLRErrorListener errorListener) {
         var charStream = CharStreams.fromString(source);
         return parse(charStream, errorListener);
     }
 
-    public static CompilationUnitNode<Void> parse(CharStream charStream, ANTLRErrorListener errorListener) {
-        return parse(charStream, errorListener, CompilationUnitVisitor.INSTANCE, MinaParser::compilationUnit);
+    public CompilationUnitNode<Void> parse(CharStream charStream, ANTLRErrorListener errorListener) {
+        return parse(charStream, errorListener, compilationUnitVisitor.get(),
+                MinaParser::compilationUnit);
     }
 
-    static <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             String source,
             ANTLRErrorListener errorListener,
             C visitor,
@@ -89,7 +51,7 @@ public class CompilationUnitParser {
         return parse(charStream, errorListener, visitor, startRule);
     }
 
-    static <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             CharStream charStream,
             ANTLRErrorListener errorListener,
             C visitor,
@@ -134,6 +96,15 @@ public class CompilationUnitParser {
                     .collect(Collectors2.toImmutableList());
         }
 
+        public <C extends ParserRuleContext, D extends ParserRuleContext, E> ImmutableList<E> visitNullableRepeated(
+                C context, Function<C, List<D>> rule,
+                Visitor<D, E> visitor) {
+            return context == null ? Lists.immutable.<E>empty()
+                    : rule.apply(context).stream()
+                            .map(ctx -> visitor.visit(ctx))
+                            .collect(Collectors2.toImmutableList());
+        }
+
         public B visitAlternatives(ParseTree... tree) {
             return Stream.of(tree)
                     .filter(t -> t != null)
@@ -143,33 +114,31 @@ public class CompilationUnitParser {
         }
     }
 
+    @Singleton
     static class CompilationUnitVisitor extends Visitor<CompilationUnitContext, CompilationUnitNode<Void>> {
 
-        public static CompilationUnitVisitor INSTANCE = new CompilationUnitVisitor(ModuleVisitor.INSTANCE);
+        private Provider<ModuleVisitor> moduleVisitor;
 
-        private ModuleVisitor moduleVisitor;
-
-        public CompilationUnitVisitor(ModuleVisitor moduleVisitor) {
+        @Inject
+        public CompilationUnitVisitor(Provider<ModuleVisitor> moduleVisitor) {
             this.moduleVisitor = moduleVisitor;
         }
 
         @Override
         public CompilationUnitNode<Void> visitCompilationUnit(CompilationUnitContext ctx) {
-            var modules = visitRepeated(ctx.module(), moduleVisitor);
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new CompilationUnitNode<Void>(meta, modules);
-            return node;
+            var modules = visitRepeated(ctx.module(), moduleVisitor.get());
+            return compilationUnitNode(contextRange(ctx), modules);
         }
     }
 
+    @Singleton
     static class ModuleVisitor extends Visitor<ModuleContext, ModuleNode<Void>> {
 
-        public static ModuleVisitor INSTANCE = new ModuleVisitor(ImportVisitor.INSTANCE, DeclarationVisitor.INSTANCE);
+        private Provider<ImportVisitor> importVisitor;
+        private Provider<DeclarationVisitor> declarationVisitor;
 
-        private ImportVisitor importVisitor;
-        private DeclarationVisitor declarationVisitor;
-
-        public ModuleVisitor(ImportVisitor importVisitor, DeclarationVisitor declarationVisitor) {
+        @Inject
+        public ModuleVisitor(Provider<ImportVisitor> importVisitor, Provider<DeclarationVisitor> declarationVisitor) {
             this.importVisitor = importVisitor;
             this.declarationVisitor = declarationVisitor;
         }
@@ -194,20 +163,16 @@ public class CompilationUnitParser {
                     .flatMap(ids -> ids.getLastOptional())
                     .orElse(null);
 
-            var imports = visitRepeated(ctx.importDeclaration(), importVisitor);
+            var imports = visitRepeated(ctx.importDeclaration(), importVisitor.get());
 
-            var declarations = visitRepeated(ctx.declaration(), declarationVisitor);
+            var declarations = visitRepeated(ctx.declaration(), declarationVisitor.get());
 
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new ModuleNode<Void>(meta, pkg, mod, imports, declarations);
-
-            return node;
+            return moduleNode(contextRange(ctx), pkg, mod, imports, declarations);
         }
     }
 
+    @Singleton
     static class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode<Void>> {
-
-        public static ImportVisitor INSTANCE = new ImportVisitor();
 
         @Override
         public ImportNode<Void> visitImportDeclaration(ImportDeclarationContext ctx) {
@@ -248,38 +213,31 @@ public class CompilationUnitParser {
                     .or(() -> importSymbols)
                     .orElse(Lists.immutable.empty());
 
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new ImportNode<Void>(meta, pkg, mod, symbols);
-
-            return node;
+            return importNode(contextRange(ctx), pkg, mod, symbols);
         }
     }
 
+    @Singleton
     static class DeclarationVisitor extends Visitor<DeclarationContext, DeclarationNode<Void>> {
 
-        public static DeclarationVisitor INSTANCE = new DeclarationVisitor(ExprVisitor.INSTANCE);
+        private Provider<ExprVisitor> exprVisitor;
 
-        private ExprVisitor exprVisitor;
-
-        public DeclarationVisitor(ExprVisitor exprVisitor) {
+        @Inject
+        public DeclarationVisitor(Provider<ExprVisitor> exprVisitor) {
             this.exprVisitor = exprVisitor;
         }
 
         @Override
         public DeclarationNode<Void> visitDataDeclaration(DataDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new DataDeclarationNode<Void>(meta, name);
-            return node;
+            return dataDeclarationNode(contextRange(ctx), name);
         }
 
         @Override
         public DeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var expr = exprVisitor.visitNullable(ctx.expr());
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new LetDeclarationNode<Void>(meta, name, expr);
-            return node;
+            var expr = exprVisitor.get().visitNullable(ctx.expr());
+            return letDeclarationNode(contextRange(ctx), name, expr);
         }
 
         @Override
@@ -288,17 +246,19 @@ public class CompilationUnitParser {
         }
     }
 
+    @Singleton
     static class ExprVisitor extends Visitor<ExprContext, ExprNode<Void>> {
 
-        public static ExprVisitor INSTANCE = new ExprVisitor(MatchCaseVisitor.INSTANCE, QualifiedIdVisitor.INSTANCE);
+        private Provider<MatchCaseVisitor> matchCaseVisitor;
+        private Provider<QualifiedIdVisitor> qualifiedIdVisitor;
+        private Provider<LiteralVisitor> literalVisitor;
 
-        private MatchCaseVisitor matchCaseVisitor;
-
-        private QualifiedIdVisitor qualifiedIdVisitor;
-
-        public ExprVisitor(MatchCaseVisitor matchCaseVisitor, QualifiedIdVisitor qualifiedIdVisitor) {
+        @Inject
+        public ExprVisitor(Provider<MatchCaseVisitor> matchCaseVisitor, Provider<QualifiedIdVisitor> qualifiedIdVisitor,
+                Provider<LiteralVisitor> literalVisitor) {
             this.matchCaseVisitor = matchCaseVisitor;
             this.qualifiedIdVisitor = qualifiedIdVisitor;
+            this.literalVisitor = literalVisitor;
         }
 
         @Override
@@ -312,9 +272,7 @@ public class CompilationUnitParser {
             var conditionNode = visitNullable(ctx.expr(0));
             var consequentNode = visitNullable(ctx.expr(1));
             var alternativeNode = visitNullable(ctx.expr(2));
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new IfExprNode<Void>(meta, conditionNode, consequentNode, alternativeNode);
-            return node;
+            return ifExprNode(contextRange(ctx), conditionNode, consequentNode, alternativeNode);
         }
 
         @Override
@@ -322,25 +280,20 @@ public class CompilationUnitParser {
             var params = ctx.lambdaParams().ID().stream()
                     .map(param -> {
                         var token = param.getSymbol();
-                        var meta = Meta.empty(tokenRange(token));
-                        return new ParamNode<Void>(meta, param.getText());
+                        return paramNode(tokenRange(token), param.getText());
                     })
                     .collect(Collectors2.toImmutableList());
 
             var bodyNode = visitNullable(ctx.expr());
 
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new LambdaExprNode<Void>(meta, params, bodyNode);
-            return node;
+            return lambdaExprNode(contextRange(ctx), params, bodyNode);
         }
 
         @Override
         public ExprNode<Void> visitMatchExpr(MatchExprContext ctx) {
             var scrutineeNode = visitNullable(ctx.expr());
-            var cases = visitRepeated(ctx.matchCase(), matchCaseVisitor);
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new MatchNode<Void>(meta, scrutineeNode, cases);
-            return node;
+            var cases = visitRepeated(ctx.matchCase(), matchCaseVisitor.get());
+            return matchNode(contextRange(ctx), scrutineeNode, cases);
         }
 
         @Override
@@ -355,9 +308,7 @@ public class CompilationUnitParser {
 
             if (applicableExprNode != null) {
                 var args = visitRepeated(ctx.application().expr(), this);
-                var meta = Meta.empty(contextRange(ctx));
-                var node = new ApplyNode<Void>(meta, applicableExprNode, args);
-                return node;
+                return applyNode(contextRange(ctx), applicableExprNode, args);
             }
 
             return null;
@@ -370,146 +321,183 @@ public class CompilationUnitParser {
 
         @Override
         public ExprNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new ReferenceNode<Void>(meta, qualifiedIdVisitor.visitNullable(ctx));
-            return node;
+            return refNode(contextRange(ctx), qualifiedIdVisitor.get().visitNullable(ctx));
         }
 
         @Override
         public ExprNode<Void> visitLiteral(LiteralContext ctx) {
-            return visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalInt());
+            return literalVisitor.get().visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(),
+                    ctx.literalInt(), ctx.literalFloat());
+        }
+    }
+
+    @Singleton
+    static class LiteralVisitor extends Visitor<LiteralContext, LiteralNode<Void>> {
+
+        @Override
+        public LiteralNode<Void> visitLiteral(LiteralContext ctx) {
+            return visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(), ctx.literalInt(),
+                    ctx.literalFloat());
         }
 
         @Override
-        public ExprNode<Void> visitLiteralBoolean(LiteralBooleanContext ctx) {
-            var trueExpr = ctx.TRUE();
-            var meta = Meta.empty(contextRange(ctx));
-
-            if (trueExpr != null) {
-                var node = new LiteralBooleanNode<Void>(meta, true);
-                return node;
+        public LiteralNode<Void> visitLiteralBoolean(LiteralBooleanContext ctx) {
+            if (ctx.TRUE() != null) {
+                return boolNode(contextRange(ctx), true);
             }
 
-            var falseExpr = ctx.FALSE();
-            if (falseExpr != null) {
-                var node = new LiteralBooleanNode<Void>(meta, false);
-                return node;
+            if (ctx.FALSE() != null) {
+                return boolNode(contextRange(ctx), false);
             }
 
             return null;
         }
 
         @Override
-        public ExprNode<Void> visitLiteralChar(LiteralCharContext ctx) {
+        public LiteralNode<Void> visitLiteralChar(LiteralCharContext ctx) {
             var charExpr = ctx.LITERAL_CHAR();
-            var charValue = charExpr.getText().charAt(1);
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new LiteralCharNode<Void>(meta, charValue);
-            return node;
+            var charValue = StringEscapeUtils.unescapeJava(charExpr.getText()).charAt(1);
+            return charNode(contextRange(ctx), charValue);
         }
 
         @Override
-        public ExprNode<Void> visitLiteralInt(LiteralIntContext ctx) {
-            var intExpr = ctx.LITERAL_INT();
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new LiteralIntNode<Void>(meta, Integer.parseInt(intExpr.getText()));
-            return node;
+        public LiteralNode<Void> visitLiteralString(LiteralStringContext ctx) {
+            var stringExpr = ctx.LITERAL_STRING();
+            var unescapedText = StringEscapeUtils.unescapeJava(stringExpr.getText());
+            var stringValue = unescapedText.substring(1, unescapedText.length() - 1);
+            return stringNode(contextRange(ctx), stringValue);
         }
 
+        @Override
+        public LiteralNode<Void> visitLiteralInt(LiteralIntContext ctx) {
+            var intExpr = ctx.LITERAL_INT();
+            var intText = intExpr.getText().replace("_", "");
+            if (intText.endsWith("l") || intText.endsWith("L")) {
+                var withoutSuffix = intText.substring(0, intText.length() - 1);
+                return longNode(contextRange(ctx), Long.parseLong(withoutSuffix));
+            } else if (intText.endsWith("i") || intText.endsWith("I")) {
+                var withoutSuffix = intText.substring(0, intText.length() - 1);
+                return intNode(contextRange(ctx), Integer.parseInt(withoutSuffix));
+            } else {
+                return intNode(contextRange(ctx), Integer.parseInt(intText));
+            }
+        }
+
+        @Override
+        public LiteralNode<Void> visitLiteralFloat(LiteralFloatContext ctx) {
+            var floatExpr = ctx.LITERAL_FLOAT();
+            var floatText = floatExpr.getText().replace("_", "");
+            if (floatText.endsWith("d") || floatText.endsWith("D")) {
+                var withoutSuffix = floatText.substring(0, floatText.length() - 1);
+                return doubleNode(contextRange(ctx), Double.parseDouble(withoutSuffix));
+            } else if (floatText.endsWith("f") || floatText.endsWith("F")) {
+                var withoutSuffix = floatText.substring(0, floatText.length() - 1);
+                return floatNode(contextRange(ctx), Float.parseFloat(withoutSuffix));
+            } else {
+                return doubleNode(contextRange(ctx), Double.parseDouble(floatText));
+            }
+        }
     }
 
+    @Singleton
     static class MatchCaseVisitor extends Visitor<MatchCaseContext, CaseNode<Void>> {
 
-        public static MatchCaseVisitor INSTANCE = new MatchCaseVisitor(ExprVisitor.INSTANCE, PatternVisitor.INSTANCE);
+        private Provider<ExprVisitor> exprVisitor;
+        private Provider<PatternVisitor> patternVisitor;
 
-        private ExprVisitor exprVisitor;
-        private PatternVisitor patternVisitor;
-
-        public MatchCaseVisitor(ExprVisitor exprVisitor, PatternVisitor patternVisitor) {
+        @Inject
+        public MatchCaseVisitor(Provider<ExprVisitor> exprVisitor, Provider<PatternVisitor> patternVisitor) {
             this.exprVisitor = exprVisitor;
             this.patternVisitor = patternVisitor;
         }
 
         @Override
         public CaseNode<Void> visitMatchCase(MatchCaseContext ctx) {
-            var patternNode = patternVisitor.visitNullable(ctx.pattern());
-            var consequentNode = exprVisitor.visitNullable(ctx.expr());
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new CaseNode<Void>(meta, patternNode, consequentNode);
-            return node;
+            var patternNode = patternVisitor.get().visitNullable(ctx.pattern());
+            var consequentNode = exprVisitor.get().visitNullable(ctx.expr());
+            return caseNode(contextRange(ctx), patternNode, consequentNode);
         }
     }
 
+    @Singleton
     static class PatternVisitor extends Visitor<PatternContext, PatternNode<Void>> {
-
-        public static PatternVisitor INSTANCE = new PatternVisitor(QualifiedIdVisitor.INSTANCE,
-                FieldPatternVisitor.INSTANCE);
 
         private QualifiedIdVisitor qualifiedIdVisitor;
         private FieldPatternVisitor fieldPatternVisitor;
+        private LiteralVisitor literalVisitor;
 
-        public PatternVisitor(QualifiedIdVisitor qualifiedIdVisitor, FieldPatternVisitor fieldPatternVisitor) {
-            this.qualifiedIdVisitor = qualifiedIdVisitor;
+        @Inject
+        public PatternVisitor(FieldPatternVisitor fieldPatternVisitor, QualifiedIdVisitor qualifiedIdVisitor,
+                LiteralVisitor literalVisitor) {
             this.fieldPatternVisitor = fieldPatternVisitor;
+            this.qualifiedIdVisitor = qualifiedIdVisitor;
+            this.literalVisitor = literalVisitor;
         }
 
         @Override
         public PatternNode<Void> visitPattern(PatternContext ctx) {
-            var id = ctx.ID();
-            if (id != null) {
-                var meta = Meta.empty(contextRange(ctx));
-                var node = new IdPatternNode<Void>(meta, id.getText());
-                return node;
-            }
-
-            return visitNullable(ctx.constructorPattern());
+            return visitAlternatives(ctx.idPattern(), ctx.literalPattern(), ctx.constructorPattern());
         }
 
         @Override
-        public PatternNode<Void> visitConstructorPattern(ConstructorPatternContext ctx) {
-            var id = qualifiedIdVisitor.visitNullable(ctx.qualifiedId());
-
+        public PatternNode<Void> visitIdPattern(IdPatternContext ctx) {
             var alias = Optional.ofNullable(ctx.patternAlias())
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);
 
-            var fieldPatterns = ctx.fieldPatterns();
-            var fields = Lists.immutable.<FieldPatternNode<Void>>empty();
-            if (fieldPatterns != null) {
-                fields = visitRepeated(fieldPatterns.fieldPattern(), fieldPatternVisitor);
-            }
+            var id = Optional.ofNullable(ctx.ID())
+                    .map(TerminalNode::getText)
+                    .orElse(null);
 
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new ConstructorPatternNode<Void>(meta, id, alias, fields);
-
-            return node;
+            return idPatternNode(contextRange(ctx), alias, id);
         }
 
+        @Override
+        public PatternNode<Void> visitLiteralPattern(LiteralPatternContext ctx) {
+            var alias = Optional.ofNullable(ctx.patternAlias())
+                    .map(PatternAliasContext::ID)
+                    .map(TerminalNode::getText);
+
+            var literal = literalVisitor.visit(ctx.literal());
+
+            return literalPatternNode(contextRange(ctx), alias, literal);
+        }
+
+        @Override
+        public PatternNode<Void> visitConstructorPattern(ConstructorPatternContext ctx) {
+            var alias = Optional.ofNullable(ctx.patternAlias())
+                    .map(PatternAliasContext::ID)
+                    .map(TerminalNode::getText);
+
+            var id = qualifiedIdVisitor.visitNullable(ctx.qualifiedId());
+
+            var fields = visitNullableRepeated(ctx.fieldPatterns(), FieldPatternsContext::fieldPattern,
+                    fieldPatternVisitor);
+
+            return constructorPatternNode(contextRange(ctx), alias, id, fields);
+        }
     }
 
+    @Singleton
     static class FieldPatternVisitor extends Visitor<FieldPatternContext, FieldPatternNode<Void>> {
 
-        public static FieldPatternVisitor INSTANCE = new FieldPatternVisitor(PatternVisitor.INSTANCE);
+        private Provider<PatternVisitor> patternVisitor;
 
-        private PatternVisitor patternVisitor;
-
-        public FieldPatternVisitor(PatternVisitor patternVisitor) {
+        @Inject
+        public FieldPatternVisitor(Provider<PatternVisitor> patternVisitor) {
             this.patternVisitor = patternVisitor;
         }
 
         @Override
         public FieldPatternNode<Void> visitFieldPattern(FieldPatternContext ctx) {
             var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var pattern = patternVisitor.visitNullable(ctx.pattern());
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new FieldPatternNode<Void>(meta, id, pattern);
-            return node;
+            var pattern = Optional.ofNullable(patternVisitor.get().visitNullable(ctx.pattern()));
+            return fieldPatternNode(contextRange(ctx), id, pattern);
         }
     }
 
+    @Singleton
     static class QualifiedIdVisitor extends Visitor<QualifiedIdContext, QualifiedIdNode<Void>> {
-
-        public static QualifiedIdVisitor INSTANCE = new QualifiedIdVisitor();
 
         @Override
         public QualifiedIdNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
@@ -526,10 +514,7 @@ public class CompilationUnitParser {
                     .map(TerminalNode::getText)
                     .orElse(null);
 
-            var meta = Meta.empty(contextRange(ctx));
-            var node = new QualifiedIdNode<Void>(meta, pkg, id);
-
-            return node;
+            return idNode(contextRange(ctx), pkg, id);
         }
 
     }

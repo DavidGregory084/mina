@@ -1,12 +1,12 @@
 package org.mina_lang.langserver;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.mina_lang.syntax.CompilationUnitNode;
+
+import java.util.concurrent.CompletableFuture;
 
 public class MinaSyntaxTrees {
     private final ConcurrentHashMap<String, CompletableFuture<CompilationUnitNode<Void>>> syntaxTrees = new ConcurrentHashMap<>();

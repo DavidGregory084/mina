@@ -1,22 +1,25 @@
 grammar Mina;
 
 @header {
-	import java.text.Normalizer;
-	import java.text.Normalizer.Form;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 }
 
 // Files
 compilationUnit: module* EOF;
 
 // Modules
-module: MODULE moduleId LBRACE importDeclaration* declaration* RBRACE;
+module:
+	MODULE moduleId LBRACE importDeclaration* declaration* RBRACE;
 
 // Imports
-importDeclaration : IMPORT importSelector;
+importDeclaration: IMPORT importSelector;
 
-importSelector : moduleId (DOT ID)? | moduleId DOT LBRACE importSymbols RBRACE;
+importSelector:
+	moduleId (DOT ID)?
+	| moduleId DOT LBRACE importSymbols RBRACE;
 
-importSymbols : (ID COMMA)* ID ;
+importSymbols: (ID COMMA)* ID;
 
 // Declarations
 declaration: dataDeclaration | letDeclaration;
@@ -26,7 +29,12 @@ dataDeclaration: DATA ID LBRACE RBRACE;
 letDeclaration: LET ID EQ expr;
 
 // Expressions
-expr: ifExpr | lambdaExpr | matchExpr | literal | applicableExpr;
+expr:
+	ifExpr
+	| lambdaExpr
+	| matchExpr
+	| literal
+	| applicableExpr;
 
 ifExpr: IF expr THEN expr ELSE expr;
 
@@ -34,32 +42,47 @@ lambdaExpr: lambdaParams ARROW expr;
 
 lambdaParams: ID | LPAREN RPAREN | LPAREN (ID COMMA)* ID RPAREN;
 
-matchExpr : MATCH expr WITH LBRACE matchCase* RBRACE;
+matchExpr: MATCH expr WITH LBRACE matchCase* RBRACE;
 
-matchCase : CASE pattern ARROW expr ;
+matchCase: CASE pattern ARROW expr;
 
-pattern : ID | literal | constructorPattern ;
+pattern: idPattern | literalPattern | constructorPattern;
 
-constructorPattern: patternAlias? qualifiedId LBRACE fieldPatterns? RBRACE ;
+idPattern: patternAlias? ID;
 
-fieldPatterns : (fieldPattern COMMA)* fieldPattern ;
+literalPattern: patternAlias? literal;
 
-fieldPattern : ID (COLON pattern)? ;
+constructorPattern:
+	patternAlias? qualifiedId LBRACE fieldPatterns? RBRACE;
 
-patternAlias : ID AT ;
+fieldPatterns: (fieldPattern COMMA)* fieldPattern;
 
-applicableExpr: parenExpr | qualifiedId | applicableExpr application;
+fieldPattern: ID (COLON pattern)?;
 
-application : LPAREN RPAREN | LPAREN (expr COMMA)* expr RPAREN;
+patternAlias: ID AT;
+
+applicableExpr:
+	parenExpr
+	| qualifiedId
+	| applicableExpr application;
+
+application: LPAREN RPAREN | LPAREN (expr COMMA)* expr RPAREN;
 
 parenExpr: LPAREN expr RPAREN;
 
 // Literals
-literal: literalBoolean | literalInt | literalChar;
+literal:
+	literalBoolean
+	| literalInt
+	| literalFloat
+	| literalChar
+	| literalString;
 
 literalBoolean: TRUE | FALSE;
 literalInt: LITERAL_INT;
+literalFloat: LITERAL_FLOAT;
 literalChar: LITERAL_CHAR;
+literalString: LITERAL_STRING;
 
 // Identifiers
 moduleId: (ID RSLASH)* ID;
@@ -92,8 +115,8 @@ LBRACE: '{';
 RBRACE: '}';
 LPAREN: '(';
 RPAREN: ')';
-LSQUARE : '[';
-RSQUARE : ']';
+LSQUARE: '[';
+RSQUARE: ']';
 
 // Reserved operators
 EQ: '=';
@@ -113,29 +136,66 @@ SQUOTE: '\'';
 DQUOTE: '"';
 
 LITERAL_CHAR: SQUOTE SINGLE_CHAR SQUOTE;
+LITERAL_STRING: DQUOTE STRING_CHAR* DQUOTE;
 
 // Numeric literals
-LITERAL_INT: DECIMAL_NUMERAL INTEGER_SUFFIX?;
+LITERAL_INT: DECIMAL_INTEGER_LITERAL;
+LITERAL_FLOAT: DECIMAL_FLOATING_LITERAL;
 
 // Identifiers (normalized)
-ID: ID_START ID_CONTINUE* { setText(Normalizer.normalize(getText(), Form.NFKC)); };
+ID:
+	ID_START ID_CONTINUE* { setText(Normalizer.normalize(getText(), Form.NFKC)); };
 
 fragment WS: [ \t\r\n];
 
 fragment ID_START: [_\p{XID_Start}];
 fragment ID_CONTINUE: [\p{XID_Continue}];
 
-fragment SINGLE_CHAR: ~['\r\n\\];
+fragment SINGLE_CHAR: ESCAPE_SEQUENCE | ~['\r\n\\];
+fragment STRING_CHAR: ESCAPE_SEQUENCE | ~["\r\n\\];
+
+fragment ESCAPE_SEQUENCE:
+	'\\b'
+	| '\\s'
+	| '\\t'
+	| '\\n'
+	| '\\f'
+	| '\\r'
+	| '\\"'
+	| '\\\''
+	| '\\\\'
+	| '\\' UNICODE_ESCAPE;
+
+fragment UNICODE_ESCAPE:
+	UNICODE_MARKER HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT;
+
+fragment UNICODE_MARKER: 'u';
+
+fragment DECIMAL_INTEGER_LITERAL:
+	DECIMAL_NUMERAL INTEGER_SUFFIX?;
 
 fragment DECIMAL_NUMERAL:
 	'0'
 	| NON_ZERO_DIGIT DIGITS?
 	| NON_ZERO_DIGIT UNDERSCORES DIGITS;
 
+fragment DECIMAL_FLOATING_LITERAL:
+	DIGITS DOT DIGITS? EXPONENT_PART? FLOAT_SUFFIX?
+	| DOT DIGITS EXPONENT_PART? FLOAT_SUFFIX?
+	| DIGITS EXPONENT_PART FLOAT_SUFFIX?
+	| DIGITS EXPONENT_PART? FLOAT_SUFFIX;
+
+fragment EXPONENT_PART: EXPONENT_INDICATOR SIGNED_INTEGER;
+fragment EXPONENT_INDICATOR: [eE];
+fragment SIGNED_INTEGER: SIGN? DIGITS;
+fragment SIGN: [+-];
+
 fragment DIGITS: DIGIT | DIGIT DIGITS_AND_UNDERSCORES? DIGIT;
 fragment DIGITS_AND_UNDERSCORES: DIGIT_OR_UNDERSCORE+;
 fragment DIGIT_OR_UNDERSCORE: [_0-9];
 fragment UNDERSCORES: '_'+;
 fragment DIGIT: [0-9];
+fragment HEX_DIGIT: [0-9a-fA-F];
 fragment NON_ZERO_DIGIT: [1-9];
 fragment INTEGER_SUFFIX: [iIlL];
+fragment FLOAT_SUFFIX: [fFdD];

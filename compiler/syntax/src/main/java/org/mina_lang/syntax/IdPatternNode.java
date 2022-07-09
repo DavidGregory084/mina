@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
-public record IdPatternNode<A>(Meta<A> meta, String name) implements PatternNode<A> {
+import java.util.Optional;
+
+public record IdPatternNode<A> (Meta<A> meta, Optional<String> alias, String name) implements PatternNode<A> {
 
 }

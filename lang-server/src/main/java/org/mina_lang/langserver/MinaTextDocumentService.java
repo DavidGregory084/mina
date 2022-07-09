@@ -1,30 +1,31 @@
 package org.mina_lang.langserver;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.antlr.v4.runtime.CharStreams;
-import org.eclipse.lsp4j.DidChangeTextDocumentParams;
-import org.eclipse.lsp4j.DidCloseTextDocumentParams;
-import org.eclipse.lsp4j.DidOpenTextDocumentParams;
-import org.eclipse.lsp4j.DidSaveTextDocumentParams;
-import org.eclipse.lsp4j.PublishDiagnosticsParams;
-import org.eclipse.lsp4j.SemanticTokens;
-import org.eclipse.lsp4j.SemanticTokensParams;
+import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.mina_lang.langserver.semantic.tokens.MinaSemanticTokensParser;
 import org.mina_lang.parser.CompilationUnitParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import java.util.concurrent.CompletableFuture;
+
+@Singleton
 public class MinaTextDocumentService implements TextDocumentService {
     private Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
 
     private MinaLanguageServer server;
+    private CompilationUnitParser parser;
     private MinaTextDocuments documents = new MinaTextDocuments();
     private MinaSyntaxTrees syntaxTrees = new MinaSyntaxTrees();
 
-    public MinaTextDocumentService(MinaLanguageServer server) {
+    @Inject
+    public MinaTextDocumentService(MinaLanguageServer server, CompilationUnitParser parser) {
         this.server = server;
+        this.parser = parser;
     }
 
     @Override
@@ -36,7 +37,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(document.getText(), document.getUri());
-                    var syntaxTree = CompilationUnitParser.parse(charStream, diagnosticCollector);
+                    var syntaxTree = parser.parse(charStream, diagnosticCollector);
                     return syntaxTree;
                 } finally {
                     server.getClient().publishDiagnostics(
@@ -57,7 +58,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(newDocument.getText(), newDocument.getUri());
-                    var syntaxTree = CompilationUnitParser.parse(charStream, diagnosticCollector);
+                    var syntaxTree = parser.parse(charStream, diagnosticCollector);
                     return syntaxTree;
                 } finally {
                     server.getClient().publishDiagnostics(
