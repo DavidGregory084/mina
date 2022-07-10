@@ -277,9 +277,9 @@ public class CompilationUnitParser {
 
         @Override
         public ExprNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
-            var params = ctx.lambdaParams().ID().stream()
+            var params = ctx.lambdaParams().lambdaParam().stream()
                     .map(param -> {
-                        var token = param.getSymbol();
+                        var token = param.ID().getSymbol();
                         return paramNode(tokenRange(token), param.getText());
                     })
                     .collect(Collectors2.toImmutableList());

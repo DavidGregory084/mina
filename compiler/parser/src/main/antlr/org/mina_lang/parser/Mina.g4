@@ -24,9 +24,48 @@ importSymbols: (ID COMMA)* ID;
 // Declarations
 declaration: dataDeclaration | letDeclaration;
 
-dataDeclaration: DATA ID LBRACE RBRACE;
+dataDeclaration:
+	DATA ID typeParams? LBRACE dataConstructor* RBRACE;
 
-letDeclaration: LET ID EQ expr;
+letDeclaration: LET ID typeAnnotation? EQ expr;
+
+// Data constructors
+dataConstructor: CASE ID (LPAREN constructorParams RPAREN)?;
+
+constructorParams: (constructorParam COMMA)* constructorParam;
+
+constructorParam: ID typeAnnotation;
+
+// Types
+type: typeBinder | funType | applicableType;
+
+typeBinder: typeParams LBRACE type RBRACE;
+
+funType: funTypeParams ARROW type;
+
+funTypeParams:
+	applicableType
+	| LPAREN RPAREN
+	| LPAREN (type COMMA)* type RPAREN;
+
+applicableType:
+	| parenType
+	| typeReference
+	| applicableType typeApplication;
+
+typeApplication:
+	LSQUARE (typeReference COMMA)* typeReference RSQUARE;
+
+typeParams: LSQUARE (typeVar COMMA)* typeVar RSQUARE;
+
+typeAnnotation: COLON type;
+
+parenType: LPAREN type RPAREN;
+
+// TODO: add qualifiedType instead?
+typeReference: qualifiedId | typeVar;
+
+typeVar: QUESTION? ID;
 
 // Expressions
 expr:
@@ -40,7 +79,12 @@ ifExpr: IF expr THEN expr ELSE expr;
 
 lambdaExpr: lambdaParams ARROW expr;
 
-lambdaParams: ID | LPAREN RPAREN | LPAREN (ID COMMA)* ID RPAREN;
+lambdaParams:
+	lambdaParam
+	| LPAREN RPAREN
+	| LPAREN (lambdaParam COMMA)* lambdaParam RPAREN;
+
+lambdaParam: ID typeAnnotation?;
 
 matchExpr: MATCH expr WITH LBRACE matchCase* RBRACE;
 
@@ -126,6 +170,7 @@ ARROW: '->';
 AT: '@';
 SEMICOLON: ';';
 COLON: ':';
+QUESTION: '?';
 
 // Boolean literals
 TRUE: 'true';
@@ -144,11 +189,13 @@ LITERAL_FLOAT: DECIMAL_FLOATING_LITERAL;
 
 // Identifiers (normalized)
 ID:
-	ID_START ID_CONTINUE* { setText(Normalizer.normalize(getText(), Form.NFKC)); };
+	(ID_START ID_CONTINUE* | '_' ID_CONTINUE+) {
+		setText(Normalizer.normalize(getText(), Form.NFKC)); 
+	};
 
 fragment WS: [ \t\r\n];
 
-fragment ID_START: [_\p{XID_Start}];
+fragment ID_START: [\p{XID_Start}];
 fragment ID_CONTINUE: [\p{XID_Continue}];
 
 fragment SINGLE_CHAR: ESCAPE_SEQUENCE | ~['\r\n\\];

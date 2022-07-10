@@ -237,9 +237,9 @@ public class MinaSemanticTokensParser {
 
         @Override
         public IntStream visitLambdaParams(LambdaParamsContext ctx) {
-            return ctx.ID().stream()
+            return ctx.lambdaParam().stream()
                     .flatMapToInt(param -> {
-                        return createToken(param, Parameter);
+                        return createToken(param.ID(), Parameter);
                     });
         }
 
