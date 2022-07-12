@@ -3,7 +3,6 @@ antlr = "4.10.1"
 apacheCommonsText = "1.9"
 eclipseCollections = "11.0.0"
 gradleVersions = "0.42.0"
-guice = "5.1.0"
 hamcrest = "2.2"
 jacoco = "0.8.8"
 junit = "5.8.2"
@@ -21,7 +20,6 @@ apacheCommonsText = { module = "org.apache.commons:commons-text", version.ref = 
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipseCollections" }
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipseCollections" }
 gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }
-guice = { module = "com.google.inject:guice", version.ref = "guice" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 julToSlf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }

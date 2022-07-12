@@ -8,24 +8,17 @@ import org.mina_lang.parser.CompilationUnitParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import java.util.concurrent.CompletableFuture;
 
-@Singleton
 public class MinaTextDocumentService implements TextDocumentService {
     private Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
 
     private MinaLanguageServer server;
-    private CompilationUnitParser parser;
     private MinaTextDocuments documents = new MinaTextDocuments();
     private MinaSyntaxTrees syntaxTrees = new MinaSyntaxTrees();
 
-    @Inject
-    public MinaTextDocumentService(MinaLanguageServer server, CompilationUnitParser parser) {
+    public MinaTextDocumentService(MinaLanguageServer server) {
         this.server = server;
-        this.parser = parser;
     }
 
     @Override
@@ -37,7 +30,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(document.getText(), document.getUri());
-                    var syntaxTree = parser.parse(charStream, diagnosticCollector);
+                    var syntaxTree = CompilationUnitParser.parse(charStream, diagnosticCollector);
                     return syntaxTree;
                 } finally {
                     server.getClient().publishDiagnostics(
@@ -58,7 +51,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(newDocument.getText(), newDocument.getUri());
-                    var syntaxTree = parser.parse(charStream, diagnosticCollector);
+                    var syntaxTree = CompilationUnitParser.parse(charStream, diagnosticCollector);
                     return syntaxTree;
                 } finally {
                     server.getClient().publishDiagnostics(

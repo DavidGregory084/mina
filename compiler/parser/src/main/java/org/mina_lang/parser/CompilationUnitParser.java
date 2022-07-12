@@ -1,6 +1,5 @@
 package org.mina_lang.parser;
 
-import com.google.inject.Provider;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -13,36 +12,27 @@ import org.mina_lang.common.Range;
 import org.mina_lang.parser.MinaParser.*;
 import org.mina_lang.syntax.*;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class CompilationUnitParser {
 
-    private Provider<CompilationUnitVisitor> compilationUnitVisitor;
-
-    @Inject
-    public CompilationUnitParser(Provider<CompilationUnitVisitor> compilationUnitVisitor) {
-        this.compilationUnitVisitor = compilationUnitVisitor;
-    }
-
-    public CompilationUnitNode<Void> parse(String source, ANTLRErrorListener errorListener) {
+    public static CompilationUnitNode<Void> parse(String source, ANTLRErrorListener errorListener) {
         var charStream = CharStreams.fromString(source);
         return parse(charStream, errorListener);
     }
 
-    public CompilationUnitNode<Void> parse(CharStream charStream, ANTLRErrorListener errorListener) {
-        return parse(charStream, errorListener, compilationUnitVisitor.get(),
+    public static CompilationUnitNode<Void> parse(CharStream charStream, ANTLRErrorListener errorListener) {
+        return parse(charStream, errorListener, CompilationUnitVisitor.instance,
                 MinaParser::compilationUnit);
     }
 
-    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    static <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             String source,
             ANTLRErrorListener errorListener,
             C visitor,
@@ -51,7 +41,7 @@ public class CompilationUnitParser {
         return parse(charStream, errorListener, visitor, startRule);
     }
 
-    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    static <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             CharStream charStream,
             ANTLRErrorListener errorListener,
             C visitor,
@@ -114,13 +104,13 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class CompilationUnitVisitor extends Visitor<CompilationUnitContext, CompilationUnitNode<Void>> {
 
-        private Provider<ModuleVisitor> moduleVisitor;
+        private Supplier<ModuleVisitor> moduleVisitor;
 
-        @Inject
-        public CompilationUnitVisitor(Provider<ModuleVisitor> moduleVisitor) {
+        private static CompilationUnitVisitor instance = new CompilationUnitVisitor(ModuleVisitor::getInstance);
+
+        public CompilationUnitVisitor(Supplier<ModuleVisitor> moduleVisitor) {
             this.moduleVisitor = moduleVisitor;
         }
 
@@ -131,14 +121,19 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class ModuleVisitor extends Visitor<ModuleContext, ModuleNode<Void>> {
 
-        private Provider<ImportVisitor> importVisitor;
-        private Provider<DeclarationVisitor> declarationVisitor;
+        private Supplier<ImportVisitor> importVisitor;
+        private Supplier<DeclarationVisitor> declarationVisitor;
 
-        @Inject
-        public ModuleVisitor(Provider<ImportVisitor> importVisitor, Provider<DeclarationVisitor> declarationVisitor) {
+        private static ModuleVisitor instance = new ModuleVisitor(ImportVisitor::getInstance,
+                DeclarationVisitor::getInstance);
+
+        public static ModuleVisitor getInstance() {
+            return instance;
+        }
+
+        public ModuleVisitor(Supplier<ImportVisitor> importVisitor, Supplier<DeclarationVisitor> declarationVisitor) {
             this.importVisitor = importVisitor;
             this.declarationVisitor = declarationVisitor;
         }
@@ -171,8 +166,13 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode<Void>> {
+
+        private static ImportVisitor instance = new ImportVisitor();
+
+        public static ImportVisitor getInstance() {
+            return instance;
+        }
 
         @Override
         public ImportNode<Void> visitImportDeclaration(ImportDeclarationContext ctx) {
@@ -217,13 +217,17 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class DeclarationVisitor extends Visitor<DeclarationContext, DeclarationNode<Void>> {
 
-        private Provider<ExprVisitor> exprVisitor;
+        private Supplier<ExprVisitor> exprVisitor;
 
-        @Inject
-        public DeclarationVisitor(Provider<ExprVisitor> exprVisitor) {
+        private static DeclarationVisitor instance = new DeclarationVisitor(ExprVisitor::getInstance);
+
+        public static DeclarationVisitor getInstance() {
+            return instance;
+        }
+
+        public DeclarationVisitor(Supplier<ExprVisitor> exprVisitor) {
             this.exprVisitor = exprVisitor;
         }
 
@@ -246,16 +250,21 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class ExprVisitor extends Visitor<ExprContext, ExprNode<Void>> {
 
-        private Provider<MatchCaseVisitor> matchCaseVisitor;
-        private Provider<QualifiedIdVisitor> qualifiedIdVisitor;
-        private Provider<LiteralVisitor> literalVisitor;
+        private Supplier<MatchCaseVisitor> matchCaseVisitor;
+        private Supplier<QualifiedIdVisitor> qualifiedIdVisitor;
+        private Supplier<LiteralVisitor> literalVisitor;
 
-        @Inject
-        public ExprVisitor(Provider<MatchCaseVisitor> matchCaseVisitor, Provider<QualifiedIdVisitor> qualifiedIdVisitor,
-                Provider<LiteralVisitor> literalVisitor) {
+        private static ExprVisitor instance = new ExprVisitor(MatchCaseVisitor::getInstance,
+                QualifiedIdVisitor::getInstance, LiteralVisitor::getInstance);
+
+        public static ExprVisitor getInstance() {
+            return instance;
+        }
+
+        public ExprVisitor(Supplier<MatchCaseVisitor> matchCaseVisitor, Supplier<QualifiedIdVisitor> qualifiedIdVisitor,
+                Supplier<LiteralVisitor> literalVisitor) {
             this.matchCaseVisitor = matchCaseVisitor;
             this.qualifiedIdVisitor = qualifiedIdVisitor;
             this.literalVisitor = literalVisitor;
@@ -331,8 +340,13 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class LiteralVisitor extends Visitor<LiteralContext, LiteralNode<Void>> {
+
+        private static LiteralVisitor instance = new LiteralVisitor();
+
+        public static LiteralVisitor getInstance() {
+            return instance;
+        }
 
         @Override
         public LiteralNode<Void> visitLiteral(LiteralContext ctx) {
@@ -399,14 +413,19 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class MatchCaseVisitor extends Visitor<MatchCaseContext, CaseNode<Void>> {
 
-        private Provider<ExprVisitor> exprVisitor;
-        private Provider<PatternVisitor> patternVisitor;
+        private Supplier<ExprVisitor> exprVisitor;
+        private Supplier<PatternVisitor> patternVisitor;
 
-        @Inject
-        public MatchCaseVisitor(Provider<ExprVisitor> exprVisitor, Provider<PatternVisitor> patternVisitor) {
+        private static MatchCaseVisitor instance = new MatchCaseVisitor(ExprVisitor::getInstance,
+                PatternVisitor::getInstance);
+
+        public static MatchCaseVisitor getInstance() {
+            return instance;
+        }
+
+        public MatchCaseVisitor(Supplier<ExprVisitor> exprVisitor, Supplier<PatternVisitor> patternVisitor) {
             this.exprVisitor = exprVisitor;
             this.patternVisitor = patternVisitor;
         }
@@ -419,16 +438,22 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class PatternVisitor extends Visitor<PatternContext, PatternNode<Void>> {
 
-        private QualifiedIdVisitor qualifiedIdVisitor;
-        private FieldPatternVisitor fieldPatternVisitor;
-        private LiteralVisitor literalVisitor;
+        private Supplier<QualifiedIdVisitor> qualifiedIdVisitor;
+        private Supplier<FieldPatternVisitor> fieldPatternVisitor;
+        private Supplier<LiteralVisitor> literalVisitor;
 
-        @Inject
-        public PatternVisitor(FieldPatternVisitor fieldPatternVisitor, QualifiedIdVisitor qualifiedIdVisitor,
-                LiteralVisitor literalVisitor) {
+        private static PatternVisitor instance = new PatternVisitor(FieldPatternVisitor::getInstance,
+                QualifiedIdVisitor::getInstance, LiteralVisitor::getInstance);
+
+        public static PatternVisitor getInstance() {
+            return instance;
+        }
+
+        public PatternVisitor(Supplier<FieldPatternVisitor> fieldPatternVisitor,
+                Supplier<QualifiedIdVisitor> qualifiedIdVisitor,
+                Supplier<LiteralVisitor> literalVisitor) {
             this.fieldPatternVisitor = fieldPatternVisitor;
             this.qualifiedIdVisitor = qualifiedIdVisitor;
             this.literalVisitor = literalVisitor;
@@ -458,7 +483,7 @@ public class CompilationUnitParser {
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);
 
-            var literal = literalVisitor.visit(ctx.literal());
+            var literal = literalVisitor.get().visit(ctx.literal());
 
             return literalPatternNode(contextRange(ctx), alias, literal);
         }
@@ -469,22 +494,26 @@ public class CompilationUnitParser {
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);
 
-            var id = qualifiedIdVisitor.visitNullable(ctx.qualifiedId());
+            var id = qualifiedIdVisitor.get().visitNullable(ctx.qualifiedId());
 
             var fields = visitNullableRepeated(ctx.fieldPatterns(), FieldPatternsContext::fieldPattern,
-                    fieldPatternVisitor);
+                    fieldPatternVisitor.get());
 
             return constructorPatternNode(contextRange(ctx), alias, id, fields);
         }
     }
 
-    @Singleton
     static class FieldPatternVisitor extends Visitor<FieldPatternContext, FieldPatternNode<Void>> {
 
-        private Provider<PatternVisitor> patternVisitor;
+        private Supplier<PatternVisitor> patternVisitor;
 
-        @Inject
-        public FieldPatternVisitor(Provider<PatternVisitor> patternVisitor) {
+        private static FieldPatternVisitor instance = new FieldPatternVisitor(PatternVisitor::getInstance);
+
+        public static FieldPatternVisitor getInstance() {
+            return instance;
+        }
+
+        public FieldPatternVisitor(Supplier<PatternVisitor> patternVisitor) {
             this.patternVisitor = patternVisitor;
         }
 
@@ -496,8 +525,13 @@ public class CompilationUnitParser {
         }
     }
 
-    @Singleton
     static class QualifiedIdVisitor extends Visitor<QualifiedIdContext, QualifiedIdNode<Void>> {
+
+        private static QualifiedIdVisitor instance = new QualifiedIdVisitor();
+
+        public static QualifiedIdVisitor getInstance() {
+            return instance;
+        }
 
         @Override
         public QualifiedIdNode<Void> visitQualifiedId(QualifiedIdContext ctx) {

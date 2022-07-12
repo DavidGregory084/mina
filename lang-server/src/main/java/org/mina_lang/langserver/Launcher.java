@@ -1,6 +1,5 @@
 package org.mina_lang.langserver;
 
-import com.google.inject.Guice;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.mina_lang.BuildInfo;
 import org.newsclub.net.unix.AFUNIXSocket;
@@ -45,8 +44,7 @@ public class Launcher implements Callable<Void> {
     }
 
     private Void listenOn(InputStream in, OutputStream out) throws InterruptedException, ExecutionException {
-        var injector = Guice.createInjector();
-        var server = injector.getInstance(MinaLanguageServer.class);
+        var server = new MinaLanguageServer();
         var errWriter = new PrintWriter(System.err);
         var launcher = LSPLauncher.createServerLauncher(server, in, out, true, errWriter);
         server.connect(launcher.getRemoteProxy());

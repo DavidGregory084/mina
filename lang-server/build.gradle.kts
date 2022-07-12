@@ -8,9 +8,6 @@ dependencies {
     // Command Line Arg Parsing
     implementation(libs.picocli)
 
-    // Dependency Injection
-    implementation(libs.guice)
-
     // Immutable Collections
     implementation(libs.bundles.eclipseCollections)
 

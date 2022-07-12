@@ -10,18 +10,13 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.*;
 import org.mina_lang.BuildInfo;
 import org.mina_lang.langserver.semantic.tokens.MinaSemanticTokens;
-import org.mina_lang.parser.CompilationUnitParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-@Singleton
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
 
@@ -42,9 +37,8 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
     private ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
 
-    @Inject
-    public MinaLanguageServer(CompilationUnitParser parser) {
-        this.documentService = new MinaTextDocumentService(this, parser);
+    public MinaLanguageServer() {
+        this.documentService = new MinaTextDocumentService(this);
         this.workspaceService = new MinaWorkspaceService(this);
     }
 
