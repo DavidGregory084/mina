@@ -13,6 +13,7 @@ import org.mina_lang.parser.MinaParser.*;
 import org.mina_lang.syntax.*;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -359,6 +360,38 @@ public class CompilationUnitParser {
             }
         }
 
+        private LiteralFloatNode<Void> safeFloatNode(Range range, Token token, String withoutSuffix) {
+            var decimalValue = new BigDecimal(withoutSuffix);
+            var floatValue = decimalValue.floatValue();
+
+            if (!(Float.isNaN(floatValue) || Float.isInfinite(floatValue))) {
+                if (new BigDecimal(String.valueOf(floatValue)).compareTo(decimalValue) == 0) {
+                    return floatNode(range, floatValue);
+                }
+            }
+
+            errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
+                    "Float precision loss detected", null);
+
+            return null;
+        }
+
+        private LiteralDoubleNode<Void> safeDoubleNode(Range range, Token token, String withoutSuffix) {
+            var decimalValue = new BigDecimal(withoutSuffix);
+            var doubleValue = decimalValue.doubleValue();
+
+            if (!(Double.isNaN(doubleValue) || Double.isInfinite(doubleValue))) {
+                if (new BigDecimal(String.valueOf(doubleValue)).compareTo(decimalValue) == 0) {
+                    return doubleNode(range, doubleValue);
+                }
+            }
+
+            errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
+                    "Double precision loss detected", null);
+
+            return null;
+        }
+
         @Override
         public LiteralNode<Void> visitLiteral(LiteralContext ctx) {
             return visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(), ctx.literalInt(),
@@ -414,12 +447,12 @@ public class CompilationUnitParser {
             var floatText = floatExpr.getText().replace("_", "");
             if (floatText.endsWith("d") || floatText.endsWith("D")) {
                 var withoutSuffix = floatText.substring(0, floatText.length() - 1);
-                return doubleNode(contextRange(ctx), Double.parseDouble(withoutSuffix));
+                return safeDoubleNode(contextRange(ctx), floatExpr.getSymbol(), withoutSuffix);
             } else if (floatText.endsWith("f") || floatText.endsWith("F")) {
                 var withoutSuffix = floatText.substring(0, floatText.length() - 1);
-                return floatNode(contextRange(ctx), Float.parseFloat(withoutSuffix));
+                return safeFloatNode(contextRange(ctx), floatExpr.getSymbol(), withoutSuffix);
             } else {
-                return doubleNode(contextRange(ctx), Double.parseDouble(floatText));
+                return safeDoubleNode(contextRange(ctx), floatExpr.getSymbol(), floatText);
             }
         }
     }

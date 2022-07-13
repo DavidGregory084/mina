@@ -634,6 +634,14 @@ public class CompilationUnitParserTest {
     }
 
     @Test
+    void parseLiteralFloatPrecisionLoss() {
+        var errors = testFailedParse("1.23456789f", CompilationUnitParser::getExprVisitor,
+                MinaParser::expr);
+        assertThat(errors, hasSize(1));
+        assertThat(errors.get(0), startsWith("Float precision loss detected"));
+    }
+
+    @Test
     void parseLiteralDouble() {
         testSuccessfulParse("123.4", CompilationUnitParser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 5), 123.4d));
@@ -689,6 +697,14 @@ public class CompilationUnitParserTest {
                 doubleNode(new Range(0, 0, 0, 9), 1.234e-2d));
         testSuccessfulParse("1.234E-2D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e-2d));
+    }
+
+    @Test
+    void parseLiteralDoublePrecisionLoss() {
+        var errors = testFailedParse("4.9E-325", CompilationUnitParser::getExprVisitor,
+                MinaParser::expr);
+        assertThat(errors, hasSize(1));
+        assertThat(errors.get(0), startsWith("Double precision loss detected"));
     }
 
     @Test
