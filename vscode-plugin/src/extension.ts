@@ -70,13 +70,12 @@ export async function activate(context: ExtensionContext) {
     const gcOptions = [
         "-XX:+UseShenandoahGC",
         "-XX:+AlwaysPreTouch",
-        "-XX:+UseLargePages",
         "-XX:+UseNUMA",
-        "-XX:-UseBiasedLocking",
         "-XX:+DisableExplicitGC",
     ];
 
     if (os.type() === "Linux") {
+      gcOptions.push("-XX:+UseLargePages");
       gcOptions.push("-XX:+UseTransparentHugePages");
     }
 

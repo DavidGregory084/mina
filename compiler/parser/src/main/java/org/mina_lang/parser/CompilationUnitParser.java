@@ -12,46 +12,100 @@ import org.mina_lang.common.Range;
 import org.mina_lang.parser.MinaParser.*;
 import org.mina_lang.syntax.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class CompilationUnitParser {
 
-    public static CompilationUnitNode<Void> parse(String source, ANTLRErrorListener errorListener) {
+    private ANTLRErrorListener errorListener;
+
+    private CompilationUnitVisitor compilationUnitVisitor = new CompilationUnitVisitor();
+    private ModuleVisitor moduleVisitor = new ModuleVisitor();
+    private ImportVisitor importVisitor = new ImportVisitor();
+    private DeclarationVisitor declarationVisitor = new DeclarationVisitor();
+    private ExprVisitor exprVisitor = new ExprVisitor();
+    private LiteralVisitor literalVisitor = new LiteralVisitor();
+    private MatchCaseVisitor matchCaseVisitor = new MatchCaseVisitor();
+    private PatternVisitor patternVisitor = new PatternVisitor();
+    private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
+    private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
+
+    public CompilationUnitParser(ANTLRErrorListener errorListener) {
+        this.errorListener = errorListener;
+    }
+
+    public CompilationUnitVisitor getCompilationUnitVisitor() {
+        return compilationUnitVisitor;
+    }
+
+    public ModuleVisitor getModuleVisitor() {
+        return moduleVisitor;
+    }
+
+    public ImportVisitor getImportVisitor() {
+        return importVisitor;
+    }
+
+    public DeclarationVisitor getDeclarationVisitor() {
+        return declarationVisitor;
+    }
+
+    public ExprVisitor getExprVisitor() {
+        return exprVisitor;
+    }
+
+    public LiteralVisitor getLiteralVisitor() {
+        return literalVisitor;
+    }
+
+    public MatchCaseVisitor getMatchCaseVisitor() {
+        return matchCaseVisitor;
+    }
+
+    public PatternVisitor getPatternVisitor() {
+        return patternVisitor;
+    }
+
+    public FieldPatternVisitor getFieldPatternVisitor() {
+        return fieldPatternVisitor;
+    }
+
+    public QualifiedIdVisitor getQualifiedIdVisitor() {
+        return qualifiedIdVisitor;
+    }
+
+    public CompilationUnitNode<Void> parse(String source) {
         var charStream = CharStreams.fromString(source);
-        return parse(charStream, errorListener);
+        return parse(charStream);
     }
 
-    public static CompilationUnitNode<Void> parse(CharStream charStream, ANTLRErrorListener errorListener) {
-        return parse(charStream, errorListener, CompilationUnitVisitor.instance,
-                MinaParser::compilationUnit);
+    public CompilationUnitNode<Void> parse(CharStream charStream) {
+        return parse(charStream, CompilationUnitParser::getCompilationUnitVisitor, MinaParser::compilationUnit);
     }
 
-    static <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             String source,
-            ANTLRErrorListener errorListener,
-            C visitor,
+            Function<CompilationUnitParser, C> visitor,
             Function<MinaParser, A> startRule) {
         var charStream = CharStreams.fromString(source);
-        return parse(charStream, errorListener, visitor, startRule);
+        return parse(charStream, visitor, startRule);
     }
 
-    static <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             CharStream charStream,
-            ANTLRErrorListener errorListener,
-            C visitor,
+            Function<CompilationUnitParser, C> visitor,
             Function<MinaParser, A> startRule) {
         var lexer = new MinaLexer(charStream);
         lexer.addErrorListener(errorListener);
         var tokenStream = new CommonTokenStream(lexer);
         var parser = new MinaParser(tokenStream);
         parser.addErrorListener(errorListener);
-        return visitor.visitNullable(startRule.apply(parser));
+        return visitor.apply(this).visitNullable(startRule.apply(parser));
     }
 
     static Range tokenRange(Token token) {
@@ -74,7 +128,7 @@ public class CompilationUnitParser {
         return new Range(startPos, endPos);
     }
 
-    static abstract class Visitor<A extends ParserRuleContext, B> extends MinaBaseVisitor<B> {
+    abstract class Visitor<A extends ParserRuleContext, B> extends MinaBaseVisitor<B> {
         public B visitNullable(ParseTree tree) {
             return tree != null ? visit(tree) : null;
         }
@@ -104,39 +158,16 @@ public class CompilationUnitParser {
         }
     }
 
-    static class CompilationUnitVisitor extends Visitor<CompilationUnitContext, CompilationUnitNode<Void>> {
-
-        private Supplier<ModuleVisitor> moduleVisitor;
-
-        private static CompilationUnitVisitor instance = new CompilationUnitVisitor(ModuleVisitor::getInstance);
-
-        public CompilationUnitVisitor(Supplier<ModuleVisitor> moduleVisitor) {
-            this.moduleVisitor = moduleVisitor;
-        }
+    class CompilationUnitVisitor extends Visitor<CompilationUnitContext, CompilationUnitNode<Void>> {
 
         @Override
         public CompilationUnitNode<Void> visitCompilationUnit(CompilationUnitContext ctx) {
-            var modules = visitRepeated(ctx.module(), moduleVisitor.get());
+            var modules = visitRepeated(ctx.module(), moduleVisitor);
             return compilationUnitNode(contextRange(ctx), modules);
         }
     }
 
-    static class ModuleVisitor extends Visitor<ModuleContext, ModuleNode<Void>> {
-
-        private Supplier<ImportVisitor> importVisitor;
-        private Supplier<DeclarationVisitor> declarationVisitor;
-
-        private static ModuleVisitor instance = new ModuleVisitor(ImportVisitor::getInstance,
-                DeclarationVisitor::getInstance);
-
-        public static ModuleVisitor getInstance() {
-            return instance;
-        }
-
-        public ModuleVisitor(Supplier<ImportVisitor> importVisitor, Supplier<DeclarationVisitor> declarationVisitor) {
-            this.importVisitor = importVisitor;
-            this.declarationVisitor = declarationVisitor;
-        }
+    class ModuleVisitor extends Visitor<ModuleContext, ModuleNode<Void>> {
 
         @Override
         public ModuleNode<Void> visitModule(ModuleContext ctx) {
@@ -158,21 +189,15 @@ public class CompilationUnitParser {
                     .flatMap(ids -> ids.getLastOptional())
                     .orElse(null);
 
-            var imports = visitRepeated(ctx.importDeclaration(), importVisitor.get());
+            var imports = visitRepeated(ctx.importDeclaration(), importVisitor);
 
-            var declarations = visitRepeated(ctx.declaration(), declarationVisitor.get());
+            var declarations = visitRepeated(ctx.declaration(), declarationVisitor);
 
             return moduleNode(contextRange(ctx), pkg, mod, imports, declarations);
         }
     }
 
-    static class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode<Void>> {
-
-        private static ImportVisitor instance = new ImportVisitor();
-
-        public static ImportVisitor getInstance() {
-            return instance;
-        }
+    class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode<Void>> {
 
         @Override
         public ImportNode<Void> visitImportDeclaration(ImportDeclarationContext ctx) {
@@ -217,19 +242,7 @@ public class CompilationUnitParser {
         }
     }
 
-    static class DeclarationVisitor extends Visitor<DeclarationContext, DeclarationNode<Void>> {
-
-        private Supplier<ExprVisitor> exprVisitor;
-
-        private static DeclarationVisitor instance = new DeclarationVisitor(ExprVisitor::getInstance);
-
-        public static DeclarationVisitor getInstance() {
-            return instance;
-        }
-
-        public DeclarationVisitor(Supplier<ExprVisitor> exprVisitor) {
-            this.exprVisitor = exprVisitor;
-        }
+    class DeclarationVisitor extends Visitor<DeclarationContext, DeclarationNode<Void>> {
 
         @Override
         public DeclarationNode<Void> visitDataDeclaration(DataDeclarationContext ctx) {
@@ -240,7 +253,7 @@ public class CompilationUnitParser {
         @Override
         public DeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var expr = exprVisitor.get().visitNullable(ctx.expr());
+            var expr = exprVisitor.visitNullable(ctx.expr());
             return letDeclarationNode(contextRange(ctx), name, expr);
         }
 
@@ -250,25 +263,7 @@ public class CompilationUnitParser {
         }
     }
 
-    static class ExprVisitor extends Visitor<ExprContext, ExprNode<Void>> {
-
-        private Supplier<MatchCaseVisitor> matchCaseVisitor;
-        private Supplier<QualifiedIdVisitor> qualifiedIdVisitor;
-        private Supplier<LiteralVisitor> literalVisitor;
-
-        private static ExprVisitor instance = new ExprVisitor(MatchCaseVisitor::getInstance,
-                QualifiedIdVisitor::getInstance, LiteralVisitor::getInstance);
-
-        public static ExprVisitor getInstance() {
-            return instance;
-        }
-
-        public ExprVisitor(Supplier<MatchCaseVisitor> matchCaseVisitor, Supplier<QualifiedIdVisitor> qualifiedIdVisitor,
-                Supplier<LiteralVisitor> literalVisitor) {
-            this.matchCaseVisitor = matchCaseVisitor;
-            this.qualifiedIdVisitor = qualifiedIdVisitor;
-            this.literalVisitor = literalVisitor;
-        }
+    class ExprVisitor extends Visitor<ExprContext, ExprNode<Void>> {
 
         @Override
         public ExprNode<Void> visitExpr(ExprContext ctx) {
@@ -301,7 +296,7 @@ public class CompilationUnitParser {
         @Override
         public ExprNode<Void> visitMatchExpr(MatchExprContext ctx) {
             var scrutineeNode = visitNullable(ctx.expr());
-            var cases = visitRepeated(ctx.matchCase(), matchCaseVisitor.get());
+            var cases = visitRepeated(ctx.matchCase(), matchCaseVisitor);
             return matchNode(contextRange(ctx), scrutineeNode, cases);
         }
 
@@ -330,22 +325,38 @@ public class CompilationUnitParser {
 
         @Override
         public ExprNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
-            return refNode(contextRange(ctx), qualifiedIdVisitor.get().visitNullable(ctx));
+            return refNode(contextRange(ctx), qualifiedIdVisitor.visitNullable(ctx));
         }
 
         @Override
         public ExprNode<Void> visitLiteral(LiteralContext ctx) {
-            return literalVisitor.get().visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(),
+            return literalVisitor.visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(),
                     ctx.literalInt(), ctx.literalFloat());
         }
     }
 
-    static class LiteralVisitor extends Visitor<LiteralContext, LiteralNode<Void>> {
+    class LiteralVisitor extends Visitor<LiteralContext, LiteralNode<Void>> {
 
-        private static LiteralVisitor instance = new LiteralVisitor();
+        private LiteralIntNode<Void> safeIntNode(Range range, Token token, String withoutSuffix) {
+            try {
+                var intValue = new BigDecimal(withoutSuffix).intValueExact();
+                return intNode(range, intValue);
+            } catch (ArithmeticException exc) {
+                errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
+                        "Integer overflow detected", null);
+                return null;
+            }
+        }
 
-        public static LiteralVisitor getInstance() {
-            return instance;
+        private LiteralLongNode<Void> safeLongNode(Range range, Token token, String withoutSuffix) {
+            try {
+                var longValue = new BigDecimal(withoutSuffix).longValueExact();
+                return longNode(range, longValue);
+            } catch (ArithmeticException exc) {
+                errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
+                        "Long overflow detected", null);
+                return null;
+            }
         }
 
         @Override
@@ -388,12 +399,12 @@ public class CompilationUnitParser {
             var intText = intExpr.getText().replace("_", "");
             if (intText.endsWith("l") || intText.endsWith("L")) {
                 var withoutSuffix = intText.substring(0, intText.length() - 1);
-                return longNode(contextRange(ctx), Long.parseLong(withoutSuffix));
+                return safeLongNode(contextRange(ctx), intExpr.getSymbol(), withoutSuffix);
             } else if (intText.endsWith("i") || intText.endsWith("I")) {
                 var withoutSuffix = intText.substring(0, intText.length() - 1);
-                return intNode(contextRange(ctx), Integer.parseInt(withoutSuffix));
+                return safeIntNode(contextRange(ctx), intExpr.getSymbol(), withoutSuffix);
             } else {
-                return intNode(contextRange(ctx), Integer.parseInt(intText));
+                return safeIntNode(contextRange(ctx), intExpr.getSymbol(), intText);
             }
         }
 
@@ -413,51 +424,17 @@ public class CompilationUnitParser {
         }
     }
 
-    static class MatchCaseVisitor extends Visitor<MatchCaseContext, CaseNode<Void>> {
-
-        private Supplier<ExprVisitor> exprVisitor;
-        private Supplier<PatternVisitor> patternVisitor;
-
-        private static MatchCaseVisitor instance = new MatchCaseVisitor(ExprVisitor::getInstance,
-                PatternVisitor::getInstance);
-
-        public static MatchCaseVisitor getInstance() {
-            return instance;
-        }
-
-        public MatchCaseVisitor(Supplier<ExprVisitor> exprVisitor, Supplier<PatternVisitor> patternVisitor) {
-            this.exprVisitor = exprVisitor;
-            this.patternVisitor = patternVisitor;
-        }
+    class MatchCaseVisitor extends Visitor<MatchCaseContext, CaseNode<Void>> {
 
         @Override
         public CaseNode<Void> visitMatchCase(MatchCaseContext ctx) {
-            var patternNode = patternVisitor.get().visitNullable(ctx.pattern());
-            var consequentNode = exprVisitor.get().visitNullable(ctx.expr());
+            var patternNode = patternVisitor.visitNullable(ctx.pattern());
+            var consequentNode = exprVisitor.visitNullable(ctx.expr());
             return caseNode(contextRange(ctx), patternNode, consequentNode);
         }
     }
 
-    static class PatternVisitor extends Visitor<PatternContext, PatternNode<Void>> {
-
-        private Supplier<QualifiedIdVisitor> qualifiedIdVisitor;
-        private Supplier<FieldPatternVisitor> fieldPatternVisitor;
-        private Supplier<LiteralVisitor> literalVisitor;
-
-        private static PatternVisitor instance = new PatternVisitor(FieldPatternVisitor::getInstance,
-                QualifiedIdVisitor::getInstance, LiteralVisitor::getInstance);
-
-        public static PatternVisitor getInstance() {
-            return instance;
-        }
-
-        public PatternVisitor(Supplier<FieldPatternVisitor> fieldPatternVisitor,
-                Supplier<QualifiedIdVisitor> qualifiedIdVisitor,
-                Supplier<LiteralVisitor> literalVisitor) {
-            this.fieldPatternVisitor = fieldPatternVisitor;
-            this.qualifiedIdVisitor = qualifiedIdVisitor;
-            this.literalVisitor = literalVisitor;
-        }
+    class PatternVisitor extends Visitor<PatternContext, PatternNode<Void>> {
 
         @Override
         public PatternNode<Void> visitPattern(PatternContext ctx) {
@@ -483,7 +460,7 @@ public class CompilationUnitParser {
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);
 
-            var literal = literalVisitor.get().visit(ctx.literal());
+            var literal = literalVisitor.visit(ctx.literal());
 
             return literalPatternNode(contextRange(ctx), alias, literal);
         }
@@ -494,44 +471,26 @@ public class CompilationUnitParser {
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);
 
-            var id = qualifiedIdVisitor.get().visitNullable(ctx.qualifiedId());
+            var id = qualifiedIdVisitor.visitNullable(ctx.qualifiedId());
 
             var fields = visitNullableRepeated(ctx.fieldPatterns(), FieldPatternsContext::fieldPattern,
-                    fieldPatternVisitor.get());
+                    fieldPatternVisitor);
 
             return constructorPatternNode(contextRange(ctx), alias, id, fields);
         }
     }
 
-    static class FieldPatternVisitor extends Visitor<FieldPatternContext, FieldPatternNode<Void>> {
-
-        private Supplier<PatternVisitor> patternVisitor;
-
-        private static FieldPatternVisitor instance = new FieldPatternVisitor(PatternVisitor::getInstance);
-
-        public static FieldPatternVisitor getInstance() {
-            return instance;
-        }
-
-        public FieldPatternVisitor(Supplier<PatternVisitor> patternVisitor) {
-            this.patternVisitor = patternVisitor;
-        }
+    class FieldPatternVisitor extends Visitor<FieldPatternContext, FieldPatternNode<Void>> {
 
         @Override
         public FieldPatternNode<Void> visitFieldPattern(FieldPatternContext ctx) {
             var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var pattern = Optional.ofNullable(patternVisitor.get().visitNullable(ctx.pattern()));
+            var pattern = Optional.ofNullable(patternVisitor.visitNullable(ctx.pattern()));
             return fieldPatternNode(contextRange(ctx), id, pattern);
         }
     }
 
-    static class QualifiedIdVisitor extends Visitor<QualifiedIdContext, QualifiedIdNode<Void>> {
-
-        private static QualifiedIdVisitor instance = new QualifiedIdVisitor();
-
-        public static QualifiedIdVisitor getInstance() {
-            return instance;
-        }
+    class QualifiedIdVisitor extends Visitor<QualifiedIdContext, QualifiedIdNode<Void>> {
 
         @Override
         public QualifiedIdNode<Void> visitQualifiedId(QualifiedIdContext ctx) {

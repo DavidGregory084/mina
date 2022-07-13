@@ -1,6 +1,6 @@
 grammar Mina;
 
-@header {
+@lexer::header {
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 }
@@ -185,6 +185,7 @@ LITERAL_STRING: DQUOTE STRING_CHAR* DQUOTE;
 
 // Numeric literals
 LITERAL_INT: DECIMAL_INTEGER_LITERAL;
+
 LITERAL_FLOAT: DECIMAL_FLOATING_LITERAL;
 
 // Identifiers (normalized)
@@ -244,8 +245,8 @@ fragment NON_ZERO_DIGIT: [1-9];
 fragment INTEGER_SUFFIX: [iIlL];
 fragment FLOAT_SUFFIX: [fFdD];
 
-// Generated with [https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp]
-// using [\p{XID_Start}&\p{Identifier_Status=Allowed}]
+// Generated with [https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp] using
+// [\p{XID_Start}&\p{Identifier_Status=Allowed}]
 fragment ID_START:
 	'A' .. 'Z'
 	| 'a' .. 'z'
@@ -591,8 +592,8 @@ fragment ID_START:
 	| '\u{2CEB0}' .. '\u{2EBE0}'
 	| '\u{30000}' .. '\u{3134A}';
 
-// Generated with [https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp]
-// using [\p{XID_Continue}&\p{Identifier_Status=Allowed}]
+// Generated with [https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp] using
+// [\p{XID_Continue}&\p{Identifier_Status=Allowed}]
 fragment ID_CONTINUE:
 	'0' .. '9'
 	| 'A' .. 'Z'

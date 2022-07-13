@@ -30,8 +30,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(document.getText(), document.getUri());
-                    var syntaxTree = CompilationUnitParser.parse(charStream, diagnosticCollector);
-                    return syntaxTree;
+                    return new CompilationUnitParser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
                             new PublishDiagnosticsParams(document.getUri(), diagnosticCollector.getDiagnostics()));
@@ -51,8 +50,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(newDocument.getText(), newDocument.getUri());
-                    var syntaxTree = CompilationUnitParser.parse(charStream, diagnosticCollector);
-                    return syntaxTree;
+                    return new CompilationUnitParser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
                             new PublishDiagnosticsParams(newDocument.getUri(), diagnosticCollector.getDiagnostics()));
