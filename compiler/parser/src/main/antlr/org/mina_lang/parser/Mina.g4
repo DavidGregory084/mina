@@ -39,9 +39,9 @@ constructorParam: ID typeAnnotation;
 // Types
 typeAnnotation: COLON type;
 
-type: typeBinder | funType | applicableType;
+type: funType | typeLambda | applicableType;
 
-typeBinder: typeParams LBRACE type RBRACE;
+typeLambda: typeParams FATARROW type;
 
 funType: funTypeParams ARROW type;
 
@@ -58,9 +58,11 @@ applicableType:
 typeApplication:
 	LSQUARE (typeReference COMMA)* typeReference RSQUARE;
 
-typeParams: LSQUARE (typeVar COMMA)* typeVar RSQUARE;
+typeParams:
+	typeVar
+	| LSQUARE (typeVar COMMA)* typeVar RSQUARE;
 
-parenType: LPAREN type RPAREN;
+parenType: LSQUARE type RSQUARE;
 
 // TODO: add qualifiedType instead?
 typeReference: qualifiedId | typeVar;
@@ -167,6 +169,7 @@ EQ: '=';
 DOT: '.';
 COMMA: ',';
 ARROW: '->';
+FATARROW: '=>';
 AT: '@';
 SEMICOLON: ';';
 COLON: ':';

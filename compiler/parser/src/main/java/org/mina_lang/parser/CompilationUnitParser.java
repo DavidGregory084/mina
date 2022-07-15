@@ -13,7 +13,7 @@ import org.mina_lang.parser.MinaParser.*;
 import org.mina_lang.syntax.*;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -340,7 +340,8 @@ public class CompilationUnitParser {
 
         private LiteralIntNode<Void> safeIntNode(Range range, Token token, String withoutSuffix) {
             try {
-                var intValue = new BigDecimal(withoutSuffix).intValueExact();
+                var decimalValue = new BigInteger(withoutSuffix);
+                var intValue = decimalValue.intValueExact();
                 return intNode(range, intValue);
             } catch (ArithmeticException exc) {
                 errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
@@ -351,7 +352,8 @@ public class CompilationUnitParser {
 
         private LiteralLongNode<Void> safeLongNode(Range range, Token token, String withoutSuffix) {
             try {
-                var longValue = new BigDecimal(withoutSuffix).longValueExact();
+                var decimalValue = new BigInteger(withoutSuffix);
+                var longValue = decimalValue.longValueExact();
                 return longNode(range, longValue);
             } catch (ArithmeticException exc) {
                 errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
