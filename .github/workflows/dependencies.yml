@@ -22,5 +22,7 @@ jobs:
       - name: Submit Gradle Dependencies
         uses: mikepenz/gradle-dependency-submission@v0.0.4
         with:
+          gradle-project-path: ".;.;.;.;.;.;."
           gradle-dependency-path: "gradle-plugin/build.gradle;compiler/common/build.gradle;compiler/syntax/build.gradle;compiler/parser/build.gradle;compiler/intermediate/build.gradle;compiler/jvm/build.gradle;lang-server/build.gradle"
           gradle-build-module: ":gradle-plugin;:compiler:common;:compiler:syntax;:compiler:parser;:compiler:intermediate;:compiler:jvm;:language-server"
+          gradle-build-configuration: "debugCompileClasspath;debugCompileClasspath;debugCompileClasspath;debugCompileClasspath;debugCompileClasspath;debugCompileClasspath;debugCompileClasspath"
