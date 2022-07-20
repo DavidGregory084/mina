@@ -1,6 +1,7 @@
 plugins {
     `java-gradle-plugin`
     jacoco
+    id("com.github.ben-manes.versions")
 }
 
 repositories {
@@ -9,6 +10,7 @@ repositories {
 
 dependencies {
     testImplementation(libs.junitJupiter)
+    testImplementation(libs.hamcrest)
 }
 
 gradlePlugin {
