@@ -1,0 +1,17 @@
+name: Update Dependency Graph
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-dependencies:
+    name: Update Dependency Graph
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Submit Gradle Dependencies
+        uses: mikepenz/gradle-dependency-submission@v0
