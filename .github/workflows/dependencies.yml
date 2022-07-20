@@ -14,4 +14,4 @@ jobs:
         uses: actions/checkout@v3
         
       - name: Submit Gradle Dependencies
-        uses: mikepenz/gradle-dependency-submission@{latest}
+        uses: mikepenz/gradle-dependency-submission@v0.0.4
