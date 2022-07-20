@@ -27,6 +27,8 @@ junixSocket = { module = "com.kohlschutter.junixsocket:junixsocket-core", versio
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
+protobufJava = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protobufPlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobufGradle" }
 slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 

@@ -1,4 +1,8 @@
 import com.google.protobuf.gradle.*
+import org.gradle.accessors.dm.LibrariesForLibs
+
+// Workaround for https://github.com/gradle/gradle/issues/15383
+val libs = the<LibrariesForLibs>()
 
 plugins {
     `java-library`
@@ -9,15 +13,12 @@ repositories {
     maven("https://maven-central.storage-download.googleapis.com/maven2/")
 }
 
-// Can't use version catalog accessors due to https://github.com/gradle/gradle/issues/15383
-val protobufVersion = "3.20.0"
-
 dependencies {
-    implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
+    implementation(libs.protobufJava)
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        artifact = libs.protoc.get().toString()
     }
 }

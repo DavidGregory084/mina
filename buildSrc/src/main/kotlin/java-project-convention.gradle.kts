@@ -1,3 +1,8 @@
+import org.gradle.accessors.dm.LibrariesForLibs
+
+// Workaround for https://github.com/gradle/gradle/issues/15383
+val libs = the<LibrariesForLibs>()
+
 plugins {
     java
     `ivy-publish`
@@ -12,14 +17,9 @@ repositories {
 group = "org.mina-lang"
 version = "0.1.0-SNAPSHOT"
 
-// Can't use version catalog accessors due to https://github.com/gradle/gradle/issues/15383
-val junitVersion = "5.8.2"
-val hamcrestVersion = "2.2"
-val jacocoVersion = "0.8.8"
-
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
-    testImplementation("org.hamcrest:hamcrest:${hamcrestVersion}")
+    testImplementation(libs.junitJupiter)
+    testImplementation(libs.hamcrest)
 }
 
 java {
@@ -36,7 +36,7 @@ tasks.named<Test>("test") {
 }
 
 jacoco {
-    toolVersion = "${jacocoVersion}"
+    toolVersion = libs.versions.jacoco.get()
 }
 
 tasks.test {
