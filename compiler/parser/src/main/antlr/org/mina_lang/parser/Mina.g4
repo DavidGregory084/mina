@@ -39,9 +39,11 @@ constructorParam: ID typeAnnotation;
 // Types
 typeAnnotation: COLON type;
 
-type: funType | typeLambda | applicableType;
+type: typeLambda | funType | applicableType;
 
 typeLambda: typeParams FATARROW type;
+
+typeParams: typeVar | LSQUARE (typeVar COMMA)* typeVar RSQUARE;
 
 funType: funTypeParams ARROW type;
 
@@ -51,20 +53,15 @@ funTypeParams:
 	| LPAREN (type COMMA)* type RPAREN;
 
 applicableType:
-	| parenType
+	parenType
 	| typeReference
 	| applicableType typeApplication;
 
 typeApplication:
 	LSQUARE (typeReference COMMA)* typeReference RSQUARE;
 
-typeParams:
-	typeVar
-	| LSQUARE (typeVar COMMA)* typeVar RSQUARE;
-
 parenType: LSQUARE type RSQUARE;
 
-// TODO: add qualifiedType instead?
 typeReference: qualifiedId | typeVar;
 
 typeVar: QUESTION? ID;

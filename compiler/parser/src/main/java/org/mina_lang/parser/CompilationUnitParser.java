@@ -29,6 +29,7 @@ public class CompilationUnitParser {
     private ModuleVisitor moduleVisitor = new ModuleVisitor();
     private ImportVisitor importVisitor = new ImportVisitor();
     private DeclarationVisitor declarationVisitor = new DeclarationVisitor();
+    private TypeVisitor typeVisitor = new TypeVisitor();
     private ExprVisitor exprVisitor = new ExprVisitor();
     private LiteralVisitor literalVisitor = new LiteralVisitor();
     private MatchCaseVisitor matchCaseVisitor = new MatchCaseVisitor();
@@ -54,6 +55,10 @@ public class CompilationUnitParser {
 
     public DeclarationVisitor getDeclarationVisitor() {
         return declarationVisitor;
+    }
+
+    public TypeVisitor getTypeVisitor() {
+        return typeVisitor;
     }
 
     public ExprVisitor getExprVisitor() {
@@ -246,13 +251,13 @@ public class CompilationUnitParser {
     class DeclarationVisitor extends Visitor<DeclarationContext, DeclarationNode<Void>> {
 
         @Override
-        public DeclarationNode<Void> visitDataDeclaration(DataDeclarationContext ctx) {
+        public DataDeclarationNode<Void> visitDataDeclaration(DataDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             return dataDeclarationNode(contextRange(ctx), name);
         }
 
         @Override
-        public DeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
+        public LetDeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var expr = exprVisitor.visitNullable(ctx.expr());
             return letDeclarationNode(contextRange(ctx), name, expr);
@@ -264,6 +269,84 @@ public class CompilationUnitParser {
         }
     }
 
+    class TypeVisitor extends Visitor<TypeContext, TypeNode<Void>> {
+
+        @Override
+        public TypeNode<Void> visitType(TypeContext ctx) {
+            return visitAlternatives(ctx.typeLambda(), ctx.funType(), ctx.applicableType());
+        }
+
+        @Override
+        public TypeLambdaNode<Void> visitTypeLambda(TypeLambdaContext ctx) {
+            var params = ctx.typeParams().typeVar().stream()
+                    .map(param -> visitTypeVar(param))
+                    .collect(Collectors2.toImmutableList());
+
+            var bodyNode = visitNullable(ctx.type());
+
+            return typeLambdaNode(contextRange(ctx), params, bodyNode);
+        }
+
+        @Override
+        public FunTypeNode<Void> visitFunType(FunTypeContext ctx) {
+            var funTypeParams = Optional.ofNullable(ctx.funTypeParams());
+
+            var paramTypeNode = funTypeParams
+                    .map(FunTypeParamsContext::applicableType)
+                    .map(this::visitNullable)
+                    .map(Lists.immutable::of);
+
+            var paramTypeNodes = paramTypeNode.orElse(
+                    visitNullableRepeated(ctx.funTypeParams(), FunTypeParamsContext::type, this));
+
+            var returnTypeNode = visitNullable(ctx.type());
+
+            return funTypeNode(contextRange(ctx), paramTypeNodes, returnTypeNode);
+        }
+
+        @Override
+        public TypeNode<Void> visitApplicableType(ApplicableTypeContext ctx) {
+            var typeNode = visitAlternatives(ctx.parenType(), ctx.typeReference());
+
+            if (typeNode != null) {
+                return typeNode;
+            }
+
+            var applicableTypeNode = visitNullable(ctx.applicableType());
+
+            if (applicableTypeNode != null) {
+                var args = ctx.typeApplication().typeReference().stream()
+                        .<TypeNode<Void>>map(ref -> visitTypeReference(ref))
+                        .collect(Collectors2.toImmutableList());
+
+                return typeApplyNode(contextRange(ctx), applicableTypeNode, args);
+            }
+
+            return null;
+        }
+
+        @Override
+        public TypeReferenceNode<Void> visitTypeReference(TypeReferenceContext ctx) {
+            var qualifiedIdNode = Optional.ofNullable(qualifiedIdVisitor.visitNullable(ctx.qualifiedId()));
+
+            var varNode = Optional.ofNullable(ctx.typeVar()).flatMap(tv -> {
+                return Optional.ofNullable(visitTypeVar(tv))
+                        .map(tvNode -> idNode(contextRange(ctx), tvNode.name()));
+            });
+
+            var idNode = qualifiedIdNode.or(() -> varNode).orElse(null);
+
+            return typeReferenceNode(contextRange(ctx), idNode);
+        }
+
+        @Override
+        public TypeVarNode<Void> visitTypeVar(TypeVarContext ctx) {
+            return ctx.QUESTION() == null ? forAllVarNode(contextRange(ctx), ctx.getText())
+                    : existsVarNode(contextRange(ctx), ctx.getText());
+        }
+
+    }
+
     class ExprVisitor extends Visitor<ExprContext, ExprNode<Void>> {
 
         @Override
@@ -273,7 +356,7 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public ExprNode<Void> visitIfExpr(IfExprContext ctx) {
+        public IfExprNode<Void> visitIfExpr(IfExprContext ctx) {
             var conditionNode = visitNullable(ctx.expr(0));
             var consequentNode = visitNullable(ctx.expr(1));
             var alternativeNode = visitNullable(ctx.expr(2));
@@ -281,7 +364,7 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public ExprNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
+        public LambdaExprNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
             var params = ctx.lambdaParams().lambdaParam().stream()
                     .map(param -> {
                         var token = param.ID().getSymbol();
@@ -295,7 +378,7 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public ExprNode<Void> visitMatchExpr(MatchExprContext ctx) {
+        public MatchNode<Void> visitMatchExpr(MatchExprContext ctx) {
             var scrutineeNode = visitNullable(ctx.expr());
             var cases = visitRepeated(ctx.matchCase(), matchCaseVisitor);
             return matchNode(contextRange(ctx), scrutineeNode, cases);
@@ -312,7 +395,7 @@ public class CompilationUnitParser {
             var applicableExprNode = visitNullable(ctx.applicableExpr());
 
             if (applicableExprNode != null) {
-                var args = visitRepeated(ctx.application().expr(), this);
+                var args = visitNullableRepeated(ctx.application(), ApplicationContext::expr, this);
                 return applyNode(contextRange(ctx), applicableExprNode, args);
             }
 
@@ -325,12 +408,12 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public ExprNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
+        public ReferenceNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
             return refNode(contextRange(ctx), qualifiedIdVisitor.visitNullable(ctx));
         }
 
         @Override
-        public ExprNode<Void> visitLiteral(LiteralContext ctx) {
+        public LiteralNode<Void> visitLiteral(LiteralContext ctx) {
             return literalVisitor.visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(),
                     ctx.literalInt(), ctx.literalFloat());
         }
@@ -401,7 +484,7 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public LiteralNode<Void> visitLiteralBoolean(LiteralBooleanContext ctx) {
+        public LiteralBooleanNode<Void> visitLiteralBoolean(LiteralBooleanContext ctx) {
             if (ctx.TRUE() != null) {
                 return boolNode(contextRange(ctx), true);
             }
@@ -414,14 +497,14 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public LiteralNode<Void> visitLiteralChar(LiteralCharContext ctx) {
+        public LiteralCharNode<Void> visitLiteralChar(LiteralCharContext ctx) {
             var charExpr = ctx.LITERAL_CHAR();
             var charValue = StringEscapeUtils.unescapeJava(charExpr.getText()).charAt(1);
             return charNode(contextRange(ctx), charValue);
         }
 
         @Override
-        public LiteralNode<Void> visitLiteralString(LiteralStringContext ctx) {
+        public LiteralStringNode<Void> visitLiteralString(LiteralStringContext ctx) {
             var stringExpr = ctx.LITERAL_STRING();
             var unescapedText = StringEscapeUtils.unescapeJava(stringExpr.getText());
             var stringValue = unescapedText.substring(1, unescapedText.length() - 1);
@@ -477,7 +560,7 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public PatternNode<Void> visitIdPattern(IdPatternContext ctx) {
+        public IdPatternNode<Void> visitIdPattern(IdPatternContext ctx) {
             var alias = Optional.ofNullable(ctx.patternAlias())
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);
@@ -490,7 +573,7 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public PatternNode<Void> visitLiteralPattern(LiteralPatternContext ctx) {
+        public LiteralPatternNode<Void> visitLiteralPattern(LiteralPatternContext ctx) {
             var alias = Optional.ofNullable(ctx.patternAlias())
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);
@@ -501,7 +584,7 @@ public class CompilationUnitParser {
         }
 
         @Override
-        public PatternNode<Void> visitConstructorPattern(ConstructorPatternContext ctx) {
+        public ConstructorPatternNode<Void> visitConstructorPattern(ConstructorPatternContext ctx) {
             var alias = Optional.ofNullable(ctx.patternAlias())
                     .map(PatternAliasContext::ID)
                     .map(TerminalNode::getText);

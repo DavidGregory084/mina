@@ -82,6 +82,112 @@ public class SyntaxNodes {
         return new LetDeclarationNode<>(meta, name, expr);
     }
 
+    // Types
+    public static TypeLambdaNode<Void> typeLambdaNode(
+        Range range,
+        ImmutableList<TypeVarNode<Void>> args,
+        TypeNode<Void> body
+    ) {
+        return new TypeLambdaNode<>(Meta.empty(range), args, body);
+    }
+
+    public static <A> TypeLambdaNode<A> typeLambdaNode(
+        Meta<A> meta,
+        ImmutableList<TypeVarNode<A>> args,
+        TypeNode<A> body
+    ) {
+        return new TypeLambdaNode<>(meta, args, body);
+    }
+
+    public static FunTypeNode<Void> funTypeNode(
+        Range range,
+        ImmutableList<TypeNode<Void>> argTypes,
+        TypeNode<Void> returnType
+    ) {
+        return new FunTypeNode<>(Meta.empty(range), argTypes, returnType);
+    }
+
+    public static <A> FunTypeNode<A> funTypeNode(
+        Meta<A> meta,
+        ImmutableList<TypeNode<A>> argTypes,
+        TypeNode<A> returnType
+    ) {
+        return new FunTypeNode<>(meta, argTypes, returnType);
+    }
+
+    public static TypeApplyNode<Void> typeApplyNode(
+       Range range,
+       TypeNode<Void> type,
+       ImmutableList<TypeNode<Void>> args
+    ) {
+        return new TypeApplyNode<>(Meta.empty(range), type, args);
+    }
+
+    public static <A> TypeApplyNode<A> typeApplyNode(
+       Meta<A> meta,
+       TypeNode<A> type,
+       ImmutableList<TypeNode<A>> args
+    ) {
+        return new TypeApplyNode<>(meta, type, args);
+    }
+
+    public static TypeReferenceNode<Void> typeReferenceNode(
+        Range range,
+        QualifiedIdNode<Void> id
+    ) {
+        return new TypeReferenceNode<>(Meta.empty(range), id);
+    }
+
+    public static <A> TypeReferenceNode<A> typeReferenceNode(
+        Meta<A> meta,
+        QualifiedIdNode<A> id
+    ) {
+        return new TypeReferenceNode<>(meta, id);
+    }
+
+    public static TypeReferenceNode<Void> typeReferenceNode(
+        Range range,
+        String name
+    ) {
+        var meta = Meta.empty(range);
+        return new TypeReferenceNode<>(meta, idNode(meta, name));
+    }
+
+    public static <A> TypeReferenceNode<A> typeReferenceNode(
+        Meta<A> meta,
+        String name
+    ) {
+        return new TypeReferenceNode<>(meta, idNode(meta, name));
+    }
+
+    public static UniversalTypeVarNode<Void> forAllVarNode(
+        Range range,
+        String name
+    ) {
+        return new UniversalTypeVarNode<>(Meta.empty(range), name);
+    }
+
+    public static <A> UniversalTypeVarNode<A> forAllVarNode(
+        Meta<A> meta,
+        String name
+    ) {
+        return new UniversalTypeVarNode<>(meta, name);
+    }
+
+    public static ExistentialTypeVarNode<Void> existsVarNode(
+        Range range,
+        String name
+    ) {
+        return new ExistentialTypeVarNode<>(Meta.empty(range), name);
+    }
+
+    public static <A> ExistentialTypeVarNode<A> existsVarNode(
+        Meta<A> meta,
+        String name
+    ) {
+        return new ExistentialTypeVarNode<>(meta, name);
+    }
+
     // Control structures
     public static IfExprNode<Void> ifExprNode(
             Range range,

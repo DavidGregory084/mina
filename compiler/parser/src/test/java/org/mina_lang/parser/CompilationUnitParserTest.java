@@ -184,6 +184,75 @@ public class CompilationUnitParserTest {
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting ID"));
     }
 
+    // Types
+    @Test
+    void parseIdTypeLambda() {
+        testSuccessfulParse("A => A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeLambdaNode(
+                        new Range(0, 0, 0, 6),
+                        Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
+                        typeReferenceNode(
+                                new Range(0, 5, 0, 6),
+                                idNode(new Range(0, 5, 0, 6), "A"))));
+
+    }
+
+    @Test
+    void parseParenthesizedIdTypeLambda() {
+        testSuccessfulParse("[A] => A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeLambdaNode(
+                        new Range(0, 0, 0, 8),
+                        Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
+                        typeReferenceNode(
+                                new Range(0, 7, 0, 8),
+                                idNode(new Range(0, 7, 0, 8), "A"))));
+
+    }
+
+    @Test
+    void parseMultiArgTypeLambda() {
+        testSuccessfulParse("[A, B] => A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeLambdaNode(
+                        new Range(0, 0, 0, 11),
+                        Lists.immutable.of(
+                            forAllVarNode(new Range(0, 1, 0, 2), "A"),
+                            forAllVarNode(new Range(0, 4, 0, 5), "B")),
+                        typeReferenceNode(
+                                new Range(0, 10, 0, 11),
+                                idNode(new Range(0, 10, 0, 11), "A"))));
+
+    }
+
+    @Test
+    void parseExistsIdTypeLambda() {
+        testSuccessfulParse("?A => ?A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeLambdaNode(
+                        new Range(0, 0, 0, 8),
+                        Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "?A")),
+                        typeReferenceNode(
+                                new Range(0, 6, 0, 8),
+                                idNode(new Range(0, 6, 0, 8), "?A"))));
+    }
+
+    @Test
+    void parseTypeLambdaMissingBody() {
+        var errors = testFailedParse("A =>", CompilationUnitParser::getTypeVisitor, MinaParser::type);
+        assertThat(errors, hasSize(1));
+        assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
+    }
+
+    @Test
+    void parseIdFunType() {
+        testSuccessfulParse("A -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                funTypeNode(
+                        new Range(0, 0, 0, 6),
+                        Lists.immutable.of(typeReferenceNode(new Range(0, 0, 0, 1), "A")),
+                        typeReferenceNode(
+                                new Range(0, 5, 0, 6),
+                                idNode(new Range(0, 5, 0, 6), "A"))));
+
+    }
+
     // Lambda expressions
     @Test
     void parseNullaryLambda() {
