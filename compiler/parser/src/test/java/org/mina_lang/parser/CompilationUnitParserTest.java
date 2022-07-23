@@ -95,7 +95,7 @@ public class CompilationUnitParserTest {
     void parseModuleHeaderMissingName() {
         var errors = testFailedParse("module {}");
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("mismatched input '{' expecting ID"));
+        assertThat(errors.get(0), startsWith("missing ID at '{'"));
     }
 
     @Test
@@ -210,13 +210,26 @@ public class CompilationUnitParserTest {
     }
 
     @Test
+    void parseTypeLambdaWithGroupingParens() {
+        testSuccessfulParse("[B => [A => A]]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeLambdaNode(
+                        new Range(0, 1, 0, 14),
+                        Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "B")),
+                        typeLambdaNode(
+                                new Range(0, 7, 0, 13), Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
+                                typeReferenceNode(
+                                        new Range(0, 12, 0, 13),
+                                        idNode(new Range(0, 12, 0, 13), "A")))));
+    }
+
+    @Test
     void parseMultiArgTypeLambda() {
         testSuccessfulParse("[A, B] => A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
                 typeLambdaNode(
                         new Range(0, 0, 0, 11),
                         Lists.immutable.of(
-                            forAllVarNode(new Range(0, 1, 0, 2), "A"),
-                            forAllVarNode(new Range(0, 4, 0, 5), "B")),
+                                forAllVarNode(new Range(0, 1, 0, 2), "A"),
+                                forAllVarNode(new Range(0, 4, 0, 5), "B")),
                         typeReferenceNode(
                                 new Range(0, 10, 0, 11),
                                 idNode(new Range(0, 10, 0, 11), "A"))));
@@ -251,6 +264,142 @@ public class CompilationUnitParserTest {
                                 new Range(0, 5, 0, 6),
                                 idNode(new Range(0, 5, 0, 6), "A"))));
 
+    }
+
+    @Test
+    void parseParenthesizedIdFunType() {
+        testSuccessfulParse("(A) -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                funTypeNode(
+                        new Range(0, 0, 0, 8),
+                        Lists.immutable.of(typeReferenceNode(new Range(0, 1, 0, 2), "A")),
+                        typeReferenceNode(
+                                new Range(0, 7, 0, 8),
+                                idNode(new Range(0, 7, 0, 8), "A"))));
+
+    }
+
+    @Test
+    void parseNullaryFunType() {
+        testSuccessfulParse("() -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                funTypeNode(
+                        new Range(0, 0, 0, 7),
+                        Lists.immutable.empty(),
+                        typeReferenceNode(
+                                new Range(0, 6, 0, 7),
+                                idNode(new Range(0, 6, 0, 7), "A"))));
+
+    }
+
+    @Test
+    void parseMultiArgFunType() {
+        testSuccessfulParse("(A, B) -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                funTypeNode(
+                        new Range(0, 0, 0, 11),
+                        Lists.immutable.of(
+                                typeReferenceNode(new Range(0, 1, 0, 2), "A"),
+                                typeReferenceNode(new Range(0, 4, 0, 5), "B")),
+                        typeReferenceNode(
+                                new Range(0, 10, 0, 11),
+                                idNode(new Range(0, 10, 0, 11), "A"))));
+
+    }
+
+    @Test
+    void parseFunTypeMissingReturnType() {
+        var errors = testFailedParse("let foo: A -> = bar", CompilationUnitParser::getDeclarationVisitor,
+                MinaParser::declaration);
+        assertThat(errors, hasSize(2));
+        assertThat(errors.get(0), startsWith("extraneous input '='"));
+        assertThat(errors.get(1), startsWith("mismatched input '<EOF>'"));
+    }
+
+    @Test
+    void parseUnaryTypeApplication() {
+        testSuccessfulParse("List[Int]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeApplyNode(
+                        new Range(0, 0, 0, 9),
+                        typeReferenceNode(new Range(0, 0, 0, 4), idNode(new Range(0, 0, 0, 4), "List")),
+                        Lists.immutable
+                                .of(typeReferenceNode(new Range(0, 5, 0, 8), idNode(new Range(0, 5, 0, 8), "Int")))));
+
+    }
+
+    @Test
+    void parseBinaryTypeApplication() {
+        testSuccessfulParse("Either[Error, String]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeApplyNode(
+                        new Range(0, 0, 0, 21),
+                        typeReferenceNode(new Range(0, 0, 0, 6), idNode(new Range(0, 0, 0, 6), "Either")),
+                        Lists.immutable.of(
+                                typeReferenceNode(new Range(0, 7, 0, 12), idNode(new Range(0, 7, 0, 12), "Error")),
+                                typeReferenceNode(new Range(0, 14, 0, 20),
+                                        idNode(new Range(0, 14, 0, 20), "String")))));
+
+    }
+
+    @Test
+    void parseWildcardTypeApplication() {
+        testSuccessfulParse("List[?]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+                typeApplyNode(
+                        new Range(0, 0, 0, 7),
+                        typeReferenceNode(new Range(0, 0, 0, 4), idNode(new Range(0, 0, 0, 4), "List")),
+                        Lists.immutable
+                                .of(typeReferenceNode(new Range(0, 5, 0, 6), idNode(new Range(0, 5, 0, 6), "?")))));
+
+    }
+
+    // Declarations
+    @Test
+    void parseLetDeclaration() {
+        testSuccessfulParse("let x = y", CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+                letDeclarationNode(
+                        new Range(0, 0, 0, 9),
+                        "x",
+                        refNode(new Range(0, 8, 0, 9), idNode(new Range(0, 8, 0, 9), "y"))));
+    }
+
+    @Test
+    void parseLetDeclarationWithTypeAnnotation() {
+        testSuccessfulParse("let x: Int = y", CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+                letDeclarationNode(
+                        new Range(0, 0, 0, 14),
+                        "x",
+                        Optional.of(typeReferenceNode(new Range(0, 7, 0, 10), idNode(new Range(0, 7, 0, 10), "Int"))),
+                        refNode(new Range(0, 13, 0, 14), idNode(new Range(0, 13, 0, 14), "y"))));
+    }
+
+    @Test
+    void parseEmptyDataDeclaration() {
+        testSuccessfulParse("data Void[A] {}", CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+                dataDeclarationNode(
+                        new Range(0, 0, 0, 15),
+                        "Void",
+                        Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
+                        Lists.immutable.empty()));
+    }
+
+    @Test
+    void parseListDataDeclaration() {
+        testSuccessfulParse("data List[A] { case Cons(head: A, tail: List[A]) case Nil() }",
+                CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+                dataDeclarationNode(
+                        new Range(0, 0, 0, 61),
+                        "List",
+                        Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
+                        Lists.immutable.of(
+                                constructorNode(
+                                        new Range(0, 15, 0, 48), "Cons",
+                                        Lists.immutable.of(
+                                                constructorParamNode(new Range(0, 25, 0, 32), "head",
+                                                        typeReferenceNode(new Range(0, 31, 0, 32), "A")),
+                                                constructorParamNode(new Range(0, 34, 0, 47), "tail",
+                                                        typeApplyNode(new Range(0, 40, 0, 47),
+                                                                typeReferenceNode(new Range(0, 40, 0, 44), "List"),
+                                                                Lists.immutable.of(typeReferenceNode(
+                                                                        new Range(0, 45, 0, 46), "A"))))),
+                                        Optional.empty()),
+                                constructorNode(
+                                        new Range(0, 49, 0, 59), "Nil", Lists.immutable.empty(), Optional.empty()))));
     }
 
     // Lambda expressions
@@ -884,7 +1033,7 @@ public class CompilationUnitParserTest {
     void parsePackageOnly() {
         var errors = testFailedParse("Mina/Test/Parser", CompilationUnitParser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting '.'"));
+        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting {'/', '.'}"));
     }
 
     @Test

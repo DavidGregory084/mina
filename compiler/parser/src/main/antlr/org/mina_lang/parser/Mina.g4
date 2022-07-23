@@ -19,7 +19,7 @@ importSelector:
 	moduleId (DOT ID)?
 	| moduleId DOT LBRACE importSymbols RBRACE;
 
-importSymbols: (ID COMMA)* ID;
+importSymbols: ID (COMMA ID)*;
 
 // Declarations
 declaration: dataDeclaration | letDeclaration;
@@ -30,9 +30,11 @@ dataDeclaration:
 letDeclaration: LET ID typeAnnotation? EQ expr;
 
 // Data constructors
-dataConstructor: CASE ID (LPAREN constructorParams RPAREN)?;
+dataConstructor: CASE ID constructorParams typeAnnotation?;
 
-constructorParams: (constructorParam COMMA)* constructorParam;
+constructorParams:
+	LPAREN RPAREN
+	| LPAREN constructorParam (COMMA constructorParam)* RPAREN;
 
 constructorParam: ID typeAnnotation;
 
@@ -41,16 +43,13 @@ typeAnnotation: COLON type;
 
 type: typeLambda | funType | applicableType;
 
-typeLambda: typeParams FATARROW type;
+typeLambda: (typeVar | typeParams) FATARROW type;
 
-typeParams: typeVar | LSQUARE (typeVar COMMA)* typeVar RSQUARE;
+typeParams: LSQUARE typeVar (COMMA typeVar)* RSQUARE;
 
-funType: funTypeParams ARROW type;
+funType: (applicableType | funTypeParams) ARROW type;
 
-funTypeParams:
-	applicableType
-	| LPAREN RPAREN
-	| LPAREN (type COMMA)* type RPAREN;
+funTypeParams: LPAREN RPAREN | LPAREN type (COMMA type)* RPAREN;
 
 applicableType:
 	parenType
@@ -58,13 +57,13 @@ applicableType:
 	| applicableType typeApplication;
 
 typeApplication:
-	LSQUARE (typeReference COMMA)* typeReference RSQUARE;
+	LSQUARE typeReference (COMMA typeReference)* RSQUARE;
 
 parenType: LSQUARE type RSQUARE;
 
 typeReference: qualifiedId | typeVar;
 
-typeVar: QUESTION? ID;
+typeVar: QUESTION? ID | QUESTION;
 
 // Expressions
 expr:
@@ -76,12 +75,11 @@ expr:
 
 ifExpr: IF expr THEN expr ELSE expr;
 
-lambdaExpr: lambdaParams ARROW expr;
+lambdaExpr: (ID | lambdaParams) ARROW expr;
 
 lambdaParams:
-	lambdaParam
-	| LPAREN RPAREN
-	| LPAREN (lambdaParam COMMA)* lambdaParam RPAREN;
+	LPAREN RPAREN
+	| LPAREN lambdaParam (COMMA lambdaParam)* RPAREN;
 
 lambdaParam: ID typeAnnotation?;
 
@@ -98,7 +96,7 @@ literalPattern: patternAlias? literal;
 constructorPattern:
 	patternAlias? qualifiedId LBRACE fieldPatterns? RBRACE;
 
-fieldPatterns: (fieldPattern COMMA)* fieldPattern;
+fieldPatterns: fieldPattern (COMMA fieldPattern)*;
 
 fieldPattern: ID (COLON pattern)?;
 
@@ -109,7 +107,7 @@ applicableExpr:
 	| qualifiedId
 	| applicableExpr application;
 
-application: LPAREN RPAREN | LPAREN (expr COMMA)* expr RPAREN;
+application: LPAREN RPAREN | LPAREN expr (COMMA expr)* RPAREN;
 
 parenExpr: LPAREN expr RPAREN;
 
@@ -128,7 +126,7 @@ literalChar: LITERAL_CHAR;
 literalString: LITERAL_STRING;
 
 // Identifiers
-moduleId: (ID RSLASH)* ID;
+moduleId: ID (RSLASH ID)*;
 qualifiedId: (moduleId DOT)? ID;
 
 WHITESPACE: WS+ -> skip;

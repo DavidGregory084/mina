@@ -29,8 +29,11 @@ public class CompilationUnitParser {
     private ModuleVisitor moduleVisitor = new ModuleVisitor();
     private ImportVisitor importVisitor = new ImportVisitor();
     private DeclarationVisitor declarationVisitor = new DeclarationVisitor();
+    private ConstructorVisitor constructorVisitor = new ConstructorVisitor();
+    private ConstructorParamVisitor constructorParamVisitor = new ConstructorParamVisitor();
     private TypeVisitor typeVisitor = new TypeVisitor();
     private ExprVisitor exprVisitor = new ExprVisitor();
+    private ParamVisitor paramVisitor = new ParamVisitor();
     private LiteralVisitor literalVisitor = new LiteralVisitor();
     private MatchCaseVisitor matchCaseVisitor = new MatchCaseVisitor();
     private PatternVisitor patternVisitor = new PatternVisitor();
@@ -57,12 +60,24 @@ public class CompilationUnitParser {
         return declarationVisitor;
     }
 
+    public ConstructorVisitor getConstructorVisitor() {
+        return constructorVisitor;
+    }
+
+    public ConstructorParamVisitor getConstructorParamVisitor() {
+        return constructorParamVisitor;
+    }
+
     public TypeVisitor getTypeVisitor() {
         return typeVisitor;
     }
 
     public ExprVisitor getExprVisitor() {
         return exprVisitor;
+    }
+
+    public ParamVisitor getParamVisitor() {
+        return paramVisitor;
     }
 
     public LiteralVisitor getLiteralVisitor() {
@@ -152,6 +167,15 @@ public class CompilationUnitParser {
             return context == null ? Lists.immutable.<E>empty()
                     : rule.apply(context).stream()
                             .map(ctx -> visitor.visit(ctx))
+                            .collect(Collectors2.toImmutableList());
+        }
+
+        public <C extends ParserRuleContext, D extends ParserRuleContext, E> ImmutableList<E> visitNullableRepeated(
+                C context, Function<C, List<D>> rule,
+                Function<D, E> visitorMethod) {
+            return context == null ? Lists.immutable.<E>empty()
+                    : rule.apply(context).stream()
+                            .map(ctx -> visitorMethod.apply(ctx))
                             .collect(Collectors2.toImmutableList());
         }
 
@@ -253,19 +277,51 @@ public class CompilationUnitParser {
         @Override
         public DataDeclarationNode<Void> visitDataDeclaration(DataDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            return dataDeclarationNode(contextRange(ctx), name);
+            var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar,
+                    typeVisitor::visitTypeVar);
+            var constructors = visitRepeated(ctx.dataConstructor(), constructorVisitor);
+            return dataDeclarationNode(contextRange(ctx), name, typeParams, constructors);
         }
 
         @Override
         public LetDeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var expr = exprVisitor.visitNullable(ctx.expr());
-            return letDeclarationNode(contextRange(ctx), name, expr);
+            var type = Optional.ofNullable(ctx.typeAnnotation()).map(typeVisitor::visitNullable);
+            return letDeclarationNode(contextRange(ctx), name, type, expr);
         }
 
         @Override
         public DeclarationNode<Void> visitDeclaration(DeclarationContext ctx) {
             return visitAlternatives(ctx.dataDeclaration(), ctx.letDeclaration());
+        }
+    }
+
+    class ConstructorVisitor extends Visitor<DataConstructorContext, ConstructorNode<Void>> {
+
+        @Override
+        public ConstructorNode<Void> visitDataConstructor(DataConstructorContext ctx) {
+            var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
+            var params = visitNullableRepeated(ctx.constructorParams(), ConstructorParamsContext::constructorParam,
+                    constructorParamVisitor::visitConstructorParam);
+            var type = Optional.ofNullable(ctx.typeAnnotation())
+                    .map(TypeAnnotationContext::type)
+                    .map(typeVisitor::visitNullable);
+            return constructorNode(contextRange(ctx), name, params, type);
+        }
+    }
+
+    class ConstructorParamVisitor extends Visitor<ConstructorParamContext, ConstructorParamNode<Void>> {
+
+        @Override
+        public ConstructorParamNode<Void> visitConstructorParam(ConstructorParamContext ctx) {
+            var id = Optional.ofNullable(ctx.ID());
+            var name = id.map(TerminalNode::getText).orElse(null);
+            var type = Optional.ofNullable(ctx.typeAnnotation())
+                    .map(TypeAnnotationContext::type)
+                    .map(typeVisitor::visitNullable)
+                    .orElse(null);
+            return constructorParamNode(contextRange(ctx), name, type);
         }
     }
 
@@ -278,22 +334,22 @@ public class CompilationUnitParser {
 
         @Override
         public TypeLambdaNode<Void> visitTypeLambda(TypeLambdaContext ctx) {
-            var params = ctx.typeParams().typeVar().stream()
-                    .map(param -> visitTypeVar(param))
-                    .collect(Collectors2.toImmutableList());
+            var singleParam = Optional.ofNullable(ctx.typeVar())
+                    .map(this::visitTypeVar)
+                    .map(Lists.immutable::of);
+
+            var typeParams = singleParam.orElse(
+                    visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar, this::visitTypeVar));
 
             var bodyNode = visitNullable(ctx.type());
 
-            return typeLambdaNode(contextRange(ctx), params, bodyNode);
+            return typeLambdaNode(contextRange(ctx), typeParams, bodyNode);
         }
 
         @Override
         public FunTypeNode<Void> visitFunType(FunTypeContext ctx) {
-            var funTypeParams = Optional.ofNullable(ctx.funTypeParams());
-
-            var paramTypeNode = funTypeParams
-                    .map(FunTypeParamsContext::applicableType)
-                    .map(this::visitNullable)
+            var paramTypeNode = Optional.ofNullable(ctx.applicableType())
+                    .map(this::visitApplicableType)
                     .map(Lists.immutable::of);
 
             var paramTypeNodes = paramTypeNode.orElse(
@@ -326,12 +382,17 @@ public class CompilationUnitParser {
         }
 
         @Override
+        public TypeNode<Void> visitParenType(ParenTypeContext ctx) {
+            return visitNullable(ctx.type());
+        }
+
+        @Override
         public TypeReferenceNode<Void> visitTypeReference(TypeReferenceContext ctx) {
             var qualifiedIdNode = Optional.ofNullable(qualifiedIdVisitor.visitNullable(ctx.qualifiedId()));
 
             var varNode = Optional.ofNullable(ctx.typeVar()).flatMap(tv -> {
                 return Optional.ofNullable(visitTypeVar(tv))
-                        .map(tvNode -> idNode(contextRange(ctx), tvNode.name()));
+                        .map(tvNode -> idNode(contextRange(tv), tvNode.name()));
             });
 
             var idNode = qualifiedIdNode.or(() -> varNode).orElse(null);
@@ -344,7 +405,6 @@ public class CompilationUnitParser {
             return ctx.QUESTION() == null ? forAllVarNode(contextRange(ctx), ctx.getText())
                     : existsVarNode(contextRange(ctx), ctx.getText());
         }
-
     }
 
     class ExprVisitor extends Visitor<ExprContext, ExprNode<Void>> {
@@ -365,12 +425,16 @@ public class CompilationUnitParser {
 
         @Override
         public LambdaExprNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
-            var params = ctx.lambdaParams().lambdaParam().stream()
-                    .map(param -> {
-                        var token = param.ID().getSymbol();
-                        return paramNode(tokenRange(token), param.getText());
+            var singleParam = Optional.ofNullable(ctx.ID())
+                    .map(id -> {
+                        var token = id.getSymbol();
+                        return paramNode(tokenRange(token), id.getText(), Optional.empty());
                     })
-                    .collect(Collectors2.toImmutableList());
+                    .map(Lists.immutable::of);
+
+            var params = singleParam.orElse(
+                    visitNullableRepeated(ctx.lambdaParams(), LambdaParamsContext::lambdaParam,
+                            paramVisitor::visitLambdaParam));
 
             var bodyNode = visitNullable(ctx.expr());
 
@@ -404,7 +468,7 @@ public class CompilationUnitParser {
 
         @Override
         public ExprNode<Void> visitParenExpr(ParenExprContext ctx) {
-            return visit(ctx.expr());
+            return visitNullable(ctx.expr());
         }
 
         @Override
@@ -416,6 +480,19 @@ public class CompilationUnitParser {
         public LiteralNode<Void> visitLiteral(LiteralContext ctx) {
             return literalVisitor.visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(),
                     ctx.literalInt(), ctx.literalFloat());
+        }
+    }
+
+    class ParamVisitor extends Visitor<LambdaParamContext, ParamNode<Void>> {
+
+        @Override
+        public ParamNode<Void> visitLambdaParam(LambdaParamContext ctx) {
+            var id = Optional.ofNullable(ctx.ID());
+            var name = id.map(TerminalNode::getText).orElse(null);
+            var token = id.map(TerminalNode::getSymbol).map(CompilationUnitParser::tokenRange).orElse(null);
+            var type = Optional.ofNullable(ctx.typeAnnotation()).map(TypeAnnotationContext::type)
+                    .map(typeVisitor::visitNullable);
+            return paramNode(token, name, type);
         }
     }
 

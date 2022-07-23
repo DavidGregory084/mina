@@ -64,22 +64,83 @@ public class SyntaxNodes {
     // Top level declarations
     public static DataDeclarationNode<Void> dataDeclarationNode(
             Range range,
-            String name) {
-        return new DataDeclarationNode<>(Meta.empty(range), name);
+            String name,
+            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<ConstructorNode<Void>> constructors) {
+        return new DataDeclarationNode<>(Meta.empty(range), name, typeParams, constructors);
+    }
+
+    public static <A> DataDeclarationNode<A> dataDeclarationNode(
+            Meta<A> meta,
+            String name,
+            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<ConstructorNode<A>> constructors) {
+        return new DataDeclarationNode<>(meta, name, typeParams, constructors);
+    }
+
+    public static LetDeclarationNode<Void> letDeclarationNode(
+            Range range,
+            String name,
+            Optional<TypeNode<Void>> type,
+            ExprNode<Void> expr) {
+        return new LetDeclarationNode<>(Meta.empty(range), name, type, expr);
+    }
+
+    public static <A> LetDeclarationNode<A> letDeclarationNode(
+            Meta<A> meta,
+            String name,
+            Optional<TypeNode<Void>> type,
+            ExprNode<A> expr) {
+        return new LetDeclarationNode<>(meta, name, type, expr);
     }
 
     public static LetDeclarationNode<Void> letDeclarationNode(
             Range range,
             String name,
             ExprNode<Void> expr) {
-        return new LetDeclarationNode<>(Meta.empty(range), name, expr);
+        return new LetDeclarationNode<>(Meta.empty(range), name, Optional.empty(), expr);
     }
 
     public static <A> LetDeclarationNode<A> letDeclarationNode(
             Meta<A> meta,
             String name,
             ExprNode<A> expr) {
-        return new LetDeclarationNode<>(meta, name, expr);
+        return new LetDeclarationNode<>(meta, name, Optional.empty(), expr);
+    }
+
+    // Data constructors
+    public static ConstructorNode<Void> constructorNode(
+        Range range,
+        String name,
+        ImmutableList<ConstructorParamNode<Void>> params,
+        Optional<TypeNode<Void>> type
+    ) {
+        return new ConstructorNode<>(Meta.empty(range), name, params, type);
+    }
+
+    public static <A> ConstructorNode<A> constructorNode(
+        Meta<A> meta,
+        String name,
+        ImmutableList<ConstructorParamNode<A>> params,
+        Optional<TypeNode<Void>> type
+    ) {
+        return new ConstructorNode<>(meta, name, params, type);
+    }
+
+    public static ConstructorParamNode<Void> constructorParamNode(
+        Range range,
+        String name,
+        TypeNode<Void> type
+    ) {
+        return new ConstructorParamNode<>(Meta.empty(range), name, type);
+    }
+
+    public static <A> ConstructorParamNode<A> constructorParamNode(
+        Meta<A> meta,
+        String name,
+        TypeNode<Void> type
+    ) {
+        return new ConstructorParamNode<>(meta, name, type);
     }
 
     // Types
@@ -160,32 +221,32 @@ public class SyntaxNodes {
         return new TypeReferenceNode<>(meta, idNode(meta, name));
     }
 
-    public static UniversalTypeVarNode<Void> forAllVarNode(
+    public static ForAllVarNode<Void> forAllVarNode(
         Range range,
         String name
     ) {
-        return new UniversalTypeVarNode<>(Meta.empty(range), name);
+        return new ForAllVarNode<>(Meta.empty(range), name);
     }
 
-    public static <A> UniversalTypeVarNode<A> forAllVarNode(
+    public static <A> ForAllVarNode<A> forAllVarNode(
         Meta<A> meta,
         String name
     ) {
-        return new UniversalTypeVarNode<>(meta, name);
+        return new ForAllVarNode<>(meta, name);
     }
 
-    public static ExistentialTypeVarNode<Void> existsVarNode(
+    public static ExistsVarNode<Void> existsVarNode(
         Range range,
         String name
     ) {
-        return new ExistentialTypeVarNode<>(Meta.empty(range), name);
+        return new ExistsVarNode<>(Meta.empty(range), name);
     }
 
-    public static <A> ExistentialTypeVarNode<A> existsVarNode(
+    public static <A> ExistsVarNode<A> existsVarNode(
         Meta<A> meta,
         String name
     ) {
-        return new ExistentialTypeVarNode<>(meta, name);
+        return new ExistsVarNode<>(meta, name);
     }
 
     // Control structures
@@ -450,13 +511,27 @@ public class SyntaxNodes {
     public static ParamNode<Void> paramNode(
             Range range,
             String name) {
-        return new ParamNode<>(Meta.empty(range), name);
+        return new ParamNode<>(Meta.empty(range), name, Optional.empty());
     }
 
     public static <A> ParamNode<A> paramNode(
             Meta<A> meta,
             String name) {
-        return new ParamNode<>(meta, name);
+        return new ParamNode<>(meta, name, Optional.empty());
+    }
+
+    public static ParamNode<Void> paramNode(
+            Range range,
+            String name,
+            Optional<TypeNode<Void>> type) {
+        return new ParamNode<>(Meta.empty(range), name, type);
+    }
+
+    public static <A> ParamNode<A> paramNode(
+            Meta<A> meta,
+            String name,
+            Optional<TypeNode<Void>> type) {
+        return new ParamNode<>(meta, name, type);
     }
 
     public static QualifiedIdNode<Void> idNode(

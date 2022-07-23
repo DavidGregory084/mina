@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
-public record ParamNode<A>(Meta<A> meta, String name) implements SyntaxNode<A> {
+import java.util.Optional;
+
+public record ParamNode<A>(Meta<A> meta, String name, Optional<TypeNode<Void>> typeAnnotation) implements SyntaxNode<A> {
 
 }

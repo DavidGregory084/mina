@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
-public record DataDeclarationNode<A>(Meta<A> meta, String name) implements DeclarationNode<A> {
+import org.eclipse.collections.api.list.ImmutableList;
+
+public record DataDeclarationNode<A>(Meta<A> meta, String name, ImmutableList<TypeVarNode<Void>> typeParams, ImmutableList<ConstructorNode<A>> constructors) implements DeclarationNode<A> {
 
 }
