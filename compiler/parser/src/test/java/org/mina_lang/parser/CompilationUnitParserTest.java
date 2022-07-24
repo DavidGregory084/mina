@@ -387,19 +387,57 @@ public class CompilationUnitParserTest {
                         "List",
                         Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
                         Lists.immutable.of(
+                                // Cons
                                 constructorNode(
                                         new Range(0, 15, 0, 48), "Cons",
                                         Lists.immutable.of(
+                                                // head: A
                                                 constructorParamNode(new Range(0, 25, 0, 32), "head",
                                                         typeReferenceNode(new Range(0, 31, 0, 32), "A")),
+                                                // tail: List[A]
                                                 constructorParamNode(new Range(0, 34, 0, 47), "tail",
                                                         typeApplyNode(new Range(0, 40, 0, 47),
                                                                 typeReferenceNode(new Range(0, 40, 0, 44), "List"),
                                                                 Lists.immutable.of(typeReferenceNode(
                                                                         new Range(0, 45, 0, 46), "A"))))),
                                         Optional.empty()),
+                                // Nil
                                 constructorNode(
                                         new Range(0, 49, 0, 59), "Nil", Lists.immutable.empty(), Optional.empty()))));
+    }
+
+    @Test
+    void parseGadtDeclaration() {
+        testSuccessfulParse("""
+                data Expr[A] {
+                    case Int(i: Int): Expr[Int]
+                    case Bool(b: Boolean): Expr[Boolean]
+                }
+                """, CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+                dataDeclarationNode(
+                        new Range(0, 0, 3, 1),
+                        "Expr",
+                        Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
+                        Lists.immutable.of(
+                                // Int
+                                constructorNode(new Range(1, 4, 1, 31), "Int",
+                                        // i: Int
+                                        Lists.immutable.of(constructorParamNode(new Range(1, 13, 1, 19), "i",
+                                                typeReferenceNode(new Range(1, 16, 1, 19), "Int"))),
+                                        // : Expr[Int]
+                                        Optional.of(typeApplyNode(new Range(1, 22, 1, 31),
+                                                typeReferenceNode(new Range(1, 22, 1, 26), "Expr"), Lists.immutable
+                                                        .of(typeReferenceNode(new Range(1, 27, 1, 30), "Int"))))),
+                                // Bool
+                                constructorNode(new Range(2, 4, 2, 40), "Bool",
+                                        // i: Int
+                                        Lists.immutable.of(constructorParamNode(new Range(2, 14, 2, 24), "b",
+                                                typeReferenceNode(new Range(2, 17, 2, 24), "Boolean"))),
+                                        // : Expr[Int]
+                                        Optional.of(typeApplyNode(new Range(2, 27, 2, 40),
+                                                typeReferenceNode(new Range(2, 27, 2, 31), "Expr"), Lists.immutable
+                                                        .of(typeReferenceNode(new Range(2, 32, 2, 39),
+                                                                "Boolean"))))))));
     }
 
     // Lambda expressions
@@ -431,6 +469,16 @@ public class CompilationUnitParserTest {
     }
 
     @Test
+    void parseAnnotatedIdentityLambda() {
+        testSuccessfulParse("(a: Int) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                lambdaExprNode(
+                        new Range(0, 0, 0, 13),
+                        Lists.immutable.of(paramNode(new Range(0, 1, 0, 7), "a",
+                                Optional.of(typeReferenceNode(new Range(0, 4, 0, 7), "Int")))),
+                        refNode(new Range(0, 12, 0, 13), "a")));
+    }
+
+    @Test
     void parseMultiArgLambda() {
         testSuccessfulParse("(a, b) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
@@ -439,6 +487,19 @@ public class CompilationUnitParserTest {
                                 paramNode(new Range(0, 1, 0, 2), "a"),
                                 paramNode(new Range(0, 4, 0, 5), "b")),
                         refNode(new Range(0, 10, 0, 11), "a")));
+    }
+
+    @Test
+    void parseAnnotatedMultiArgLambda() {
+        testSuccessfulParse("(a: Int, b: Boolean) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                lambdaExprNode(
+                        new Range(0, 0, 0, 25),
+                        Lists.immutable.of(
+                                paramNode(new Range(0, 1, 0, 7), "a",
+                                        Optional.of(typeReferenceNode(new Range(0, 4, 0, 7), "Int"))),
+                                paramNode(new Range(0, 9, 0, 19), "b",
+                                        Optional.of(typeReferenceNode(new Range(0, 12, 0, 19), "Boolean")))),
+                        refNode(new Range(0, 24, 0, 25), "a")));
     }
 
     @Test

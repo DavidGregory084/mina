@@ -489,10 +489,10 @@ public class CompilationUnitParser {
         public ParamNode<Void> visitLambdaParam(LambdaParamContext ctx) {
             var id = Optional.ofNullable(ctx.ID());
             var name = id.map(TerminalNode::getText).orElse(null);
-            var token = id.map(TerminalNode::getSymbol).map(CompilationUnitParser::tokenRange).orElse(null);
-            var type = Optional.ofNullable(ctx.typeAnnotation()).map(TypeAnnotationContext::type)
+            var type = Optional.ofNullable(ctx.typeAnnotation())
+                    .map(TypeAnnotationContext::type)
                     .map(typeVisitor::visitNullable);
-            return paramNode(token, name, type);
+            return paramNode(contextRange(ctx), name, type);
         }
     }
 
