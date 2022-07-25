@@ -254,16 +254,26 @@ public class CompilationUnitParser {
         }
 
         @Override
+        public LetFnDeclarationNode<Void> visitLetFnDeclaration(LetFnDeclarationContext ctx) {
+            var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
+            var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar, typeVisitor::visitTypeVar);
+            var valueParams = visitNullableRepeated(ctx.lambdaParams(), LambdaParamsContext::lambdaParam, paramVisitor::visitLambdaParam);
+            var expr = exprVisitor.visitNullable(ctx.expr());
+            var type = typeVisitor.visitNullable(ctx.typeAnnotation());
+            return letFnDeclarationNode(contextRange(ctx), name, typeParams, valueParams, type, expr);
+        }
+
+        @Override
         public LetDeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var expr = exprVisitor.visitNullable(ctx.expr());
-            var type = Optional.ofNullable(ctx.typeAnnotation()).map(typeVisitor::visitNullable);
+            var type = typeVisitor.visitNullable(ctx.typeAnnotation());
             return letDeclarationNode(contextRange(ctx), name, type, expr);
         }
 
         @Override
         public DeclarationNode<Void> visitDeclaration(DeclarationContext ctx) {
-            return visitAlternatives(ctx.dataDeclaration(), ctx.letDeclaration());
+            return visitAlternatives(ctx.dataDeclaration(), ctx.letFnDeclaration(), ctx.letDeclaration());
         }
     }
 
@@ -405,7 +415,7 @@ public class CompilationUnitParser {
             var singleParam = Optional.ofNullable(ctx.ID())
                     .map(id -> {
                         var token = id.getSymbol();
-                        return paramNode(tokenRange(token), id.getText(), Optional.empty());
+                        return paramNode(tokenRange(token), id.getText());
                     })
                     .map(Lists.immutable::of);
 
@@ -466,9 +476,7 @@ public class CompilationUnitParser {
         public ParamNode<Void> visitLambdaParam(LambdaParamContext ctx) {
             var id = Optional.ofNullable(ctx.ID());
             var name = id.map(TerminalNode::getText).orElse(null);
-            var type = Optional.ofNullable(ctx.typeAnnotation())
-                    .map(TypeAnnotationContext::type)
-                    .map(typeVisitor::visitNullable);
+            var type = typeVisitor.visitNullable(ctx.typeAnnotation());
             return paramNode(contextRange(ctx), name, type);
         }
     }

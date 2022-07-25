@@ -20,10 +20,12 @@ importSelector:
 	| moduleId DOT LBRACE symbols += ID (COMMA symbols += ID)* RBRACE;
 
 // Declarations
-declaration: dataDeclaration | letDeclaration;
+declaration: dataDeclaration | letFnDeclaration | letDeclaration;
 
 dataDeclaration:
 	DATA ID typeParams? LBRACE dataConstructor* RBRACE;
+
+letFnDeclaration: LET ID typeParams? lambdaParams typeAnnotation? EQ expr;
 
 letDeclaration: LET ID typeAnnotation? EQ expr;
 

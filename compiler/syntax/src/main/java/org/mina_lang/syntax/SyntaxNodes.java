@@ -73,20 +73,92 @@ public class SyntaxNodes {
         return new DataDeclarationNode<>(meta, name, typeParams, constructors);
     }
 
+    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+            Range range,
+            String name,
+            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<ParamNode<Void>> valueParams,
+            TypeNode<Void> returnType,
+            ExprNode<Void> expr) {
+        return new LetFnDeclarationNode<>(Meta.empty(range), name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
+    }
+
+    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+            Meta<A> meta,
+            String name,
+            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<ParamNode<A>> valueParams,
+            TypeNode<Void> returnType,
+            ExprNode<A> expr) {
+        return new LetFnDeclarationNode<>(meta, name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
+    }
+
+    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+            Range range,
+            String name,
+            ImmutableList<ParamNode<Void>> valueParams,
+            TypeNode<Void> returnType,
+            ExprNode<Void> expr) {
+        return new LetFnDeclarationNode<>(Meta.empty(range), name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
+    }
+
+    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+            Meta<A> meta,
+            String name,
+            ImmutableList<ParamNode<A>> valueParams,
+            TypeNode<Void> returnType,
+            ExprNode<A> expr) {
+        return new LetFnDeclarationNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
+    }
+
+    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+            Range range,
+            String name,
+            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<ParamNode<Void>> valueParams,
+            ExprNode<Void> expr) {
+        return new LetFnDeclarationNode<>(Meta.empty(range), name, typeParams, valueParams, Optional.empty(), expr);
+    }
+
+    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+            Meta<A> meta,
+            String name,
+            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<ParamNode<A>> valueParams,
+            ExprNode<A> expr) {
+        return new LetFnDeclarationNode<>(meta, name, typeParams, valueParams, Optional.empty(), expr);
+    }
+
+    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+            Range range,
+            String name,
+            ImmutableList<ParamNode<Void>> valueParams,
+            ExprNode<Void> expr) {
+        return new LetFnDeclarationNode<>(Meta.empty(range), name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
+    }
+
+    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+            Meta<A> meta,
+            String name,
+            ImmutableList<ParamNode<A>> valueParams,
+            ExprNode<A> expr) {
+        return new LetFnDeclarationNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
+    }
+
     public static LetDeclarationNode<Void> letDeclarationNode(
             Range range,
             String name,
-            Optional<TypeNode<Void>> type,
+            TypeNode<Void> type,
             ExprNode<Void> expr) {
-        return new LetDeclarationNode<>(Meta.empty(range), name, type, expr);
+        return new LetDeclarationNode<>(Meta.empty(range), name, Optional.ofNullable(type), expr);
     }
 
     public static <A> LetDeclarationNode<A> letDeclarationNode(
             Meta<A> meta,
             String name,
-            Optional<TypeNode<Void>> type,
+            TypeNode<Void> type,
             ExprNode<A> expr) {
-        return new LetDeclarationNode<>(meta, name, type, expr);
+        return new LetDeclarationNode<>(meta, name, Optional.ofNullable(type), expr);
     }
 
     public static LetDeclarationNode<Void> letDeclarationNode(
@@ -530,15 +602,15 @@ public class SyntaxNodes {
     public static ParamNode<Void> paramNode(
             Range range,
             String name,
-            Optional<TypeNode<Void>> type) {
-        return new ParamNode<>(Meta.empty(range), name, type);
+            TypeNode<Void> type) {
+        return new ParamNode<>(Meta.empty(range), name, Optional.ofNullable(type));
     }
 
     public static <A> ParamNode<A> paramNode(
             Meta<A> meta,
             String name,
-            Optional<TypeNode<Void>> type) {
-        return new ParamNode<>(meta, name, type);
+            TypeNode<Void> type) {
+        return new ParamNode<>(meta, name, Optional.ofNullable(type));
     }
 
     public static ModuleIdNode<Void> modIdNode(

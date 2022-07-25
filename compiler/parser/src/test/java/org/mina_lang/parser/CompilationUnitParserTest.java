@@ -1,22 +1,60 @@
 package org.mina_lang.parser;
 
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.eclipse.collections.api.factory.Lists;
-import org.junit.jupiter.api.Test;
-import org.mina_lang.common.Range;
-import org.mina_lang.parser.CompilationUnitParser.Visitor;
-import org.mina_lang.syntax.CompilationUnitNode;
-import org.mina_lang.syntax.LiteralIntNode;
-import org.mina_lang.syntax.SyntaxNode;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.mina_lang.syntax.SyntaxNodes.applyNode;
+import static org.mina_lang.syntax.SyntaxNodes.blockExprNode;
+import static org.mina_lang.syntax.SyntaxNodes.boolNode;
+import static org.mina_lang.syntax.SyntaxNodes.caseNode;
+import static org.mina_lang.syntax.SyntaxNodes.charNode;
+import static org.mina_lang.syntax.SyntaxNodes.compilationUnitNode;
+import static org.mina_lang.syntax.SyntaxNodes.constructorNode;
+import static org.mina_lang.syntax.SyntaxNodes.constructorParamNode;
+import static org.mina_lang.syntax.SyntaxNodes.constructorPatternNode;
+import static org.mina_lang.syntax.SyntaxNodes.dataDeclarationNode;
+import static org.mina_lang.syntax.SyntaxNodes.doubleNode;
+import static org.mina_lang.syntax.SyntaxNodes.existsVarNode;
+import static org.mina_lang.syntax.SyntaxNodes.fieldPatternNode;
+import static org.mina_lang.syntax.SyntaxNodes.floatNode;
+import static org.mina_lang.syntax.SyntaxNodes.forAllVarNode;
+import static org.mina_lang.syntax.SyntaxNodes.funTypeNode;
+import static org.mina_lang.syntax.SyntaxNodes.idNode;
+import static org.mina_lang.syntax.SyntaxNodes.idPatternNode;
+import static org.mina_lang.syntax.SyntaxNodes.ifExprNode;
+import static org.mina_lang.syntax.SyntaxNodes.importNode;
+import static org.mina_lang.syntax.SyntaxNodes.intNode;
+import static org.mina_lang.syntax.SyntaxNodes.lambdaExprNode;
+import static org.mina_lang.syntax.SyntaxNodes.letDeclarationNode;
+import static org.mina_lang.syntax.SyntaxNodes.letFnDeclarationNode;
+import static org.mina_lang.syntax.SyntaxNodes.literalPatternNode;
+import static org.mina_lang.syntax.SyntaxNodes.longNode;
+import static org.mina_lang.syntax.SyntaxNodes.matchNode;
+import static org.mina_lang.syntax.SyntaxNodes.modIdNode;
+import static org.mina_lang.syntax.SyntaxNodes.moduleNode;
+import static org.mina_lang.syntax.SyntaxNodes.paramNode;
+import static org.mina_lang.syntax.SyntaxNodes.refNode;
+import static org.mina_lang.syntax.SyntaxNodes.stringNode;
+import static org.mina_lang.syntax.SyntaxNodes.typeApplyNode;
+import static org.mina_lang.syntax.SyntaxNodes.typeLambdaNode;
+import static org.mina_lang.syntax.SyntaxNodes.typeReferenceNode;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mina_lang.syntax.SyntaxNodes.*;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.eclipse.collections.api.factory.Lists;
+import org.junit.jupiter.api.Test;
+import org.mina_lang.common.Range;
+import org.mina_lang.parser.CompilationUnitParser.Visitor;
+import org.mina_lang.syntax.CompilationUnitNode;
+import org.mina_lang.syntax.SyntaxNode;
 
 public class CompilationUnitParserTest {
 
@@ -184,9 +222,7 @@ public class CompilationUnitParserTest {
                 typeLambdaNode(
                         new Range(0, 0, 0, 6),
                         Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
-                        typeReferenceNode(
-                                new Range(0, 5, 0, 6),
-                                idNode(new Range(0, 5, 0, 6), "A"))));
+                        typeReferenceNode(new Range(0, 5, 0, 6), "A")));
 
     }
 
@@ -196,9 +232,7 @@ public class CompilationUnitParserTest {
                 typeLambdaNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
-                        typeReferenceNode(
-                                new Range(0, 7, 0, 8),
-                                idNode(new Range(0, 7, 0, 8), "A"))));
+                        typeReferenceNode(new Range(0, 7, 0, 8), "A")));
 
     }
 
@@ -210,9 +244,7 @@ public class CompilationUnitParserTest {
                         Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "B")),
                         typeLambdaNode(
                                 new Range(0, 7, 0, 13), Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
-                                typeReferenceNode(
-                                        new Range(0, 12, 0, 13),
-                                        idNode(new Range(0, 12, 0, 13), "A")))));
+                                typeReferenceNode(new Range(0, 12, 0, 13), "A"))));
     }
 
     @Test
@@ -223,9 +255,7 @@ public class CompilationUnitParserTest {
                         Lists.immutable.of(
                                 forAllVarNode(new Range(0, 1, 0, 2), "A"),
                                 forAllVarNode(new Range(0, 4, 0, 5), "B")),
-                        typeReferenceNode(
-                                new Range(0, 10, 0, 11),
-                                idNode(new Range(0, 10, 0, 11), "A"))));
+                        typeReferenceNode(new Range(0, 10, 0, 11), "A")));
 
     }
 
@@ -235,9 +265,7 @@ public class CompilationUnitParserTest {
                 typeLambdaNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "?A")),
-                        typeReferenceNode(
-                                new Range(0, 6, 0, 8),
-                                idNode(new Range(0, 6, 0, 8), "?A"))));
+                        typeReferenceNode(new Range(0, 6, 0, 8), "?A")));
     }
 
     @Test
@@ -253,9 +281,7 @@ public class CompilationUnitParserTest {
                 funTypeNode(
                         new Range(0, 0, 0, 6),
                         Lists.immutable.of(typeReferenceNode(new Range(0, 0, 0, 1), "A")),
-                        typeReferenceNode(
-                                new Range(0, 5, 0, 6),
-                                idNode(new Range(0, 5, 0, 6), "A"))));
+                        typeReferenceNode(new Range(0, 5, 0, 6), "A")));
 
     }
 
@@ -265,9 +291,7 @@ public class CompilationUnitParserTest {
                 funTypeNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(typeReferenceNode(new Range(0, 1, 0, 2), "A")),
-                        typeReferenceNode(
-                                new Range(0, 7, 0, 8),
-                                idNode(new Range(0, 7, 0, 8), "A"))));
+                        typeReferenceNode(new Range(0, 7, 0, 8), "A")));
 
     }
 
@@ -277,9 +301,7 @@ public class CompilationUnitParserTest {
                 funTypeNode(
                         new Range(0, 0, 0, 7),
                         Lists.immutable.empty(),
-                        typeReferenceNode(
-                                new Range(0, 6, 0, 7),
-                                idNode(new Range(0, 6, 0, 7), "A"))));
+                        typeReferenceNode(new Range(0, 6, 0, 7), "A")));
 
     }
 
@@ -291,9 +313,7 @@ public class CompilationUnitParserTest {
                         Lists.immutable.of(
                                 typeReferenceNode(new Range(0, 1, 0, 2), "A"),
                                 typeReferenceNode(new Range(0, 4, 0, 5), "B")),
-                        typeReferenceNode(
-                                new Range(0, 10, 0, 11),
-                                idNode(new Range(0, 10, 0, 11), "A"))));
+                        typeReferenceNode(new Range(0, 10, 0, 11), "A")));
 
     }
 
@@ -311,9 +331,9 @@ public class CompilationUnitParserTest {
         testSuccessfulParse("List[Int]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
                 typeApplyNode(
                         new Range(0, 0, 0, 9),
-                        typeReferenceNode(new Range(0, 0, 0, 4), idNode(new Range(0, 0, 0, 4), "List")),
+                        typeReferenceNode(new Range(0, 0, 0, 4), "List"),
                         Lists.immutable
-                                .of(typeReferenceNode(new Range(0, 5, 0, 8), idNode(new Range(0, 5, 0, 8), "Int")))));
+                                .of(typeReferenceNode(new Range(0, 5, 0, 8), "Int"))));
 
     }
 
@@ -322,11 +342,10 @@ public class CompilationUnitParserTest {
         testSuccessfulParse("Either[Error, String]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
                 typeApplyNode(
                         new Range(0, 0, 0, 21),
-                        typeReferenceNode(new Range(0, 0, 0, 6), idNode(new Range(0, 0, 0, 6), "Either")),
+                        typeReferenceNode(new Range(0, 0, 0, 6), "Either"),
                         Lists.immutable.of(
-                                typeReferenceNode(new Range(0, 7, 0, 12), idNode(new Range(0, 7, 0, 12), "Error")),
-                                typeReferenceNode(new Range(0, 14, 0, 20),
-                                        idNode(new Range(0, 14, 0, 20), "String")))));
+                                typeReferenceNode(new Range(0, 7, 0, 12), "Error"),
+                                typeReferenceNode(new Range(0, 14, 0, 20), "String"))));
 
     }
 
@@ -335,9 +354,8 @@ public class CompilationUnitParserTest {
         testSuccessfulParse("List[?]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
                 typeApplyNode(
                         new Range(0, 0, 0, 7),
-                        typeReferenceNode(new Range(0, 0, 0, 4), idNode(new Range(0, 0, 0, 4), "List")),
-                        Lists.immutable
-                                .of(typeReferenceNode(new Range(0, 5, 0, 6), idNode(new Range(0, 5, 0, 6), "?")))));
+                        typeReferenceNode(new Range(0, 0, 0, 4), "List"),
+                        Lists.immutable.of(typeReferenceNode(new Range(0, 5, 0, 6), "?"))));
 
     }
 
@@ -348,7 +366,7 @@ public class CompilationUnitParserTest {
                 letDeclarationNode(
                         new Range(0, 0, 0, 9),
                         "x",
-                        refNode(new Range(0, 8, 0, 9), idNode(new Range(0, 8, 0, 9), "y"))));
+                        refNode(new Range(0, 8, 0, 9), "y")));
     }
 
     @Test
@@ -357,8 +375,22 @@ public class CompilationUnitParserTest {
                 letDeclarationNode(
                         new Range(0, 0, 0, 14),
                         "x",
-                        Optional.of(typeReferenceNode(new Range(0, 7, 0, 10), idNode(new Range(0, 7, 0, 10), "Int"))),
-                        refNode(new Range(0, 13, 0, 14), idNode(new Range(0, 13, 0, 14), "y"))));
+                        typeReferenceNode(new Range(0, 7, 0, 10), "Int"),
+                        refNode(new Range(0, 13, 0, 14), "y")));
+    }
+
+    @Test
+    void parseLetFnDeclarationWithTypeAnnotation() {
+        testSuccessfulParse("let id[A](a: A): A = a", CompilationUnitParser::getDeclarationVisitor,
+                MinaParser::declaration,
+                letFnDeclarationNode(
+                        new Range(0, 0, 0, 22),
+                        "id",
+                        Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
+                        Lists.immutable.of(paramNode(new Range(0, 10, 0, 14), "a",
+                                typeReferenceNode(new Range(0, 13, 0, 14), "A"))),
+                        typeReferenceNode(new Range(0, 17, 0, 18), "A"),
+                        refNode(new Range(0, 21, 0, 22), "a")));
     }
 
     @Test
@@ -529,8 +561,8 @@ public class CompilationUnitParserTest {
         testSuccessfulParse("(a: Int) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
                         new Range(0, 0, 0, 13),
-                        Lists.immutable.of(paramNode(new Range(0, 1, 0, 7), "a",
-                                Optional.of(typeReferenceNode(new Range(0, 4, 0, 7), "Int")))),
+                        Lists.immutable.of(
+                                paramNode(new Range(0, 1, 0, 7), "a", typeReferenceNode(new Range(0, 4, 0, 7), "Int"))),
                         refNode(new Range(0, 12, 0, 13), "a")));
     }
 
@@ -551,10 +583,9 @@ public class CompilationUnitParserTest {
                 lambdaExprNode(
                         new Range(0, 0, 0, 25),
                         Lists.immutable.of(
-                                paramNode(new Range(0, 1, 0, 7), "a",
-                                        Optional.of(typeReferenceNode(new Range(0, 4, 0, 7), "Int"))),
+                                paramNode(new Range(0, 1, 0, 7), "a", typeReferenceNode(new Range(0, 4, 0, 7), "Int")),
                                 paramNode(new Range(0, 9, 0, 19), "b",
-                                        Optional.of(typeReferenceNode(new Range(0, 12, 0, 19), "Boolean")))),
+                                        typeReferenceNode(new Range(0, 12, 0, 19), "Boolean"))),
                         refNode(new Range(0, 24, 0, 25), "a")));
     }
 

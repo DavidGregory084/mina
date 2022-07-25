@@ -6,12 +6,12 @@ module Mina/Examples/DeclareList {
         case Nil()
     }
 
-    let headOption: List[A] -> Option[A] = list -> match list with {
+    let headOption: A => List[A] -> Option[A] = list -> match list with {
         case Nil {} -> None()
         case Cons { head } -> Some(head)
     }
 
-    let lastOption: List[A] -> Option[A] = list -> match list with {
+    let lastOption[A](list: List[A]): Option[A] = match list with {
         case Nil {} -> None()
         case Cons { head, tail: Nil {} } -> Some(head)
         case Cons { tail } -> lastOption(tail)
