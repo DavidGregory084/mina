@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Range;
 import org.mina_lang.parser.CompilationUnitParser.Visitor;
 import org.mina_lang.syntax.CompilationUnitNode;
+import org.mina_lang.syntax.LiteralIntNode;
 import org.mina_lang.syntax.SyntaxNode;
 
 import java.math.BigDecimal;
@@ -430,6 +431,69 @@ public class CompilationUnitParserTest {
                                                 typeReferenceNode(new Range(2, 27, 2, 31), "Expr"), Lists.immutable
                                                         .of(typeReferenceNode(new Range(2, 32, 2, 39),
                                                                 "Boolean"))))))));
+    }
+
+    // Block expressions
+    @Test
+    void parseBlock() {
+        testSuccessfulParse("""
+                {
+                    foo
+                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                blockExprNode(
+                        new Range(0, 0, 2, 1),
+                        Lists.immutable.empty(),
+                        refNode(new Range(1, 4, 1, 7), "foo")));
+    }
+
+    @Test
+    void parseBlockWithSingleLet() {
+        testSuccessfulParse("""
+                {
+                    let x = 1
+                    2
+                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                blockExprNode(
+                        new Range(0, 0, 3, 1),
+                        Lists.immutable.of(
+                                letDeclarationNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1))),
+                        intNode(new Range(2, 4, 2, 5), 2)));
+    }
+
+    @Test
+    void parseBlockWithMultipleLet() {
+        testSuccessfulParse("""
+                {
+                    let x = 1
+                    let y = 'a'
+                    2
+                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                blockExprNode(
+                        new Range(0, 0, 4, 1),
+                        Lists.immutable.of(
+                                letDeclarationNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1)),
+                                letDeclarationNode(new Range(2, 4, 2, 15), "y",
+                                        charNode(new Range(2, 12, 2, 15), 'a'))),
+                        intNode(new Range(3, 4, 3, 5), 2)));
+    }
+
+    @Test
+    void parseNestedBlock() {
+        testSuccessfulParse("""
+                {
+                    let x = 1
+                    let y = {
+                        'a'
+                    }
+                    2
+                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                blockExprNode(
+                        new Range(0, 0, 6, 1),
+                        Lists.immutable.of(
+                                letDeclarationNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1)),
+                                letDeclarationNode(new Range(2, 4, 4, 5), "y",
+                                        blockExprNode(new Range(2, 12, 4, 5), charNode(new Range(3, 8, 3, 11), 'a')))),
+                        intNode(new Range(5, 4, 5, 5), 2)));
     }
 
     // Lambda expressions

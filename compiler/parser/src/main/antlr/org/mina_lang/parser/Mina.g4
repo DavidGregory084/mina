@@ -65,11 +65,14 @@ typeVar: QUESTION? ID | QUESTION;
 
 // Expressions
 expr:
-	ifExpr
+	blockExpr
+	| ifExpr
 	| lambdaExpr
 	| matchExpr
 	| literal
 	| applicableExpr;
+
+blockExpr: LBRACE letDeclaration* expr RBRACE;
 
 ifExpr: IF expr THEN expr ELSE expr;
 

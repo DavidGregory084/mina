@@ -162,6 +162,13 @@ public class CompilationUnitParser {
                     .collect(Collectors2.toImmutableList());
         }
 
+        public <C extends ParserRuleContext, D> ImmutableList<D> visitRepeated(List<C> contexts,
+                Function<C, D> visitorMethod) {
+            return contexts.stream()
+                    .map(ctx -> visitorMethod.apply(ctx))
+                    .collect(Collectors2.toImmutableList());
+        }
+
         public <C extends ParserRuleContext, D extends ParserRuleContext, E> ImmutableList<E> visitNullableRepeated(
                 C context, Function<C, List<D>> rule,
                 Visitor<D, E> visitor) {
@@ -374,8 +381,15 @@ public class CompilationUnitParser {
 
         @Override
         public ExprNode<Void> visitExpr(ExprContext ctx) {
-            return visitAlternatives(ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.literal(),
+            return visitAlternatives(ctx.blockExpr(), ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.literal(),
                     ctx.applicableExpr());
+        }
+
+        @Override
+        public BlockExprNode<Void> visitBlockExpr(BlockExprContext ctx) {
+            var declarationNodes = visitRepeated(ctx.letDeclaration(), declarationVisitor::visitLetDeclaration);
+            var resultNode = visitNullable(ctx.expr());
+            return blockExprNode(contextRange(ctx), declarationNodes, resultNode);
         }
 
         @Override

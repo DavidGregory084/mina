@@ -227,6 +227,36 @@ public class SyntaxNodes {
     }
 
     // Control structures
+    public static BlockExprNode<Void> blockExprNode(
+        Range range,
+        ExprNode<Void> result
+    ) {
+        return new BlockExprNode<>(Meta.empty(range), Lists.immutable.empty(), result);
+    }
+
+    public static <A> BlockExprNode<A> blockExprNode(
+        Meta<A> meta,
+        ExprNode<A> result
+    ) {
+        return new BlockExprNode<>(meta, Lists.immutable.empty(), result);
+    }
+
+    public static BlockExprNode<Void> blockExprNode(
+        Range range,
+        ImmutableList<LetDeclarationNode<Void>> declarations,
+        ExprNode<Void> result
+    ) {
+        return new BlockExprNode<>(Meta.empty(range), declarations, result);
+    }
+
+    public static <A> BlockExprNode<A> blockExprNode(
+        Meta<A> meta,
+        ImmutableList<LetDeclarationNode<A>> declarations,
+        ExprNode<A> result
+    ) {
+        return new BlockExprNode<>(meta, declarations, result);
+    }
+
     public static IfExprNode<Void> ifExprNode(
             Range range,
             ExprNode<Void> condition,
