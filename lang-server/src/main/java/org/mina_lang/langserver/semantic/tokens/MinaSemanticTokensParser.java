@@ -3,6 +3,7 @@ package org.mina_lang.langserver.semantic.tokens;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.lsp4j.TextDocumentItem;
@@ -37,10 +38,13 @@ public class MinaSemanticTokensParser {
         int previousPos = -1;
 
         private IntStream createToken(TerminalNode node, String tokenType, String... tokenModifiers) {
-            if (node == null) {
+            return node == null ? IntStream.empty() : createToken(node.getSymbol(), tokenType, tokenModifiers);
+        }
+
+        private IntStream createToken(Token token, String tokenType, String... tokenModifiers) {
+            if (token == null) {
                 return IntStream.empty();
             } else {
-                var token = node.getSymbol();
                 var tokenLine = token.getLine() - 1;
                 var tokenPos = token.getCharPositionInLine();
 
@@ -163,21 +167,13 @@ public class MinaSemanticTokensParser {
         @Override
         public IntStream visitImportSelector(ImportSelectorContext ctx) {
             var moduleIdTokens = visitNullable(ctx.moduleId());
-            var symbolToken = createToken(ctx.ID(), Variable);
-            var importSymbolsTokens = visitNullable(ctx.importSymbols());
+
+            var importSymbolsTokens = ctx.symbols.stream()
+                .flatMapToInt(sym -> createToken(sym, Variable));
 
             return Stream.of(
                     moduleIdTokens,
-                    symbolToken,
                     importSymbolsTokens).flatMapToInt(x -> x);
-        }
-
-        @Override
-        public IntStream visitImportSymbols(ImportSymbolsContext ctx) {
-            return ctx.ID().stream()
-                    .flatMapToInt(sym -> {
-                        return createToken(sym, Function);
-                    });
         }
 
         @Override

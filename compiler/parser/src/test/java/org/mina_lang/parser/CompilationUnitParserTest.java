@@ -71,8 +71,7 @@ public class CompilationUnitParserTest {
                         Lists.immutable.of(
                                 moduleNode(
                                         new Range(0, 0, 0, 26),
-                                        Lists.immutable.of("Mina", "Test"),
-                                        "Parser",
+                                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
                                         Lists.immutable.empty(),
                                         Lists.immutable.empty()))));
     }
@@ -85,8 +84,7 @@ public class CompilationUnitParserTest {
                         Lists.immutable.of(
                                 moduleNode(
                                         new Range(0, 0, 0, 16),
-                                        Lists.immutable.empty(),
-                                        "Parser",
+                                        modIdNode(new Range(0, 7, 0, 13), "Parser"),
                                         Lists.immutable.empty(),
                                         Lists.immutable.empty()))));
     }
@@ -95,7 +93,7 @@ public class CompilationUnitParserTest {
     void parseModuleHeaderMissingName() {
         var errors = testFailedParse("module {}");
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("missing ID at '{'"));
+        assertThat(errors.get(0), startsWith("mismatched input '{' expecting ID"));
     }
 
     @Test
@@ -119,8 +117,7 @@ public class CompilationUnitParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 23),
-                        Lists.immutable.of("Mina", "Test"),
-                        "Parser"));
+                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser")));
     }
 
     @Test
@@ -128,8 +125,7 @@ public class CompilationUnitParserTest {
         testSuccessfulParse("import Parser", CompilationUnitParser::getImportVisitor, MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 13),
-                        Lists.immutable.empty(),
-                        "Parser"));
+                        modIdNode(new Range(0, 7, 0, 13), "Parser")));
     }
 
     @Test
@@ -139,8 +135,7 @@ public class CompilationUnitParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 60),
-                        Lists.immutable.of("Mina", "Test"),
-                        "Parser",
+                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
                         Lists.immutable.of("compilationUnit", "importDeclaration")));
     }
 
@@ -151,8 +146,7 @@ public class CompilationUnitParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 50),
-                        Lists.immutable.empty(),
-                        "Parser",
+                        modIdNode(new Range(0, 7, 0, 13), "Parser"),
                         Lists.immutable.of("compilationUnit", "importDeclaration")));
     }
 
@@ -162,8 +156,7 @@ public class CompilationUnitParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 30),
-                        Lists.immutable.of("Mina", "Test"),
-                        "Parser",
+                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
                         Lists.immutable.of("ifExpr")));
     }
 
@@ -173,8 +166,7 @@ public class CompilationUnitParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 20),
-                        Lists.immutable.empty(),
-                        "Parser",
+                        modIdNode(new Range(0, 7, 0, 13), "Parser"),
                         Lists.immutable.of("ifExpr")));
     }
 
@@ -1067,7 +1059,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseQualifiedId() {
         testSuccessfulParse("Parser.compilationUnit", CompilationUnitParser::getExprVisitor, MinaParser::expr,
-                refNode(new Range(0, 0, 0, 22), Lists.immutable.of("Parser"), "compilationUnit"));
+                refNode(new Range(0, 0, 0, 22), modIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
     }
 
     @Test
@@ -1080,7 +1072,9 @@ public class CompilationUnitParserTest {
     @Test
     void parseFullyQualifiedId() {
         testSuccessfulParse("Mina/Test/Parser.compilationUnit", CompilationUnitParser::getExprVisitor, MinaParser::expr,
-                refNode(new Range(0, 0, 0, 32), Lists.immutable.of("Mina", "Test", "Parser"), "compilationUnit"));
+                refNode(new Range(0, 0, 0, 32),
+                        modIdNode(new Range(0, 0, 0, 16), Lists.immutable.of("Mina", "Test"), "Parser"),
+                        "compilationUnit"));
     }
 
     @Test
@@ -1094,7 +1088,7 @@ public class CompilationUnitParserTest {
     void parsePackageOnly() {
         var errors = testFailedParse("Mina/Test/Parser", CompilationUnitParser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting {'/', '.'}"));
+        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting '.'"));
     }
 
     @Test

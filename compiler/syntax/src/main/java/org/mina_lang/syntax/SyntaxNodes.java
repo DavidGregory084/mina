@@ -22,43 +22,38 @@ public class SyntaxNodes {
     // Module header
     public static ModuleNode<Void> moduleNode(
             Range range,
-            ImmutableList<String> pkg,
-            String name,
+            ModuleIdNode<Void> id,
             ImmutableList<ImportNode<Void>> imports,
             ImmutableList<DeclarationNode<Void>> declarations) {
-        return new ModuleNode<>(Meta.empty(range), pkg, name, imports, declarations);
+        return new ModuleNode<>(Meta.empty(range), id, imports, declarations);
     }
 
     public static <A> ModuleNode<A> moduleNode(
             Meta<A> meta,
-            ImmutableList<String> pkg,
-            String name,
+            ModuleIdNode<Void> id,
             ImmutableList<ImportNode<Void>> imports,
             ImmutableList<DeclarationNode<A>> declarations) {
-        return new ModuleNode<>(meta, pkg, name, imports, declarations);
+        return new ModuleNode<>(meta, id, imports, declarations);
     }
 
     public static ImportNode<Void> importNode(
             Range range,
-            ImmutableList<String> pkg,
-            String mod) {
-        return new ImportNode<>(Meta.empty(range), pkg, mod, Lists.immutable.empty());
+            ModuleIdNode<Void> mod) {
+        return new ImportNode<>(Meta.empty(range), mod, Lists.immutable.empty());
     }
 
     public static ImportNode<Void> importNode(
             Range range,
-            ImmutableList<String> pkg,
-            String mod,
+            ModuleIdNode<Void> mod,
             String symbol) {
-        return new ImportNode<>(Meta.empty(range), pkg, mod, Lists.immutable.of(symbol));
+        return new ImportNode<>(Meta.empty(range), mod, Lists.immutable.of(symbol));
     }
 
     public static ImportNode<Void> importNode(
             Range range,
-            ImmutableList<String> pkg,
-            String mod,
+            ModuleIdNode<Void> mod,
             ImmutableList<String> symbols) {
-        return new ImportNode<>(Meta.empty(range), pkg, mod, symbols);
+        return new ImportNode<>(Meta.empty(range), mod, symbols);
     }
 
     // Top level declarations
@@ -110,142 +105,124 @@ public class SyntaxNodes {
 
     // Data constructors
     public static ConstructorNode<Void> constructorNode(
-        Range range,
-        String name,
-        ImmutableList<ConstructorParamNode<Void>> params,
-        Optional<TypeNode<Void>> type
-    ) {
+            Range range,
+            String name,
+            ImmutableList<ConstructorParamNode<Void>> params,
+            Optional<TypeNode<Void>> type) {
         return new ConstructorNode<>(Meta.empty(range), name, params, type);
     }
 
     public static <A> ConstructorNode<A> constructorNode(
-        Meta<A> meta,
-        String name,
-        ImmutableList<ConstructorParamNode<A>> params,
-        Optional<TypeNode<Void>> type
-    ) {
+            Meta<A> meta,
+            String name,
+            ImmutableList<ConstructorParamNode<A>> params,
+            Optional<TypeNode<Void>> type) {
         return new ConstructorNode<>(meta, name, params, type);
     }
 
     public static ConstructorParamNode<Void> constructorParamNode(
-        Range range,
-        String name,
-        TypeNode<Void> type
-    ) {
+            Range range,
+            String name,
+            TypeNode<Void> type) {
         return new ConstructorParamNode<>(Meta.empty(range), name, type);
     }
 
     public static <A> ConstructorParamNode<A> constructorParamNode(
-        Meta<A> meta,
-        String name,
-        TypeNode<Void> type
-    ) {
+            Meta<A> meta,
+            String name,
+            TypeNode<Void> type) {
         return new ConstructorParamNode<>(meta, name, type);
     }
 
     // Types
     public static TypeLambdaNode<Void> typeLambdaNode(
-        Range range,
-        ImmutableList<TypeVarNode<Void>> args,
-        TypeNode<Void> body
-    ) {
+            Range range,
+            ImmutableList<TypeVarNode<Void>> args,
+            TypeNode<Void> body) {
         return new TypeLambdaNode<>(Meta.empty(range), args, body);
     }
 
     public static <A> TypeLambdaNode<A> typeLambdaNode(
-        Meta<A> meta,
-        ImmutableList<TypeVarNode<A>> args,
-        TypeNode<A> body
-    ) {
+            Meta<A> meta,
+            ImmutableList<TypeVarNode<A>> args,
+            TypeNode<A> body) {
         return new TypeLambdaNode<>(meta, args, body);
     }
 
     public static FunTypeNode<Void> funTypeNode(
-        Range range,
-        ImmutableList<TypeNode<Void>> argTypes,
-        TypeNode<Void> returnType
-    ) {
+            Range range,
+            ImmutableList<TypeNode<Void>> argTypes,
+            TypeNode<Void> returnType) {
         return new FunTypeNode<>(Meta.empty(range), argTypes, returnType);
     }
 
     public static <A> FunTypeNode<A> funTypeNode(
-        Meta<A> meta,
-        ImmutableList<TypeNode<A>> argTypes,
-        TypeNode<A> returnType
-    ) {
+            Meta<A> meta,
+            ImmutableList<TypeNode<A>> argTypes,
+            TypeNode<A> returnType) {
         return new FunTypeNode<>(meta, argTypes, returnType);
     }
 
     public static TypeApplyNode<Void> typeApplyNode(
-       Range range,
-       TypeNode<Void> type,
-       ImmutableList<TypeNode<Void>> args
-    ) {
+            Range range,
+            TypeNode<Void> type,
+            ImmutableList<TypeNode<Void>> args) {
         return new TypeApplyNode<>(Meta.empty(range), type, args);
     }
 
     public static <A> TypeApplyNode<A> typeApplyNode(
-       Meta<A> meta,
-       TypeNode<A> type,
-       ImmutableList<TypeNode<A>> args
-    ) {
+            Meta<A> meta,
+            TypeNode<A> type,
+            ImmutableList<TypeNode<A>> args) {
         return new TypeApplyNode<>(meta, type, args);
     }
 
     public static TypeReferenceNode<Void> typeReferenceNode(
-        Range range,
-        QualifiedIdNode<Void> id
-    ) {
+            Range range,
+            QualifiedIdNode<Void> id) {
         return new TypeReferenceNode<>(Meta.empty(range), id);
     }
 
     public static <A> TypeReferenceNode<A> typeReferenceNode(
-        Meta<A> meta,
-        QualifiedIdNode<A> id
-    ) {
+            Meta<A> meta,
+            QualifiedIdNode<A> id) {
         return new TypeReferenceNode<>(meta, id);
     }
 
     public static TypeReferenceNode<Void> typeReferenceNode(
-        Range range,
-        String name
-    ) {
+            Range range,
+            String name) {
         var meta = Meta.empty(range);
         return new TypeReferenceNode<>(meta, idNode(meta, name));
     }
 
     public static <A> TypeReferenceNode<A> typeReferenceNode(
-        Meta<A> meta,
-        String name
-    ) {
+            Meta<A> meta,
+            String name) {
         return new TypeReferenceNode<>(meta, idNode(meta, name));
     }
 
     public static ForAllVarNode<Void> forAllVarNode(
-        Range range,
-        String name
-    ) {
+            Range range,
+            String name) {
         return new ForAllVarNode<>(Meta.empty(range), name);
     }
 
     public static <A> ForAllVarNode<A> forAllVarNode(
-        Meta<A> meta,
-        String name
-    ) {
+            Meta<A> meta,
+            String name) {
         return new ForAllVarNode<>(meta, name);
     }
 
     public static ExistsVarNode<Void> existsVarNode(
-        Range range,
-        String name
-    ) {
+            Range range,
+            String name) {
         return new ExistsVarNode<>(Meta.empty(range), name);
     }
 
     public static <A> ExistsVarNode<A> existsVarNode(
-        Meta<A> meta,
-        String name
-    ) {
+            Meta<A> meta,
+            String name) {
         return new ExistsVarNode<>(meta, name);
     }
 
@@ -395,17 +372,17 @@ public class SyntaxNodes {
 
     public static ReferenceNode<Void> refNode(
             Range range,
-            ImmutableList<String> pkg,
+            ModuleIdNode<Void> mod,
             String name) {
         var meta = Meta.empty(range);
-        return new ReferenceNode<>(meta, new QualifiedIdNode<>(meta, pkg, name));
+        return new ReferenceNode<>(meta, idNode(meta, mod, name));
     }
 
     public static ReferenceNode<Void> refNode(
             Range range,
             String name) {
         var meta = Meta.empty(range);
-        return new ReferenceNode<>(meta, new QualifiedIdNode<>(meta, Lists.immutable.empty(), name));
+        return new ReferenceNode<>(meta, idNode(meta, name));
     }
 
     public static ReferenceNode<Void> refNode(
@@ -417,15 +394,15 @@ public class SyntaxNodes {
 
     public static <A> ReferenceNode<A> refNode(
             Meta<A> meta,
-            ImmutableList<String> pkg,
+            ModuleIdNode<Void> mod,
             String name) {
-        return new ReferenceNode<>(meta, new QualifiedIdNode<>(meta, pkg, name));
+        return new ReferenceNode<>(meta, idNode(meta, mod, name));
     }
 
     public static <A> ReferenceNode<A> refNode(
             Meta<A> meta,
             String name) {
-        return new ReferenceNode<>(meta, new QualifiedIdNode<>(meta, Lists.immutable.empty(), name));
+        return new ReferenceNode<>(meta, idNode(meta, name));
     }
 
     public static <A> ReferenceNode<A> refNode(
@@ -534,29 +511,42 @@ public class SyntaxNodes {
         return new ParamNode<>(meta, name, type);
     }
 
-    public static QualifiedIdNode<Void> idNode(
+    public static ModuleIdNode<Void> modIdNode(
             Range range,
             ImmutableList<String> pkg,
+            String mod) {
+        return new ModuleIdNode<>(Meta.empty(range), pkg, mod);
+    }
+
+    public static ModuleIdNode<Void> modIdNode(
+            Range range,
+            String mod) {
+        return new ModuleIdNode<>(Meta.empty(range), Lists.immutable.empty(), mod);
+    }
+
+    public static QualifiedIdNode<Void> idNode(
+            Range range,
+            ModuleIdNode<Void> mod,
             String name) {
-        return new QualifiedIdNode<>(Meta.empty(range), pkg, name);
+        return new QualifiedIdNode<>(Meta.empty(range), Optional.ofNullable(mod), name);
     }
 
     public static QualifiedIdNode<Void> idNode(
             Range range,
             String name) {
-        return new QualifiedIdNode<>(Meta.empty(range), Lists.immutable.empty(), name);
+        return new QualifiedIdNode<>(Meta.empty(range), Optional.empty(), name);
     }
 
     public static <A> QualifiedIdNode<A> idNode(
             Meta<A> meta,
-            ImmutableList<String> pkg,
+            ModuleIdNode<Void> mod,
             String name) {
-        return new QualifiedIdNode<>(meta, pkg, name);
+        return new QualifiedIdNode<>(meta, Optional.ofNullable(mod), name);
     }
 
     public static <A> QualifiedIdNode<A> idNode(
             Meta<A> meta,
             String name) {
-        return new QualifiedIdNode<>(meta, Lists.immutable.empty(), name);
+        return new QualifiedIdNode<>(meta, Optional.empty(), name);
     }
 }

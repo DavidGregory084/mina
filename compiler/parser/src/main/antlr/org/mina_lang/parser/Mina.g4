@@ -16,10 +16,8 @@ module:
 importDeclaration: IMPORT importSelector;
 
 importSelector:
-	moduleId (DOT ID)?
-	| moduleId DOT LBRACE importSymbols RBRACE;
-
-importSymbols: ID (COMMA ID)*;
+	moduleId (DOT symbols += ID)?
+	| moduleId DOT LBRACE symbols += ID (COMMA symbols += ID)* RBRACE;
 
 // Declarations
 declaration: dataDeclaration | letDeclaration;
@@ -126,7 +124,7 @@ literalChar: LITERAL_CHAR;
 literalString: LITERAL_STRING;
 
 // Identifiers
-moduleId: ID (RSLASH ID)*;
+moduleId: (pkg += ID RSLASH)* mod = ID;
 qualifiedId: (moduleId DOT)? ID;
 
 WHITESPACE: WS+ -> skip;

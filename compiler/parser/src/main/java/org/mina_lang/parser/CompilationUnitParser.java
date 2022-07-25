@@ -26,6 +26,7 @@ public class CompilationUnitParser {
     private ANTLRErrorListener errorListener;
 
     private CompilationUnitVisitor compilationUnitVisitor = new CompilationUnitVisitor();
+    private ModuleIdVisitor moduleIdVisitor = new ModuleIdVisitor();
     private ModuleVisitor moduleVisitor = new ModuleVisitor();
     private ImportVisitor importVisitor = new ImportVisitor();
     private DeclarationVisitor declarationVisitor = new DeclarationVisitor();
@@ -201,29 +202,13 @@ public class CompilationUnitParser {
 
         @Override
         public ModuleNode<Void> visitModule(ModuleContext ctx) {
-            var modId = Optional.ofNullable(ctx.moduleId());
-
-            var modIdSegments = modId
-                    .map(ModuleIdContext::ID)
-                    .map(ids -> {
-                        return ids.stream()
-                                .map(TerminalNode::getText)
-                                .collect(Collectors2.toImmutableList());
-                    });
-
-            var pkg = modIdSegments
-                    .map(ids -> ids.notEmpty() ? ids.take(ids.size() - 1) : ids)
-                    .orElse(Lists.immutable.empty());
-
-            var mod = modIdSegments
-                    .flatMap(ids -> ids.getLastOptional())
-                    .orElse(null);
+            var id = moduleIdVisitor.visitNullable(ctx.moduleId());
 
             var imports = visitRepeated(ctx.importDeclaration(), importVisitor);
 
             var declarations = visitRepeated(ctx.declaration(), declarationVisitor);
 
-            return moduleNode(contextRange(ctx), pkg, mod, imports, declarations);
+            return moduleNode(contextRange(ctx), id, imports, declarations);
         }
     }
 
@@ -233,42 +218,20 @@ public class CompilationUnitParser {
         public ImportNode<Void> visitImportDeclaration(ImportDeclarationContext ctx) {
             var selector = Optional.ofNullable(ctx.importSelector());
 
-            var modId = selector.map(ImportSelectorContext::moduleId);
-
-            var modIdSegments = modId
-                    .map(ModuleIdContext::ID)
-                    .map(ids -> {
-                        return ids.stream()
-                                .map(TerminalNode::getText)
-                                .collect(Collectors2.toImmutableList());
-                    });
-
-            var pkg = modIdSegments
-                    .map(ids -> ids.notEmpty() ? ids.take(ids.size() - 1) : ids)
-                    .orElse(Lists.immutable.empty());
-
-            var mod = modIdSegments
-                    .flatMap(ids -> ids.getLastOptional())
+            var mod = selector
+                    .map(ImportSelectorContext::moduleId)
+                    .map(moduleIdVisitor::visitNullable)
                     .orElse(null);
 
-            var symbol = selector
-                    .map(ImportSelectorContext::ID)
-                    .map(TerminalNode::getText)
-                    .map(name -> Lists.immutable.of(name));
-
-            var importSymbols = selector
-                    .map(ImportSelectorContext::importSymbols)
-                    .map(syms -> {
-                        return syms.ID().stream()
-                                .map(TerminalNode::getText)
+            var symbols = selector
+                    .map(selectorCtx -> {
+                        return selectorCtx.symbols.stream()
+                                .map(Token::getText)
                                 .collect(Collectors2.toImmutableList());
-                    });
-
-            var symbols = symbol
-                    .or(() -> importSymbols)
+                    })
                     .orElse(Lists.immutable.empty());
 
-            return importNode(contextRange(ctx), pkg, mod, symbols);
+            return importNode(contextRange(ctx), mod, symbols);
         }
     }
 
@@ -685,25 +648,27 @@ public class CompilationUnitParser {
         }
     }
 
+    class ModuleIdVisitor extends Visitor<ModuleIdContext, ModuleIdNode<Void>> {
+
+        @Override
+        public ModuleIdNode<Void> visitModuleId(ModuleIdContext ctx) {
+            var pkg = ctx.pkg.stream()
+                    .map(Token::getText)
+                    .collect(Collectors2.toImmutableList());
+
+            var mod = Optional.ofNullable(ctx.mod).map(Token::getText).orElse(null);
+
+            return modIdNode(contextRange(ctx), pkg, mod);
+        }
+    }
+
     class QualifiedIdVisitor extends Visitor<QualifiedIdContext, QualifiedIdNode<Void>> {
 
         @Override
         public QualifiedIdNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
-            var pkg = Optional.ofNullable(ctx.moduleId())
-                    .map(ModuleIdContext::ID)
-                    .map(ids -> {
-                        return ids.stream()
-                                .map(TerminalNode::getText)
-                                .collect(Collectors2.toImmutableList());
-                    })
-                    .orElse(Lists.immutable.empty());
-
-            var id = Optional.ofNullable(ctx.ID())
-                    .map(TerminalNode::getText)
-                    .orElse(null);
-
-            return idNode(contextRange(ctx), pkg, id);
+            var mod = moduleIdVisitor.visitNullable(ctx.moduleId());
+            var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
+            return idNode(contextRange(ctx), mod, id);
         }
-
     }
 }
