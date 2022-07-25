@@ -1,3 +1,5 @@
 module Mina/Examples/LetChar {
     let char = 'a'
+    let newLineChar = '\n'
+    let bulletPointChar = '\u2022'
 }

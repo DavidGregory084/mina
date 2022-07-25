@@ -3,7 +3,6 @@ package org.mina_lang.langserver;
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
-import org.mina_lang.langserver.semantic.tokens.MinaSemanticTokensParser;
 import org.mina_lang.parser.CompilationUnitParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,16 +69,5 @@ public class MinaTextDocumentService implements TextDocumentService {
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-    }
-
-    @Override
-    public CompletableFuture<SemanticTokens> semanticTokensFull(SemanticTokensParams params) {
-        return server.ifInitialized(cancelToken -> {
-            cancelToken.checkCanceled();
-            var document = documents.get(params.getTextDocument().getUri());
-            var tokens = MinaSemanticTokensParser.parseTokens(document);
-            cancelToken.checkCanceled();
-            return new SemanticTokens(tokens);
-        });
     }
 }

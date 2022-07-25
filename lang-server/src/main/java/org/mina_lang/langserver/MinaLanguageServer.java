@@ -9,7 +9,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.*;
 import org.mina_lang.BuildInfo;
-import org.mina_lang.langserver.semantic.tokens.MinaSemanticTokens;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,13 +106,6 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             textDocumentSyncOptions.setSave(true);
 
             serverCapabilities.setTextDocumentSync(textDocumentSyncOptions);
-
-            var tokenLegend = new SemanticTokensLegend(
-                    MinaSemanticTokens.tokenTypes.toList(),
-                    MinaSemanticTokens.tokenModifiers.toList());
-            var tokenOptions = new SemanticTokensWithRegistrationOptions(tokenLegend, true, false);
-
-            serverCapabilities.setSemanticTokensProvider(tokenOptions);
 
             cancelToken.checkCanceled();
 

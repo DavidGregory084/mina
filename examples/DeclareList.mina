@@ -1,0 +1,19 @@
+module Mina/Examples/DeclareList {
+    import Mina/Examples/DeclareOption.{ Option, Some, None }
+
+    data List[A] {
+        case Cons(head: A, tail: List[A])
+        case Nil()
+    }
+
+    let headOption: List[A] -> Option[A] = list -> match list with {
+        case Nil {} -> None()
+        case Cons { head } -> Some(head)
+    }
+
+    let lastOption: List[A] -> Option[A] = list -> match list with {
+        case Nil {} -> None()
+        case Cons { head, tail: Nil {} } -> Some(head)
+        case Cons { tail } -> lastOption(tail)
+    }
+}

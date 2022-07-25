@@ -1,0 +1,6 @@
+module Mina/Examples/DeclareOption {
+    data Option[A] {
+        case Some(value: A)
+        case None()
+    }
+}

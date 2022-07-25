@@ -1,3 +1,4 @@
 module Mina/Examples/LetBool {
-    let bool = true
+    let truthy = true
+    let falsey = false
 }

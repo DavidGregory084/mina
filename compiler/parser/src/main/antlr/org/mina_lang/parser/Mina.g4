@@ -187,7 +187,7 @@ LITERAL_FLOAT: DECIMAL_FLOATING_LITERAL;
 // Identifiers (normalized)
 ID:
 	(ID_START ID_CONTINUE* | '_' ID_CONTINUE+) {
-		setText(Normalizer.normalize(getText(), Form.NFKC)); 
+		setText(Normalizer.normalize(getText(), Form.NFKC));
 	};
 
 fragment WS: [ \t\r\n];

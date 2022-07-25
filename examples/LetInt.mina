@@ -1,3 +1,5 @@
 module Mina/Examples/LetInt {
-    let int = 4
+    let int = 4_000_000
+    let intWithSuffix = 4_000_000i
+    let long = 4_000_000l
 }

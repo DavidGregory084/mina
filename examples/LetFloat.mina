@@ -1,0 +1,7 @@
+module Mina/Example/LetFloat {
+    let float = .1234f
+    let floatWithExponent = 0.1234e9f
+    let double = 0.1234d
+    let doubleNoSuffix = 0.1234
+    let doubleWithExponent = 0.1234e-9
+}
