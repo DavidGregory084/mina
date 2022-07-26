@@ -1,47 +1,8 @@
 package org.mina_lang.parser;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.mina_lang.syntax.SyntaxNodes.applyNode;
-import static org.mina_lang.syntax.SyntaxNodes.blockExprNode;
-import static org.mina_lang.syntax.SyntaxNodes.boolNode;
-import static org.mina_lang.syntax.SyntaxNodes.caseNode;
-import static org.mina_lang.syntax.SyntaxNodes.charNode;
-import static org.mina_lang.syntax.SyntaxNodes.compilationUnitNode;
-import static org.mina_lang.syntax.SyntaxNodes.constructorNode;
-import static org.mina_lang.syntax.SyntaxNodes.constructorParamNode;
-import static org.mina_lang.syntax.SyntaxNodes.constructorPatternNode;
-import static org.mina_lang.syntax.SyntaxNodes.dataDeclarationNode;
-import static org.mina_lang.syntax.SyntaxNodes.doubleNode;
-import static org.mina_lang.syntax.SyntaxNodes.existsVarNode;
-import static org.mina_lang.syntax.SyntaxNodes.fieldPatternNode;
-import static org.mina_lang.syntax.SyntaxNodes.floatNode;
-import static org.mina_lang.syntax.SyntaxNodes.forAllVarNode;
-import static org.mina_lang.syntax.SyntaxNodes.funTypeNode;
-import static org.mina_lang.syntax.SyntaxNodes.idNode;
-import static org.mina_lang.syntax.SyntaxNodes.idPatternNode;
-import static org.mina_lang.syntax.SyntaxNodes.ifExprNode;
-import static org.mina_lang.syntax.SyntaxNodes.importNode;
-import static org.mina_lang.syntax.SyntaxNodes.intNode;
-import static org.mina_lang.syntax.SyntaxNodes.lambdaExprNode;
-import static org.mina_lang.syntax.SyntaxNodes.letDeclarationNode;
-import static org.mina_lang.syntax.SyntaxNodes.letFnDeclarationNode;
-import static org.mina_lang.syntax.SyntaxNodes.literalPatternNode;
-import static org.mina_lang.syntax.SyntaxNodes.longNode;
-import static org.mina_lang.syntax.SyntaxNodes.matchNode;
-import static org.mina_lang.syntax.SyntaxNodes.modIdNode;
-import static org.mina_lang.syntax.SyntaxNodes.moduleNode;
-import static org.mina_lang.syntax.SyntaxNodes.paramNode;
-import static org.mina_lang.syntax.SyntaxNodes.refNode;
-import static org.mina_lang.syntax.SyntaxNodes.stringNode;
-import static org.mina_lang.syntax.SyntaxNodes.typeApplyNode;
-import static org.mina_lang.syntax.SyntaxNodes.typeLambdaNode;
-import static org.mina_lang.syntax.SyntaxNodes.typeReferenceNode;
+import static org.hamcrest.Matchers.*;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -52,7 +13,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Range;
-import org.mina_lang.parser.CompilationUnitParser.Visitor;
+import org.mina_lang.parser.Parser.Visitor;
 import org.mina_lang.syntax.CompilationUnitNode;
 import org.mina_lang.syntax.SyntaxNode;
 
@@ -62,7 +23,7 @@ public class CompilationUnitParserTest {
             String source,
             CompilationUnitNode<Void> expected) {
         var errorCollector = new ErrorCollector();
-        var actual = new CompilationUnitParser(errorCollector).parse(source);
+        var actual = new Parser(errorCollector).parse(source);
         assertThat("There should be no parsing errors", errorCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
         assertThat(actual, equalTo(expected));
@@ -70,7 +31,7 @@ public class CompilationUnitParserTest {
 
     List<String> testFailedParse(String source) {
         var errorCollector = new ErrorCollector();
-        new CompilationUnitParser(errorCollector).parse(source);
+        new Parser(errorCollector).parse(source);
         var errors = errorCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
         return errors;
@@ -78,11 +39,11 @@ public class CompilationUnitParserTest {
 
     <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> void testSuccessfulParse(
             String source,
-            Function<CompilationUnitParser, C> visitor,
+            Function<Parser, C> visitor,
             Function<MinaParser, A> startRule,
             B expected) {
         var errorCollector = new ErrorCollector();
-        var parser = new CompilationUnitParser(errorCollector);
+        var parser = new Parser(errorCollector);
         var actual = parser.parse(source, visitor, startRule);
         assertThat("There should be no parsing errors", errorCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
@@ -91,10 +52,10 @@ public class CompilationUnitParserTest {
 
     <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> List<String> testFailedParse(
             String source,
-            Function<CompilationUnitParser, C> visitor,
+            Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
         var errorCollector = new ErrorCollector();
-        var parser = new CompilationUnitParser(errorCollector);
+        var parser = new Parser(errorCollector);
         parser.parse(source, visitor, startRule);
         var errors = errorCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
@@ -152,7 +113,7 @@ public class CompilationUnitParserTest {
     // Import declarations
     @Test
     void parseImportModuleOnly() {
-        testSuccessfulParse("import Mina/Test/Parser", CompilationUnitParser::getImportVisitor,
+        testSuccessfulParse("import Mina/Test/Parser", Parser::getImportVisitor,
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 23),
@@ -161,7 +122,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseImportEmptyPackageModuleOnly() {
-        testSuccessfulParse("import Parser", CompilationUnitParser::getImportVisitor, MinaParser::importDeclaration,
+        testSuccessfulParse("import Parser", Parser::getImportVisitor, MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 13),
                         modIdNode(new Range(0, 7, 0, 13), "Parser")));
@@ -170,7 +131,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseImportMultipleSymbols() {
         testSuccessfulParse("import Mina/Test/Parser.{compilationUnit, importDeclaration}",
-                CompilationUnitParser::getImportVisitor,
+                Parser::getImportVisitor,
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 60),
@@ -181,7 +142,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseImportEmptyPackageMultipleSymbols() {
         testSuccessfulParse("import Parser.{compilationUnit, importDeclaration}",
-                CompilationUnitParser::getImportVisitor,
+                Parser::getImportVisitor,
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 50),
@@ -191,7 +152,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseImportSingleSymbol() {
-        testSuccessfulParse("import Mina/Test/Parser.ifExpr", CompilationUnitParser::getImportVisitor,
+        testSuccessfulParse("import Mina/Test/Parser.ifExpr", Parser::getImportVisitor,
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 30),
@@ -201,7 +162,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseImportEmptyPackageSingleSymbol() {
-        testSuccessfulParse("import Parser.ifExpr", CompilationUnitParser::getImportVisitor,
+        testSuccessfulParse("import Parser.ifExpr", Parser::getImportVisitor,
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 20),
@@ -211,14 +172,14 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseImportNoSelector() {
-        var errors = testFailedParse("import", CompilationUnitParser::getImportVisitor, MinaParser::importDeclaration);
+        var errors = testFailedParse("import", Parser::getImportVisitor, MinaParser::importDeclaration);
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting ID"));
     }
 
     // Types
     @Test
     void parseIdTypeLambda() {
-        testSuccessfulParse("A => A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("A => A", Parser::getTypeVisitor, MinaParser::type,
                 typeLambdaNode(
                         new Range(0, 0, 0, 6),
                         Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
@@ -228,7 +189,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseParenthesizedIdTypeLambda() {
-        testSuccessfulParse("[A] => A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("[A] => A", Parser::getTypeVisitor, MinaParser::type,
                 typeLambdaNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
@@ -238,7 +199,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseTypeLambdaWithGroupingParens() {
-        testSuccessfulParse("[B => [A => A]]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("[B => [A => A]]", Parser::getTypeVisitor, MinaParser::type,
                 typeLambdaNode(
                         new Range(0, 1, 0, 14),
                         Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "B")),
@@ -249,7 +210,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseMultiArgTypeLambda() {
-        testSuccessfulParse("[A, B] => A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("[A, B] => A", Parser::getTypeVisitor, MinaParser::type,
                 typeLambdaNode(
                         new Range(0, 0, 0, 11),
                         Lists.immutable.of(
@@ -261,7 +222,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseExistsIdTypeLambda() {
-        testSuccessfulParse("?A => ?A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("?A => ?A", Parser::getTypeVisitor, MinaParser::type,
                 typeLambdaNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "?A")),
@@ -270,14 +231,14 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseTypeLambdaMissingBody() {
-        var errors = testFailedParse("A =>", CompilationUnitParser::getTypeVisitor, MinaParser::type);
+        var errors = testFailedParse("A =>", Parser::getTypeVisitor, MinaParser::type);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
     }
 
     @Test
     void parseIdFunType() {
-        testSuccessfulParse("A -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("A -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 6),
                         Lists.immutable.of(typeReferenceNode(new Range(0, 0, 0, 1), "A")),
@@ -287,7 +248,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseParenthesizedIdFunType() {
-        testSuccessfulParse("(A) -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("(A) -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(typeReferenceNode(new Range(0, 1, 0, 2), "A")),
@@ -297,7 +258,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseNullaryFunType() {
-        testSuccessfulParse("() -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("() -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 7),
                         Lists.immutable.empty(),
@@ -307,7 +268,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseMultiArgFunType() {
-        testSuccessfulParse("(A, B) -> A", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("(A, B) -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 11),
                         Lists.immutable.of(
@@ -319,7 +280,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseFunTypeMissingReturnType() {
-        var errors = testFailedParse("let foo: A -> = bar", CompilationUnitParser::getDeclarationVisitor,
+        var errors = testFailedParse("let foo: A -> = bar", Parser::getDeclarationVisitor,
                 MinaParser::declaration);
         assertThat(errors, hasSize(2));
         assertThat(errors.get(0), startsWith("extraneous input '='"));
@@ -328,7 +289,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseUnaryTypeApplication() {
-        testSuccessfulParse("List[Int]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("List[Int]", Parser::getTypeVisitor, MinaParser::type,
                 typeApplyNode(
                         new Range(0, 0, 0, 9),
                         typeReferenceNode(new Range(0, 0, 0, 4), "List"),
@@ -339,7 +300,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseBinaryTypeApplication() {
-        testSuccessfulParse("Either[Error, String]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("Either[Error, String]", Parser::getTypeVisitor, MinaParser::type,
                 typeApplyNode(
                         new Range(0, 0, 0, 21),
                         typeReferenceNode(new Range(0, 0, 0, 6), "Either"),
@@ -351,7 +312,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseWildcardTypeApplication() {
-        testSuccessfulParse("List[?]", CompilationUnitParser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("List[?]", Parser::getTypeVisitor, MinaParser::type,
                 typeApplyNode(
                         new Range(0, 0, 0, 7),
                         typeReferenceNode(new Range(0, 0, 0, 4), "List"),
@@ -362,7 +323,7 @@ public class CompilationUnitParserTest {
     // Declarations
     @Test
     void parseLetDeclaration() {
-        testSuccessfulParse("let x = y", CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+        testSuccessfulParse("let x = y", Parser::getDeclarationVisitor, MinaParser::declaration,
                 letDeclarationNode(
                         new Range(0, 0, 0, 9),
                         "x",
@@ -371,7 +332,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLetDeclarationWithTypeAnnotation() {
-        testSuccessfulParse("let x: Int = y", CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+        testSuccessfulParse("let x: Int = y", Parser::getDeclarationVisitor, MinaParser::declaration,
                 letDeclarationNode(
                         new Range(0, 0, 0, 14),
                         "x",
@@ -381,7 +342,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLetFnDeclarationWithTypeAnnotation() {
-        testSuccessfulParse("let id[A](a: A): A = a", CompilationUnitParser::getDeclarationVisitor,
+        testSuccessfulParse("let id[A](a: A): A = a", Parser::getDeclarationVisitor,
                 MinaParser::declaration,
                 letFnDeclarationNode(
                         new Range(0, 0, 0, 22),
@@ -395,7 +356,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseEmptyDataDeclaration() {
-        testSuccessfulParse("data Void[A] {}", CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+        testSuccessfulParse("data Void[A] {}", Parser::getDeclarationVisitor, MinaParser::declaration,
                 dataDeclarationNode(
                         new Range(0, 0, 0, 15),
                         "Void",
@@ -406,7 +367,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseListDataDeclaration() {
         testSuccessfulParse("data List[A] { case Cons(head: A, tail: List[A]) case Nil() }",
-                CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+                Parser::getDeclarationVisitor, MinaParser::declaration,
                 dataDeclarationNode(
                         new Range(0, 0, 0, 61),
                         "List",
@@ -438,7 +399,7 @@ public class CompilationUnitParserTest {
                     case Int(i: Int): Expr[Int]
                     case Bool(b: Boolean): Expr[Boolean]
                 }
-                """, CompilationUnitParser::getDeclarationVisitor, MinaParser::declaration,
+                """, Parser::getDeclarationVisitor, MinaParser::declaration,
                 dataDeclarationNode(
                         new Range(0, 0, 3, 1),
                         "Expr",
@@ -471,7 +432,7 @@ public class CompilationUnitParserTest {
         testSuccessfulParse("""
                 {
                     foo
-                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                }""", Parser::getExprVisitor, MinaParser::expr,
                 blockExprNode(
                         new Range(0, 0, 2, 1),
                         Lists.immutable.empty(),
@@ -484,7 +445,7 @@ public class CompilationUnitParserTest {
                 {
                     let x = 1
                     2
-                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                }""", Parser::getExprVisitor, MinaParser::expr,
                 blockExprNode(
                         new Range(0, 0, 3, 1),
                         Lists.immutable.of(
@@ -499,7 +460,7 @@ public class CompilationUnitParserTest {
                     let x = 1
                     let y = 'a'
                     2
-                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                }""", Parser::getExprVisitor, MinaParser::expr,
                 blockExprNode(
                         new Range(0, 0, 4, 1),
                         Lists.immutable.of(
@@ -518,7 +479,7 @@ public class CompilationUnitParserTest {
                         'a'
                     }
                     2
-                }""", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                }""", Parser::getExprVisitor, MinaParser::expr,
                 blockExprNode(
                         new Range(0, 0, 6, 1),
                         Lists.immutable.of(
@@ -531,7 +492,7 @@ public class CompilationUnitParserTest {
     // Lambda expressions
     @Test
     void parseNullaryLambda() {
-        testSuccessfulParse("() -> 1", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("() -> 1", Parser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
                         new Range(0, 0, 0, 7),
                         Lists.immutable.empty(),
@@ -540,7 +501,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseIdentityLambda() {
-        testSuccessfulParse("a -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("a -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
                         new Range(0, 0, 0, 6),
                         Lists.immutable.of(paramNode(new Range(0, 0, 0, 1), "a")),
@@ -549,7 +510,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseParenthesizedIdentityLambda() {
-        testSuccessfulParse("(a) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("(a) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(paramNode(new Range(0, 1, 0, 2), "a")),
@@ -558,7 +519,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseAnnotatedIdentityLambda() {
-        testSuccessfulParse("(a: Int) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("(a: Int) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
                         new Range(0, 0, 0, 13),
                         Lists.immutable.of(
@@ -568,7 +529,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseMultiArgLambda() {
-        testSuccessfulParse("(a, b) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("(a, b) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
                         new Range(0, 0, 0, 11),
                         Lists.immutable.of(
@@ -579,7 +540,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseAnnotatedMultiArgLambda() {
-        testSuccessfulParse("(a: Int, b: Boolean) -> a", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("(a: Int, b: Boolean) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaExprNode(
                         new Range(0, 0, 0, 25),
                         Lists.immutable.of(
@@ -591,7 +552,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLambdaMissingBody() {
-        var errors = testFailedParse("a ->", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("a ->", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
     }
@@ -600,7 +561,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseIfExpression() {
         testSuccessfulParse(
-                "if false then 0 else 1", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+                "if false then 0 else 1", Parser::getExprVisitor, MinaParser::expr,
                 ifExprNode(
                         new Range(0, 0, 0, 22),
                         boolNode(new Range(0, 3, 0, 8), false),
@@ -610,26 +571,26 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseIfExpressionMissingCondition() {
-        var errors = testFailedParse("if then 0 else 1", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("if then 0 else 1", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors.get(0), startsWith("extraneous input 'then'"));
     }
 
     @Test
     void parseIfExpressionMissingConsequent() {
-        var errors = testFailedParse("if false then else 1", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("if false then else 1", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors.get(0), startsWith("extraneous input 'else'"));
     }
 
     @Test
     void parseIfExpressionMissingAlternative() {
-        var errors = testFailedParse("if false then 0", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("if false then 0", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting 'else'"));
     }
 
     // Function application
     @Test
     void parseFunctionApplication() {
-        testSuccessfulParse("f(x)", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("f(x)", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
                         new Range(0, 0, 0, 4),
                         refNode(new Range(0, 0, 0, 1), "f"),
@@ -638,7 +599,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseNullaryFunctionApplication() {
-        testSuccessfulParse("f()", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("f()", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
                         new Range(0, 0, 0, 3),
                         refNode(new Range(0, 0, 0, 1), "f"),
@@ -647,7 +608,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseMultiArgFunctionApplication() {
-        testSuccessfulParse("f(x, y)", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("f(x, y)", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
                         new Range(0, 0, 0, 7),
                         refNode(new Range(0, 0, 0, 1), "f"),
@@ -658,7 +619,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseNestedFunctionApplication() {
-        testSuccessfulParse("f(g(x))", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("f(g(x))", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
                         new Range(0, 0, 0, 7),
                         refNode(new Range(0, 0, 0, 1), "f"),
@@ -671,7 +632,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseCurriedFunctionApplication() {
-        testSuccessfulParse("f(x)(y)", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("f(x)(y)", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
                         new Range(0, 0, 0, 7),
                         applyNode(
@@ -683,7 +644,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseFunctionApplicationWithGroupingParens() {
-        testSuccessfulParse("f((x)(y))", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("f((x)(y))", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
                         new Range(0, 0, 0, 9),
                         refNode(new Range(0, 0, 0, 1), "f"),
@@ -696,7 +657,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseRedex() {
-        testSuccessfulParse("(x -> x)(1)", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("(x -> x)(1)", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
                         new Range(0, 0, 0, 11),
                         lambdaExprNode(
@@ -709,7 +670,7 @@ public class CompilationUnitParserTest {
     // Match expressions
     @Test
     void parseNoAltMatchExpression() {
-        testSuccessfulParse("match x with {}", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("match x with {}", Parser::getExprVisitor, MinaParser::expr,
                 matchNode(
                         new Range(0, 0, 0, 15),
                         refNode(new Range(0, 6, 0, 7), "x"),
@@ -718,7 +679,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseIdPatternMatchExpression() {
-        testSuccessfulParse("match x with { case y -> z }", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("match x with { case y -> z }", Parser::getExprVisitor, MinaParser::expr,
                 matchNode(
                         new Range(0, 0, 0, 28),
                         refNode(new Range(0, 6, 0, 7), "x"),
@@ -731,7 +692,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseIdPatternAlias() {
-        testSuccessfulParse("case x @ y -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case x @ y -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 15),
                         idPatternNode(new Range(0, 5, 0, 10), Optional.of("x"), "y"),
@@ -740,7 +701,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralIntPattern() {
-        testSuccessfulParse("case 1 -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case 1 -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 11),
                         literalPatternNode(new Range(0, 5, 0, 6), Optional.empty(), intNode(new Range(0, 5, 0, 6), 1)),
@@ -749,7 +710,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralIntPatternAlias() {
-        testSuccessfulParse("case x @ 1 -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case x @ 1 -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 15),
                         literalPatternNode(new Range(0, 5, 0, 10), Optional.of("x"),
@@ -759,7 +720,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralLongPattern() {
-        testSuccessfulParse("case 9_999_999L -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case 9_999_999L -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 20),
                         literalPatternNode(new Range(0, 5, 0, 15), Optional.empty(),
@@ -769,7 +730,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralBooleanPattern() {
-        testSuccessfulParse("case true -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case true -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 14),
                         literalPatternNode(new Range(0, 5, 0, 9), Optional.empty(),
@@ -779,7 +740,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralCharPattern() {
-        testSuccessfulParse("case '\\r' -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case '\\r' -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 14),
                         literalPatternNode(new Range(0, 5, 0, 9), Optional.empty(),
@@ -789,7 +750,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralStringPattern() {
-        testSuccessfulParse("case \"Hello\\n\" -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case \"Hello\\n\" -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 19),
                         literalPatternNode(new Range(0, 5, 0, 14), Optional.empty(),
@@ -799,7 +760,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralFloatPattern() {
-        testSuccessfulParse("case 1.234e+2f -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case 1.234e+2f -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 19),
                         literalPatternNode(new Range(0, 5, 0, 14), Optional.empty(),
@@ -809,7 +770,7 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralDoublePattern() {
-        testSuccessfulParse("case 1.234e+2 -> x", CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+        testSuccessfulParse("case 1.234e+2 -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 18),
                         literalPatternNode(new Range(0, 5, 0, 13), Optional.empty(),
@@ -820,7 +781,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseConstructorPattern() {
         testSuccessfulParse("case Cons { head } -> head",
-                CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+                Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 26),
                         constructorPatternNode(
@@ -836,7 +797,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseConstructorPatternAlias() {
         testSuccessfulParse("case cons @ Cons { head } -> head",
-                CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+                Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 33),
                         constructorPatternNode(
@@ -852,7 +813,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseConstructorPatternWithFieldPattern() {
         testSuccessfulParse("case Cons { head, tail: Nil {}  } -> head",
-                CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+                Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 41),
                         constructorPatternNode(
@@ -874,7 +835,7 @@ public class CompilationUnitParserTest {
     @Test
     void parseConstructorPatternNestedPatternAlias() {
         testSuccessfulParse("case Cons { head, tail: nil @ Nil {}  } -> head",
-                CompilationUnitParser::getMatchCaseVisitor, MinaParser::matchCase,
+                Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 47),
                         constructorPatternNode(
@@ -896,29 +857,29 @@ public class CompilationUnitParserTest {
     // Atomic expressions
     @Test
     void parseLiteralInt() {
-        testSuccessfulParse("0", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("0", Parser::getExprVisitor, MinaParser::expr,
                 intNode(new Range(0, 0, 0, 1), 0));
-        testSuccessfulParse("1", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1", Parser::getExprVisitor, MinaParser::expr,
                 intNode(new Range(0, 0, 0, 1), 1));
-        testSuccessfulParse("1i", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1i", Parser::getExprVisitor, MinaParser::expr,
                 intNode(new Range(0, 0, 0, 2), 1));
-        testSuccessfulParse("1I", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1I", Parser::getExprVisitor, MinaParser::expr,
                 intNode(new Range(0, 0, 0, 2), 1));
     }
 
     @Test
     void parseLiteralIntUnderscores() {
-        testSuccessfulParse("9_999_999", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("9_999_999", Parser::getExprVisitor, MinaParser::expr,
                 intNode(new Range(0, 0, 0, 9), 9999999));
-        testSuccessfulParse("9_999_999i", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("9_999_999i", Parser::getExprVisitor, MinaParser::expr,
                 intNode(new Range(0, 0, 0, 10), 9999999));
-        testSuccessfulParse("9_999_999I", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("9_999_999I", Parser::getExprVisitor, MinaParser::expr,
                 intNode(new Range(0, 0, 0, 10), 9999999));
     }
 
     @Test
     void parseLiteralIntOverflow() {
-        var errors = testFailedParse(Long.toString(1L + Integer.MAX_VALUE), CompilationUnitParser::getExprVisitor,
+        var errors = testFailedParse(Long.toString(1L + Integer.MAX_VALUE), Parser::getExprVisitor,
                 MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("Integer overflow detected"));
@@ -926,19 +887,19 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralLong() {
-        testSuccessfulParse("0l", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("0l", Parser::getExprVisitor, MinaParser::expr,
                 longNode(new Range(0, 0, 0, 2), 0L));
-        testSuccessfulParse("1l", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1l", Parser::getExprVisitor, MinaParser::expr,
                 longNode(new Range(0, 0, 0, 2), 1L));
-        testSuccessfulParse("1L", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1L", Parser::getExprVisitor, MinaParser::expr,
                 longNode(new Range(0, 0, 0, 2), 1L));
     }
 
     @Test
     void parseLiteralLongUnderscores() {
-        testSuccessfulParse("9_999_999l", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("9_999_999l", Parser::getExprVisitor, MinaParser::expr,
                 longNode(new Range(0, 0, 0, 10), 9999999L));
-        testSuccessfulParse("9_999_999L", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("9_999_999L", Parser::getExprVisitor, MinaParser::expr,
                 longNode(new Range(0, 0, 0, 10), 9999999L));
     }
 
@@ -946,62 +907,62 @@ public class CompilationUnitParserTest {
     void parseLiteralLongOverflow() {
         System.out.println(BigDecimal.ONE.add(BigDecimal.valueOf(Long.MAX_VALUE)));
         var errors = testFailedParse(BigDecimal.ONE.add(BigDecimal.valueOf(Long.MAX_VALUE)).toString() + "L",
-                CompilationUnitParser::getExprVisitor, MinaParser::expr);
+                Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("Long overflow detected"));
     }
 
     @Test
     void parseLiteralFloat() {
-        testSuccessfulParse("123.4f", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("123.4f", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 6), 123.4f));
-        testSuccessfulParse("123.4F", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("123.4F", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 6), 123.4f));
     }
 
     @Test
     void parseLiteralFloatNoIntegerPart() {
-        testSuccessfulParse(".1f", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".1f", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 3), .1f));
-        testSuccessfulParse(".1F", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".1F", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 3), .1f));
     }
 
     @Test
     void parseLiteralFloatUnderscores() {
-        testSuccessfulParse(".9_999_999f", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".9_999_999f", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 11), 0.9999999f));
-        testSuccessfulParse(".9_999_999F", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".9_999_999F", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 11), 0.9999999f));
     }
 
     @Test
     void parseLiteralFloatPositiveExponent() {
-        testSuccessfulParse("1.234e+2f", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e+2f", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e+2f));
-        testSuccessfulParse("1.234e+2F", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e+2F", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e+2f));
-        testSuccessfulParse("1.234E+2f", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E+2f", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e+2f));
-        testSuccessfulParse("1.234E+2F", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E+2F", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e+2f));
     }
 
     @Test
     void parseLiteralFloatNegativeExponent() {
-        testSuccessfulParse("1.234e-2f", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e-2f", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e-2f));
-        testSuccessfulParse("1.234e-2F", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e-2F", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e-2f));
-        testSuccessfulParse("1.234E-2f", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E-2f", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e-2f));
-        testSuccessfulParse("1.234E-2F", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E-2F", Parser::getExprVisitor, MinaParser::expr,
                 floatNode(new Range(0, 0, 0, 9), 1.234e-2f));
     }
 
     @Test
     void parseLiteralFloatPrecisionLoss() {
-        var errors = testFailedParse("1.23456789f", CompilationUnitParser::getExprVisitor,
+        var errors = testFailedParse("1.23456789f", Parser::getExprVisitor,
                 MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("Float precision loss detected"));
@@ -1009,65 +970,65 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralDouble() {
-        testSuccessfulParse("123.4", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("123.4", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 5), 123.4d));
-        testSuccessfulParse("123.4d", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("123.4d", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 6), 123.4d));
-        testSuccessfulParse("123.4D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("123.4D", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 6), 123.4d));
     }
 
     @Test
     void parseLiteralDoubleNoIntegerPart() {
-        testSuccessfulParse(".1", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".1", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 2), .1d));
-        testSuccessfulParse(".1d", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".1d", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 3), .1d));
-        testSuccessfulParse(".1D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".1D", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 3), .1d));
     }
 
     @Test
     void parseLiteralDoubleUnderscores() {
-        testSuccessfulParse(".9_999_999", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".9_999_999", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 10), 0.9999999d));
-        testSuccessfulParse(".9_999_999d", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".9_999_999d", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 11), 0.9999999d));
-        testSuccessfulParse(".9_999_999D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse(".9_999_999D", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 11), 0.9999999d));
     }
 
     @Test
     void parseLiteralDoublePositiveExponent() {
-        testSuccessfulParse("1.234e+2", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e+2", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 8), 1.234e+2d));
-        testSuccessfulParse("1.234e+2d", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e+2d", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e+2d));
-        testSuccessfulParse("1.234e+2D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e+2D", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e+2d));
-        testSuccessfulParse("1.234E+2d", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E+2d", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e+2d));
-        testSuccessfulParse("1.234E+2D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E+2D", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e+2d));
     }
 
     @Test
     void parseLiteralDoubleNegativeExponent() {
-        testSuccessfulParse("1.234e-2", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e-2", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 8), 1.234e-2d));
-        testSuccessfulParse("1.234e-2d", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e-2d", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e-2d));
-        testSuccessfulParse("1.234e-2D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234e-2D", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e-2d));
-        testSuccessfulParse("1.234E-2d", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E-2d", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e-2d));
-        testSuccessfulParse("1.234E-2D", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("1.234E-2D", Parser::getExprVisitor, MinaParser::expr,
                 doubleNode(new Range(0, 0, 0, 9), 1.234e-2d));
     }
 
     @Test
     void parseLiteralDoublePrecisionLoss() {
-        var errors = testFailedParse("4.9E-325", CompilationUnitParser::getExprVisitor,
+        var errors = testFailedParse("4.9E-325", Parser::getExprVisitor,
                 MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("Double precision loss detected"));
@@ -1075,98 +1036,98 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseLiteralTrue() {
-        testSuccessfulParse("true", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("true", Parser::getExprVisitor, MinaParser::expr,
                 boolNode(new Range(0, 0, 0, 4), true));
     }
 
     @Test
     void parseLiteralFalse() {
-        testSuccessfulParse("false", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("false", Parser::getExprVisitor, MinaParser::expr,
                 boolNode(new Range(0, 0, 0, 5), false));
     }
 
     @Test
     void parseLiteralChar() {
-        testSuccessfulParse("'a'", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("'a'", Parser::getExprVisitor, MinaParser::expr,
                 charNode(new Range(0, 0, 0, 3), 'a'));
     }
 
     @Test
     void parseLiteralCharEscape() {
-        testSuccessfulParse("'\\n'", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("'\\n'", Parser::getExprVisitor, MinaParser::expr,
                 charNode(new Range(0, 0, 0, 4), '\n'));
     }
 
     @Test
     void parseLiteralSingleQuoteChar() {
-        testSuccessfulParse("'\\\''", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("'\\\''", Parser::getExprVisitor, MinaParser::expr,
                 charNode(new Range(0, 0, 0, 4), '\''));
     }
 
     @Test
     void parseLiteralBackslashChar() {
-        testSuccessfulParse("'\\\\'", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("'\\\\'", Parser::getExprVisitor, MinaParser::expr,
                 charNode(new Range(0, 0, 0, 4), '\\'));
     }
 
     @Test
     void parseLiteralCharUnicodeEscape() {
-        testSuccessfulParse("'\\u2022'", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("'\\u2022'", Parser::getExprVisitor, MinaParser::expr,
                 charNode(new Range(0, 0, 0, 8), '\u2022'));
     }
 
     @Test
     void parseLiteralString() {
-        testSuccessfulParse("\"abc\"", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("\"abc\"", Parser::getExprVisitor, MinaParser::expr,
                 stringNode(new Range(0, 0, 0, 5), "abc"));
     }
 
     @Test
     void parseLiteralStringEscape() {
-        testSuccessfulParse("\"Hello\\n\"", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("\"Hello\\n\"", Parser::getExprVisitor, MinaParser::expr,
                 stringNode(new Range(0, 0, 0, 9), "Hello\n"));
     }
 
     @Test
     void parseLiteralDoubleQuoteString() {
-        testSuccessfulParse("\"\\\"\"", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("\"\\\"\"", Parser::getExprVisitor, MinaParser::expr,
                 stringNode(new Range(0, 0, 0, 4), "\""));
     }
 
     @Test
     void parseLiteralBackslashString() {
-        testSuccessfulParse("\"\\\\\"", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("\"\\\\\"", Parser::getExprVisitor, MinaParser::expr,
                 stringNode(new Range(0, 0, 0, 4), "\\"));
     }
 
     @Test
     void parseLiteralStringUnicodeEscape() {
-        testSuccessfulParse("\"\\u2022 Unicode escape\"", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("\"\\u2022 Unicode escape\"", Parser::getExprVisitor, MinaParser::expr,
                 stringNode(new Range(0, 0, 0, 23), "\u2022 Unicode escape"));
     }
 
     @Test
     void parseUnqualifiedId() {
-        testSuccessfulParse("foo", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("foo", Parser::getExprVisitor, MinaParser::expr,
                 refNode(new Range(0, 0, 0, 3), "foo"));
     }
 
     @Test
     void parseQualifiedId() {
-        testSuccessfulParse("Parser.compilationUnit", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
                 refNode(new Range(0, 0, 0, 22), modIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
     }
 
     @Test
     void parseQNMissingId() {
-        var errors = testFailedParse("Parser.", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("Parser.", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
     }
 
     @Test
     void parseFullyQualifiedId() {
-        testSuccessfulParse("Mina/Test/Parser.compilationUnit", CompilationUnitParser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("Mina/Test/Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
                 refNode(new Range(0, 0, 0, 32),
                         modIdNode(new Range(0, 0, 0, 16), Lists.immutable.of("Mina", "Test"), "Parser"),
                         "compilationUnit"));
@@ -1174,21 +1135,21 @@ public class CompilationUnitParserTest {
 
     @Test
     void parseFQNMissingId() {
-        var errors = testFailedParse("Mina/Test/Parser.", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("Mina/Test/Parser.", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
     }
 
     @Test
     void parsePackageOnly() {
-        var errors = testFailedParse("Mina/Test/Parser", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("Mina/Test/Parser", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting '.'"));
     }
 
     @Test
     void parseExprEmptyString() {
-        var errors = testFailedParse("", CompilationUnitParser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
     }

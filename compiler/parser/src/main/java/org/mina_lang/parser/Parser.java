@@ -1,5 +1,14 @@
 package org.mina_lang.parser;
 
+import static org.mina_lang.syntax.SyntaxNodes.*;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -12,16 +21,7 @@ import org.mina_lang.common.Range;
 import org.mina_lang.parser.MinaParser.*;
 import org.mina_lang.syntax.*;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-public class CompilationUnitParser {
+public class Parser {
 
     private ANTLRDiagnosticCollector errorListener;
 
@@ -41,7 +41,7 @@ public class CompilationUnitParser {
     private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
     private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
 
-    public CompilationUnitParser(ANTLRDiagnosticCollector errorListener) {
+    public Parser(ANTLRDiagnosticCollector errorListener) {
         this.errorListener = errorListener;
     }
 
@@ -107,12 +107,12 @@ public class CompilationUnitParser {
     }
 
     public CompilationUnitNode<Void> parse(CharStream charStream) {
-        return parse(charStream, CompilationUnitParser::getCompilationUnitVisitor, MinaParser::compilationUnit);
+        return parse(charStream, Parser::getCompilationUnitVisitor, MinaParser::compilationUnit);
     }
 
     <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             String source,
-            Function<CompilationUnitParser, C> visitor,
+            Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
         var charStream = CharStreams.fromString(source);
         return parse(charStream, visitor, startRule);
@@ -120,7 +120,7 @@ public class CompilationUnitParser {
 
     <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
             CharStream charStream,
-            Function<CompilationUnitParser, C> visitor,
+            Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
         var lexer = new MinaLexer(charStream);
         lexer.addErrorListener(errorListener);

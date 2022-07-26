@@ -3,7 +3,7 @@ package org.mina_lang.langserver;
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
-import org.mina_lang.parser.CompilationUnitParser;
+import org.mina_lang.parser.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(document.getText(), document.getUri());
-                    return new CompilationUnitParser(diagnosticCollector).parse(charStream);
+                    return new Parser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
                             new PublishDiagnosticsParams(document.getUri(), diagnosticCollector.getLSPDiagnostics()));
@@ -49,7 +49,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
                     var charStream = CharStreams.fromString(newDocument.getText(), newDocument.getUri());
-                    return new CompilationUnitParser(diagnosticCollector).parse(charStream);
+                    return new Parser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
                             new PublishDiagnosticsParams(newDocument.getUri(), diagnosticCollector.getLSPDiagnostics()));

@@ -1,5 +1,7 @@
 grammar Mina;
 
+options { superClass=org.antlr.v4.runtime.Parser; }
+
 @lexer::header {
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
