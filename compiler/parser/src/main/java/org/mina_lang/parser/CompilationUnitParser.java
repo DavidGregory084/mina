@@ -23,7 +23,7 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class CompilationUnitParser {
 
-    private ANTLRErrorListener errorListener;
+    private ANTLRDiagnosticCollector errorListener;
 
     private CompilationUnitVisitor compilationUnitVisitor = new CompilationUnitVisitor();
     private ModuleIdVisitor moduleIdVisitor = new ModuleIdVisitor();
@@ -41,7 +41,7 @@ public class CompilationUnitParser {
     private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
     private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
 
-    public CompilationUnitParser(ANTLRErrorListener errorListener) {
+    public CompilationUnitParser(ANTLRDiagnosticCollector errorListener) {
         this.errorListener = errorListener;
     }
 
@@ -256,8 +256,10 @@ public class CompilationUnitParser {
         @Override
         public LetFnDeclarationNode<Void> visitLetFnDeclaration(LetFnDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar, typeVisitor::visitTypeVar);
-            var valueParams = visitNullableRepeated(ctx.lambdaParams(), LambdaParamsContext::lambdaParam, paramVisitor::visitLambdaParam);
+            var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar,
+                    typeVisitor::visitTypeVar);
+            var valueParams = visitNullableRepeated(ctx.lambdaParams(), LambdaParamsContext::lambdaParam,
+                    paramVisitor::visitLambdaParam);
             var expr = exprVisitor.visitNullable(ctx.expr());
             var type = typeVisitor.visitNullable(ctx.typeAnnotation());
             return letFnDeclarationNode(contextRange(ctx), name, typeParams, valueParams, type, expr);
@@ -483,27 +485,25 @@ public class CompilationUnitParser {
 
     class LiteralVisitor extends Visitor<LiteralContext, LiteralNode<Void>> {
 
-        private LiteralIntNode<Void> safeIntNode(Range range, Token token, String withoutSuffix) {
+        private LiteralIntNode<Void> safeIntNode(Range range, String withoutSuffix) {
+            var decimalValue = new BigInteger(withoutSuffix);
             try {
-                var decimalValue = new BigInteger(withoutSuffix);
                 var intValue = decimalValue.intValueExact();
                 return intNode(range, intValue);
             } catch (ArithmeticException exc) {
-                errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
-                        "Integer overflow detected", null);
-                return null;
+                errorListener.reportWarning(range, "Integer overflow detected");
+                return intNode(range, decimalValue.intValue());
             }
         }
 
-        private LiteralLongNode<Void> safeLongNode(Range range, Token token, String withoutSuffix) {
+        private LiteralLongNode<Void> safeLongNode(Range range, String withoutSuffix) {
+            var decimalValue = new BigInteger(withoutSuffix);
             try {
-                var decimalValue = new BigInteger(withoutSuffix);
                 var longValue = decimalValue.longValueExact();
                 return longNode(range, longValue);
             } catch (ArithmeticException exc) {
-                errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
-                        "Long overflow detected", null);
-                return null;
+                errorListener.reportWarning(range, "Long overflow detected");
+                return longNode(range, decimalValue.longValue());
             }
         }
 
@@ -511,32 +511,26 @@ public class CompilationUnitParser {
             var decimalValue = new BigDecimal(withoutSuffix);
             var floatValue = decimalValue.floatValue();
 
-            if (!(Float.isNaN(floatValue) || Float.isInfinite(floatValue))) {
-                if (new BigDecimal(String.valueOf(floatValue)).compareTo(decimalValue) == 0) {
-                    return floatNode(range, floatValue);
-                }
+            var outOfRange = Float.isNaN(floatValue) || Float.isInfinite(floatValue);
+            var notExact = new BigDecimal(String.valueOf(floatValue)).compareTo(decimalValue) != 0;
+            if (outOfRange || notExact) {
+                errorListener.reportWarning(range, "Float precision loss detected");
             }
 
-            errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
-                    "Float precision loss detected", null);
-
-            return null;
+            return floatNode(range, floatValue);
         }
 
         private LiteralDoubleNode<Void> safeDoubleNode(Range range, Token token, String withoutSuffix) {
             var decimalValue = new BigDecimal(withoutSuffix);
             var doubleValue = decimalValue.doubleValue();
 
-            if (!(Double.isNaN(doubleValue) || Double.isInfinite(doubleValue))) {
-                if (new BigDecimal(String.valueOf(doubleValue)).compareTo(decimalValue) == 0) {
-                    return doubleNode(range, doubleValue);
-                }
+            var outOfRange = Double.isNaN(doubleValue) || Double.isInfinite(doubleValue);
+            var notExact = new BigDecimal(String.valueOf(doubleValue)).compareTo(decimalValue) != 0;
+            if (outOfRange || notExact) {
+                errorListener.reportWarning(range, "Double precision loss detected");
             }
 
-            errorListener.syntaxError(null, token, token.getLine(), token.getCharPositionInLine(),
-                    "Double precision loss detected", null);
-
-            return null;
+            return doubleNode(range, doubleValue);
         }
 
         @Override
@@ -579,12 +573,12 @@ public class CompilationUnitParser {
             var intText = intExpr.getText().replace("_", "");
             if (intText.endsWith("l") || intText.endsWith("L")) {
                 var withoutSuffix = intText.substring(0, intText.length() - 1);
-                return safeLongNode(contextRange(ctx), intExpr.getSymbol(), withoutSuffix);
+                return safeLongNode(contextRange(ctx), withoutSuffix);
             } else if (intText.endsWith("i") || intText.endsWith("I")) {
                 var withoutSuffix = intText.substring(0, intText.length() - 1);
-                return safeIntNode(contextRange(ctx), intExpr.getSymbol(), withoutSuffix);
+                return safeIntNode(contextRange(ctx), withoutSuffix);
             } else {
-                return safeIntNode(contextRange(ctx), intExpr.getSymbol(), intText);
+                return safeIntNode(contextRange(ctx), intText);
             }
         }
 

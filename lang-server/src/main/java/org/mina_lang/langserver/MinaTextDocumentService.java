@@ -32,7 +32,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                     return new CompilationUnitParser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
-                            new PublishDiagnosticsParams(document.getUri(), diagnosticCollector.getDiagnostics()));
+                            new PublishDiagnosticsParams(document.getUri(), diagnosticCollector.getLSPDiagnostics()));
                 }
             }, server.getExecutor());
             syntaxTrees.addSyntaxTree(params, parsingFuture);
@@ -52,7 +52,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                     return new CompilationUnitParser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
-                            new PublishDiagnosticsParams(newDocument.getUri(), diagnosticCollector.getDiagnostics()));
+                            new PublishDiagnosticsParams(newDocument.getUri(), diagnosticCollector.getLSPDiagnostics()));
                 }
             }, server.getExecutor());
             syntaxTrees.updateSyntaxTree(params, parsingFuture);

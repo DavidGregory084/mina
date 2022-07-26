@@ -19,6 +19,9 @@ dependencies {
     // Language Server Protocol
     implementation(libs.lsp4j)
 
+    // Common Definitions
+    implementation(project(":compiler:common"))
+
     // Syntax Trees
     implementation(project(":compiler:syntax"))
 
