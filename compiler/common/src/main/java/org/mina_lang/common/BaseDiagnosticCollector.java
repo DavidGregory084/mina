@@ -1,11 +1,11 @@
 package org.mina_lang.common;
 
-import java.util.List;
-
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.MutableList;
 
-public class BaseDiagnosticCollector implements DiagnosticCollector {
+import java.util.List;
+
+public abstract class BaseDiagnosticCollector implements DiagnosticCollector {
     MutableList<Diagnostic> diagnostics = Lists.mutable.empty();
 
     public List<Diagnostic> getDiagnostics() {
