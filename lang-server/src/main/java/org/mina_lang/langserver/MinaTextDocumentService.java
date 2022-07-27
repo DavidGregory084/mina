@@ -32,7 +32,10 @@ public class MinaTextDocumentService implements TextDocumentService {
                     return new Parser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
-                            new PublishDiagnosticsParams(document.getUri(), diagnosticCollector.getLSPDiagnostics()));
+                            new PublishDiagnosticsParams(
+                                    document.getUri(),
+                                    diagnosticCollector.getLSPDiagnostics(),
+                                    document.getVersion()));
                 }
             }, server.getExecutor());
             syntaxTrees.addSyntaxTree(params, parsingFuture);
@@ -48,11 +51,14 @@ public class MinaTextDocumentService implements TextDocumentService {
             var parsingFuture = CompletableFuture.supplyAsync(() -> {
                 var diagnosticCollector = new MinaDiagnosticCollector();
                 try {
-                    var charStream = CharStreams.fromString(newDocument.getText(), newDocument.getUri());
+                    var charStream = CharStreams.fromString(newDocument.getText(), documentUri);
                     return new Parser(diagnosticCollector).parse(charStream);
                 } finally {
                     server.getClient().publishDiagnostics(
-                            new PublishDiagnosticsParams(newDocument.getUri(), diagnosticCollector.getLSPDiagnostics()));
+                            new PublishDiagnosticsParams(
+                                    newDocument.getUri(),
+                                    diagnosticCollector.getLSPDiagnostics(),
+                                    newDocument.getVersion()));
                 }
             }, server.getExecutor());
             syntaxTrees.updateSyntaxTree(params, parsingFuture);
