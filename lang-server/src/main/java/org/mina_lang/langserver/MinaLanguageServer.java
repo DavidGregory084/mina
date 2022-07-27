@@ -58,7 +58,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     public <A> CompletableFuture<A> ifInitialized(Function<CancelChecker, A> action) {
-        if (isInitialized()) {
+        if (isInitialized() && !isShutdown()) {
             return CompletableFutures.computeAsync(executor, cancelToken -> {
                 return action.apply(cancelToken);
             });
@@ -73,18 +73,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     public <A> CompletableFuture<A> ifInitializedAsync(Function<CancelChecker, CompletableFuture<A>> action) {
-        if (isInitialized()) {
-            return CompletableFutures.computeAsync(executor, cancelToken -> {
-                return action.apply(cancelToken);
-            }).thenCompose(x -> x);
-        } else {
-            var error = isShutdown()
-                    ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
-                    : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
-            var result = new CompletableFuture<A>();
-            result.completeExceptionally(new ResponseErrorException(error));
-            return result;
-        }
+        return ifInitialized(action).thenCompose(x -> x);
     }
 
     public void ifShouldNotify(Runnable action) {
