@@ -23,7 +23,7 @@ import org.mina_lang.syntax.*;
 
 public class Parser {
 
-    private ANTLRDiagnosticCollector errorListener;
+    private ANTLRDiagnosticCollector diagnostics;
 
     private CompilationUnitVisitor compilationUnitVisitor = new CompilationUnitVisitor();
     private ModuleIdVisitor moduleIdVisitor = new ModuleIdVisitor();
@@ -41,8 +41,8 @@ public class Parser {
     private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
     private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
 
-    public Parser(ANTLRDiagnosticCollector errorListener) {
-        this.errorListener = errorListener;
+    public Parser(ANTLRDiagnosticCollector diagnostics) {
+        this.diagnostics = diagnostics;
     }
 
     public CompilationUnitVisitor getCompilationUnitVisitor() {
@@ -123,10 +123,10 @@ public class Parser {
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
         var lexer = new MinaLexer(charStream);
-        lexer.addErrorListener(errorListener);
+        lexer.addErrorListener(diagnostics);
         var tokenStream = new CommonTokenStream(lexer);
         var parser = new MinaParser(tokenStream);
-        parser.addErrorListener(errorListener);
+        parser.addErrorListener(diagnostics);
         return visitor.apply(this).visitNullable(startRule.apply(parser));
     }
 
@@ -491,7 +491,7 @@ public class Parser {
                 var intValue = decimalValue.intValueExact();
                 return intNode(range, intValue);
             } catch (ArithmeticException exc) {
-                errorListener.reportWarning(range, "Integer overflow detected");
+                diagnostics.reportWarning(range, "Integer overflow detected");
                 return intNode(range, decimalValue.intValue());
             }
         }
@@ -502,7 +502,7 @@ public class Parser {
                 var longValue = decimalValue.longValueExact();
                 return longNode(range, longValue);
             } catch (ArithmeticException exc) {
-                errorListener.reportWarning(range, "Long overflow detected");
+                diagnostics.reportWarning(range, "Long overflow detected");
                 return longNode(range, decimalValue.longValue());
             }
         }
@@ -514,7 +514,7 @@ public class Parser {
             var outOfRange = Float.isNaN(floatValue) || Float.isInfinite(floatValue);
             var notExact = new BigDecimal(String.valueOf(floatValue)).compareTo(decimalValue) != 0;
             if (outOfRange || notExact) {
-                errorListener.reportWarning(range, "Float precision loss detected");
+                diagnostics.reportWarning(range, "Float precision loss detected");
             }
 
             return floatNode(range, floatValue);
@@ -527,7 +527,7 @@ public class Parser {
             var outOfRange = Double.isNaN(doubleValue) || Double.isInfinite(doubleValue);
             var notExact = new BigDecimal(String.valueOf(doubleValue)).compareTo(decimalValue) != 0;
             if (outOfRange || notExact) {
-                errorListener.reportWarning(range, "Double precision loss detected");
+                diagnostics.reportWarning(range, "Double precision loss detected");
             }
 
             return doubleNode(range, doubleValue);

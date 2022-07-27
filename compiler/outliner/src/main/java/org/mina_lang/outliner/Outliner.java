@@ -1,13 +1,12 @@
-package org.mina_lang.renamer;
+package org.mina_lang.outliner;
 
 import org.mina_lang.common.DiagnosticCollector;
 
-public class Renamer {
+public class Outliner {
 
     private DiagnosticCollector diagnostics;
 
-    public Renamer(DiagnosticCollector diagnostics) {
+    public Outliner(DiagnosticCollector diagnostics) {
         this.diagnostics = diagnostics;
     }
-
 }

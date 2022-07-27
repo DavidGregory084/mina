@@ -9,6 +9,7 @@ include("compiler:common")
 // Frontend
 include("compiler:syntax")
 include("compiler:parser")
+include("compiler:outliner")
 include("compiler:renamer")
 
 // Optimizer & code generation
