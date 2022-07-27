@@ -98,7 +98,15 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
             cancelToken.checkCanceled();
 
+            ProcessHandle
+                    .of(params.getProcessId())
+                    .ifPresent(processHandle -> {
+                        logger.info("Monitoring termination of parent process {}", processHandle.pid());
+                        processHandle.onExit().thenRun(this::exit);
+                    });
+
             var serverInfo = new ServerInfo("Mina Language Server", BuildInfo.version);
+
             return new InitializeResult(serverCapabilities, serverInfo);
         });
     }
