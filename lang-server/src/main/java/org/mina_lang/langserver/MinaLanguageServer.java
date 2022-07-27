@@ -12,6 +12,7 @@ import org.mina_lang.BuildInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -98,8 +99,8 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
             cancelToken.checkCanceled();
 
-            ProcessHandle
-                    .of(params.getProcessId())
+            Optional.ofNullable(params.getProcessId())
+                    .flatMap(ProcessHandle::of)
                     .ifPresent(processHandle -> {
                         logger.info("Monitoring termination of parent process {}", processHandle.pid());
                         processHandle.onExit().thenRun(this::exit);
