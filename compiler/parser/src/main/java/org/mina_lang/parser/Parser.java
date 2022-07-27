@@ -45,59 +45,59 @@ public class Parser {
         this.diagnostics = diagnostics;
     }
 
-    public CompilationUnitVisitor getCompilationUnitVisitor() {
+    CompilationUnitVisitor getCompilationUnitVisitor() {
         return compilationUnitVisitor;
     }
 
-    public ModuleVisitor getModuleVisitor() {
+    ModuleVisitor getModuleVisitor() {
         return moduleVisitor;
     }
 
-    public ImportVisitor getImportVisitor() {
+    ImportVisitor getImportVisitor() {
         return importVisitor;
     }
 
-    public DeclarationVisitor getDeclarationVisitor() {
+    DeclarationVisitor getDeclarationVisitor() {
         return declarationVisitor;
     }
 
-    public ConstructorVisitor getConstructorVisitor() {
+    ConstructorVisitor getConstructorVisitor() {
         return constructorVisitor;
     }
 
-    public ConstructorParamVisitor getConstructorParamVisitor() {
+    ConstructorParamVisitor getConstructorParamVisitor() {
         return constructorParamVisitor;
     }
 
-    public TypeVisitor getTypeVisitor() {
+    TypeVisitor getTypeVisitor() {
         return typeVisitor;
     }
 
-    public ExprVisitor getExprVisitor() {
+    ExprVisitor getExprVisitor() {
         return exprVisitor;
     }
 
-    public ParamVisitor getParamVisitor() {
+    ParamVisitor getParamVisitor() {
         return paramVisitor;
     }
 
-    public LiteralVisitor getLiteralVisitor() {
+    LiteralVisitor getLiteralVisitor() {
         return literalVisitor;
     }
 
-    public MatchCaseVisitor getMatchCaseVisitor() {
+    MatchCaseVisitor getMatchCaseVisitor() {
         return matchCaseVisitor;
     }
 
-    public PatternVisitor getPatternVisitor() {
+    PatternVisitor getPatternVisitor() {
         return patternVisitor;
     }
 
-    public FieldPatternVisitor getFieldPatternVisitor() {
+    FieldPatternVisitor getFieldPatternVisitor() {
         return fieldPatternVisitor;
     }
 
-    public QualifiedIdVisitor getQualifiedIdVisitor() {
+    QualifiedIdVisitor getQualifiedIdVisitor() {
         return qualifiedIdVisitor;
     }
 
