@@ -92,7 +92,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
             var textDocumentSyncOptions = new TextDocumentSyncOptions();
             textDocumentSyncOptions.setOpenClose(true);
-            textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);
+            textDocumentSyncOptions.setChange(TextDocumentSyncKind.Incremental);
             textDocumentSyncOptions.setSave(true);
 
             serverCapabilities.setTextDocumentSync(textDocumentSyncOptions);

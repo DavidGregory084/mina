@@ -134,7 +134,7 @@ literalString: LITERAL_STRING;
 moduleId: (pkg += ID RSLASH)* mod = ID;
 qualifiedId: (moduleId DOT)? ID;
 
-WHITESPACE: WS+ -> skip;
+WHITESPACE: WS+ -> channel(HIDDEN);
 
 // Package separator
 RSLASH: '/';

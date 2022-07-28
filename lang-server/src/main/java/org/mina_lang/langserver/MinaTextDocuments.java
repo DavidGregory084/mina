@@ -9,7 +9,7 @@ import org.eclipse.lsp4j.TextDocumentItem;
 public class MinaTextDocuments {
     private final ConcurrentHashMap<String, TextDocumentItem> documents = new ConcurrentHashMap<>();
 
-    public TextDocumentItem get(String uri) {
+    public TextDocumentItem getDocument(String uri) {
         return documents.get(uri);
     }
 
@@ -18,21 +18,15 @@ public class MinaTextDocuments {
         documents.put(document.getUri(), document);
     }
 
-    public void updateDocument(DidChangeTextDocumentParams params) {
-        var newDocument = params.getTextDocument();
-        var changes = params.getContentChanges();
-        if (!changes.isEmpty()) {
-            var existingDocument = get(newDocument.getUri());
-            if (existingDocument != null) {
-                var latestText = changes.get(changes.size() - 1).getText();
-                existingDocument.setVersion(newDocument.getVersion());
-                existingDocument.setText(latestText);
-            }
-        }
-    }
-
     public void removeDocument(DidCloseTextDocumentParams params) {
         var document = params.getTextDocument();
         documents.remove(document.getUri());
+    }
+
+    public TextDocumentItem updateDocument(DidChangeTextDocumentParams params) {
+        var newDocument = params.getTextDocument();
+        return documents.computeIfPresent(newDocument.getUri(), (uri, existingDocument) -> {
+            return TextDocument.applyChanges(existingDocument, params);
+        });
     }
 }

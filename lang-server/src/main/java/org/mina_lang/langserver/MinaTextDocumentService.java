@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public class MinaTextDocumentService implements TextDocumentService {
     private Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
@@ -20,23 +21,30 @@ public class MinaTextDocumentService implements TextDocumentService {
         this.server = server;
     }
 
+    private <A> A withDiagnostics(TextDocumentItem document, Function<MinaDiagnosticCollector, A> action) {
+        var diagnostics = new MinaDiagnosticCollector();
+        try {
+            return action.apply(diagnostics);
+        } finally {
+            server.getClient().publishDiagnostics(
+                    new PublishDiagnosticsParams(
+                            document.getUri(),
+                            diagnostics.getLSPDiagnostics(),
+                            document.getVersion()));
+        }
+    }
+
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
         server.ifShouldNotify(() -> {
             var document = params.getTextDocument();
+            var documentUri = document.getUri();
             documents.addDocument(params);
             var parsingFuture = CompletableFuture.supplyAsync(() -> {
-                var diagnosticCollector = new MinaDiagnosticCollector();
-                try {
-                    var charStream = CharStreams.fromString(document.getText(), document.getUri());
-                    return new Parser(diagnosticCollector).parse(charStream);
-                } finally {
-                    server.getClient().publishDiagnostics(
-                            new PublishDiagnosticsParams(
-                                    document.getUri(),
-                                    diagnosticCollector.getLSPDiagnostics(),
-                                    document.getVersion()));
-                }
+                return withDiagnostics(document, diagnostics -> {
+                    var charStream = CharStreams.fromString(document.getText(), documentUri);
+                    return new Parser(diagnostics).parse(charStream);
+                });
             }, server.getExecutor());
             syntaxTrees.addSyntaxTree(params, parsingFuture);
         });
@@ -45,21 +53,13 @@ public class MinaTextDocumentService implements TextDocumentService {
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
         server.ifShouldNotify(() -> {
-            documents.updateDocument(params);
             var documentUri = params.getTextDocument().getUri();
-            var newDocument = documents.get(documentUri);
+            var updatedDocument = documents.updateDocument(params);
             var parsingFuture = CompletableFuture.supplyAsync(() -> {
-                var diagnosticCollector = new MinaDiagnosticCollector();
-                try {
-                    var charStream = CharStreams.fromString(newDocument.getText(), documentUri);
-                    return new Parser(diagnosticCollector).parse(charStream);
-                } finally {
-                    server.getClient().publishDiagnostics(
-                            new PublishDiagnosticsParams(
-                                    newDocument.getUri(),
-                                    diagnosticCollector.getLSPDiagnostics(),
-                                    newDocument.getVersion()));
-                }
+                return withDiagnostics(updatedDocument, diagnostics -> {
+                    var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
+                    return new Parser(diagnostics).parse(charStream);
+                });
             }, server.getExecutor());
             syntaxTrees.updateSyntaxTree(params, parsingFuture);
         });
