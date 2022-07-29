@@ -106,4 +106,27 @@ public class TextDocumentTest {
                         }
                         """)));
     }
+
+    @Test
+    void testDeleteMultipleLines() {
+        var uri = "file:///ApplyChange.mina";
+
+        var document = new TextDocumentItem(
+                uri, "mina", 1, """
+                        module Mina/Test/ApplyChange {
+                            let foo = bar
+                            let baz = quu
+                        }
+                        """);
+
+        var params = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(uri, 2), List.of(
+                new TextDocumentContentChangeEvent(new Range(new Position(1, 0), new Position(3, 0)), "")));
+
+        assertThat(
+                TextDocument.applyChanges(document, params),
+                is(new TextDocumentItem(uri, "mina", 2, """
+                        module Mina/Test/ApplyChange {
+                        }
+                        """)));
+    }
 }
