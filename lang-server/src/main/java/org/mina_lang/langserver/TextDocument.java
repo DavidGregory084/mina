@@ -11,6 +11,9 @@ import java.util.regex.Pattern;
 public class TextDocument {
     private static final Pattern LINE_ENDINGS = Pattern.compile("(\\r\\n|\\r|\\n)");
 
+    private TextDocument() {
+    }
+
     private static int[] getLineIndices(String documentText) {
         var indices = IntLists.mutable.empty();
         var matcher = LINE_ENDINGS.matcher(documentText);
