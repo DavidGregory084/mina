@@ -17,7 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 @Command(name = "Mina Language Server", version = BuildInfo.version, mixinStandardHelpOptions = true)
-public class Launcher implements Callable<Void> {
+public class Launcher implements Callable<Integer> {
 
     @ArgGroup(exclusive = true, multiplicity = "1")
     private Transport transport;
@@ -43,16 +43,17 @@ public class Launcher implements Callable<Void> {
         System.exit(exitCode);
     }
 
-    private Void listenOn(InputStream in, OutputStream out) throws InterruptedException, ExecutionException {
+    private int listenOn(InputStream in, OutputStream out) throws InterruptedException, ExecutionException {
         var server = new MinaLanguageServer();
         var errWriter = new PrintWriter(System.err);
         var launcher = LSPLauncher.createServerLauncher(server, in, out, true, errWriter);
         server.connect(launcher.getRemoteProxy());
-        return launcher.startListening().get();
+        launcher.startListening().get();
+        return server.getExitCode();
     }
 
     @Override
-    public Void call() throws IOException, InterruptedException, ExecutionException {
+    public Integer call() throws IOException, InterruptedException, ExecutionException {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 

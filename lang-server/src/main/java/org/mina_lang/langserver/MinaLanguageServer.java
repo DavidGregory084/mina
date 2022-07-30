@@ -20,6 +20,7 @@ import java.util.function.Function;
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
 
+    private int exitCode = 0;
     private LanguageClient client;
     private MinaTextDocumentService documentService;
     private MinaWorkspaceService workspaceService;
@@ -56,6 +57,10 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
     public LanguageClient getClient() {
         return client;
+    }
+
+    public int getExitCode() {
+        return exitCode;
     }
 
     public <A> CompletableFuture<A> ifInitialized(Function<CancelChecker, A> action) {
@@ -131,16 +136,12 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         try {
             executor.shutdown();
             if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
-                System.exit(1);
+                exitCode = 1;
+            } else if (!isShutdown()) {
+                exitCode = 1;
             }
         } catch (InterruptedException e) {
-            System.exit(1);
-        } finally {
-            if (isShutdown()) {
-                System.exit(0);
-            } else {
-                System.exit(1);
-            }
+            exitCode = 1;
         }
     }
 
