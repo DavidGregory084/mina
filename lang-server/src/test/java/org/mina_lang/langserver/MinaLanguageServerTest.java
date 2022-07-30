@@ -148,10 +148,10 @@ public class MinaLanguageServerTest {
             withClientAndServer(clientIn, clientOut, testFunction);
             return exitCode;
         } finally {
-            System.setIn(sysIn);
-            System.setOut(sysOut);
             clientIn.close();
             clientOut.close();
+            System.setIn(sysIn);
+            System.setOut(sysOut);
         }
     }
 
