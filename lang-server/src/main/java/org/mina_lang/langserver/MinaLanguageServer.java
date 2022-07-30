@@ -135,6 +135,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     public void exit() {
         try {
             if (!isShutdown()) {
+                logger.error("Server exit request received before shutdown request");
                 exitCode = 1;
             }
 
