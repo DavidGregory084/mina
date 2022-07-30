@@ -134,10 +134,13 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     @Override
     public void exit() {
         try {
-            executor.shutdown();
-            if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
+            if (!isShutdown()) {
                 exitCode = 1;
-            } else if (!isShutdown()) {
+            }
+
+            executor.shutdown();
+
+            if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
                 exitCode = 1;
             }
         } catch (InterruptedException e) {
