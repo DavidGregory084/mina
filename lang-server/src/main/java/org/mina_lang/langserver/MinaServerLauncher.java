@@ -18,8 +18,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 @Command(name = "Mina Language Server", version = BuildInfo.version, mixinStandardHelpOptions = true)
-public class Launcher implements Callable<Integer> {
-    Logger logger = LoggerFactory.getLogger(Launcher.class);
+public class MinaServerLauncher implements Callable<Integer> {
+    Logger logger = LoggerFactory.getLogger(MinaServerLauncher.class);
 
     @ArgGroup(exclusive = true, multiplicity = "1")
     private Transport transport;
@@ -33,15 +33,10 @@ public class Launcher implements Callable<Integer> {
 
         @Option(names = { "--pipe" }, required = true, description = "Use named pipe at the given location.")
         String pipeName;
-
-        @Override
-        public String toString() {
-            return "Transport [pipe=" + pipeName + ", socket=" + socketPort + ", useStdio=" + useStdio + "]";
-        }
     }
 
     public static void main(String[] args) throws IOException {
-        int exitCode = new CommandLine(new Launcher()).execute(args);
+        int exitCode = new CommandLine(new MinaServerLauncher()).execute(args);
         System.exit(exitCode);
     }
 
