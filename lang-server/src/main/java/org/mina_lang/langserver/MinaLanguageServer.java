@@ -29,6 +29,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
     private AtomicReference<String> traceValue = new AtomicReference<>(TraceValue.Off);
+    private AtomicReference<ClientCapabilities> clientCapabilities = new AtomicReference<>();
 
     private ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(true)
@@ -94,6 +95,8 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
         return CompletableFutures.computeAsync(executor, cancelToken -> {
             cancelToken.checkCanceled();
+
+            clientCapabilities.set(params.getCapabilities());
 
             var serverCapabilities = new ServerCapabilities();
 
