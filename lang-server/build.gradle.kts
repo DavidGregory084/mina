@@ -39,5 +39,5 @@ buildInfo {
 }
 
 application {
-    mainClass.set("org.mina_lang.langserver.Launcher")
+    mainClass.set("org.mina_lang.langserver.MinaServerLauncher")
 }
