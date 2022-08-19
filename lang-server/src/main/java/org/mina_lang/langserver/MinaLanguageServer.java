@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
@@ -27,6 +28,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
+    private AtomicReference<String> traceValue = new AtomicReference<>(TraceValue.Off);
 
     private ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(true)
@@ -147,6 +149,13 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         } catch (InterruptedException e) {
             exitCode = 1;
         }
+    }
+
+    @Override
+    public void setTrace(SetTraceParams params) {
+        ifShouldNotify(() -> {
+            traceValue.set(params.getValue());
+        });
     }
 
     @Override
