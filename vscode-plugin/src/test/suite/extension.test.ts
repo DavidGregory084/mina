@@ -12,5 +12,5 @@ suite("Mina Language Extension", () => {
       .activate();
 
     return assert.ok(true);
-  }).timeout(30000);
+  }).timeout(60000);
 });
