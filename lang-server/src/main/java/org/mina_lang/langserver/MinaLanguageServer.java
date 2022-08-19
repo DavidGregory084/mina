@@ -25,6 +25,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private LanguageClient client;
     private MinaTextDocumentService documentService;
     private MinaWorkspaceService workspaceService;
+    private NotebookDocumentService notebookDocumentService;
 
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
@@ -44,6 +45,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     public MinaLanguageServer() {
         this.documentService = new MinaTextDocumentService(this);
         this.workspaceService = new MinaWorkspaceService(this);
+        this.notebookDocumentService = new MinaNotebookDocumentService(this);
     }
 
     public boolean isInitialized() {
@@ -169,6 +171,11 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     @Override
     public WorkspaceService getWorkspaceService() {
         return workspaceService;
+    }
+
+    @Override
+    public NotebookDocumentService getNotebookDocumentService() {
+        return notebookDocumentService;
     }
 
     @Override
