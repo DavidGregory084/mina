@@ -87,7 +87,7 @@ export async function activate(context: ExtensionContext) {
         ...gcOptions,
         "-cp",
         getServerClasspath.stdout,
-        "org.mina_lang.langserver.Launcher",
+        "org.mina_lang.langserver.MinaServerLauncher",
       ],
     };
 
