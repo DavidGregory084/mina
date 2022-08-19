@@ -17,7 +17,8 @@
     "format": "prettier --write src",
     "format-check": "npx prettier --check src",
     "pretest": "npm run compile",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "test-linux": "xvfb-run -a npm run test"
   },
   "dependencies": {
     "jdk-utils": "^0.4.3",

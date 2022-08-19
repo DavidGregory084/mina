@@ -49,18 +49,3 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           arguments: build --info
-
-      - name: Publish Gradle Modules
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: publish --info
-
-      - name: Build VS Code Extension
-        if: runner.os == 'Linux'
-        working-directory: vscode-plugin
-        run: npm install && xvfb-run -a npm run test --silent
-
-      - name: Build VS Code Extension
-        if: runner.os != 'Linux'
-        working-directory: vscode-plugin
-        run: npm install && npm run test --silent

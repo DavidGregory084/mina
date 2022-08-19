@@ -18,3 +18,6 @@ include("compiler:jvm")
 
 // Language server
 include("lang-server")
+
+// VS Code plugin
+include("vscode-plugin")
