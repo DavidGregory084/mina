@@ -12,13 +12,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
+
       - name: Setup Java JDK
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 17
-        
+          java-version: 18
+
       - name: Submit Gradle Dependencies
         uses: mikepenz/gradle-dependency-submission@v0.0.4
         with:

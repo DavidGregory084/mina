@@ -1,9 +1,12 @@
 .antlr/
 .gradle/
 .idea/
+.settings/
 .vscode/
 .vscode-test/
 bin/
 build/
 node_modules/
 out/
+.classpath
+.project
