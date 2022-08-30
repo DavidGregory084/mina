@@ -1,6 +1,6 @@
 # mina
 
-*mina* is a minimal viable functional programming language for the JVM.
+*mina* is a minimum viable functional programming language for the JVM.
 
 Everything is currently under construction and subject to change.
 
