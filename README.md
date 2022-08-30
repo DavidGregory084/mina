@@ -25,7 +25,7 @@ The project structure is as follows:
 * `gradle/libs.versions.toml` - this is the version catalog declaring dependencies and their versions. See the Gradle documentation about [The version catalog TOML file format](https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format) for more details.
 * `gradle-plugin` - mostly unimplemented; this will contain a Gradle plugin for declaring and building Mina projects.
 * `lang-server` - this contains an LSP-compatible language server implemented using [lsp4j](https://github.com/eclipse/lsp4j). Since only the parsing phase of the Mina compiler is implemented, this server currently only parses source files and highlights syntactic errors.
-* `proto` - unimplemented, currently nothing more than a copy of the Protobuf definitions from [DavidGregory084/inc](https://github.com/DavidGregory084/inc). This will contain Protobuf definitions for the language syntax and intermediate language. The AST of each module will be embedded in its Mina .class file as a custom class file attribute. The optimised intermediate language for definitions will be embedded in Mina .class files for the purposes of inlining. They will serve a similar purpose to Haskell .hi files.
+* `proto` - unimplemented, currently nothing more than a copy of the Protobuf definitions from [DavidGregory084/inc](https://github.com/DavidGregory084/inc). This will contain Protobuf definitions for the language syntax and intermediate language. The AST of each namespace will be embedded in its Mina .class file as a custom class file attribute. The optimised intermediate language for definitions will be embedded in Mina .class files for the purposes of inlining. They will serve a similar purpose to Haskell .hi files.
 * `vscode-plugin` - the VS Code plugin which interacts with the language server in `lang-server`.
 
 ## Getting started
@@ -50,18 +50,15 @@ Having said that, I would welcome GitHub discussions about the proposed language
 
 ## Notes
 
-### Nebulous ideas and suggestions
-
-* The `module` keyword should be renamed to `namespace` - the term "module" is overloaded too much in the Java ecosystem and means something quite different in ML languages too.
-* The existence of "compilation units" and the ability to declare multiple modules in a single source file is probably a misfeature and it would be good to remove it. A 1:1 relationship between source files and code units is a nice property to have.
-
 ### Planned features
+
+#### Major version shading
 
 It's planned that the Mina compiler will have a concept of packages and package versioning, so that it can automatically shade Java packages by major version.
 
-For example, for a module `mina/data/NonEmptyList`, the Java package compiled into the class file and the group ID used in the dependency metadata will be something like `mina.v0.data`.
+For example, for a namespace `mina/data/NonEmptyList`, the Java package compiled into the .class file and the group ID used in the dependency metadata will be something like `mina.v0.data`.
 
-When declaring Mina Gradle projects, the project major version must be declared. When consuming Mina dependencies, the package major version metadata will be used in linking to the underlying class file definitions.
+When declaring Mina Gradle projects, the project major version must be declared. When consuming Mina dependencies, the package major version metadata will be used in linking to the underlying .class file definitions.
 
 This should ameliorate the pains of major version migration by allowing dependencies to continue to make use of older major package versions.
 

@@ -2,13 +2,9 @@ package org.mina_lang.syntax;
 
 public interface MetaNodeTransformer<A, B> extends MetaNodeVisitor<A, MetaNode<B>> {
 
-    // Files
+    // Namespaces
     @Override
-    CompilationUnitNode<B> visitCompilationUnit(CompilationUnitNode<A> unit);
-
-    // Modules
-    @Override
-    ModuleNode<B> visitModule(ModuleNode<A> mod);
+    NamespaceNode<B> visitNamespace(NamespaceNode<A> mod);
 
     // Declarations
     @Override

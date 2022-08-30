@@ -16,7 +16,7 @@ public class TextDocumentTest {
 
         var document = new TextDocumentItem(
                 uri, "mina", 1, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let foo = baz
                         }
                         """);
@@ -27,7 +27,7 @@ public class TextDocumentTest {
         assertThat(
                 TextDocument.applyChanges(document, params),
                 is(new TextDocumentItem(uri, "mina", 2, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let bar = baz
                         }
                         """)));
@@ -39,7 +39,7 @@ public class TextDocumentTest {
 
         var document = new TextDocumentItem(
                 uri, "mina", 1, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let foo = bar
                         }
                         """);
@@ -51,7 +51,7 @@ public class TextDocumentTest {
         assertThat(
                 TextDocument.applyChanges(document, params),
                 is(new TextDocumentItem(uri, "mina", 2, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let foo = bar
                             let baz = quu
                         }
@@ -64,7 +64,7 @@ public class TextDocumentTest {
 
         var document = new TextDocumentItem(
                 uri, "mina", 1, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let foo = bar
                         }
                         """);
@@ -76,7 +76,7 @@ public class TextDocumentTest {
         assertThat(
                 TextDocument.applyChanges(document, params),
                 is(new TextDocumentItem(uri, "mina", 2, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let foo = bar
                             let baz = quu
                         }
@@ -89,7 +89,7 @@ public class TextDocumentTest {
 
         var document = new TextDocumentItem(
                 uri, "mina", 1, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let foo = bar
                             let baz = quu
                         }
@@ -101,7 +101,7 @@ public class TextDocumentTest {
         assertThat(
                 TextDocument.applyChanges(document, params),
                 is(new TextDocumentItem(uri, "mina", 2, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let baz = quu
                         }
                         """)));
@@ -113,7 +113,7 @@ public class TextDocumentTest {
 
         var document = new TextDocumentItem(
                 uri, "mina", 1, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                             let foo = bar
                             let baz = quu
                         }
@@ -125,7 +125,7 @@ public class TextDocumentTest {
         assertThat(
                 TextDocument.applyChanges(document, params),
                 is(new TextDocumentItem(uri, "mina", 2, """
-                        module Mina/Test/ApplyChange {
+                        namespace Mina/Test/ApplyChange {
                         }
                         """)));
     }

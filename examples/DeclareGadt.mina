@@ -1,4 +1,4 @@
-module Mina/Examples/DeclareGadt {
+namespace Mina/Examples/DeclareGadt {
     data Expr[A] {
         case Int(i: Int): Expr[Int]
         case Add(l: Expr[Int], r: Expr[Int]): Expr[Int]

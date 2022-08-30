@@ -3,11 +3,9 @@ package org.mina_lang.syntax;
 import java.util.function.Function;
 
 public interface MetaNodeVisitor<A, B> {
-    // Files
-    B visitCompilationUnit(CompilationUnitNode<A> unit);
 
-    // Modules
-    B visitModule(ModuleNode<A> mod);
+    // Namespaces
+    B visitNamespace(NamespaceNode<A> mod);
 
     // Declarations
     default B visitDeclaration(DeclarationNode<A> decl) {
@@ -105,14 +103,10 @@ public interface MetaNodeVisitor<A, B> {
 
     default <C> MetaNodeVisitor<A, C> map(Function<B, C> f) {
         return new MetaNodeVisitor<A, C>() {
-            @Override
-            public C visitCompilationUnit(CompilationUnitNode<A> unit) {
-                return f.apply(MetaNodeVisitor.this.visitCompilationUnit(unit));
-            }
 
             @Override
-            public C visitModule(ModuleNode<A> mod) {
-                return f.apply(MetaNodeVisitor.this.visitModule(mod));
+            public C visitNamespace(NamespaceNode<A> mod) {
+                return f.apply(MetaNodeVisitor.this.visitNamespace(mod));
             }
 
             @Override
@@ -244,14 +238,10 @@ public interface MetaNodeVisitor<A, B> {
 
     default <C, D extends MetaNodeVisitor<A, C>> MetaNodeVisitor<A, C> flatMap(Function<B, D> f) {
         return new MetaNodeVisitor<A, C>() {
-            @Override
-            public C visitCompilationUnit(CompilationUnitNode<A> unit) {
-                return f.apply(MetaNodeVisitor.this.visitCompilationUnit(unit)).visitCompilationUnit(unit);
-            }
 
             @Override
-            public C visitModule(ModuleNode<A> mod) {
-                return f.apply(MetaNodeVisitor.this.visitModule(mod)).visitModule(mod);
+            public C visitNamespace(NamespaceNode<A> mod) {
+                return f.apply(MetaNodeVisitor.this.visitNamespace(mod)).visitNamespace(mod);
             }
 
             @Override

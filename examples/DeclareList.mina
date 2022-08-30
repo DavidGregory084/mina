@@ -1,4 +1,4 @@
-module Mina/Examples/DeclareList {
+namespace Mina/Examples/DeclareList {
     import Mina/Examples/DeclareOption.{ Option, Some, None }
 
     data List[A] {

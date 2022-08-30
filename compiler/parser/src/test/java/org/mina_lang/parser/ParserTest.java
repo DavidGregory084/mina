@@ -14,14 +14,14 @@ import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Range;
 import org.mina_lang.parser.Parser.Visitor;
-import org.mina_lang.syntax.CompilationUnitNode;
 import org.mina_lang.syntax.MetaNode;
+import org.mina_lang.syntax.NamespaceNode;
 
-public class CompilationUnitParserTest {
+public class ParserTest {
 
     void testSuccessfulParse(
             String source,
-            CompilationUnitNode<Void> expected) {
+            NamespaceNode<Void> expected) {
         var errorCollector = new ErrorCollector();
         var actual = new Parser(errorCollector).parse(source);
         assertThat("There should be no parsing errors", errorCollector.getErrors(), empty());
@@ -62,57 +62,51 @@ public class CompilationUnitParserTest {
         return errors;
     }
 
-    // Module header
+    // Namespace header
     @Test
-    void parseModuleHeader() {
-        testSuccessfulParse("module Mina/Test/Parser {}",
-                compilationUnitNode(
-                        new Range(0, 0, 0, 31),
-                        Lists.immutable.of(
-                                moduleNode(
-                                        new Range(0, 0, 0, 26),
-                                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.empty()))));
+    void parseNamespaceHeader() {
+        testSuccessfulParse("namespace Mina/Test/Parser {}",
+                namespaceNode(
+                        new Range(0, 0, 0, 34),
+                        modIdNode(new Range(0, 10, 0, 26), Lists.immutable.of("Mina", "Test"), "Parser"),
+                        Lists.immutable.empty(),
+                        Lists.immutable.empty()));
     }
 
     @Test
-    void parseModuleHeaderEmptyPackage() {
-        testSuccessfulParse("module Parser {}",
-                compilationUnitNode(
-                        new Range(0, 0, 0, 21),
-                        Lists.immutable.of(
-                                moduleNode(
-                                        new Range(0, 0, 0, 16),
-                                        modIdNode(new Range(0, 7, 0, 13), "Parser"),
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.empty()))));
+    void parseNamespaceHeaderEmptyPackage() {
+        testSuccessfulParse("namespace Parser {}",
+                namespaceNode(
+                        new Range(0, 0, 0, 24),
+                        modIdNode(new Range(0, 10, 0, 16), "Parser"),
+                        Lists.immutable.empty(),
+                        Lists.immutable.empty()));
     }
 
     @Test
-    void parseModuleHeaderMissingName() {
-        var errors = testFailedParse("module {}");
+    void parseNamespaceHeaderMissingName() {
+        var errors = testFailedParse("namespace {}");
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '{' expecting ID"));
     }
 
     @Test
-    void parseModuleHeaderMissingOpenParen() {
-        var errors = testFailedParse("module Parser }");
+    void parseNamespaceHeaderMissingOpenParen() {
+        var errors = testFailedParse("namespace Parser }");
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("missing '{' at '}'"));
     }
 
     @Test
-    void parseModuleHeaderMissingCloseParen() {
-        var errors = testFailedParse("module Parser {");
+    void parseNamespaceHeaderMissingCloseParen() {
+        var errors = testFailedParse("namespace Parser {");
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
     }
 
     // Import declarations
     @Test
-    void parseImportModuleOnly() {
+    void parseImportNamespaceOnly() {
         testSuccessfulParse("import Mina/Test/Parser", Parser::getImportVisitor,
                 MinaParser::importDeclaration,
                 importNode(
@@ -121,7 +115,7 @@ public class CompilationUnitParserTest {
     }
 
     @Test
-    void parseImportEmptyPackageModuleOnly() {
+    void parseImportEmptyPackageNamespaceOnly() {
         testSuccessfulParse("import Parser", Parser::getImportVisitor, MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 13),

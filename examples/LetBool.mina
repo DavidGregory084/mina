@@ -1,4 +1,4 @@
-module Mina/Examples/LetBool {
+namespace Mina/Examples/LetBool {
     let truthy = true
     let falsey = false
 }

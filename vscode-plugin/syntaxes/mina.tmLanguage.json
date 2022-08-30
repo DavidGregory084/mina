@@ -52,8 +52,8 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(module)\\b",
-          "name": "keyword.other.module.mina"
+          "match": "\\b(namespace)\\b",
+          "name": "keyword.other.namespace.mina"
         },
         {
           "match": "\\b(import)\\b",

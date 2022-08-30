@@ -1,4 +1,4 @@
-module Mina/Examples/DeclareOption {
+namespace Mina/Examples/DeclareOption {
     data Option[A] {
         case Some(value: A)
         case None()
