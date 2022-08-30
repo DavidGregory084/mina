@@ -38,6 +38,7 @@ Prerequisites:
 To get started:
 
 * Build the entire project using `./gradlew build --info`. This also builds the VS Code plugin using [gradle-node-plugin](https://github.com/node-gradle/gradle-node-plugin) and publishes the language server to your local Ivy repository.
+* If you're using VS Code, run `./gradlew eclipse` to ensure that Eclipse JDT configuration files are generated. The Language Support for Java extension requires these in order to configure Java compiler options.
 * Open [the VS Code extension file](./vscode-plugin/src/extension.ts) in VS Code and hit F5 to launch the Extension Development Host. Try opening the `examples/` folder from this project. You can examine the build server logging in the "Mina Language Server" window of the VS Code Output tab. Try making deliberate syntax errors or declaring overflowing numeric literals.
 
 ## Contributing to this project
