@@ -85,6 +85,7 @@ export async function activate(context: ExtensionContext) {
       args: [
         `-DLOG_FOLDER=${context.logUri.fsPath}`,
         ...gcOptions,
+        "--enable-preview",
         "-cp",
         getServerClasspath.stdout,
         "org.mina_lang.langserver.MinaServerLauncher",
