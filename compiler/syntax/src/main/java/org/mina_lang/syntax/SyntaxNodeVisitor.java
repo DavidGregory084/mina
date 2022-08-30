@@ -3,13 +3,8 @@ package org.mina_lang.syntax;
 public interface SyntaxNodeVisitor {
     void visit(SyntaxNode node);
 
-    // Files
-    default void visitCompilationUnit(CompilationUnitNode<?> unit) {
-        visit(unit);
-    }
-
-    // Modules
-    default void visitModule(ModuleNode<?> mod) {
+    // Namespaces
+    default void visitNamespace(NamespaceNode<?> mod) {
         visit(mod);
     }
 
@@ -200,7 +195,7 @@ public interface SyntaxNodeVisitor {
     }
 
     // Identifiers
-    default void visitModuleId(ModuleIdNode<?> id) {
+    default void visitNamespaceId(NamespaceIdNode<?> id) {
         visit(id);
     }
 

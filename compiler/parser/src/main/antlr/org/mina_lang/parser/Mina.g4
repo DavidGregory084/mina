@@ -7,19 +7,15 @@ import java.text.Normalizer;
 import java.text.Normalizer.Form;
 }
 
-// Files
-compilationUnit: module* EOF;
-
-// Modules
-module:
-	MODULE moduleId LBRACE importDeclaration* declaration* RBRACE;
+// Namespaces
+namespace: NAMESPACE namespaceId LBRACE importDeclaration* declaration* RBRACE EOF;
 
 // Imports
 importDeclaration: IMPORT importSelector;
 
 importSelector:
-	moduleId (DOT symbols += ID)?
-	| moduleId DOT LBRACE symbols += ID (COMMA symbols += ID)* RBRACE;
+	namespaceId (DOT symbols += ID)?
+	| namespaceId DOT LBRACE symbols += ID (COMMA symbols += ID)* RBRACE;
 
 // Declarations
 declaration: dataDeclaration | letFnDeclaration | letDeclaration;
@@ -131,16 +127,16 @@ literalChar: LITERAL_CHAR;
 literalString: LITERAL_STRING;
 
 // Identifiers
-moduleId: (pkg += ID RSLASH)* mod = ID;
-qualifiedId: (moduleId DOT)? ID;
+namespaceId: (pkg += ID RSLASH)* ns = ID;
+qualifiedId: (namespaceId DOT)? ID;
 
 WHITESPACE: WS+ -> channel(HIDDEN);
 
 // Package separator
 RSLASH: '/';
 
-// Module header
-MODULE: 'module';
+// Namespace header
+NAMESPACE: 'namespace';
 IMPORT: 'import';
 
 // Top level declarations

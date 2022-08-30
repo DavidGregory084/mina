@@ -25,9 +25,8 @@ public class Parser {
 
     private ANTLRDiagnosticCollector diagnostics;
 
-    private CompilationUnitVisitor compilationUnitVisitor = new CompilationUnitVisitor();
-    private ModuleIdVisitor moduleIdVisitor = new ModuleIdVisitor();
-    private ModuleVisitor moduleVisitor = new ModuleVisitor();
+    private NamespaceIdVisitor namespaceIdVisitor = new NamespaceIdVisitor();
+    private NamespaceVisitor namespaceVisitor = new NamespaceVisitor();
     private ImportVisitor importVisitor = new ImportVisitor();
     private DeclarationVisitor declarationVisitor = new DeclarationVisitor();
     private ConstructorVisitor constructorVisitor = new ConstructorVisitor();
@@ -45,12 +44,8 @@ public class Parser {
         this.diagnostics = diagnostics;
     }
 
-    CompilationUnitVisitor getCompilationUnitVisitor() {
-        return compilationUnitVisitor;
-    }
-
-    ModuleVisitor getModuleVisitor() {
-        return moduleVisitor;
+    NamespaceVisitor getNamespaceVisitor() {
+        return namespaceVisitor;
     }
 
     ImportVisitor getImportVisitor() {
@@ -101,13 +96,13 @@ public class Parser {
         return qualifiedIdVisitor;
     }
 
-    public CompilationUnitNode<Void> parse(String source) {
+    public NamespaceNode<Void> parse(String source) {
         var charStream = CharStreams.fromString(source);
         return parse(charStream);
     }
 
-    public CompilationUnitNode<Void> parse(CharStream charStream) {
-        return parse(charStream, Parser::getCompilationUnitVisitor, MinaParser::compilationUnit);
+    public NamespaceNode<Void> parse(CharStream charStream) {
+        return parse(charStream, Parser::getNamespaceVisitor, MinaParser::namespace);
     }
 
     <A extends ParserRuleContext, B extends MetaNode<Void>, C extends Visitor<A, B>> B parse(
@@ -196,26 +191,17 @@ public class Parser {
         }
     }
 
-    class CompilationUnitVisitor extends Visitor<CompilationUnitContext, CompilationUnitNode<Void>> {
+    class NamespaceVisitor extends Visitor<NamespaceContext, NamespaceNode<Void>> {
 
         @Override
-        public CompilationUnitNode<Void> visitCompilationUnit(CompilationUnitContext ctx) {
-            var modules = visitRepeated(ctx.module(), moduleVisitor);
-            return compilationUnitNode(contextRange(ctx), modules);
-        }
-    }
-
-    class ModuleVisitor extends Visitor<ModuleContext, ModuleNode<Void>> {
-
-        @Override
-        public ModuleNode<Void> visitModule(ModuleContext ctx) {
-            var id = moduleIdVisitor.visitNullable(ctx.moduleId());
+        public NamespaceNode<Void> visitNamespace(NamespaceContext ctx) {
+            var id = namespaceIdVisitor.visitNullable(ctx.namespaceId());
 
             var imports = visitRepeated(ctx.importDeclaration(), importVisitor);
 
             var declarations = visitRepeated(ctx.declaration(), declarationVisitor);
 
-            return moduleNode(contextRange(ctx), id, imports, declarations);
+            return namespaceNode(contextRange(ctx), id, imports, declarations);
         }
     }
 
@@ -225,9 +211,9 @@ public class Parser {
         public ImportNode<Void> visitImportDeclaration(ImportDeclarationContext ctx) {
             var selector = Optional.ofNullable(ctx.importSelector());
 
-            var mod = selector
-                    .map(ImportSelectorContext::moduleId)
-                    .map(moduleIdVisitor::visitNullable)
+            var ns = selector
+                    .map(ImportSelectorContext::namespaceId)
+                    .map(namespaceIdVisitor::visitNullable)
                     .orElse(null);
 
             var symbols = selector
@@ -238,7 +224,7 @@ public class Parser {
                     })
                     .orElse(Lists.immutable.empty());
 
-            return importNode(contextRange(ctx), mod, symbols);
+            return importNode(contextRange(ctx), ns, symbols);
         }
     }
 
@@ -664,17 +650,17 @@ public class Parser {
         }
     }
 
-    class ModuleIdVisitor extends Visitor<ModuleIdContext, ModuleIdNode<Void>> {
+    class NamespaceIdVisitor extends Visitor<NamespaceIdContext, NamespaceIdNode<Void>> {
 
         @Override
-        public ModuleIdNode<Void> visitModuleId(ModuleIdContext ctx) {
+        public NamespaceIdNode<Void> visitNamespaceId(NamespaceIdContext ctx) {
             var pkg = ctx.pkg.stream()
                     .map(Token::getText)
                     .collect(Collectors2.toImmutableList());
 
-            var mod = Optional.ofNullable(ctx.mod).map(Token::getText).orElse(null);
+            var ns = Optional.ofNullable(ctx.ns).map(Token::getText).orElse(null);
 
-            return modIdNode(contextRange(ctx), pkg, mod);
+            return modIdNode(contextRange(ctx), pkg, ns);
         }
     }
 
@@ -682,9 +668,9 @@ public class Parser {
 
         @Override
         public QualifiedIdNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
-            var mod = moduleIdVisitor.visitNullable(ctx.moduleId());
+            var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
             var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            return idNode(contextRange(ctx), mod, id);
+            return idNode(contextRange(ctx), ns, id);
         }
     }
 }

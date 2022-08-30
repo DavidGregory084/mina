@@ -28,54 +28,17 @@ public class SyntaxNodeVisitorTest {
         assertThat(visitor.getEntries(), expected);
     }
 
-    // Units & modules
+    // Namespaces
     @ParameterizedTest
     @MethodSource("visitor")
-    void testVisitCompilationUnit(TracingSyntaxNodeVisitor visitor) {
-        var mod = compilationUnitNode(
-                new Range(0, 0, 4, 0),
-                Lists.immutable.of(moduleNode(
-                        new Range(0, 0, 4, 0),
-                        modIdNode(
-                                new Range(0, 7, 0, 24),
-                                Lists.immutable.of("Mina", "Test"), "Visitor"),
-                        Lists.immutable.of(
-                                importNode(
-                                        new Range(1, 4, 1, 27),
-                                        modIdNode(
-                                                new Range(1, 11, 1, 27),
-                                                Lists.immutable.of("Mina", "Test"), "Parser"))),
-                        Lists.immutable.of(
-                                letNode(
-                                        new Range(2, 4, 2, 13),
-                                        "x",
-                                        refNode(new Range(2, 12, 2, 13), "y"))
-
-                        ))));
-
-        var expected = contains(
-                new Entry(ModuleIdNode.class, new Range(0, 7, 0, 24)),
-                new Entry(ModuleIdNode.class, new Range(1, 11, 1, 27)),
-                new Entry(ImportNode.class, new Range(1, 4, 1, 27)),
-                new Entry(QualifiedIdNode.class, new Range(2, 12, 2, 13)),
-                new Entry(ReferenceNode.class, new Range(2, 12, 2, 13)),
-                new Entry(LetNode.class, new Range(2, 4, 2, 13)),
-                new Entry(ModuleNode.class, new Range(0, 0, 4, 0)),
-                new Entry(CompilationUnitNode.class, new Range(0, 0, 4, 0)));
-
-        expectEntries(visitor, mod, expected);
-    }
-
-    @ParameterizedTest
-    @MethodSource("visitor")
-    void testVisitModule(TracingSyntaxNodeVisitor visitor) {
+    void testVisitNamespace(TracingSyntaxNodeVisitor visitor) {
         /*
-         * module Mina/Test/Visitor {
+         * namespace Mina/Test/Visitor {
          * import Mina/Test/Parser
          * let x = y
          * }
          */
-        var mod = moduleNode(
+        var ns = namespaceNode(
                 new Range(0, 0, 4, 0),
                 modIdNode(
                         new Range(0, 7, 0, 24),
@@ -95,15 +58,15 @@ public class SyntaxNodeVisitorTest {
                 ));
 
         var expected = contains(
-                new Entry(ModuleIdNode.class, new Range(0, 7, 0, 24)),
-                new Entry(ModuleIdNode.class, new Range(1, 11, 1, 27)),
+                new Entry(NamespaceIdNode.class, new Range(0, 7, 0, 24)),
+                new Entry(NamespaceIdNode.class, new Range(1, 11, 1, 27)),
                 new Entry(ImportNode.class, new Range(1, 4, 1, 27)),
                 new Entry(QualifiedIdNode.class, new Range(2, 12, 2, 13)),
                 new Entry(ReferenceNode.class, new Range(2, 12, 2, 13)),
                 new Entry(LetNode.class, new Range(2, 4, 2, 13)),
-                new Entry(ModuleNode.class, new Range(0, 0, 4, 0)));
+                new Entry(NamespaceNode.class, new Range(0, 0, 4, 0)));
 
-        expectEntries(visitor, mod, expected);
+        expectEntries(visitor, ns, expected);
     }
 
     // Types

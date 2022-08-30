@@ -1,4 +1,4 @@
-module Mina/Examples/LetString {
+namespace Mina/Examples/LetString {
     let string = "example"
     let newLineString = "example\n"
     let bulletPointString = "\u2022 example"

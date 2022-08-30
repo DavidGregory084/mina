@@ -22,15 +22,9 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
         // do nothing - we're testing that the type-specific visitor methods are called
     }
 
-    // Files
+    // Namespaces
     @Override
-    public void visitCompilationUnit(CompilationUnitNode<?> unit) {
-        entries.add(new Entry(unit.getClass(), unit.range()));
-    }
-
-    // Modules
-    @Override
-    public void visitModule(ModuleNode<?> mod) {
+    public void visitNamespace(NamespaceNode<?> mod) {
         entries.add(new Entry(mod.getClass(), mod.range()));
     }
 
@@ -196,7 +190,7 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
 
     // Identifiers
     @Override
-    public void visitModuleId(ModuleIdNode<?> id) {
+    public void visitNamespaceId(NamespaceIdNode<?> id) {
         entries.add(new Entry(id.getClass(), id.range()));
     }
 
