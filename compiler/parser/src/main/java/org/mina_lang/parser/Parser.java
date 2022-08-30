@@ -110,7 +110,7 @@ public class Parser {
         return parse(charStream, Parser::getCompilationUnitVisitor, MinaParser::compilationUnit);
     }
 
-    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends MetaNode<Void>, C extends Visitor<A, B>> B parse(
             String source,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
@@ -118,7 +118,7 @@ public class Parser {
         return parse(charStream, visitor, startRule);
     }
 
-    <A extends ParserRuleContext, B extends SyntaxNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends MetaNode<Void>, C extends Visitor<A, B>> B parse(
             CharStream charStream,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
@@ -245,16 +245,16 @@ public class Parser {
     class DeclarationVisitor extends Visitor<DeclarationContext, DeclarationNode<Void>> {
 
         @Override
-        public DataDeclarationNode<Void> visitDataDeclaration(DataDeclarationContext ctx) {
+        public DataNode<Void> visitDataDeclaration(DataDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar,
                     typeVisitor::visitTypeVar);
             var constructors = visitRepeated(ctx.dataConstructor(), constructorVisitor);
-            return dataDeclarationNode(contextRange(ctx), name, typeParams, constructors);
+            return dataNode(contextRange(ctx), name, typeParams, constructors);
         }
 
         @Override
-        public LetFnDeclarationNode<Void> visitLetFnDeclaration(LetFnDeclarationContext ctx) {
+        public LetFnNode<Void> visitLetFnDeclaration(LetFnDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar,
                     typeVisitor::visitTypeVar);
@@ -262,15 +262,15 @@ public class Parser {
                     paramVisitor::visitLambdaParam);
             var expr = exprVisitor.visitNullable(ctx.expr());
             var type = typeVisitor.visitNullable(ctx.typeAnnotation());
-            return letFnDeclarationNode(contextRange(ctx), name, typeParams, valueParams, type, expr);
+            return letFnNode(contextRange(ctx), name, typeParams, valueParams, type, expr);
         }
 
         @Override
-        public LetDeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
+        public LetNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             var expr = exprVisitor.visitNullable(ctx.expr());
             var type = typeVisitor.visitNullable(ctx.typeAnnotation());
-            return letDeclarationNode(contextRange(ctx), name, type, expr);
+            return letNode(contextRange(ctx), name, type, expr);
         }
 
         @Override
@@ -379,7 +379,7 @@ public class Parser {
 
             var idNode = qualifiedIdNode.or(() -> varNode).orElse(null);
 
-            return typeReferenceNode(contextRange(ctx), idNode);
+            return typeRefNode(contextRange(ctx), idNode);
         }
 
         @Override
@@ -398,22 +398,22 @@ public class Parser {
         }
 
         @Override
-        public BlockExprNode<Void> visitBlockExpr(BlockExprContext ctx) {
+        public BlockNode<Void> visitBlockExpr(BlockExprContext ctx) {
             var declarationNodes = visitRepeated(ctx.letDeclaration(), declarationVisitor::visitLetDeclaration);
             var resultNode = visitNullable(ctx.expr());
-            return blockExprNode(contextRange(ctx), declarationNodes, resultNode);
+            return blockNode(contextRange(ctx), declarationNodes, resultNode);
         }
 
         @Override
-        public IfExprNode<Void> visitIfExpr(IfExprContext ctx) {
+        public IfNode<Void> visitIfExpr(IfExprContext ctx) {
             var conditionNode = visitNullable(ctx.expr(0));
             var consequentNode = visitNullable(ctx.expr(1));
             var alternativeNode = visitNullable(ctx.expr(2));
-            return ifExprNode(contextRange(ctx), conditionNode, consequentNode, alternativeNode);
+            return ifNode(contextRange(ctx), conditionNode, consequentNode, alternativeNode);
         }
 
         @Override
-        public LambdaExprNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
+        public LambdaNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
             var singleParam = Optional.ofNullable(ctx.ID())
                     .map(id -> {
                         var token = id.getSymbol();
@@ -427,7 +427,7 @@ public class Parser {
 
             var bodyNode = visitNullable(ctx.expr());
 
-            return lambdaExprNode(contextRange(ctx), params, bodyNode);
+            return lambdaNode(contextRange(ctx), params, bodyNode);
         }
 
         @Override
@@ -485,7 +485,7 @@ public class Parser {
 
     class LiteralVisitor extends Visitor<LiteralContext, LiteralNode<Void>> {
 
-        private LiteralIntNode<Void> safeIntNode(Range range, String withoutSuffix) {
+        private IntNode<Void> safeIntNode(Range range, String withoutSuffix) {
             var decimalValue = new BigInteger(withoutSuffix);
             try {
                 var intValue = decimalValue.intValueExact();
@@ -496,7 +496,7 @@ public class Parser {
             }
         }
 
-        private LiteralLongNode<Void> safeLongNode(Range range, String withoutSuffix) {
+        private LongNode<Void> safeLongNode(Range range, String withoutSuffix) {
             var decimalValue = new BigInteger(withoutSuffix);
             try {
                 var longValue = decimalValue.longValueExact();
@@ -507,7 +507,7 @@ public class Parser {
             }
         }
 
-        private LiteralFloatNode<Void> safeFloatNode(Range range, Token token, String withoutSuffix) {
+        private FloatNode<Void> safeFloatNode(Range range, Token token, String withoutSuffix) {
             var decimalValue = new BigDecimal(withoutSuffix);
             var floatValue = decimalValue.floatValue();
 
@@ -520,7 +520,7 @@ public class Parser {
             return floatNode(range, floatValue);
         }
 
-        private LiteralDoubleNode<Void> safeDoubleNode(Range range, Token token, String withoutSuffix) {
+        private DoubleNode<Void> safeDoubleNode(Range range, Token token, String withoutSuffix) {
             var decimalValue = new BigDecimal(withoutSuffix);
             var doubleValue = decimalValue.doubleValue();
 
@@ -540,7 +540,7 @@ public class Parser {
         }
 
         @Override
-        public LiteralBooleanNode<Void> visitLiteralBoolean(LiteralBooleanContext ctx) {
+        public BooleanNode<Void> visitLiteralBoolean(LiteralBooleanContext ctx) {
             if (ctx.TRUE() != null) {
                 return boolNode(contextRange(ctx), true);
             }
@@ -553,14 +553,14 @@ public class Parser {
         }
 
         @Override
-        public LiteralCharNode<Void> visitLiteralChar(LiteralCharContext ctx) {
+        public CharNode<Void> visitLiteralChar(LiteralCharContext ctx) {
             var charExpr = ctx.LITERAL_CHAR();
             var charValue = StringEscapeUtils.unescapeJava(charExpr.getText()).charAt(1);
             return charNode(contextRange(ctx), charValue);
         }
 
         @Override
-        public LiteralStringNode<Void> visitLiteralString(LiteralStringContext ctx) {
+        public StringNode<Void> visitLiteralString(LiteralStringContext ctx) {
             var stringExpr = ctx.LITERAL_STRING();
             var unescapedText = StringEscapeUtils.unescapeJava(stringExpr.getText());
             var stringValue = unescapedText.substring(1, unescapedText.length() - 1);

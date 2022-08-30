@@ -57,122 +57,122 @@ public class SyntaxNodes {
     }
 
     // Top level declarations
-    public static DataDeclarationNode<Void> dataDeclarationNode(
+    public static DataNode<Void> dataNode(
             Range range,
             String name,
             ImmutableList<TypeVarNode<Void>> typeParams,
             ImmutableList<ConstructorNode<Void>> constructors) {
-        return new DataDeclarationNode<>(Meta.empty(range), name, typeParams, constructors);
+        return new DataNode<>(Meta.empty(range), name, typeParams, constructors);
     }
 
-    public static <A> DataDeclarationNode<A> dataDeclarationNode(
+    public static <A> DataNode<A> dataNode(
             Meta<A> meta,
             String name,
-            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<TypeVarNode<A>> typeParams,
             ImmutableList<ConstructorNode<A>> constructors) {
-        return new DataDeclarationNode<>(meta, name, typeParams, constructors);
+        return new DataNode<>(meta, name, typeParams, constructors);
     }
 
-    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+    public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
             ImmutableList<TypeVarNode<Void>> typeParams,
             ImmutableList<ParamNode<Void>> valueParams,
             TypeNode<Void> returnType,
             ExprNode<Void> expr) {
-        return new LetFnDeclarationNode<>(Meta.empty(range), name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
+        return new LetFnNode<>(Meta.empty(range), name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
     }
 
-    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+    public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
-            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<TypeVarNode<A>> typeParams,
             ImmutableList<ParamNode<A>> valueParams,
-            TypeNode<Void> returnType,
+            TypeNode<A> returnType,
             ExprNode<A> expr) {
-        return new LetFnDeclarationNode<>(meta, name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
+        return new LetFnNode<>(meta, name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
     }
 
-    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+    public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
             ImmutableList<ParamNode<Void>> valueParams,
             TypeNode<Void> returnType,
             ExprNode<Void> expr) {
-        return new LetFnDeclarationNode<>(Meta.empty(range), name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
+        return new LetFnNode<>(Meta.empty(range), name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
     }
 
-    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+    public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
             ImmutableList<ParamNode<A>> valueParams,
-            TypeNode<Void> returnType,
+            TypeNode<A> returnType,
             ExprNode<A> expr) {
-        return new LetFnDeclarationNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
+        return new LetFnNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
     }
 
-    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+    public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
             ImmutableList<TypeVarNode<Void>> typeParams,
             ImmutableList<ParamNode<Void>> valueParams,
             ExprNode<Void> expr) {
-        return new LetFnDeclarationNode<>(Meta.empty(range), name, typeParams, valueParams, Optional.empty(), expr);
+        return new LetFnNode<>(Meta.empty(range), name, typeParams, valueParams, Optional.empty(), expr);
     }
 
-    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+    public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
-            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<TypeVarNode<A>> typeParams,
             ImmutableList<ParamNode<A>> valueParams,
             ExprNode<A> expr) {
-        return new LetFnDeclarationNode<>(meta, name, typeParams, valueParams, Optional.empty(), expr);
+        return new LetFnNode<>(meta, name, typeParams, valueParams, Optional.empty(), expr);
     }
 
-    public static LetFnDeclarationNode<Void> letFnDeclarationNode(
+    public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
             ImmutableList<ParamNode<Void>> valueParams,
             ExprNode<Void> expr) {
-        return new LetFnDeclarationNode<>(Meta.empty(range), name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
+        return new LetFnNode<>(Meta.empty(range), name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
     }
 
-    public static <A> LetFnDeclarationNode<A> letFnDeclarationNode(
+    public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
             ImmutableList<ParamNode<A>> valueParams,
             ExprNode<A> expr) {
-        return new LetFnDeclarationNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
+        return new LetFnNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
     }
 
-    public static LetDeclarationNode<Void> letDeclarationNode(
+    public static LetNode<Void> letNode(
             Range range,
             String name,
             TypeNode<Void> type,
             ExprNode<Void> expr) {
-        return new LetDeclarationNode<>(Meta.empty(range), name, Optional.ofNullable(type), expr);
+        return new LetNode<>(Meta.empty(range), name, Optional.ofNullable(type), expr);
     }
 
-    public static <A> LetDeclarationNode<A> letDeclarationNode(
+    public static <A> LetNode<A> letNode(
             Meta<A> meta,
             String name,
             TypeNode<Void> type,
             ExprNode<A> expr) {
-        return new LetDeclarationNode<>(meta, name, Optional.ofNullable(type), expr);
+        return new LetNode<>(meta, name, Optional.ofNullable(type), expr);
     }
 
-    public static LetDeclarationNode<Void> letDeclarationNode(
+    public static LetNode<Void> letNode(
             Range range,
             String name,
             ExprNode<Void> expr) {
-        return new LetDeclarationNode<>(Meta.empty(range), name, Optional.empty(), expr);
+        return new LetNode<>(Meta.empty(range), name, Optional.empty(), expr);
     }
 
-    public static <A> LetDeclarationNode<A> letDeclarationNode(
+    public static <A> LetNode<A> letNode(
             Meta<A> meta,
             String name,
             ExprNode<A> expr) {
-        return new LetDeclarationNode<>(meta, name, Optional.empty(), expr);
+        return new LetNode<>(meta, name, Optional.empty(), expr);
     }
 
     // Data constructors
@@ -188,7 +188,7 @@ public class SyntaxNodes {
             Meta<A> meta,
             String name,
             ImmutableList<ConstructorParamNode<A>> params,
-            Optional<TypeNode<Void>> type) {
+            Optional<TypeNode<A>> type) {
         return new ConstructorNode<>(meta, name, params, type);
     }
 
@@ -249,26 +249,26 @@ public class SyntaxNodes {
         return new TypeApplyNode<>(meta, type, args);
     }
 
-    public static TypeReferenceNode<Void> typeReferenceNode(
+    public static TypeReferenceNode<Void> typeRefNode(
             Range range,
             QualifiedIdNode<Void> id) {
         return new TypeReferenceNode<>(Meta.empty(range), id);
     }
 
-    public static <A> TypeReferenceNode<A> typeReferenceNode(
+    public static <A> TypeReferenceNode<A> typeRefNode(
             Meta<A> meta,
             QualifiedIdNode<A> id) {
         return new TypeReferenceNode<>(meta, id);
     }
 
-    public static TypeReferenceNode<Void> typeReferenceNode(
+    public static TypeReferenceNode<Void> typeRefNode(
             Range range,
             String name) {
         var meta = Meta.empty(range);
         return new TypeReferenceNode<>(meta, idNode(meta, name));
     }
 
-    public static <A> TypeReferenceNode<A> typeReferenceNode(
+    public static <A> TypeReferenceNode<A> typeRefNode(
             Meta<A> meta,
             String name) {
         return new TypeReferenceNode<>(meta, idNode(meta, name));
@@ -299,64 +299,64 @@ public class SyntaxNodes {
     }
 
     // Control structures
-    public static BlockExprNode<Void> blockExprNode(
+    public static BlockNode<Void> blockNode(
         Range range,
         ExprNode<Void> result
     ) {
-        return new BlockExprNode<>(Meta.empty(range), Lists.immutable.empty(), result);
+        return new BlockNode<>(Meta.empty(range), Lists.immutable.empty(), result);
     }
 
-    public static <A> BlockExprNode<A> blockExprNode(
+    public static <A> BlockNode<A> blockNode(
         Meta<A> meta,
         ExprNode<A> result
     ) {
-        return new BlockExprNode<>(meta, Lists.immutable.empty(), result);
+        return new BlockNode<>(meta, Lists.immutable.empty(), result);
     }
 
-    public static BlockExprNode<Void> blockExprNode(
+    public static BlockNode<Void> blockNode(
         Range range,
-        ImmutableList<LetDeclarationNode<Void>> declarations,
+        ImmutableList<LetNode<Void>> declarations,
         ExprNode<Void> result
     ) {
-        return new BlockExprNode<>(Meta.empty(range), declarations, result);
+        return new BlockNode<>(Meta.empty(range), declarations, result);
     }
 
-    public static <A> BlockExprNode<A> blockExprNode(
+    public static <A> BlockNode<A> blockNode(
         Meta<A> meta,
-        ImmutableList<LetDeclarationNode<A>> declarations,
+        ImmutableList<LetNode<A>> declarations,
         ExprNode<A> result
     ) {
-        return new BlockExprNode<>(meta, declarations, result);
+        return new BlockNode<>(meta, declarations, result);
     }
 
-    public static IfExprNode<Void> ifExprNode(
+    public static IfNode<Void> ifNode(
             Range range,
             ExprNode<Void> condition,
             ExprNode<Void> consequent,
             ExprNode<Void> alternative) {
-        return new IfExprNode<>(Meta.empty(range), condition, consequent, alternative);
+        return new IfNode<>(Meta.empty(range), condition, consequent, alternative);
     }
 
-    public static <A> IfExprNode<A> ifExprNode(
+    public static <A> IfNode<A> ifNode(
             Meta<A> meta,
             ExprNode<A> condition,
             ExprNode<A> consequent,
             ExprNode<A> alternative) {
-        return new IfExprNode<>(meta, condition, consequent, alternative);
+        return new IfNode<>(meta, condition, consequent, alternative);
     }
 
-    public static LambdaExprNode<Void> lambdaExprNode(
+    public static LambdaNode<Void> lambdaNode(
             Range range,
             ImmutableList<ParamNode<Void>> params,
             ExprNode<Void> body) {
-        return new LambdaExprNode<>(Meta.empty(range), params, body);
+        return new LambdaNode<>(Meta.empty(range), params, body);
     }
 
-    public static <A> LambdaExprNode<A> lambdaExprNode(
+    public static <A> LambdaNode<A> lambdaNode(
             Meta<A> meta,
             ImmutableList<ParamNode<A>> params,
             ExprNode<A> body) {
-        return new LambdaExprNode<>(meta, params, body);
+        return new LambdaNode<>(meta, params, body);
     }
 
     public static MatchNode<Void> matchNode(
@@ -388,88 +388,88 @@ public class SyntaxNodes {
     }
 
     // Atomic expressions
-    public static LiteralBooleanNode<Void> boolNode(
+    public static BooleanNode<Void> boolNode(
             Range range,
             boolean value) {
-        return new LiteralBooleanNode<>(Meta.empty(range), value);
+        return new BooleanNode<>(Meta.empty(range), value);
     }
 
-    public static <A> LiteralBooleanNode<A> boolNode(
+    public static <A> BooleanNode<A> boolNode(
             Meta<A> meta,
             boolean value) {
-        return new LiteralBooleanNode<>(meta, value);
+        return new BooleanNode<>(meta, value);
     }
 
-    public static LiteralCharNode<Void> charNode(
+    public static CharNode<Void> charNode(
             Range range,
             char value) {
-        return new LiteralCharNode<>(Meta.empty(range), value);
+        return new CharNode<>(Meta.empty(range), value);
     }
 
-    public static <A> LiteralCharNode<A> charNode(
+    public static <A> CharNode<A> charNode(
             Meta<A> meta,
             char value) {
-        return new LiteralCharNode<>(meta, value);
+        return new CharNode<>(meta, value);
     }
 
-    public static LiteralStringNode<Void> stringNode(
+    public static StringNode<Void> stringNode(
             Range range,
             String value) {
-        return new LiteralStringNode<>(Meta.empty(range), value);
+        return new StringNode<>(Meta.empty(range), value);
     }
 
-    public static <A> LiteralStringNode<A> stringNode(
+    public static <A> StringNode<A> stringNode(
             Meta<A> meta,
             String value) {
-        return new LiteralStringNode<>(meta, value);
+        return new StringNode<>(meta, value);
     }
 
-    public static LiteralIntNode<Void> intNode(
+    public static IntNode<Void> intNode(
             Range range,
             int value) {
-        return new LiteralIntNode<>(Meta.empty(range), value);
+        return new IntNode<>(Meta.empty(range), value);
     }
 
-    public static <A> LiteralIntNode<A> intNode(
+    public static <A> IntNode<A> intNode(
             Meta<A> meta,
             int value) {
-        return new LiteralIntNode<>(meta, value);
+        return new IntNode<>(meta, value);
     }
 
-    public static LiteralLongNode<Void> longNode(
+    public static LongNode<Void> longNode(
             Range range,
             long value) {
-        return new LiteralLongNode<>(Meta.empty(range), value);
+        return new LongNode<>(Meta.empty(range), value);
     }
 
-    public static <A> LiteralLongNode<A> longNode(
+    public static <A> LongNode<A> longNode(
             Meta<A> meta,
             long value) {
-        return new LiteralLongNode<>(meta, value);
+        return new LongNode<>(meta, value);
     }
 
-    public static LiteralFloatNode<Void> floatNode(
+    public static FloatNode<Void> floatNode(
             Range range,
             float value) {
-        return new LiteralFloatNode<>(Meta.empty(range), value);
+        return new FloatNode<>(Meta.empty(range), value);
     }
 
-    public static <A> LiteralFloatNode<A> floatNode(
+    public static <A> FloatNode<A> floatNode(
             Meta<A> meta,
             float value) {
-        return new LiteralFloatNode<>(meta, value);
+        return new FloatNode<>(meta, value);
     }
 
-    public static LiteralDoubleNode<Void> doubleNode(
+    public static DoubleNode<Void> doubleNode(
             Range range,
             double value) {
-        return new LiteralDoubleNode<>(Meta.empty(range), value);
+        return new DoubleNode<>(Meta.empty(range), value);
     }
 
-    public static <A> LiteralDoubleNode<A> doubleNode(
+    public static <A> DoubleNode<A> doubleNode(
             Meta<A> meta,
             double value) {
-        return new LiteralDoubleNode<>(meta, value);
+        return new DoubleNode<>(meta, value);
     }
 
     public static ReferenceNode<Void> refNode(
