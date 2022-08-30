@@ -37,7 +37,7 @@ Prerequisites:
 
 To get started:
 
-* Build the entire project using `./gradlew build --info`. This also builds the VS Code plugin using `gradle-node` and publishes the language server to your local Ivy repository.
+* Build the entire project using `./gradlew build --info`. This also builds the VS Code plugin using [gradle-node-plugin](https://github.com/node-gradle/gradle-node-plugin) and publishes the language server to your local Ivy repository.
 * Open [the VS Code extension file](./vscode-plugin/src/extension.ts) in VS Code and hit F5 to launch the Extension Development Host. Try opening the `examples/` folder from this project. You can examine the build server logging in the "Mina Language Server" window of the VS Code Output tab. Try making deliberate syntax errors or declaring overflowing numeric literals.
 
 ## Contributing to this project
