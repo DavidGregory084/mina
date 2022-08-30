@@ -57,7 +57,12 @@ Having said that, I would welcome GitHub discussions about the proposed language
 
 ### Planned features
 
-It's planned that the Mina compiler will have a concept of packages and package versioning, so that it can automatically shade Java packages by major version. For example, for a module `mina/data/NonEmptyList`, the Java package compiled into the class file and the group ID used in the dependency metadata will be something like `mina.v0.data`.
+It's planned that the Mina compiler will have a concept of packages and package versioning, so that it can automatically shade Java packages by major version.
+
+For example, for a module `mina/data/NonEmptyList`, the Java package compiled into the class file and the group ID used in the dependency metadata will be something like `mina.v0.data`.
+
 When declaring Mina Gradle projects, the project major version must be declared. When consuming Mina dependencies, the package major version metadata will be used in linking to the underlying class file definitions.
+
 This should ameliorate the pains of major version migration by allowing dependencies to continue to make use of older major package versions.
+
 The exact details of how this will be implemented are unclear and subject to change.
