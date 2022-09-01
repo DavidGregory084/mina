@@ -40,13 +40,13 @@ public class SyntaxNodeVisitorTest {
          */
         var ns = namespaceNode(
                 new Range(0, 0, 4, 0),
-                modIdNode(
+                nsIdNode(
                         new Range(0, 7, 0, 24),
                         Lists.immutable.of("Mina", "Test"), "Visitor"),
                 Lists.immutable.of(
                         importNode(
                                 new Range(1, 4, 1, 27),
-                                modIdNode(
+                                nsIdNode(
                                         new Range(1, 11, 1, 27),
                                         Lists.immutable.of("Mina", "Test"), "Parser"))),
                 Lists.immutable.of(

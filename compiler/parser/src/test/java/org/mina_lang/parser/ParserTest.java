@@ -16,6 +16,7 @@ import org.mina_lang.common.Range;
 import org.mina_lang.parser.Parser.Visitor;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
+import org.mina_lang.syntax.SyntaxNode;
 
 public class ParserTest {
 
@@ -37,7 +38,7 @@ public class ParserTest {
         return errors;
     }
 
-    <A extends ParserRuleContext, B extends MetaNode<Void>, C extends Visitor<A, B>> void testSuccessfulParse(
+    <A extends ParserRuleContext, B extends SyntaxNode, C extends Visitor<A, B>> void testSuccessfulParse(
             String source,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule,
@@ -50,7 +51,7 @@ public class ParserTest {
         assertThat(actual, equalTo(expected));
     }
 
-    <A extends ParserRuleContext, B extends MetaNode<Void>, C extends Visitor<A, B>> List<String> testFailedParse(
+    <A extends ParserRuleContext, B extends SyntaxNode, C extends Visitor<A, B>> List<String> testFailedParse(
             String source,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
@@ -68,7 +69,7 @@ public class ParserTest {
         testSuccessfulParse("namespace Mina/Test/Parser {}",
                 namespaceNode(
                         new Range(0, 0, 0, 34),
-                        modIdNode(new Range(0, 10, 0, 26), Lists.immutable.of("Mina", "Test"), "Parser"),
+                        nsIdNode(new Range(0, 10, 0, 26), Lists.immutable.of("Mina", "Test"), "Parser"),
                         Lists.immutable.empty(),
                         Lists.immutable.empty()));
     }
@@ -78,7 +79,7 @@ public class ParserTest {
         testSuccessfulParse("namespace Parser {}",
                 namespaceNode(
                         new Range(0, 0, 0, 24),
-                        modIdNode(new Range(0, 10, 0, 16), "Parser"),
+                        nsIdNode(new Range(0, 10, 0, 16), "Parser"),
                         Lists.immutable.empty(),
                         Lists.immutable.empty()));
     }
@@ -111,7 +112,7 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 23),
-                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser")));
+                        nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser")));
     }
 
     @Test
@@ -119,7 +120,7 @@ public class ParserTest {
         testSuccessfulParse("import Parser", Parser::getImportVisitor, MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 13),
-                        modIdNode(new Range(0, 7, 0, 13), "Parser")));
+                        nsIdNode(new Range(0, 7, 0, 13), "Parser")));
     }
 
     @Test
@@ -129,7 +130,7 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 60),
-                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
+                        nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
                         Lists.immutable.of("compilationUnit", "importDeclaration")));
     }
 
@@ -140,7 +141,7 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 50),
-                        modIdNode(new Range(0, 7, 0, 13), "Parser"),
+                        nsIdNode(new Range(0, 7, 0, 13), "Parser"),
                         Lists.immutable.of("compilationUnit", "importDeclaration")));
     }
 
@@ -150,7 +151,7 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 30),
-                        modIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
+                        nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
                         Lists.immutable.of("ifExpr")));
     }
 
@@ -160,7 +161,7 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importNode(
                         new Range(0, 0, 0, 20),
-                        modIdNode(new Range(0, 7, 0, 13), "Parser"),
+                        nsIdNode(new Range(0, 7, 0, 13), "Parser"),
                         Lists.immutable.of("ifExpr")));
     }
 
@@ -1109,7 +1110,7 @@ public class ParserTest {
     @Test
     void parseQualifiedId() {
         testSuccessfulParse("Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
-                refNode(new Range(0, 0, 0, 22), modIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
+                refNode(new Range(0, 0, 0, 22), nsIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
     }
 
     @Test
@@ -1123,7 +1124,7 @@ public class ParserTest {
     void parseFullyQualifiedId() {
         testSuccessfulParse("Mina/Test/Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
                 refNode(new Range(0, 0, 0, 32),
-                        modIdNode(new Range(0, 0, 0, 16), Lists.immutable.of("Mina", "Test"), "Parser"),
+                        nsIdNode(new Range(0, 0, 0, 16), Lists.immutable.of("Mina", "Test"), "Parser"),
                         "compilationUnit"));
     }
 

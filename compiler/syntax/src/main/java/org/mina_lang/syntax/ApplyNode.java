@@ -9,4 +9,20 @@ public record ApplyNode<A> (Meta<A> meta, ExprNode<A> expr, ImmutableList<ExprNo
         args.forEach(arg -> arg.accept(visitor));
         visitor.visitApply(this);
     }
+
+    @Override
+    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
+        return visitor.visitApply(
+                meta(),
+                visitor.visitExpr(expr()),
+                args().collect(visitor::visitExpr));
+    }
+
+    @Override
+    public <B> ApplyNode<B> accept(MetaNodeTransformer<A, B> transformer) {
+        return transformer.visitApply(
+                meta(),
+                transformer.visitExpr(expr()),
+                args().collect(transformer::visitExpr));
+    }
 }

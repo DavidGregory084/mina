@@ -4,22 +4,18 @@ public interface SyntaxNodeVisitor {
     void visit(SyntaxNode node);
 
     // Namespaces
-    default void visitNamespace(NamespaceNode<?> mod) {
-        visit(mod);
+    default void visitNamespace(NamespaceNode<?> ns) {
+        visit(ns);
     }
 
     // Imports
-    default void visitImport(ImportNode<?> imp) {
+    default void visitImport(ImportNode imp) {
         visit(imp);
     }
 
     // Declarations
     default void visitDeclaration(DeclarationNode<?> decl) {
-        switch (decl) {
-            case LetNode<?> let -> visitLet(let);
-            case LetFnNode<?> letFn -> visitLetFn(letFn);
-            case DataNode<?> data -> visitData(data);
-        };
+        decl.accept(this);
     }
 
     default void visitData(DataNode<?> data) {
@@ -48,13 +44,7 @@ public interface SyntaxNodeVisitor {
 
     // Types
     default void visitType(TypeNode<?> typ) {
-        switch (typ)  {
-            case TypeLambdaNode<?> lam -> visitTypeLambda(lam);
-            case FunTypeNode<?> funTyp -> visitFunType(funTyp);
-            case TypeApplyNode<?> tyApp -> visitTypeApply(tyApp);
-            case TypeVarNode<?> tyVar -> visitTypeVar(tyVar);
-            case TypeReferenceNode<?> tyRef -> visitTypeReference(tyRef);
-        };
+        typ.accept(this);
     }
 
     default void visitFunType(FunTypeNode<?> funTyp) {
@@ -74,10 +64,7 @@ public interface SyntaxNodeVisitor {
     }
 
     default void visitTypeVar(TypeVarNode<?> tyVar) {
-        switch (tyVar) {
-            case ForAllVarNode<?> forAll -> visitForAllVar(forAll);
-            case ExistsVarNode<?> exists -> visitExistsVar(exists);
-        }
+        tyVar.accept(this);
     }
 
     default void visitForAllVar(ForAllVarNode<?> forAll) {
@@ -90,15 +77,7 @@ public interface SyntaxNodeVisitor {
 
     // Expressions
     default void visitExpr(ExprNode<?> expr) {
-        switch (expr) {
-            case BlockNode<?> block -> visitBlock(block);
-            case IfNode<?> ifExpr -> visitIf(ifExpr);
-            case LambdaNode<?> lambda -> visitLambda(lambda);
-            case MatchNode<?> match -> visitMatch(match);
-            case ApplyNode<?> apply -> visitApply(apply);
-            case ReferenceNode<?> ref -> visitReference(ref);
-            case LiteralNode<?> literal -> visitLiteral(literal);
-        };
+        expr.accept(this);
     }
 
     default void visitBlock(BlockNode<?> block) {
@@ -126,15 +105,7 @@ public interface SyntaxNodeVisitor {
     }
 
     default void visitLiteral(LiteralNode<?> literal) {
-        switch (literal) {
-            case BooleanNode<?> bool -> visitBoolean(bool);
-            case CharNode<?> chr -> visitChar(chr);
-            case DoubleNode<?> dbl -> visitDouble(dbl);
-            case FloatNode<?> flt -> visitFloat(flt);
-            case IntNode<?> intgr -> visitInt(intgr);
-            case LongNode<?> lng -> visitLong(lng);
-            case StringNode<?> str -> visitString(str);
-        };
+        literal.accept(this);
     }
 
     default void visitBoolean(BooleanNode<?> bool) {
@@ -171,11 +142,7 @@ public interface SyntaxNodeVisitor {
     }
 
     default void visitPattern(PatternNode<?> pat) {
-        switch (pat) {
-            case ConstructorPatternNode<?> constrPat -> visitConstructorPattern(constrPat);
-            case IdPatternNode<?> idPat -> visitIdPattern(idPat);
-            case LiteralPatternNode<?> litPat -> visitLiteralPattern(litPat);
-        };
+        pat.accept(this);
     }
 
     default void visitConstructorPattern(ConstructorPatternNode<?> constrPat) {
@@ -195,7 +162,7 @@ public interface SyntaxNodeVisitor {
     }
 
     // Identifiers
-    default void visitNamespaceId(NamespaceIdNode<?> id) {
+    default void visitNamespaceId(NamespaceIdNode id) {
         visit(id);
     }
 

@@ -10,38 +10,38 @@ public class SyntaxNodes {
     // Namespace
     public static NamespaceNode<Void> namespaceNode(
             Range range,
-            NamespaceIdNode<Void> id,
-            ImmutableList<ImportNode<Void>> imports,
+            NamespaceIdNode id,
+            ImmutableList<ImportNode> imports,
             ImmutableList<DeclarationNode<Void>> declarations) {
         return new NamespaceNode<>(Meta.empty(range), id, imports, declarations);
     }
 
     public static <A> NamespaceNode<A> namespaceNode(
             Meta<A> meta,
-            NamespaceIdNode<Void> id,
-            ImmutableList<ImportNode<Void>> imports,
+            NamespaceIdNode id,
+            ImmutableList<ImportNode> imports,
             ImmutableList<DeclarationNode<A>> declarations) {
         return new NamespaceNode<>(meta, id, imports, declarations);
     }
 
-    public static ImportNode<Void> importNode(
+    public static ImportNode importNode(
             Range range,
-            NamespaceIdNode<Void> mod) {
-        return new ImportNode<>(Meta.empty(range), mod, Lists.immutable.empty());
+            NamespaceIdNode namespace) {
+        return new ImportNode(range, namespace, Lists.immutable.empty());
     }
 
-    public static ImportNode<Void> importNode(
+    public static ImportNode importNode(
             Range range,
-            NamespaceIdNode<Void> mod,
+            NamespaceIdNode namespace,
             String symbol) {
-        return new ImportNode<>(Meta.empty(range), mod, Lists.immutable.of(symbol));
+        return new ImportNode(range, namespace, Lists.immutable.of(symbol));
     }
 
-    public static ImportNode<Void> importNode(
+    public static ImportNode importNode(
             Range range,
-            NamespaceIdNode<Void> mod,
+            NamespaceIdNode namespace,
             ImmutableList<String> symbols) {
-        return new ImportNode<>(Meta.empty(range), mod, symbols);
+        return new ImportNode(range, namespace, symbols);
     }
 
     // Top level declarations
@@ -462,10 +462,10 @@ public class SyntaxNodes {
 
     public static ReferenceNode<Void> refNode(
             Range range,
-            NamespaceIdNode<Void> mod,
+            NamespaceIdNode namespace,
             String name) {
         var meta = Meta.empty(range);
-        return new ReferenceNode<>(meta, idNode(meta, mod, name));
+        return new ReferenceNode<>(meta, idNode(meta, namespace, name));
     }
 
     public static ReferenceNode<Void> refNode(
@@ -484,9 +484,9 @@ public class SyntaxNodes {
 
     public static <A> ReferenceNode<A> refNode(
             Meta<A> meta,
-            NamespaceIdNode<Void> mod,
+            NamespaceIdNode namespace,
             String name) {
-        return new ReferenceNode<>(meta, idNode(meta, mod, name));
+        return new ReferenceNode<>(meta, idNode(meta, namespace, name));
     }
 
     public static <A> ReferenceNode<A> refNode(
@@ -601,24 +601,24 @@ public class SyntaxNodes {
         return new ParamNode<>(meta, name, Optional.ofNullable(type));
     }
 
-    public static NamespaceIdNode<Void> modIdNode(
+    public static NamespaceIdNode nsIdNode(
             Range range,
             ImmutableList<String> pkg,
-            String mod) {
-        return new NamespaceIdNode<>(Meta.empty(range), pkg, mod);
+            String ns) {
+        return new NamespaceIdNode(range, pkg, ns);
     }
 
-    public static NamespaceIdNode<Void> modIdNode(
+    public static NamespaceIdNode nsIdNode(
             Range range,
-            String mod) {
-        return new NamespaceIdNode<>(Meta.empty(range), Lists.immutable.empty(), mod);
+            String ns) {
+        return new NamespaceIdNode(range, Lists.immutable.empty(), ns);
     }
 
     public static QualifiedIdNode<Void> idNode(
             Range range,
-            NamespaceIdNode<Void> mod,
+            NamespaceIdNode namespace,
             String name) {
-        return new QualifiedIdNode<>(Meta.empty(range), Optional.ofNullable(mod), name);
+        return new QualifiedIdNode<>(Meta.empty(range), Optional.ofNullable(namespace), name);
     }
 
     public static QualifiedIdNode<Void> idNode(
@@ -629,9 +629,9 @@ public class SyntaxNodes {
 
     public static <A> QualifiedIdNode<A> idNode(
             Meta<A> meta,
-            NamespaceIdNode<Void> mod,
+            NamespaceIdNode namespace,
             String name) {
-        return new QualifiedIdNode<>(meta, Optional.ofNullable(mod), name);
+        return new QualifiedIdNode<>(meta, Optional.ofNullable(namespace), name);
     }
 
     public static <A> QualifiedIdNode<A> idNode(

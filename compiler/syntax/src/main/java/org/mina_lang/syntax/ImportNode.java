@@ -1,11 +1,13 @@
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Range;
 
-public record ImportNode<A>(Meta<A> meta, NamespaceIdNode<Void> mod, ImmutableList<String> symbols) implements MetaNode<A> {
+public record ImportNode(Range range, NamespaceIdNode namespace, ImmutableList<String> symbols) implements SyntaxNode {
+
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
-        mod.accept(visitor);
+        namespace.accept(visitor);
         visitor.visitImport(this);
     }
 }

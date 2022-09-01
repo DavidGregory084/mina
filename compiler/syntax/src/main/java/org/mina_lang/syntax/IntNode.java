@@ -5,4 +5,14 @@ public record IntNode<A>(Meta<A> meta, int value) implements LiteralNode<A> {
     public void accept(SyntaxNodeVisitor visitor) {
         visitor.visitInt(this);
     }
+
+    @Override
+    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
+        return visitor.visitInt(meta(), value());
+    }
+
+    @Override
+    public <B> IntNode<B> accept(MetaNodeTransformer<A, B> transformer) {
+        return transformer.visitInt(meta(), value());
+    }
 }

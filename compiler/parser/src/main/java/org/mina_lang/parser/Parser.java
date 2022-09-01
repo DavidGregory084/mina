@@ -105,7 +105,7 @@ public class Parser {
         return parse(charStream, Parser::getNamespaceVisitor, MinaParser::namespace);
     }
 
-    <A extends ParserRuleContext, B extends MetaNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends SyntaxNode, C extends Visitor<A, B>> B parse(
             String source,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
@@ -113,7 +113,7 @@ public class Parser {
         return parse(charStream, visitor, startRule);
     }
 
-    <A extends ParserRuleContext, B extends MetaNode<Void>, C extends Visitor<A, B>> B parse(
+    <A extends ParserRuleContext, B extends SyntaxNode, C extends Visitor<A, B>> B parse(
             CharStream charStream,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
@@ -205,10 +205,10 @@ public class Parser {
         }
     }
 
-    class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode<Void>> {
+    class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode> {
 
         @Override
-        public ImportNode<Void> visitImportDeclaration(ImportDeclarationContext ctx) {
+        public ImportNode visitImportDeclaration(ImportDeclarationContext ctx) {
             var selector = Optional.ofNullable(ctx.importSelector());
 
             var ns = selector
@@ -650,17 +650,17 @@ public class Parser {
         }
     }
 
-    class NamespaceIdVisitor extends Visitor<NamespaceIdContext, NamespaceIdNode<Void>> {
+    class NamespaceIdVisitor extends Visitor<NamespaceIdContext, NamespaceIdNode> {
 
         @Override
-        public NamespaceIdNode<Void> visitNamespaceId(NamespaceIdContext ctx) {
+        public NamespaceIdNode visitNamespaceId(NamespaceIdContext ctx) {
             var pkg = ctx.pkg.stream()
                     .map(Token::getText)
                     .collect(Collectors2.toImmutableList());
 
             var ns = Optional.ofNullable(ctx.ns).map(Token::getText).orElse(null);
 
-            return modIdNode(contextRange(ctx), pkg, ns);
+            return nsIdNode(contextRange(ctx), pkg, ns);
         }
     }
 

@@ -32,7 +32,7 @@ The project structure is as follows:
 
 Prerequisites:
 
-* JDK 18+
+* JDK 17+
 * Node 16+
 
 To get started:

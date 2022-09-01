@@ -24,13 +24,13 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
 
     // Namespaces
     @Override
-    public void visitNamespace(NamespaceNode<?> mod) {
-        entries.add(new Entry(mod.getClass(), mod.range()));
+    public void visitNamespace(NamespaceNode<?> ns) {
+        entries.add(new Entry(ns.getClass(), ns.range()));
     }
 
     // Imports
     @Override
-    public void visitImport(ImportNode<?> imp) {
+    public void visitImport(ImportNode imp) {
         entries.add(new Entry(imp.getClass(), imp.range()));
     }
 
@@ -190,7 +190,7 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
 
     // Identifiers
     @Override
-    public void visitNamespaceId(NamespaceIdNode<?> id) {
+    public void visitNamespaceId(NamespaceIdNode id) {
         entries.add(new Entry(id.getClass(), id.range()));
     }
 

@@ -7,49 +7,12 @@ import org.eclipse.collections.api.list.ImmutableList;
 public interface MetaNodeTransformer<A, B> {
 
     // Namespaces
-    NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode<Void> id, ImmutableList<ImportNode<Void>> imports,
+    NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
             ImmutableList<DeclarationNode<B>> declarations);
 
     // Declarations
     default DeclarationNode<B> visitDeclaration(DeclarationNode<A> decl) {
-        return switch (decl) {
-            case LetNode<A> let ->
-                visitLet(
-                        let.meta(),
-                        let.name(),
-                        let.type().map(this::visitType),
-                        visitExpr(let.expr()));
-            case LetFnNode<A> letFn ->
-                visitLetFn(
-                        letFn.meta(),
-                        letFn.name(),
-                        letFn.typeParams().collect(this::visitTypeVar),
-                        letFn.valueParams().collect(param -> {
-                            return visitParam(
-                                    param.meta(),
-                                    param.name(),
-                                    param.typeAnnotation().map(this::visitType));
-                        }),
-                        letFn.returnType().map(this::visitType),
-                        visitExpr(letFn.expr()));
-            case DataNode<A> data ->
-                visitData(
-                        data.meta(),
-                        data.name(),
-                        data.typeParams().collect(this::visitTypeVar),
-                        data.constructors().collect(constr -> {
-                            return visitConstructor(
-                                    constr.meta(),
-                                    constr.name(),
-                                    constr.params().collect(param -> {
-                                        return visitConstructorParam(
-                                                param.meta(),
-                                                param.name(),
-                                                visitType(param.typeAnnotation()));
-                                    }),
-                                    constr.type().map(this::visitType));
-                        }));
-        };
+        return decl.accept(this);
     }
 
     DataNode<B> visitData(Meta<A> meta, String name, ImmutableList<TypeVarNode<B>> typeParams,
@@ -69,29 +32,7 @@ public interface MetaNodeTransformer<A, B> {
 
     // Types
     default TypeNode<B> visitType(TypeNode<A> typ) {
-        return switch (typ) {
-            case TypeLambdaNode<A> tyLam ->
-                visitTypeLambda(
-                        tyLam.meta(),
-                        tyLam.args().collect(this::visitTypeVar),
-                        visitType(tyLam.body()));
-            case FunTypeNode<A> funTyp ->
-                visitFunType(
-                        funTyp.meta(),
-                        funTyp.argTypes().collect(this::visitType),
-                        visitType(funTyp.returnType()));
-            case TypeApplyNode<A> tyApp ->
-                visitTypeApply(
-                        tyApp.meta(),
-                        visitType(tyApp.type()),
-                        tyApp.args().collect(this::visitType));
-            case TypeReferenceNode<A> tyRef ->
-                visitTypeReference(
-                        tyRef.meta(),
-                        visitQualifiedId(tyRef.id()));
-            case TypeVarNode<A> tyVar ->
-                visitTypeVar(tyVar);
-        };
+        return typ.accept(this);
     }
 
     TypeLambdaNode<B> visitTypeLambda(Meta<A> meta, ImmutableList<TypeVarNode<B>> args, TypeNode<B> body);
@@ -103,12 +44,7 @@ public interface MetaNodeTransformer<A, B> {
     TypeReferenceNode<B> visitTypeReference(Meta<A> meta, QualifiedIdNode<B> id);
 
     default TypeVarNode<B> visitTypeVar(TypeVarNode<A> tyVar) {
-        return switch (tyVar) {
-            case ForAllVarNode<A> forAll ->
-                visitForAllVar(forAll.meta(), forAll.name());
-            case ExistsVarNode<A> exists ->
-                visitExistsVar(exists.meta(), exists.name());
-        };
+        return tyVar.accept(this);
     }
 
     ForAllVarNode<B> visitForAllVar(Meta<A> meta, String name);
@@ -117,56 +53,7 @@ public interface MetaNodeTransformer<A, B> {
 
     // Expressions
     default ExprNode<B> visitExpr(ExprNode<A> expr) {
-        return switch (expr) {
-            case BlockNode<A> block ->
-                visitBlock(
-                        block.meta(),
-                        block.declarations().collect(let -> {
-                            return visitLet(
-                                    let.meta(),
-                                    let.name(),
-                                    let.type().map(this::visitType),
-                                    visitExpr(let.expr()));
-                        }),
-                        visitExpr(block.result()));
-            case IfNode<A> ifExpr ->
-                visitIf(
-                        ifExpr.meta(),
-                        visitExpr(ifExpr.condition()),
-                        visitExpr(ifExpr.consequent()),
-                        visitExpr(ifExpr.alternative()));
-            case LambdaNode<A> lambda ->
-                visitLambda(
-                        lambda.meta(),
-                        lambda.params().collect(param -> {
-                            return visitParam(
-                                    param.meta(),
-                                    param.name(),
-                                    param.typeAnnotation().map(this::visitType));
-                        }),
-                        visitExpr(lambda.body()));
-            case MatchNode<A> match ->
-                visitMatch(
-                        match.meta(),
-                        visitExpr(match.scrutinee()),
-                        match.cases().collect(cse -> {
-                            return visitCase(
-                                    cse.meta(),
-                                    visitPattern(cse.pattern()),
-                                    visitExpr(cse.consequent()));
-                        }));
-            case ApplyNode<A> apply ->
-                visitApply(
-                        apply.meta(),
-                        visitExpr(apply.expr()),
-                        apply.args().collect(this::visitExpr));
-            case ReferenceNode<A> ref ->
-                visitReference(
-                        ref.meta(),
-                        visitQualifiedId(ref.id()));
-            case LiteralNode<A> literal ->
-                visitLiteral(literal);
-        };
+        return expr.accept(this);
     }
 
     BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, ExprNode<B> result);
@@ -182,22 +69,7 @@ public interface MetaNodeTransformer<A, B> {
     ReferenceNode<B> visitReference(Meta<A> meta, QualifiedIdNode<B> id);
 
     default LiteralNode<B> visitLiteral(LiteralNode<A> literal) {
-        return switch (literal) {
-            case BooleanNode<A> bool ->
-                visitBoolean(bool.meta(), bool.value());
-            case CharNode<A> chr ->
-                visitChar(chr.meta(), chr.value());
-            case DoubleNode<A> dbl ->
-                visitDouble(dbl.meta(), dbl.value());
-            case FloatNode<A> flt ->
-                visitFloat(flt.meta(), flt.value());
-            case IntNode<A> intgr ->
-                visitInt(intgr.meta(), intgr.value());
-            case LongNode<A> lng ->
-                visitLong(lng.meta(), lng.value());
-            case StringNode<A> str ->
-                visitString(str.meta(), str.value());
-        };
+        return literal.accept(this);
     }
 
     BooleanNode<B> visitBoolean(Meta<A> meta, boolean value);
@@ -218,29 +90,7 @@ public interface MetaNodeTransformer<A, B> {
     CaseNode<B> visitCase(Meta<A> meta, PatternNode<B> pattern, ExprNode<B> consequent);
 
     default PatternNode<B> visitPattern(PatternNode<A> pat) {
-        return switch (pat) {
-            case IdPatternNode<A> idPat ->
-                visitIdPattern(
-                        idPat.meta(),
-                        idPat.alias(),
-                        idPat.name());
-            case LiteralPatternNode<A> litPat ->
-                visitLiteralPattern(
-                        litPat.meta(),
-                        litPat.alias(),
-                        visitLiteral(litPat.literal()));
-            case ConstructorPatternNode<A> constrPat ->
-                visitConstructorPattern(
-                        constrPat.meta(),
-                        constrPat.alias(),
-                        visitQualifiedId(constrPat.id()),
-                        constrPat.fields().collect(fieldPat -> {
-                            return visitFieldPattern(
-                                    fieldPat.meta(),
-                                    fieldPat.field(),
-                                    fieldPat.pattern().map(this::visitPattern));
-                        }));
-        };
+        return pat.accept(this);
     }
 
     ConstructorPatternNode<B> visitConstructorPattern(Meta<A> meta, Optional<String> alias, QualifiedIdNode<B> id,
@@ -253,5 +103,5 @@ public interface MetaNodeTransformer<A, B> {
     LiteralPatternNode<B> visitLiteralPattern(Meta<A> meta, Optional<String> alias, LiteralNode<B> literal);
 
     // Identifiers
-    QualifiedIdNode<B> visitQualifiedId(QualifiedIdNode<A> id);
+    QualifiedIdNode<B> visitQualifiedId(Meta<A> meta, Optional<NamespaceIdNode> ns, String name);
 }
