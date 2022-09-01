@@ -1,6 +1,6 @@
 package org.mina_lang.syntax;
 
-public record ConstructorParamNode<A> (Meta<A> meta, String name, TypeNode<Void> typeAnnotation)
+public record ConstructorParamNode<A> (Meta<A> meta, String name, TypeNode<A> typeAnnotation)
         implements MetaNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {

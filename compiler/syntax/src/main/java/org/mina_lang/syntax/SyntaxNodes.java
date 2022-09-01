@@ -144,7 +144,7 @@ public class SyntaxNodes {
     public static <A> LetNode<A> letNode(
             Meta<A> meta,
             String name,
-            TypeNode<Void> type,
+            TypeNode<A> type,
             ExprNode<A> expr) {
         return new LetNode<>(meta, name, Optional.ofNullable(type), expr);
     }
@@ -190,7 +190,7 @@ public class SyntaxNodes {
     public static <A> ConstructorParamNode<A> constructorParamNode(
             Meta<A> meta,
             String name,
-            TypeNode<Void> type) {
+            TypeNode<A> type) {
         return new ConstructorParamNode<>(meta, name, type);
     }
 
@@ -597,7 +597,7 @@ public class SyntaxNodes {
     public static <A> ParamNode<A> paramNode(
             Meta<A> meta,
             String name,
-            TypeNode<Void> type) {
+            TypeNode<A> type) {
         return new ParamNode<>(meta, name, Optional.ofNullable(type));
     }
 
