@@ -1,131 +1,257 @@
 package org.mina_lang.syntax;
 
-public interface MetaNodeTransformer<A, B> extends MetaNodeVisitor<A, MetaNode<B>> {
+import java.util.Optional;
+
+import org.eclipse.collections.api.list.ImmutableList;
+
+public interface MetaNodeTransformer<A, B> {
 
     // Namespaces
-    @Override
-    NamespaceNode<B> visitNamespace(NamespaceNode<A> mod);
+    NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode<Void> id, ImmutableList<ImportNode<Void>> imports,
+            ImmutableList<DeclarationNode<B>> declarations);
 
     // Declarations
-    @Override
     default DeclarationNode<B> visitDeclaration(DeclarationNode<A> decl) {
         return switch (decl) {
-            case LetNode<A> let -> visitLet(let);
-            case LetFnNode<A> letFn -> visitLetFn(letFn);
-            case DataNode<A> data -> visitData(data);
+            case LetNode<A> let ->
+                visitLet(
+                        let.meta(),
+                        let.name(),
+                        let.type().map(this::visitType),
+                        visitExpr(let.expr()));
+            case LetFnNode<A> letFn ->
+                visitLetFn(
+                        letFn.meta(),
+                        letFn.name(),
+                        letFn.typeParams().collect(this::visitTypeVar),
+                        letFn.valueParams().collect(param -> {
+                            return visitParam(
+                                    param.meta(),
+                                    param.name(),
+                                    param.typeAnnotation().map(this::visitType));
+                        }),
+                        letFn.returnType().map(this::visitType),
+                        visitExpr(letFn.expr()));
+            case DataNode<A> data ->
+                visitData(
+                        data.meta(),
+                        data.name(),
+                        data.typeParams().collect(this::visitTypeVar),
+                        data.constructors().collect(constr -> {
+                            return visitConstructor(
+                                    constr.meta(),
+                                    constr.name(),
+                                    constr.params().collect(param -> {
+                                        return visitConstructorParam(
+                                                param.meta(),
+                                                param.name(),
+                                                visitType(param.typeAnnotation()));
+                                    }),
+                                    constr.type().map(this::visitType));
+                        }));
         };
     }
 
-    @Override
-    DataNode<B> visitData(DataNode<A> data);
+    DataNode<B> visitData(Meta<A> meta, String name, ImmutableList<TypeVarNode<B>> typeParams,
+            ImmutableList<ConstructorNode<B>> constructors);
 
-    @Override
-    ConstructorNode<B> visitConstructor(ConstructorNode<A> constr);
+    ConstructorNode<B> visitConstructor(Meta<A> meta, String name, ImmutableList<ConstructorParamNode<B>> params,
+            Optional<TypeNode<B>> type);
 
-    @Override
-    ConstructorParamNode<B> visitConstructorParam(ConstructorParamNode<A> constrParam);
+    ConstructorParamNode<B> visitConstructorParam(Meta<A> meta, String name, TypeNode<B> typeAnnotation);
 
-    @Override
-    LetNode<B> visitLet(LetNode<A> let);
+    LetNode<B> visitLet(Meta<A> meta, String name, Optional<TypeNode<B>> type, ExprNode<B> expr);
 
-    @Override
-    LetFnNode<B> visitLetFn(LetFnNode<A> letFn);
+    LetFnNode<B> visitLetFn(Meta<A> meta, String name, ImmutableList<TypeVarNode<B>> typeParams,
+            ImmutableList<ParamNode<B>> valueParams, Optional<TypeNode<B>> returnType, ExprNode<B> expr);
 
-    @Override
-    ParamNode<B> visitParam(ParamNode<A> param);
+    ParamNode<B> visitParam(Meta<A> param, String name, Optional<TypeNode<B>> typeAnnotation);
+
+    // Types
+    default TypeNode<B> visitType(TypeNode<A> typ) {
+        return switch (typ) {
+            case TypeLambdaNode<A> tyLam ->
+                visitTypeLambda(
+                        tyLam.meta(),
+                        tyLam.args().collect(this::visitTypeVar),
+                        visitType(tyLam.body()));
+            case FunTypeNode<A> funTyp ->
+                visitFunType(
+                        funTyp.meta(),
+                        funTyp.argTypes().collect(this::visitType),
+                        visitType(funTyp.returnType()));
+            case TypeApplyNode<A> tyApp ->
+                visitTypeApply(
+                        tyApp.meta(),
+                        visitType(tyApp.type()),
+                        tyApp.args().collect(this::visitType));
+            case TypeReferenceNode<A> tyRef ->
+                visitTypeReference(
+                        tyRef.meta(),
+                        visitQualifiedId(tyRef.id()));
+            case TypeVarNode<A> tyVar ->
+                visitTypeVar(tyVar);
+        };
+    }
+
+    TypeLambdaNode<B> visitTypeLambda(Meta<A> meta, ImmutableList<TypeVarNode<B>> args, TypeNode<B> body);
+
+    FunTypeNode<B> visitFunType(Meta<A> meta, ImmutableList<TypeNode<B>> argTypes, TypeNode<B> returnType);
+
+    TypeApplyNode<B> visitTypeApply(Meta<A> meta, TypeNode<B> type, ImmutableList<TypeNode<B>> args);
+
+    TypeReferenceNode<B> visitTypeReference(Meta<A> meta, QualifiedIdNode<B> id);
+
+    default TypeVarNode<B> visitTypeVar(TypeVarNode<A> tyVar) {
+        return switch (tyVar) {
+            case ForAllVarNode<A> forAll ->
+                visitForAllVar(forAll.meta(), forAll.name());
+            case ExistsVarNode<A> exists ->
+                visitExistsVar(exists.meta(), exists.name());
+        };
+    }
+
+    ForAllVarNode<B> visitForAllVar(Meta<A> meta, String name);
+
+    ExistsVarNode<B> visitExistsVar(Meta<A> meta, String name);
 
     // Expressions
-    @Override
     default ExprNode<B> visitExpr(ExprNode<A> expr) {
         return switch (expr) {
-            case BlockNode<A> block -> visitBlock(block);
-            case IfNode<A> ifExpr -> visitIf(ifExpr);
-            case LambdaNode<A> lambda -> visitLambda(lambda);
-            case MatchNode<A> match -> visitMatch(match);
-            case ApplyNode<A> apply -> visitApply(apply);
-            case ReferenceNode<A> ref -> visitReference(ref);
-            case LiteralNode<A> literal -> visitLiteral(literal);
+            case BlockNode<A> block ->
+                visitBlock(
+                        block.meta(),
+                        block.declarations().collect(let -> {
+                            return visitLet(
+                                    let.meta(),
+                                    let.name(),
+                                    let.type().map(this::visitType),
+                                    visitExpr(let.expr()));
+                        }),
+                        visitExpr(block.result()));
+            case IfNode<A> ifExpr ->
+                visitIf(
+                        ifExpr.meta(),
+                        visitExpr(ifExpr.condition()),
+                        visitExpr(ifExpr.consequent()),
+                        visitExpr(ifExpr.alternative()));
+            case LambdaNode<A> lambda ->
+                visitLambda(
+                        lambda.meta(),
+                        lambda.params().collect(param -> {
+                            return visitParam(
+                                    param.meta(),
+                                    param.name(),
+                                    param.typeAnnotation().map(this::visitType));
+                        }),
+                        visitExpr(lambda.body()));
+            case MatchNode<A> match ->
+                visitMatch(
+                        match.meta(),
+                        visitExpr(match.scrutinee()),
+                        match.cases().collect(cse -> {
+                            return visitCase(
+                                    cse.meta(),
+                                    visitPattern(cse.pattern()),
+                                    visitExpr(cse.consequent()));
+                        }));
+            case ApplyNode<A> apply ->
+                visitApply(
+                        apply.meta(),
+                        visitExpr(apply.expr()),
+                        apply.args().collect(this::visitExpr));
+            case ReferenceNode<A> ref ->
+                visitReference(
+                        ref.meta(),
+                        visitQualifiedId(ref.id()));
+            case LiteralNode<A> literal ->
+                visitLiteral(literal);
         };
     }
 
-    @Override
-    BlockNode<B> visitBlock(BlockNode<A> blockExpr);
+    BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, ExprNode<B> result);
 
-    @Override
-    IfNode<B> visitIf(IfNode<A> ifExpr);
+    IfNode<B> visitIf(Meta<A> meta, ExprNode<B> condition, ExprNode<B> consequence, ExprNode<B> alternative);
 
-    @Override
-    LambdaNode<B> visitLambda(LambdaNode<A> lambda);
+    LambdaNode<B> visitLambda(Meta<A> meta, ImmutableList<ParamNode<B>> params, ExprNode<B> body);
 
-    @Override
-    MatchNode<B> visitMatch(MatchNode<A> match);
+    MatchNode<B> visitMatch(Meta<A> meta, ExprNode<B> scrutinee, ImmutableList<CaseNode<B>> cases);
 
-    @Override
-    ApplyNode<B> visitApply(ApplyNode<A> apply);
+    ApplyNode<B> visitApply(Meta<A> meta, ExprNode<B> expr, ImmutableList<ExprNode<B>> args);
 
-    @Override
-    ReferenceNode<B> visitReference(ReferenceNode<A> ref);
+    ReferenceNode<B> visitReference(Meta<A> meta, QualifiedIdNode<B> id);
 
-    @Override
     default LiteralNode<B> visitLiteral(LiteralNode<A> literal) {
         return switch (literal) {
-            case BooleanNode<A> bool -> visitBoolean(bool);
-            case CharNode<A> chr -> visitChar(chr);
-            case DoubleNode<A> dbl -> visitDouble(dbl);
-            case FloatNode<A> flt -> visitFloat(flt);
-            case IntNode<A> intgr -> visitInt(intgr);
-            case LongNode<A> lng -> visitLong(lng);
-            case StringNode<A> str -> visitString(str);
+            case BooleanNode<A> bool ->
+                visitBoolean(bool.meta(), bool.value());
+            case CharNode<A> chr ->
+                visitChar(chr.meta(), chr.value());
+            case DoubleNode<A> dbl ->
+                visitDouble(dbl.meta(), dbl.value());
+            case FloatNode<A> flt ->
+                visitFloat(flt.meta(), flt.value());
+            case IntNode<A> intgr ->
+                visitInt(intgr.meta(), intgr.value());
+            case LongNode<A> lng ->
+                visitLong(lng.meta(), lng.value());
+            case StringNode<A> str ->
+                visitString(str.meta(), str.value());
         };
     }
 
-    @Override
-    BooleanNode<B> visitBoolean(BooleanNode<A> bool);
+    BooleanNode<B> visitBoolean(Meta<A> meta, boolean value);
 
-    @Override
-    CharNode<B> visitChar(CharNode<A> chr);
+    CharNode<B> visitChar(Meta<A> meta, char value);
 
-    @Override
-    DoubleNode<B> visitDouble(DoubleNode<A> dbl);
+    StringNode<B> visitString(Meta<A> meta, String value);
 
-    @Override
-    FloatNode<B> visitFloat(FloatNode<A> flt);
+    IntNode<B> visitInt(Meta<A> meta, int value);
 
-    @Override
-    IntNode<B> visitInt(IntNode<A> intgr);
+    LongNode<B> visitLong(Meta<A> meta, long value);
 
-    @Override
-    LongNode<B> visitLong(LongNode<A> lng);
+    FloatNode<B> visitFloat(Meta<A> meta, float value);
 
-    @Override
-    StringNode<B> visitString(StringNode<A> str);
+    DoubleNode<B> visitDouble(Meta<A> meta, double value);
 
     // Cases and patterns
-    @Override
-    CaseNode<B> visitCase(CaseNode<A> cse);
+    CaseNode<B> visitCase(Meta<A> meta, PatternNode<B> pattern, ExprNode<B> consequent);
 
-    @Override
     default PatternNode<B> visitPattern(PatternNode<A> pat) {
         return switch (pat) {
-            case ConstructorPatternNode<A> constrPat -> visitConstructorPattern(constrPat);
-            case IdPatternNode<A> idPat -> visitIdPattern(idPat);
-            case LiteralPatternNode<A> litPat -> visitLiteralPattern(litPat);
+            case IdPatternNode<A> idPat ->
+                visitIdPattern(
+                        idPat.meta(),
+                        idPat.alias(),
+                        idPat.name());
+            case LiteralPatternNode<A> litPat ->
+                visitLiteralPattern(
+                        litPat.meta(),
+                        litPat.alias(),
+                        visitLiteral(litPat.literal()));
+            case ConstructorPatternNode<A> constrPat ->
+                visitConstructorPattern(
+                        constrPat.meta(),
+                        constrPat.alias(),
+                        visitQualifiedId(constrPat.id()),
+                        constrPat.fields().collect(fieldPat -> {
+                            return visitFieldPattern(
+                                    fieldPat.meta(),
+                                    fieldPat.field(),
+                                    fieldPat.pattern().map(this::visitPattern));
+                        }));
         };
     }
 
-    @Override
-    ConstructorPatternNode<B> visitConstructorPattern(ConstructorPatternNode<A> constrPat);
+    ConstructorPatternNode<B> visitConstructorPattern(Meta<A> meta, Optional<String> alias, QualifiedIdNode<B> id,
+            ImmutableList<FieldPatternNode<B>> fields);
 
-    @Override
-    FieldPatternNode<B> visitFieldPattern(FieldPatternNode<A> fieldPat);
+    FieldPatternNode<B> visitFieldPattern(Meta<A> meta, String field, Optional<PatternNode<B>> pattern);
 
-    @Override
-    IdPatternNode<B> visitIdPattern(IdPatternNode<A> idPat);
+    IdPatternNode<B> visitIdPattern(Meta<A> meta, Optional<String> alias, String name);
 
-    @Override
-    LiteralPatternNode<B> visitLiteralPattern(LiteralPatternNode<A> litPat);
+    LiteralPatternNode<B> visitLiteralPattern(Meta<A> meta, Optional<String> alias, LiteralNode<B> literal);
 
     // Identifiers
-    @Override
     QualifiedIdNode<B> visitQualifiedId(QualifiedIdNode<A> id);
 }

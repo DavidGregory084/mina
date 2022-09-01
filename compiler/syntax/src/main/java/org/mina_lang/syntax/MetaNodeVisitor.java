@@ -1,373 +1,248 @@
 package org.mina_lang.syntax;
 
-import java.util.function.Function;
+import java.util.Optional;
+
+import org.eclipse.collections.api.list.ImmutableList;
 
 public interface MetaNodeVisitor<A, B> {
 
     // Namespaces
-    B visitNamespace(NamespaceNode<A> mod);
+    B visitNamespace(Meta<A> meta, NamespaceIdNode<Void> id, ImmutableList<ImportNode<Void>> imports,
+            ImmutableList<B> declarations);
 
     // Declarations
     default B visitDeclaration(DeclarationNode<A> decl) {
         return switch (decl) {
-            case LetNode<A> let -> visitLet(let);
-            case LetFnNode<A> letFn -> visitLetFn(letFn);
-            case DataNode<A> data -> visitData(data);
+            case LetNode<A> let ->
+                visitLet(
+                        let.meta(),
+                        let.name(),
+                        let.type().map(this::visitType),
+                        visitExpr(let.expr()));
+            case LetFnNode<A> letFn ->
+                visitLetFn(
+                        letFn.meta(),
+                        letFn.name(),
+                        letFn.typeParams().collect(this::visitTypeVar),
+                        letFn.valueParams().collect(param -> {
+                            return visitParam(
+                                    param.meta(),
+                                    param.name(),
+                                    param.typeAnnotation().map(this::visitType));
+                        }),
+                        letFn.returnType().map(this::visitType),
+                        visitExpr(letFn.expr()));
+            case DataNode<A> data ->
+                visitData(
+                        data.meta(),
+                        data.name(),
+                        data.typeParams().collect(this::visitTypeVar),
+                        data.constructors().collect(constr -> {
+                            return visitConstructor(
+                                    constr.meta(),
+                                    constr.name(),
+                                    constr.params().collect(param -> {
+                                        return visitConstructorParam(
+                                                param.meta(),
+                                                param.name(),
+                                                visitType(param.typeAnnotation()));
+                                    }),
+                                    constr.type().map(this::visitType));
+                        }));
         };
     }
 
-    B visitData(DataNode<A> data);
+    B visitData(Meta<A> meta, String name, ImmutableList<B> typeParams, ImmutableList<B> constructors);
 
-    B visitConstructor(ConstructorNode<A> constr);
+    B visitConstructor(Meta<A> meta, String name, ImmutableList<B> params, Optional<B> type);
 
-    B visitConstructorParam(ConstructorParamNode<A> constrParam);
+    B visitConstructorParam(Meta<A> meta, String name, B typeAnnotation);
 
-    B visitLet(LetNode<A> let);
+    B visitLet(Meta<A> meta, String name, Optional<B> type, B expr);
 
-    B visitLetFn(LetFnNode<A> letFn);
+    B visitLetFn(Meta<A> meta, String name, ImmutableList<B> typeParams, ImmutableList<B> valueParams,
+            Optional<B> returnType, B expr);
 
-    B visitParam(ParamNode<A> param);
+    B visitParam(Meta<A> param, String name, Optional<B> typeAnnotation);
+
+    // Types
+    default B visitType(TypeNode<A> typ) {
+        return switch (typ) {
+            case TypeLambdaNode<A> tyLam ->
+                visitTypeLambda(
+                        tyLam.meta(),
+                        tyLam.args().collect(this::visitTypeVar),
+                        visitType(tyLam.body()));
+            case FunTypeNode<A> funTyp ->
+                visitFunType(
+                        funTyp.meta(),
+                        funTyp.argTypes().collect(this::visitType),
+                        visitType(funTyp.returnType()));
+            case TypeApplyNode<A> tyApp ->
+                visitTypeApply(
+                        tyApp.meta(),
+                        visitType(tyApp.type()),
+                        tyApp.args().collect(this::visitType));
+            case TypeReferenceNode<A> tyRef ->
+                visitTypeReference(
+                        tyRef.meta(),
+                        visitQualifiedId(tyRef.id()));
+            case TypeVarNode<A> tyVar ->
+                visitTypeVar(tyVar);
+        };
+    }
+
+    B visitTypeLambda(Meta<A> meta, ImmutableList<B> args, B body);
+
+    B visitFunType(Meta<A> meta, ImmutableList<B> argTypes, B returnType);
+
+    B visitTypeApply(Meta<A> meta, B type, ImmutableList<B> args);
+
+    B visitTypeReference(Meta<A> meta, B id);
+
+    default B visitTypeVar(TypeVarNode<A> tyVar) {
+        return switch (tyVar) {
+            case ForAllVarNode<A> forAll ->
+                visitForAllVar(forAll.meta(), forAll.name());
+            case ExistsVarNode<A> exists ->
+                visitExistsVar(exists.meta(), exists.name());
+        };
+    }
+
+    B visitForAllVar(Meta<A> meta, String name);
+
+    B visitExistsVar(Meta<A> meta, String name);
 
     // Expressions
     default B visitExpr(ExprNode<A> expr) {
         return switch (expr) {
-            case BlockNode<A> block -> visitBlock(block);
-            case IfNode<A> ifExpr -> visitIf(ifExpr);
-            case LambdaNode<A> lambda -> visitLambda(lambda);
-            case MatchNode<A> match -> visitMatch(match);
-            case ApplyNode<A> apply -> visitApply(apply);
-            case ReferenceNode<A> ref -> visitReference(ref);
-            case LiteralNode<A> literal -> visitLiteral(literal);
+            case BlockNode<A> block ->
+                visitBlock(
+                        block.meta(),
+                        block.declarations().collect(this::visitDeclaration),
+                        visitExpr(block.result()));
+            case IfNode<A> ifExpr ->
+                visitIf(
+                        ifExpr.meta(),
+                        visitExpr(ifExpr.condition()),
+                        visitExpr(ifExpr.consequent()),
+                        visitExpr(ifExpr.alternative()));
+            case LambdaNode<A> lambda ->
+                visitLambda(
+                        lambda.meta(),
+                        lambda.params().collect(param -> {
+                            return visitParam(
+                                    param.meta(),
+                                    param.name(),
+                                    param.typeAnnotation().map(this::visitType));
+                        }),
+                        visitExpr(lambda.body()));
+            case MatchNode<A> match ->
+                visitMatch(
+                        match.meta(),
+                        visitExpr(match.scrutinee()),
+                        match.cases().collect(cse -> {
+                            return visitCase(
+                                    cse.meta(),
+                                    visitPattern(cse.pattern()),
+                                    visitExpr(cse.consequent()));
+                        }));
+            case ApplyNode<A> apply ->
+                visitApply(
+                        apply.meta(),
+                        visitExpr(apply.expr()),
+                        apply.args().collect(this::visitExpr));
+            case ReferenceNode<A> ref ->
+                visitReference(
+                        ref.meta(),
+                        visitQualifiedId(ref.id()));
+            case LiteralNode<A> literal ->
+                visitLiteral(literal);
         };
     }
 
-    B visitBlock(BlockNode<A> block);
+    B visitBlock(Meta<A> meta, ImmutableList<B> declarations, B result);
 
-    B visitIf(IfNode<A> ifExpr);
+    B visitIf(Meta<A> meta, B condition, B consequence, B alternative);
 
-    B visitLambda(LambdaNode<A> lambda);
+    B visitLambda(Meta<A> meta, ImmutableList<B> params, B body);
 
-    B visitMatch(MatchNode<A> match);
+    B visitMatch(Meta<A> meta, B scrutinee, ImmutableList<B> cases);
 
-    B visitApply(ApplyNode<A> apply);
+    B visitApply(Meta<A> meta, B expr, ImmutableList<B> args);
 
-    B visitReference(ReferenceNode<A> ref);
+    B visitReference(Meta<A> meta, B id);
 
     default B visitLiteral(LiteralNode<A> literal) {
         return switch (literal) {
-            case BooleanNode<A> bool -> visitBoolean(bool);
-            case CharNode<A> chr -> visitChar(chr);
-            case DoubleNode<A> dbl -> visitDouble(dbl);
-            case FloatNode<A> flt -> visitFloat(flt);
-            case IntNode<A> intgr -> visitInt(intgr);
-            case LongNode<A> lng -> visitLong(lng);
-            case StringNode<A> str -> visitString(str);
+            case BooleanNode<A> bool ->
+                visitBoolean(bool.meta(), bool.value());
+            case CharNode<A> chr ->
+                visitChar(chr.meta(), chr.value());
+            case DoubleNode<A> dbl ->
+                visitDouble(dbl.meta(), dbl.value());
+            case FloatNode<A> flt ->
+                visitFloat(flt.meta(), flt.value());
+            case IntNode<A> intgr ->
+                visitInt(intgr.meta(), intgr.value());
+            case LongNode<A> lng ->
+                visitLong(lng.meta(), lng.value());
+            case StringNode<A> str ->
+                visitString(str.meta(), str.value());
         };
     }
 
-    B visitBoolean(BooleanNode<A> bool);
+    B visitBoolean(Meta<A> meta, boolean value);
 
-    B visitChar(CharNode<A> chr);
+    B visitChar(Meta<A> meta, char value);
 
-    B visitString(StringNode<A> str);
+    B visitString(Meta<A> meta, String value);
 
-    B visitInt(IntNode<A> intgr);
+    B visitInt(Meta<A> meta, int value);
 
-    B visitLong(LongNode<A> lng);
+    B visitLong(Meta<A> meta, long value);
 
-    B visitFloat(FloatNode<A> flt);
+    B visitFloat(Meta<A> meta, float value);
 
-    B visitDouble(DoubleNode<A> dbl);
+    B visitDouble(Meta<A> meta, double value);
 
     // Cases and patterns
-    B visitCase(CaseNode<A> cse);
+    B visitCase(Meta<A> meta, B pattern, B consequent);
 
     default B visitPattern(PatternNode<A> pat) {
         return switch (pat) {
-            case ConstructorPatternNode<A> constrPat -> visitConstructorPattern(constrPat);
-            case IdPatternNode<A> idPat -> visitIdPattern(idPat);
-            case LiteralPatternNode<A> litPat -> visitLiteralPattern(litPat);
+            case IdPatternNode<A> idPat ->
+                visitIdPattern(
+                        idPat.meta(),
+                        idPat.alias(),
+                        idPat.name());
+            case LiteralPatternNode<A> litPat ->
+                visitLiteralPattern(
+                        litPat.meta(),
+                        litPat.alias(),
+                        visitLiteral(litPat.literal()));
+            case ConstructorPatternNode<A> constrPat ->
+                visitConstructorPattern(
+                        constrPat.meta(),
+                        constrPat.alias(),
+                        visitQualifiedId(constrPat.id()),
+                        constrPat.fields().collect(fieldPat -> {
+                            return visitFieldPattern(
+                                    fieldPat.meta(),
+                                    fieldPat.field(),
+                                    fieldPat.pattern().map(this::visitPattern));
+                        }));
         };
     }
 
-    B visitConstructorPattern(ConstructorPatternNode<A> constrPat);
+    B visitConstructorPattern(Meta<A> meta, Optional<String> alias, B id, ImmutableList<B> fields);
 
-    B visitFieldPattern(FieldPatternNode<A> fieldPat);
+    B visitFieldPattern(Meta<A> meta, String field, Optional<B> pattern);
 
-    B visitIdPattern(IdPatternNode<A> idPat);
+    B visitIdPattern(Meta<A> meta, Optional<String> alias, String name);
 
-    B visitLiteralPattern(LiteralPatternNode<A> litPat);
+    B visitLiteralPattern(Meta<A> meta, Optional<String> alias, B literal);
 
     // Identifiers
     B visitQualifiedId(QualifiedIdNode<A> id);
-
-    default <C> MetaNodeVisitor<A, C> map(Function<B, C> f) {
-        return new MetaNodeVisitor<A, C>() {
-
-            @Override
-            public C visitNamespace(NamespaceNode<A> mod) {
-                return f.apply(MetaNodeVisitor.this.visitNamespace(mod));
-            }
-
-            @Override
-            public C visitData(DataNode<A> data) {
-                return f.apply(MetaNodeVisitor.this.visitData(data));
-            }
-
-            @Override
-            public C visitConstructor(ConstructorNode<A> constr) {
-                return f.apply(MetaNodeVisitor.this.visitConstructor(constr));
-            }
-
-            @Override
-            public C visitConstructorParam(ConstructorParamNode<A> constrParam) {
-                return f.apply(MetaNodeVisitor.this.visitConstructorParam(constrParam));
-            }
-
-            @Override
-            public C visitLet(LetNode<A> let) {
-                return f.apply(MetaNodeVisitor.this.visitLet(let));
-            }
-
-            @Override
-            public C visitLetFn(LetFnNode<A> letFn) {
-                return f.apply(MetaNodeVisitor.this.visitLetFn(letFn));
-            }
-
-            @Override
-            public C visitParam(ParamNode<A> param) {
-                return f.apply(MetaNodeVisitor.this.visitParam(param));
-            }
-
-            @Override
-            public C visitBlock(BlockNode<A> block) {
-                return f.apply(MetaNodeVisitor.this.visitBlock(block));
-            }
-
-            @Override
-            public C visitIf(IfNode<A> ifExpr) {
-                return f.apply(MetaNodeVisitor.this.visitIf(ifExpr));
-            }
-
-            @Override
-            public C visitLambda(LambdaNode<A> lambda) {
-                return f.apply(MetaNodeVisitor.this.visitLambda(lambda));
-            }
-
-            @Override
-            public C visitMatch(MatchNode<A> match) {
-                return f.apply(MetaNodeVisitor.this.visitMatch(match));
-            }
-
-            @Override
-            public C visitApply(ApplyNode<A> apply) {
-                return f.apply(MetaNodeVisitor.this.visitApply(apply));
-            }
-
-            @Override
-            public C visitReference(ReferenceNode<A> ref) {
-                return f.apply(MetaNodeVisitor.this.visitReference(ref));
-            }
-
-            @Override
-            public C visitBoolean(BooleanNode<A> bool) {
-                return f.apply(MetaNodeVisitor.this.visitBoolean(bool));
-            }
-
-            @Override
-            public C visitChar(CharNode<A> chr) {
-                return f.apply(MetaNodeVisitor.this.visitChar(chr));
-            }
-
-            @Override
-            public C visitString(StringNode<A> str) {
-                return f.apply(MetaNodeVisitor.this.visitString(str));
-            }
-
-            @Override
-            public C visitInt(IntNode<A> intgr) {
-                return f.apply(MetaNodeVisitor.this.visitInt(intgr));
-            }
-
-            @Override
-            public C visitLong(LongNode<A> lng) {
-                return f.apply(MetaNodeVisitor.this.visitLong(lng));
-            }
-
-            @Override
-            public C visitFloat(FloatNode<A> flt) {
-                return f.apply(MetaNodeVisitor.this.visitFloat(flt));
-            }
-
-            @Override
-            public C visitDouble(DoubleNode<A> dbl) {
-                return f.apply(MetaNodeVisitor.this.visitDouble(dbl));
-            }
-
-            @Override
-            public C visitCase(CaseNode<A> cse) {
-                return f.apply(MetaNodeVisitor.this.visitCase(cse));
-            }
-
-            @Override
-            public C visitConstructorPattern(ConstructorPatternNode<A> constrPat) {
-                return f.apply(MetaNodeVisitor.this.visitConstructorPattern(constrPat));
-            }
-
-            @Override
-            public C visitFieldPattern(FieldPatternNode<A> fieldPat) {
-                return f.apply(MetaNodeVisitor.this.visitFieldPattern(fieldPat));
-            }
-
-            @Override
-            public C visitIdPattern(IdPatternNode<A> idPat) {
-                return f.apply(MetaNodeVisitor.this.visitIdPattern(idPat));
-            }
-
-            @Override
-            public C visitLiteralPattern(LiteralPatternNode<A> litPat) {
-                return f.apply(MetaNodeVisitor.this.visitLiteralPattern(litPat));
-            }
-
-            @Override
-            public C visitQualifiedId(QualifiedIdNode<A> id) {
-                return f.apply(MetaNodeVisitor.this.visitQualifiedId(id));
-            }
-        };
-    }
-
-    default <C, D extends MetaNodeVisitor<A, C>> MetaNodeVisitor<A, C> flatMap(Function<B, D> f) {
-        return new MetaNodeVisitor<A, C>() {
-
-            @Override
-            public C visitNamespace(NamespaceNode<A> mod) {
-                return f.apply(MetaNodeVisitor.this.visitNamespace(mod)).visitNamespace(mod);
-            }
-
-            @Override
-            public C visitData(DataNode<A> data) {
-                return f.apply(MetaNodeVisitor.this.visitData(data)).visitData(data);
-            }
-
-            @Override
-            public C visitConstructor(ConstructorNode<A> constr) {
-                return f.apply(MetaNodeVisitor.this.visitConstructor(constr)).visitConstructor(constr);
-            }
-
-            @Override
-            public C visitConstructorParam(ConstructorParamNode<A> constrParam) {
-                return f.apply(MetaNodeVisitor.this.visitConstructorParam(constrParam)).visitConstructorParam(constrParam);
-            }
-
-            @Override
-            public C visitLet(LetNode<A> let) {
-                return f.apply(MetaNodeVisitor.this.visitLet(let)).visitLet(let);
-            }
-
-            @Override
-            public C visitLetFn(LetFnNode<A> letFn) {
-                return f.apply(MetaNodeVisitor.this.visitLetFn(letFn)).visitLetFn(letFn);
-            }
-
-            @Override
-            public C visitParam(ParamNode<A> param) {
-                return f.apply(MetaNodeVisitor.this.visitParam(param)).visitParam(param);
-            }
-
-            @Override
-            public C visitBlock(BlockNode<A> block) {
-                return f.apply(MetaNodeVisitor.this.visitBlock(block)).visitBlock(block);
-            }
-
-            @Override
-            public C visitIf(IfNode<A> ifExpr) {
-                return f.apply(MetaNodeVisitor.this.visitIf(ifExpr)).visitIf(ifExpr);
-            }
-
-            @Override
-            public C visitLambda(LambdaNode<A> lambda) {
-                return f.apply(MetaNodeVisitor.this.visitLambda(lambda)).visitLambda(lambda);
-            }
-
-            @Override
-            public C visitMatch(MatchNode<A> match) {
-                return f.apply(MetaNodeVisitor.this.visitMatch(match)).visitMatch(match);
-            }
-
-            @Override
-            public C visitApply(ApplyNode<A> apply) {
-                return f.apply(MetaNodeVisitor.this.visitApply(apply)).visitApply(apply);
-            }
-
-            @Override
-            public C visitReference(ReferenceNode<A> ref) {
-                return f.apply(MetaNodeVisitor.this.visitReference(ref)).visitReference(ref);
-            }
-
-            @Override
-            public C visitBoolean(BooleanNode<A> bool) {
-                return f.apply(MetaNodeVisitor.this.visitBoolean(bool)).visitBoolean(bool);
-            }
-
-            @Override
-            public C visitChar(CharNode<A> chr) {
-                return f.apply(MetaNodeVisitor.this.visitChar(chr)).visitChar(chr);
-            }
-
-            @Override
-            public C visitString(StringNode<A> str) {
-                return f.apply(MetaNodeVisitor.this.visitString(str)).visitString(str);
-            }
-
-            @Override
-            public C visitInt(IntNode<A> intgr) {
-                return f.apply(MetaNodeVisitor.this.visitInt(intgr)).visitInt(intgr);
-            }
-
-            @Override
-            public C visitLong(LongNode<A> lng) {
-                return f.apply(MetaNodeVisitor.this.visitLong(lng)).visitLong(lng);
-            }
-
-            @Override
-            public C visitFloat(FloatNode<A> flt) {
-                return f.apply(MetaNodeVisitor.this.visitFloat(flt)).visitFloat(flt);
-            }
-
-            @Override
-            public C visitDouble(DoubleNode<A> dbl) {
-                return f.apply(MetaNodeVisitor.this.visitDouble(dbl)).visitDouble(dbl);
-            }
-
-            @Override
-            public C visitCase(CaseNode<A> cse) {
-                return f.apply(MetaNodeVisitor.this.visitCase(cse)).visitCase(cse);
-            }
-
-            @Override
-            public C visitConstructorPattern(ConstructorPatternNode<A> constrPat) {
-                return f.apply(MetaNodeVisitor.this.visitConstructorPattern(constrPat)).visitConstructorPattern(constrPat);
-            }
-
-            @Override
-            public C visitFieldPattern(FieldPatternNode<A> fieldPat) {
-                return f.apply(MetaNodeVisitor.this.visitFieldPattern(fieldPat)).visitFieldPattern(fieldPat);
-            }
-
-            @Override
-            public C visitIdPattern(IdPatternNode<A> idPat) {
-                return f.apply(MetaNodeVisitor.this.visitIdPattern(idPat)).visitIdPattern(idPat);
-            }
-
-            @Override
-            public C visitLiteralPattern(LiteralPatternNode<A> litPat) {
-                return f.apply(MetaNodeVisitor.this.visitLiteralPattern(litPat)).visitLiteralPattern(litPat);
-            }
-
-            @Override
-            public C visitQualifiedId(QualifiedIdNode<A> id) {
-                return f.apply(MetaNodeVisitor.this.visitQualifiedId(id)).visitQualifiedId(id);
-            }
-        };
-    }
 }
