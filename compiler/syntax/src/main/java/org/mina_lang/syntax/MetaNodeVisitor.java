@@ -3,6 +3,7 @@ package org.mina_lang.syntax;
 import java.util.Optional;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Meta;
 
 public interface MetaNodeVisitor<A, B> {
 

@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Meta;
 
 public record TypeLambdaNode<A> (Meta<A> meta, ImmutableList<TypeVarNode<A>> args, TypeNode<A> body)
         implements TypeNode<A> {

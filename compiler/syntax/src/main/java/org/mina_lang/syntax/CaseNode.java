@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record CaseNode<A> (Meta<A> meta, PatternNode<A> pattern, ExprNode<A> consequent) implements MetaNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {

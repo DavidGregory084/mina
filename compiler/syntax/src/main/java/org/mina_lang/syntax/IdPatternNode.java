@@ -2,6 +2,8 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
+import org.mina_lang.common.Meta;
+
 public record IdPatternNode<A> (Meta<A> meta, Optional<String> alias, String name) implements PatternNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {

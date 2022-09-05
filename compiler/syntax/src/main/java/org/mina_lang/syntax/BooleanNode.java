@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record BooleanNode<A> (Meta<A> meta, boolean value) implements LiteralNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {

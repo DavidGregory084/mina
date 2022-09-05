@@ -2,6 +2,7 @@ package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
 
 import java.util.Optional;
@@ -59,6 +60,26 @@ public class SyntaxNodes {
             ImmutableList<TypeVarNode<A>> typeParams,
             ImmutableList<ConstructorNode<A>> constructors) {
         return new DataNode<>(meta, name, typeParams, constructors);
+    }
+
+    public static LetFnNode<Void> letFnNode(
+            Range range,
+            String name,
+            ImmutableList<TypeVarNode<Void>> typeParams,
+            ImmutableList<ParamNode<Void>> valueParams,
+            Optional<TypeNode<Void>> returnType,
+            ExprNode<Void> expr) {
+        return new LetFnNode<>(Meta.empty(range), name, typeParams, valueParams, returnType, expr);
+    }
+
+    public static <A> LetFnNode<A> letFnNode(
+            Meta<A> meta,
+            String name,
+            ImmutableList<TypeVarNode<A>> typeParams,
+            ImmutableList<ParamNode<A>> valueParams,
+            Optional<TypeNode<A>> returnType,
+            ExprNode<A> expr) {
+        return new LetFnNode<>(meta, name, typeParams, valueParams, returnType, expr);
     }
 
     public static LetFnNode<Void> letFnNode(

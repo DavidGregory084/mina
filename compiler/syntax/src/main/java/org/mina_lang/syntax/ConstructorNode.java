@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.*;
 
 import java.util.Optional;
 
@@ -29,5 +30,9 @@ public record ConstructorNode<A> (Meta<A> meta, String name, ImmutableList<Const
                 name(),
                 params().collect(param -> param.accept(transformer)),
                 type().map(transformer::visitType));
+    }
+
+    public ConstructorName getName(DataName enclosing, NamespaceName namespace) {
+        return new ConstructorName(enclosing, new QualifiedName(namespace, name));
     }
 }

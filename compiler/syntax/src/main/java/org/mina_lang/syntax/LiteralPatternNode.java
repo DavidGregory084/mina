@@ -2,6 +2,8 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
+import org.mina_lang.common.Meta;
+
 public record LiteralPatternNode<A>(Meta<A> meta, Optional<String> alias, LiteralNode<A> literal) implements PatternNode<A> {
 
     @Override

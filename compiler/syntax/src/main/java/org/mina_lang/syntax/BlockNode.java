@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Meta;
 
 public record BlockNode<A> (Meta<A> meta, ImmutableList<LetNode<A>> declarations, ExprNode<A> result)
         implements ExprNode<A> {

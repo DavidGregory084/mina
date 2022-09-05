@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record ExistsVarNode<A> (Meta<A> meta, String name) implements TypeVarNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {

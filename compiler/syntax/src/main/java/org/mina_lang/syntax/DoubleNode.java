@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record DoubleNode<A> (Meta<A> meta, double value) implements LiteralNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {

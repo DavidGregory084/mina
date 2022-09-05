@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record IfNode<A> (Meta<A> meta, ExprNode<A> condition, ExprNode<A> consequent, ExprNode<A> alternative)
         implements ExprNode<A> {
     @Override

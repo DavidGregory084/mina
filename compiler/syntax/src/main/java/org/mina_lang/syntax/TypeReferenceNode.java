@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record TypeReferenceNode<A> (Meta<A> meta, QualifiedIdNode<A> id) implements TypeNode<A> {
 
     @Override

@@ -3,6 +3,10 @@ package org.mina_lang.syntax;
 import java.util.Optional;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.LetName;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.NamespaceName;
+import org.mina_lang.common.QualifiedName;
 
 public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<A>> typeParams,
         ImmutableList<ParamNode<A>> valueParams, Optional<TypeNode<A>> returnType, ExprNode<A> expr)
@@ -39,5 +43,9 @@ public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode
                 valueParams().collect(param -> param.accept(transformer)),
                 returnType().map(transformer::visitType),
                 transformer.visitExpr(expr()));
+    }
+
+    public LetName getName(NamespaceName namespace) {
+        return new LetName(new QualifiedName(namespace, name));
     }
 }

@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Meta;
 
 import java.util.Optional;
 

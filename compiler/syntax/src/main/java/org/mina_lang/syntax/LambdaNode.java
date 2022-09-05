@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Meta;
 
 public record LambdaNode<A> (Meta<A> meta, ImmutableList<ParamNode<A>> params, ExprNode<A> body)
         implements ExprNode<A> {

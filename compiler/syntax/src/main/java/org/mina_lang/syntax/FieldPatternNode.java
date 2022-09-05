@@ -2,6 +2,8 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
+import org.mina_lang.common.Meta;
+
 public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternNode<A>> pattern)
         implements MetaNode<A> {
     @Override

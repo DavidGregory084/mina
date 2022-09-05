@@ -4,6 +4,9 @@ plugins {
 }
 
 dependencies {
+    // Immutable Collections
+    implementation(libs.bundles.eclipseCollections)
+
     // Common Definitions
     implementation(project(":compiler:common"))
 

@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record ConstructorParamNode<A> (Meta<A> meta, String name, TypeNode<A> typeAnnotation)
         implements MetaNode<A> {
 

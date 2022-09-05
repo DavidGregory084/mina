@@ -1,5 +1,7 @@
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
+
 public record ReferenceNode<A> (Meta<A> meta, QualifiedIdNode<A> id) implements ExprNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
