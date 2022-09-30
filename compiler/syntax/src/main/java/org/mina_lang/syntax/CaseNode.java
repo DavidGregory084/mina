@@ -11,18 +11,30 @@ public record CaseNode<A> (Meta<A> meta, PatternNode<A> pattern, ExprNode<A> con
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitCase(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitCase(this);
+
+        var result = visitor.visitCase(
                 meta(),
                 visitor.visitPattern(pattern()),
                 visitor.visitExpr(consequent()));
+
+        visitor.postVisitCase(result);
+
+        return result;
     }
 
     @Override
-    public <B> CaseNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitCase(
+    public <B> CaseNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitCase(this);
+
+        var result = visitor.visitCase(
                 meta(),
-                transformer.visitPattern(pattern()),
-                transformer.visitExpr(consequent()));
+                visitor.visitPattern(pattern()),
+                visitor.visitExpr(consequent()));
+
+        visitor.postVisitCase(result);
+
+        return result;
     }
 }

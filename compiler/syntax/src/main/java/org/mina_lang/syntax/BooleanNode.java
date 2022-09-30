@@ -9,12 +9,18 @@ public record BooleanNode<A> (Meta<A> meta, boolean value) implements LiteralNod
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitBoolean(meta(), value());
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitBoolean(this);
+        var result = visitor.visitBoolean(meta(), value());
+        visitor.postVisitBoolean(result);
+        return result;
     }
 
     @Override
-    public <B> BooleanNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitBoolean(meta(), value());
+    public <B> BooleanNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitBoolean(this);
+        var result = visitor.visitBoolean(meta(), value());
+        visitor.postVisitBoolean(result);
+        return result;
     }
 }

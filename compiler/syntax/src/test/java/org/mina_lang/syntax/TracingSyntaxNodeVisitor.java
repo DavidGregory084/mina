@@ -195,7 +195,7 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
     }
 
     @Override
-    public void visitQualifiedId(QualifiedIdNode<?> id) {
+    public void visitQualifiedId(QualifiedIdNode id) {
         entries.add(new Entry(id.getClass(), id.range()));
     }
 }

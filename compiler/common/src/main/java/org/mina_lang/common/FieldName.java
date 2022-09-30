@@ -1,6 +1,6 @@
 package org.mina_lang.common;
 
-public record LocalName(String name, int index) implements Named {
+public record FieldName(ConstructorName constructor, String name) implements Named {
 
     @Override
     public String localName() {

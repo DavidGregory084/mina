@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.mina_lang.common.Meta;
 
-public record LiteralPatternNode<A>(Meta<A> meta, Optional<String> alias, LiteralNode<A> literal) implements PatternNode<A> {
+public record LiteralPatternNode<A>(Meta<A> meta, LiteralNode<A> literal) implements PatternNode<A> {
 
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -13,18 +13,28 @@ public record LiteralPatternNode<A>(Meta<A> meta, Optional<String> alias, Litera
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitLiteralPattern(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitLiteralPattern(this);
+
+        var result = visitor.visitLiteralPattern(
             meta(),
-            alias(),
             visitor.visitLiteral(literal()));
+
+        visitor.postVisitLiteralPattern(result);
+
+        return result;
     }
 
     @Override
-    public <B> LiteralPatternNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitLiteralPattern(
+    public <B> LiteralPatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitLiteralPattern(this);
+
+        var result = visitor.visitLiteralPattern(
             meta(),
-            alias(),
-            transformer.visitLiteral(literal()));
+            visitor.visitLiteral(literal()));
+
+        visitor.postVisitLiteralPattern(result);
+
+        return result;
     }
 }

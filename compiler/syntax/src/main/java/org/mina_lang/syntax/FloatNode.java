@@ -9,12 +9,18 @@ public record FloatNode<A> (Meta<A> meta, float value) implements LiteralNode<A>
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitFloat(meta(), value());
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitFloat(this);
+        var result = visitor.visitFloat(meta(), value());
+        visitor.postVisitFloat(result);
+        return result;
     }
 
     @Override
-    public <B> FloatNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitFloat(meta(), value());
+    public <B> FloatNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitFloat(this);
+        var result = visitor.visitFloat(meta(), value());
+        visitor.postVisitFloat(result);
+        return result;
     }
 }

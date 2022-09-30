@@ -12,18 +12,30 @@ public record ApplyNode<A> (Meta<A> meta, ExprNode<A> expr, ImmutableList<ExprNo
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitApply(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitApply(this);
+
+        var result = visitor.visitApply(
                 meta(),
                 visitor.visitExpr(expr()),
                 args().collect(visitor::visitExpr));
+
+        visitor.postVisitApply(result);
+
+        return result;
     }
 
     @Override
-    public <B> ApplyNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitApply(
+    public <B> ApplyNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitApply(this);
+
+        var result = visitor.visitApply(
                 meta(),
-                transformer.visitExpr(expr()),
-                args().collect(transformer::visitExpr));
+                visitor.visitExpr(expr()),
+                args().collect(visitor::visitExpr));
+
+        visitor.postVisitApply(result);
+
+        return result;
     }
 }

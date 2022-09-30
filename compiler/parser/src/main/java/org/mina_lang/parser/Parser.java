@@ -598,45 +598,43 @@ public class Parser {
 
         @Override
         public PatternNode<Void> visitPattern(PatternContext ctx) {
-            return visitAlternatives(ctx.idPattern(), ctx.literalPattern(), ctx.constructorPattern());
+            return visitAlternatives(ctx.aliasPattern(), ctx.idPattern(), ctx.literalPattern(), ctx.constructorPattern());
+        }
+
+        @Override
+        public AliasPatternNode<Void> visitAliasPattern(AliasPatternContext ctx) {
+            var alias = Optional.ofNullable(ctx.ID())
+                    .map(TerminalNode::getText)
+                    .orElse(null);
+
+            var pattern = visitNullable(ctx.pattern());
+
+            return aliasPatternNode(contextRange(ctx), alias, pattern);
         }
 
         @Override
         public IdPatternNode<Void> visitIdPattern(IdPatternContext ctx) {
-            var alias = Optional.ofNullable(ctx.patternAlias())
-                    .map(PatternAliasContext::ID)
-                    .map(TerminalNode::getText);
-
             var id = Optional.ofNullable(ctx.ID())
                     .map(TerminalNode::getText)
                     .orElse(null);
 
-            return idPatternNode(contextRange(ctx), alias, id);
+            return idPatternNode(contextRange(ctx), id);
         }
 
         @Override
         public LiteralPatternNode<Void> visitLiteralPattern(LiteralPatternContext ctx) {
-            var alias = Optional.ofNullable(ctx.patternAlias())
-                    .map(PatternAliasContext::ID)
-                    .map(TerminalNode::getText);
-
             var literal = literalVisitor.visit(ctx.literal());
-
-            return literalPatternNode(contextRange(ctx), alias, literal);
+            return literalPatternNode(contextRange(ctx), literal);
         }
 
         @Override
         public ConstructorPatternNode<Void> visitConstructorPattern(ConstructorPatternContext ctx) {
-            var alias = Optional.ofNullable(ctx.patternAlias())
-                    .map(PatternAliasContext::ID)
-                    .map(TerminalNode::getText);
-
             var id = qualifiedIdVisitor.visitNullable(ctx.qualifiedId());
 
             var fields = visitNullableRepeated(ctx.fieldPatterns(), FieldPatternsContext::fieldPattern,
                     fieldPatternVisitor);
 
-            return constructorPatternNode(contextRange(ctx), alias, id, fields);
+            return constructorPatternNode(contextRange(ctx), id, fields);
         }
     }
 
@@ -664,10 +662,10 @@ public class Parser {
         }
     }
 
-    class QualifiedIdVisitor extends Visitor<QualifiedIdContext, QualifiedIdNode<Void>> {
+    class QualifiedIdVisitor extends Visitor<QualifiedIdContext, QualifiedIdNode> {
 
         @Override
-        public QualifiedIdNode<Void> visitQualifiedId(QualifiedIdContext ctx) {
+        public QualifiedIdNode visitQualifiedId(QualifiedIdContext ctx) {
             var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
             var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
             return idNode(contextRange(ctx), ns, id);

@@ -13,20 +13,32 @@ public record IfNode<A> (Meta<A> meta, ExprNode<A> condition, ExprNode<A> conseq
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitIf(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitIf(this);
+
+        var result = visitor.visitIf(
                 meta(),
                 visitor.visitExpr(condition()),
-                visitor.visitExpr(alternative()),
-                visitor.visitExpr(consequent()));
+                visitor.visitExpr(consequent()),
+                visitor.visitExpr(alternative()));
+
+        visitor.postVisitIf(result);
+
+        return result;
     }
 
     @Override
-    public <B> IfNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitIf(
+    public <B> IfNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitIf(this);
+
+        var result = visitor.visitIf(
                 meta(),
-                transformer.visitExpr(condition()),
-                transformer.visitExpr(alternative()),
-                transformer.visitExpr(consequent()));
+                visitor.visitExpr(condition()),
+                visitor.visitExpr(consequent()),
+                visitor.visitExpr(alternative()));
+
+        visitor.postVisitIf(result);
+
+        return result;
     }
 }

@@ -15,21 +15,33 @@ public record ConstructorNode<A> (Meta<A> meta, String name, ImmutableList<Const
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitConstructor(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitConstructor(this);
+
+        var result = visitor.visitConstructor(
                 meta(),
                 name(),
                 params().collect(param -> param.accept(visitor)),
                 type().map(visitor::visitType));
+
+        visitor.postVisitConstructor(result);
+
+        return result;
     }
 
     @Override
-    public <B> ConstructorNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitConstructor(
+    public <B> ConstructorNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitConstructor(this);
+
+        var result = visitor.visitConstructor(
                 meta(),
                 name(),
-                params().collect(param -> param.accept(transformer)),
-                type().map(transformer::visitType));
+                params().collect(param -> param.accept(visitor)),
+                type().map(visitor::visitType));
+
+        visitor.postVisitConstructor(result);
+
+        return result;
     }
 
     public ConstructorName getName(DataName enclosing, NamespaceName namespace) {

@@ -13,18 +13,30 @@ public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternN
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitFieldPattern(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitFieldPattern(this);
+
+        var result = visitor.visitFieldPattern(
                 meta(),
                 field(),
                 pattern().map(visitor::visitPattern));
+
+        visitor.postVisitFieldPattern(result);
+
+        return result;
     }
 
     @Override
-    public <B> FieldPatternNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitFieldPattern(
+    public <B> FieldPatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitFieldPattern(this);
+
+        var result = visitor.visitFieldPattern(
                 meta(),
                 field(),
-                pattern().map(transformer::visitPattern));
+                pattern().map(visitor::visitPattern));
+
+        visitor.postVisitFieldPattern(result);
+
+        return result;
     }
 }

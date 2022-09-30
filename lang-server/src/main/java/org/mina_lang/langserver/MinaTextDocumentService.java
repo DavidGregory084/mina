@@ -3,7 +3,9 @@ package org.mina_lang.langserver;
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
+import org.mina_lang.common.Environment;
 import org.mina_lang.parser.Parser;
+import org.mina_lang.renamer.Renamer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,7 @@ public class MinaTextDocumentService implements TextDocumentService {
             server.getClient().publishDiagnostics(
                     new PublishDiagnosticsParams(
                             document.getUri(),
-                            diagnostics.getLSPDiagnostics(),
+                            diagnostics.getLSPDiagnostics(document.getUri()),
                             document.getVersion()));
         }
     }
@@ -43,7 +45,15 @@ public class MinaTextDocumentService implements TextDocumentService {
             var parsingFuture = CompletableFuture.supplyAsync(() -> {
                 return withDiagnostics(document, diagnostics -> {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
-                    return new Parser(diagnostics).parse(charStream);
+                    try {
+                        var parsed = new Parser(diagnostics).parse(charStream);
+                        var renamer = new Renamer(diagnostics, Environment.empty());
+                        var renamed = renamer.rename(parsed);
+                        return renamed;
+                    } catch (Exception e) {
+                        logger.error("Exception while processing syntax tree", e);
+                        throw e;
+                    }
                 });
             }, server.getExecutor());
             syntaxTrees.addSyntaxTree(params, parsingFuture);
@@ -58,7 +68,15 @@ public class MinaTextDocumentService implements TextDocumentService {
             var parsingFuture = CompletableFuture.supplyAsync(() -> {
                 return withDiagnostics(updatedDocument, diagnostics -> {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
-                    return new Parser(diagnostics).parse(charStream);
+                    try {
+                        var parsed = new Parser(diagnostics).parse(charStream);
+                        var renamer = new Renamer(diagnostics, Environment.empty());
+                        var renamed = renamer.rename(parsed);
+                        return renamed;
+                    } catch (Exception e) {
+                        logger.error("Exception while processing syntax tree", e);
+                        throw e;
+                    }
                 });
             }, server.getExecutor());
             syntaxTrees.updateSyntaxTree(params, parsingFuture);

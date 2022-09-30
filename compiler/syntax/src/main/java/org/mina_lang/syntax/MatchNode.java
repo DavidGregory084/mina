@@ -13,18 +13,30 @@ public record MatchNode<A> (Meta<A> meta, ExprNode<A> scrutinee, ImmutableList<C
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitMatch(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitMatch(this);
+
+        var result = visitor.visitMatch(
                 meta(),
                 visitor.visitExpr(scrutinee()),
                 cases().collect(cse -> cse.accept(visitor)));
+
+        visitor.postVisitMatch(result);
+
+        return result;
     }
 
     @Override
-    public <B> MatchNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitMatch(
+    public <B> MatchNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitMatch(this);
+
+        var result = visitor.visitMatch(
                 meta(),
-                transformer.visitExpr(scrutinee()),
-                cases().collect(cse -> cse.accept(transformer)));
+                visitor.visitExpr(scrutinee()),
+                cases().collect(cse -> cse.accept(visitor)));
+
+        visitor.postVisitMatch(result);
+
+        return result;
     }
 }

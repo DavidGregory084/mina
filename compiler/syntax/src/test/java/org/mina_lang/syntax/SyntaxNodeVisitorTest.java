@@ -319,7 +319,7 @@ public class SyntaxNodeVisitorTest {
                 Lists.immutable.of(
                         caseNode(
                                 new Range(0, 15, 0, 26),
-                                idPatternNode(new Range(0, 20, 0, 21), Optional.empty(), "y"),
+                                idPatternNode(new Range(0, 20, 0, 21), "y"),
                                 refNode(new Range(0, 25, 0, 26), "z"))));
 
         var expected = contains(
@@ -342,7 +342,6 @@ public class SyntaxNodeVisitorTest {
                 new Range(0, 0, 0, 41),
                 constructorPatternNode(
                         new Range(0, 5, 0, 33),
-                        Optional.empty(),
                         idNode(new Range(0, 5, 0, 9), "Cons"),
                         Lists.immutable.of(
                                 fieldPatternNode(new Range(0, 12, 0, 16), "head",
@@ -350,7 +349,6 @@ public class SyntaxNodeVisitorTest {
                                 fieldPatternNode(new Range(0, 18, 0, 30), "tail", Optional.of(
                                         constructorPatternNode(
                                                 new Range(0, 24, 0, 30),
-                                                Optional.empty(),
                                                 idNode(new Range(0, 24, 0, 27), "Nil"),
                                                 Lists.immutable.empty()))))),
                 refNode(new Range(0, 37, 0, 41), "head"));
@@ -380,7 +378,7 @@ public class SyntaxNodeVisitorTest {
         /* case 1.234e+2f -> x */
         var cse = caseNode(
                 new Range(0, 0, 0, 19),
-                literalPatternNode(new Range(0, 5, 0, 14), Optional.empty(),
+                literalPatternNode(new Range(0, 5, 0, 14),
                         floatNode(new Range(0, 5, 0, 14), 1.234e+2f)),
                 refNode(new Range(0, 18, 0, 19), "x"));
 

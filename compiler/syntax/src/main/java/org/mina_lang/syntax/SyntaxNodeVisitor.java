@@ -1,7 +1,8 @@
 package org.mina_lang.syntax;
 
 public interface SyntaxNodeVisitor {
-    void visit(SyntaxNode node);
+    default void visit(SyntaxNode node) {
+    }
 
     // Namespaces
     default void visitNamespace(NamespaceNode<?> ns) {
@@ -145,6 +146,10 @@ public interface SyntaxNodeVisitor {
         pat.accept(this);
     }
 
+    default void visitAliasPattern(AliasPatternNode<?> alias) {
+        alias.accept(this);
+    }
+
     default void visitConstructorPattern(ConstructorPatternNode<?> constrPat) {
         visit(constrPat);
     }
@@ -166,7 +171,8 @@ public interface SyntaxNodeVisitor {
         visit(id);
     }
 
-    default void visitQualifiedId(QualifiedIdNode<?> id) {
+    default void visitQualifiedId(QualifiedIdNode id) {
         visit(id);
     }
+
 }

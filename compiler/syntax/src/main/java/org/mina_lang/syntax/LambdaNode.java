@@ -14,18 +14,30 @@ public record LambdaNode<A> (Meta<A> meta, ImmutableList<ParamNode<A>> params, E
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitLambda(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitLambda(this);
+
+        var result = visitor.visitLambda(
                 meta(),
                 params().collect(param -> param.accept(visitor)),
                 visitor.visitExpr(body()));
+
+        visitor.postVisitLambda(result);
+
+        return result;
     }
 
     @Override
-    public <B> LambdaNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitLambda(
+    public <B> LambdaNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitLambda(this);
+
+        var result = visitor.visitLambda(
                 meta(),
-                params().collect(param -> param.accept(transformer)),
-                transformer.visitExpr(body()));
+                params().collect(param -> param.accept(visitor)),
+                visitor.visitExpr(body()));
+
+        visitor.postVisitLambda(result);
+
+        return result;
     }
 }

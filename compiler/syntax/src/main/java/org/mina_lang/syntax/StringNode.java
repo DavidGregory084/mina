@@ -9,12 +9,18 @@ public record StringNode<A>(Meta<A> meta, String value) implements LiteralNode<A
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitString(meta(), value());
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitString(this);
+        var result = visitor.visitString(meta(), value());
+        visitor.preVisitString(this);
+        return result;
     }
 
     @Override
-    public <B> StringNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitString(meta(), value());
+    public <B> StringNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitString(this);
+        var result = visitor.visitString(meta(), value());
+        visitor.preVisitString(this);
+        return result;
     }
 }

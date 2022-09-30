@@ -13,18 +13,30 @@ public record FunTypeNode<A> (Meta<A> meta, ImmutableList<TypeNode<A>> argTypes,
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitFunType(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitFunType(this);
+
+        var result = visitor.visitFunType(
                 meta(),
                 argTypes().collect(visitor::visitType),
                 visitor.visitType(returnType()));
+
+        visitor.postVisitFunType(result);
+
+        return result;
     }
 
     @Override
-    public <B> FunTypeNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitFunType(
+    public <B> FunTypeNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitFunType(this);
+
+        var result = visitor.visitFunType(
                 meta(),
-                argTypes().collect(transformer::visitType),
-                transformer.visitType(returnType()));
+                argTypes().collect(visitor::visitType),
+                visitor.visitType(returnType()));
+
+        visitor.postVisitFunType(result);
+
+        return result;
     }
 }

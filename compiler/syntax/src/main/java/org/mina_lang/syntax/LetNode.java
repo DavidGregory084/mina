@@ -18,21 +18,33 @@ public record LetNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> type,
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitLet(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitLet(this);
+
+        var result = visitor.visitLet(
                 meta(),
                 name(),
                 type().map(visitor::visitType),
                 visitor.visitExpr(expr()));
+
+        visitor.postVisitLet(result);
+
+        return result;
     }
 
     @Override
-    public <B> LetNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitLet(
+    public <B> LetNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitLet(this);
+
+        var result = visitor.visitLet(
                 meta(),
                 name(),
-                type().map(transformer::visitType),
-                transformer.visitExpr(expr()));
+                type().map(visitor::visitType),
+                visitor.visitExpr(expr()));
+
+        visitor.postVisitLet(result);
+
+        return result;
     }
 
     public LetName getName(NamespaceName namespace) {
