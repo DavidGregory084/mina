@@ -14,27 +14,7 @@ public class Renamer {
     private DiagnosticCollector diagnostics;
     private Environment<Name> environment;
 
-    /**
-     * The depth at which local variables are defined.
-     * <p>
-     * It's possible for inner scopes to declare variables that shadow those in
-     * outer scopes.
-     * <p>
-     * This is used in a similar way to
-     * <a href="https://en.wikipedia.org/wiki/De_Bruijn_index">De Bruijn
-     * indices</a>,
-     * to disambiguate local variables bound in different scopes.
-     * <p>
-     * Inspired by Gabriella Gonzalez' blog post <a href=
-     * "https://www.haskellforall.com/2021/08/namespaced-de-bruijn-indices.html">Namespaced
-     * De Bruijn Indices</>.
-     * <p>
-     * TODO: Find a good technique to disambiguate local variables bound in
-     * conditional constructs,
-     * which may occur at the same binding depth but in different conditional
-     * branches.
-     */
-    private int localNameDepth = 0;
+    private int localVarIndex = 0;
 
     public Renamer(DiagnosticCollector diagnostics, Environment<Name> globalEnv) {
         this.diagnostics = diagnostics;
@@ -202,7 +182,7 @@ public class Renamer {
         @Override
         public void preVisitLet(LetNode<Void> let) {
             if (environment.topScope() instanceof BlockScope<Name> blockScope) {
-                var letMeta = new Meta<Name>(let.range(), new LocalName(let.name(), localNameDepth));
+                var letMeta = new Meta<Name>(let.range(), new LocalName(let.name(), localVarIndex++));
                 // Local let bindings are only valid within the block scope and can shadow outer
                 // declarations
                 blockScope.populateValueOrElse(let.name(), letMeta, Renamer.this::duplicateDefinition);
@@ -213,6 +193,14 @@ public class Renamer {
         public LetNode<Name> visitLet(Meta<Void> meta, String name, Optional<TypeNode<Name>> type,
                 ExprNode<Name> expr) {
             return letNode(environment.lookupValue(name).get(), name, type, expr);
+        }
+
+        @Override
+        public void postVisitLet(LetNode<Name> let) {
+            if (environment.topScope() instanceof NamespaceScope) {
+                // Reset local variable counter for each new top-level let binding
+                localVarIndex = 0;
+            }
         }
 
         @Override
@@ -249,7 +237,7 @@ public class Renamer {
         @Override
         public void preVisitParam(ParamNode<Void> param) {
             var enclosingLambda = environment.enclosingLambda().get();
-            var paramMeta = new Meta<Name>(param.range(), param.getName(localNameDepth));
+            var paramMeta = new Meta<Name>(param.range(), param.getName(localVarIndex++));
             // Only check the current lambda scope because lambda params can shadow outer
             // declarations
             enclosingLambda.populateValueOrElse(param.name(), paramMeta, Renamer.this::duplicateDefinition);
@@ -299,28 +287,28 @@ public class Renamer {
         public TypeReferenceNode<Name> visitTypeReference(Meta<Void> meta, QualifiedIdNode id) {
             var lookupMeta = environment
                     .lookupTypeOrElse(id.canonicalName(), meta, Renamer.this::undefinedType)
+                    .map(typeMeta -> typeMeta.withRange(meta.range()))
                     .orElseGet(() -> {
                         return new Meta<>(meta.range(), Nameless.INSTANCE);
                     });
 
-            return typeRefNode(new Meta<>(meta.range(), lookupMeta.meta()), id);
+            return typeRefNode(lookupMeta, id);
         }
 
         @Override
         public ForAllVarNode<Name> visitForAllVar(Meta<Void> meta, String name) {
             var lookupMeta = environment.lookupType(name).get();
-            return forAllVarNode(new Meta<>(meta.range(), lookupMeta.meta()), name);
+            return forAllVarNode(lookupMeta.withRange(meta.range()), name);
         }
 
         @Override
         public ExistsVarNode<Name> visitExistsVar(Meta<Void> meta, String name) {
             var lookupMeta = environment.lookupType(name).get();
-            return existsVarNode(new Meta<>(meta.range(), lookupMeta.meta()), name);
+            return existsVarNode(lookupMeta.withRange(meta.range()), name);
         }
 
         @Override
         public void preVisitBlock(BlockNode<Void> block) {
-            localNameDepth += 1;
             environment.pushScope(new BlockScope<>());
         }
 
@@ -333,7 +321,6 @@ public class Renamer {
         @Override
         public void postVisitBlock(BlockNode<Name> block) {
             environment.popScope(BlockScope.class);
-            localNameDepth -= 1;
         }
 
         @Override
@@ -344,7 +331,6 @@ public class Renamer {
 
         @Override
         public void preVisitLambda(LambdaNode<Void> lambda) {
-            localNameDepth += 1;
             environment.pushScope(new LambdaScope<>());
         }
 
@@ -357,23 +343,12 @@ public class Renamer {
         @Override
         public void postVisitLambda(LambdaNode<Name> lambda) {
             environment.popScope(LambdaScope.class);
-            localNameDepth -= 1;
-        }
-
-        @Override
-        public void preVisitMatch(MatchNode<Void> match) {
-            localNameDepth += 1;
         }
 
         @Override
         public MatchNode<Name> visitMatch(Meta<Void> meta, ExprNode<Name> scrutinee,
                 ImmutableList<CaseNode<Name>> cases) {
             return matchNode(new Meta<>(meta.range(), Nameless.INSTANCE), scrutinee, cases);
-        }
-
-        @Override
-        public void postVisitMatch(MatchNode<Name> match) {
-            localNameDepth -= 1;
         }
 
         @Override
@@ -385,11 +360,10 @@ public class Renamer {
         public ReferenceNode<Name> visitReference(Meta<Void> meta, QualifiedIdNode id) {
             var lookupMeta = environment
                     .lookupValueOrElse(id.canonicalName(), meta, Renamer.this::undefinedValue)
-                    .orElseGet(() -> {
-                        return new Meta<>(meta.range(), Nameless.INSTANCE);
-                    });
+                    .map(refMeta -> refMeta.withRange(meta.range()))
+                    .orElseGet(() -> new Meta<>(meta.range(), Nameless.INSTANCE));
 
-            return refNode(new Meta<>(meta.range(), lookupMeta.meta()), id);
+            return refNode(lookupMeta, id);
         }
 
         @Override
@@ -445,7 +419,7 @@ public class Renamer {
         @Override
         public void preVisitAliasPattern(AliasPatternNode<Void> alias) {
             var enclosingCase = environment.enclosingCase().get();
-            var aliasMeta = new Meta<Name>(alias.range(), new LocalName(alias.alias(), localNameDepth));
+            var aliasMeta = new Meta<Name>(alias.range(), new LocalName(alias.alias(), localVarIndex++));
             // Only check the current case scope because pattern bindings can shadow outer
             // definitions
             enclosingCase.populateValueOrElse(alias.alias(), aliasMeta, Renamer.this::duplicateDefinition);
@@ -473,8 +447,11 @@ public class Renamer {
         @Override
         public ConstructorPatternNode<Name> visitConstructorPattern(Meta<Void> meta, QualifiedIdNode id,
                 ImmutableList<FieldPatternNode<Name>> fields) {
-            // TODO: Fix ranges of looked-up entities
-            return constructorPatternNode(environment.lookupValue(id.canonicalName()).get(), id, fields);
+            var lookupMeta = environment.lookupValue(id.canonicalName())
+                    .map(constrMeta -> constrMeta.withRange(meta.range()))
+                    .orElseGet(() -> new Meta<>(meta.range(), Nameless.INSTANCE));
+
+            return constructorPatternNode(lookupMeta, id, fields);
         }
 
         @Override
@@ -499,7 +476,7 @@ public class Renamer {
                 }
 
                 if (fieldPat.pattern().isEmpty()) {
-                    var patName = new LocalName(fieldPat.field(), localNameDepth);
+                    var patName = new LocalName(fieldPat.field(), localVarIndex++);
                     var patMeta = new Meta<Name>(fieldPat.range(), patName);
 
                     // Only check the current case scope because pattern bindings can shadow outer
@@ -525,8 +502,8 @@ public class Renamer {
         @Override
         public void preVisitIdPattern(IdPatternNode<Void> idPat) {
             var enclosingCase = environment.enclosingCase().get();
-            var idPatName = new LocalName(idPat.name(), localNameDepth);
-            var idPatMeta = new Meta<Name>(idPat.meta().range(), idPatName);
+            var idPatName = new LocalName(idPat.name(), localVarIndex++);
+            var idPatMeta = new Meta<Name>(idPat.range(), idPatName);
             // Only check the current case scope because pattern bindings can shadow outer
             // definitions
             enclosingCase.populateValueOrElse(idPat.name(), idPatMeta, Renamer.this::duplicateDefinition);

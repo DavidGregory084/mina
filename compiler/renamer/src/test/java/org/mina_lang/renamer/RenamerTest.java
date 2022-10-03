@@ -531,7 +531,7 @@ public class RenamerTest {
         var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
         var letName = new LetName(new QualifiedName(namespaceName, "id"));
         var typeVarAName = new TypeVarName("A");
-        var paramAName = new LocalName("a", 1);
+        var paramAName = new LocalName("a", 0);
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -628,7 +628,7 @@ public class RenamerTest {
         var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
         var letName = new LetName(new QualifiedName(namespaceName, "const"));
         var paramAName = new LocalName("a", 0);
-        var paramBName = new LocalName("b", 0);
+        var paramBName = new LocalName("b", 1);
         var typeVarAName = new TypeVarName("A");
         var typeVarBName = new TypeVarName("B");
 
@@ -962,7 +962,7 @@ public class RenamerTest {
     // Expressions
     @Test
     void renameLambda() {
-        var paramName = new LocalName("a", 1);
+        var paramName = new LocalName("a", 0);
 
         /* a -> a */
         var originalNode = lambdaNode(
@@ -981,8 +981,8 @@ public class RenamerTest {
 
     @Test
     void renameLambdaInnerNameShadowsOuter() {
-        var outerParamName = new LocalName("a", 1);
-        var innerParamName = new LocalName("a", 2);
+        var outerParamName = new LocalName("a", 0);
+        var innerParamName = new LocalName("a", 1);
 
         var outerParamRange = new Range(0, 0, 0, 1);
         var innerParamRange = new Range(0, 5, 0, 6);
@@ -1028,7 +1028,7 @@ public class RenamerTest {
 
     @Test
     void renameBlock() {
-        var localLetName = new LocalName("bar", 1);
+        var localLetName = new LocalName("bar", 0);
 
         /*-
          * {
@@ -1111,7 +1111,7 @@ public class RenamerTest {
         var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
         var outerFooName = new LetName(new QualifiedName(namespaceName, "foo"));
         var outerBarName = new LetName(new QualifiedName(namespaceName, "bar"));
-        var localBarName = new LocalName("bar", 1);
+        var localBarName = new LocalName("bar", 0);
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -1154,7 +1154,7 @@ public class RenamerTest {
         var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
         var outerFooName = new LetName(new QualifiedName(namespaceName, "foo"));
         var outerBarName = new LetName(new QualifiedName(namespaceName, "bar"));
-        var localBazName = new LocalName("baz", 1);
+        var localBazName = new LocalName("baz", 0);
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -1245,7 +1245,8 @@ public class RenamerTest {
     @Test
     void renameIfBranchesHaveIndependentScope() {
 
-        var localFooName = new LocalName("foo", 1);
+        var firstLocalFooName = new LocalName("foo", 0);
+        var secondLocalFooName = new LocalName("foo", 1);
 
         /*-
          * if true then {
@@ -1268,25 +1269,20 @@ public class RenamerTest {
                         Lists.immutable.of(letNode(Range.EMPTY, "foo", intNode(Range.EMPTY, 2))),
                         refNode(Range.EMPTY, "foo")));
 
-        /*
-         * TODO: How to disambiguate identically-named local variables in branches of
-         * `if`? The same problem occurs in case pattern bindings.
-         * Does it matter? We will probably use a global incrementing variable for
-         * locals in code generation.
-         */
         var expectedNode = ifNode(
                 Meta.of(Nameless.INSTANCE),
                 boolNode(Meta.of(Nameless.INSTANCE), true),
                 blockNode(
                         Meta.of(Nameless.INSTANCE),
                         Lists.immutable
-                                .of(letNode(Meta.of(localFooName), "foo", intNode(Meta.of(Nameless.INSTANCE), 1))),
-                        refNode(Meta.of(localFooName), "foo")),
+                                .of(letNode(Meta.of(firstLocalFooName), "foo", intNode(Meta.of(Nameless.INSTANCE), 1))),
+                        refNode(Meta.of(firstLocalFooName), "foo")),
                 blockNode(
                         Meta.of(Nameless.INSTANCE),
                         Lists.immutable
-                                .of(letNode(Meta.of(localFooName), "foo", intNode(Meta.of(Nameless.INSTANCE), 2))),
-                        refNode(Meta.of(localFooName), "foo")));
+                                .of(letNode(Meta.of(secondLocalFooName), "foo",
+                                        intNode(Meta.of(Nameless.INSTANCE), 2))),
+                        refNode(Meta.of(secondLocalFooName), "foo")));
 
         testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
     }
@@ -1324,7 +1320,7 @@ public class RenamerTest {
 
     @Test
     void renameApply() {
-        var paramFName = new LocalName("f", 1);
+        var paramFName = new LocalName("f", 0);
         var paramAName = new LocalName("a", 1);
 
         /* (f, a) -> f(a) */
@@ -1371,7 +1367,7 @@ public class RenamerTest {
 
     @Test
     void renameEmptyMatch() {
-        var paramAName = new LocalName("a", 1);
+        var paramAName = new LocalName("a", 0);
 
         /* a -> match a with {} */
         var originalNode = lambdaNode(
@@ -1395,8 +1391,8 @@ public class RenamerTest {
 
     @Test
     void renameMatchCasesShadowOuterNames() {
-        var outerParamName = new LocalName("a", 1);
-        var innerParamName = new LocalName("a", 2);
+        var outerParamName = new LocalName("a", 0);
+        var innerParamName = new LocalName("a", 1);
 
         /* a -> match a with { case a -> a } */
         var originalNode = lambdaNode(
@@ -1465,8 +1461,8 @@ public class RenamerTest {
                                                 Lists.immutable.empty())))));
 
         var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
-        var lambdaParamName = new LocalName("list", 1);
-        var fieldPatName = new LocalName("head", 2);
+        var lambdaParamName = new LocalName("list", 0);
+        var fieldPatName = new LocalName("head", 1);
 
         var listMeta = Meta.of(new DataName(new QualifiedName(namespaceName, "List")));
         var consMeta = Meta.<Name>of(new ConstructorName(listMeta.meta(), new QualifiedName(namespaceName, "Cons")));
@@ -1513,6 +1509,7 @@ public class RenamerTest {
         imports.populateValue("Nil", nilMeta);
         imports.populateValue("Some", someMeta);
         imports.populateValue("None", noneMeta);
+
         imports.populateField((ConstructorName) consMeta.meta(), "head", headMeta);
 
         var environment = Environment.of(imports);
