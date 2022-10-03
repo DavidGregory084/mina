@@ -485,13 +485,7 @@ public class Renamer {
 
         @Override
         public void postVisitConstructorPattern(ConstructorPatternNode<Name> constrPat) {
-            if (environment.topScope() instanceof ConstructorPatternScope<Name> constrPatternScope) {
-                constrPatternScope.constr().ifPresent(constrName -> {
-                    if (constrPat.meta().meta().equals(constrName)) {
-                        environment.popScope(ConstructorPatternScope.class);
-                    }
-                });
-            }
+            environment.popScope(ConstructorPatternScope.class);
         }
 
         @Override
