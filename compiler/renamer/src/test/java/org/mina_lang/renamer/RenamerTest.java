@@ -71,12 +71,28 @@ public class RenamerTest {
         assertThat(firstRelatedInfo.range(), is(equalTo(relatedInfoRange)));
     }
 
-    void assertDuplicateDefinition(List<Diagnostic> diagnostics, Range duplicateRange, Range originalRange,
+    void assertDuplicateValueDefinition(List<Diagnostic> diagnostics, Range duplicateRange, Range originalRange,
             String name) {
         assertDiagnosticWithRelatedInfo(
                 diagnostics,
-                duplicateRange, "Duplicate definition of '" + name + "'",
-                originalRange, "Original definition of '" + name + "'");
+                duplicateRange, "Duplicate definition of value '" + name + "'",
+                originalRange, "Original definition of value '" + name + "'");
+    }
+
+    void assertDuplicateTypeDefinition(List<Diagnostic> diagnostics, Range duplicateRange, Range originalRange,
+            String name) {
+        assertDiagnosticWithRelatedInfo(
+                diagnostics,
+                duplicateRange, "Duplicate definition of type '" + name + "'",
+                originalRange, "Original definition of type '" + name + "'");
+    }
+
+    void assertDuplicateFieldDefinition(List<Diagnostic> diagnostics, Range duplicateRange, Range originalRange,
+            String name, String constr) {
+        assertDiagnosticWithRelatedInfo(
+                diagnostics,
+                duplicateRange, "Duplicate definition of field '" + name + "' in constructor 'Mina/Test/Renamer." + constr + "'",
+                originalRange, "Original definition of field '" + name + "' in constructor 'Mina/Test/Renamer." + constr + "'");
     }
 
     // Namespaces
@@ -142,7 +158,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
                 duplicateDataRange, originalDataRange, "Void");
     }
@@ -219,10 +235,9 @@ public class RenamerTest {
 
         var diagnostics = collector.getDiagnostics();
 
-        // TODO: Suppress duplicate notification about both types and values
         assertThat(diagnostics, hasSize(2));
 
-        assertDuplicateDefinition(
+        assertDuplicateValueDefinition(
                 diagnostics,
                 duplicateConstructorRange,
                 originalConstructorRange,
@@ -264,7 +279,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
                 collidingConstructorRange, originalDataRange, "Boolean");
     }
@@ -427,7 +442,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
                 duplicateTyParamRange, originalTyParamRange, "A");
     }
@@ -473,9 +488,9 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateFieldDefinition(
                 collector.getDiagnostics(),
-                duplicateParamRange, originalParamRange, "head");
+                duplicateParamRange, originalParamRange, "head", "Cons");
     }
 
     @Test
@@ -519,7 +534,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateValueDefinition(
                 collector.getDiagnostics(),
                 duplicateLetRange, originalLetRange, "one");
     }
@@ -719,7 +734,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
                 duplicateTypeVarRange, originalTypeVarRange, "A");
     }
@@ -781,7 +796,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateValueDefinition(
                 collector.getDiagnostics(),
                 duplicateParamRange, originalParamRange, "a");
     }
@@ -848,7 +863,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
                 duplicateTypeVarRange, originalTypeVarRange, "A");
     }
@@ -1072,7 +1087,7 @@ public class RenamerTest {
 
         var collector = testFailedRename(Environment.empty(), originalNode);
 
-        assertDuplicateDefinition(
+        assertDuplicateValueDefinition(
                 collector.getDiagnostics(),
                 duplicateLetRange, originalLetRange, "bar");
     }
