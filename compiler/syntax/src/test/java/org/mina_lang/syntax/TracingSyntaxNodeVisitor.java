@@ -30,6 +30,11 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
 
     // Imports
     @Override
+    public void visitImportSymbol(ImportSymbolNode sym) {
+        entries.add(new Entry(sym.getClass(), sym.range()));
+    }
+
+    @Override
     public void visitImport(ImportNode imp) {
         entries.add(new Entry(imp.getClass(), imp.range()));
     }
@@ -179,6 +184,11 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
     }
 
     @Override
+    public void visitAliasPattern(AliasPatternNode<?> alias) {
+        entries.add(new Entry(alias.getClass(), alias.range()));
+    }
+
+    @Override
     public void visitIdPattern(IdPatternNode<?> idPat) {
         entries.add(new Entry(idPat.getClass(), idPat.range()));
     }
@@ -198,4 +208,5 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
     public void visitQualifiedId(QualifiedIdNode id) {
         entries.add(new Entry(id.getClass(), id.range()));
     }
+
 }

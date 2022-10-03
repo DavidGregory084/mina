@@ -32,10 +32,10 @@ public class SyntaxNodeVisitorTest {
     @ParameterizedTest
     @MethodSource("visitor")
     void testVisitNamespace(TracingSyntaxNodeVisitor visitor) {
-        /*
+        /*-
          * namespace Mina/Test/Visitor {
-         * import Mina/Test/Parser
-         * let x = y
+         *     import Mina/Test/Parser.y
+         *     let x = y
          * }
          */
         var ns = namespaceNode(
@@ -45,10 +45,11 @@ public class SyntaxNodeVisitorTest {
                         Lists.immutable.of("Mina", "Test"), "Visitor"),
                 Lists.immutable.of(
                         importNode(
-                                new Range(1, 4, 1, 27),
+                                new Range(1, 4, 1, 29),
                                 nsIdNode(
                                         new Range(1, 11, 1, 27),
-                                        Lists.immutable.of("Mina", "Test"), "Parser"))),
+                                        Lists.immutable.of("Mina", "Test"), "Parser"),
+                                Lists.immutable.of(importSymbolNode(new Range(1, 28, 1, 29), "y")))),
                 Lists.immutable.of(
                         letNode(
                                 new Range(2, 4, 2, 13),
@@ -60,7 +61,8 @@ public class SyntaxNodeVisitorTest {
         var expected = contains(
                 new Entry(NamespaceIdNode.class, new Range(0, 7, 0, 24)),
                 new Entry(NamespaceIdNode.class, new Range(1, 11, 1, 27)),
-                new Entry(ImportNode.class, new Range(1, 4, 1, 27)),
+                new Entry(ImportSymbolNode.class, new Range(1, 28, 1, 29)),
+                new Entry(ImportNode.class, new Range(1, 4, 1, 29)),
                 new Entry(QualifiedIdNode.class, new Range(2, 12, 2, 13)),
                 new Entry(ReferenceNode.class, new Range(2, 12, 2, 13)),
                 new Entry(LetNode.class, new Range(2, 4, 2, 13)),
@@ -204,10 +206,10 @@ public class SyntaxNodeVisitorTest {
     @ParameterizedTest
     @MethodSource("visitor")
     void testVisitData(TracingSyntaxNodeVisitor visitor) {
-        /*
+        /*-
          * data Expr[A] {
-         * case Int(i: Int): Expr[Int]
-         * case Bool(b: Boolean): Expr[Boolean]
+         *     case Int(i: Int): Expr[Int]
+         *     case Bool(b: Boolean): Expr[Boolean]
          * }
          */
         var data = dataNode(
@@ -374,6 +376,27 @@ public class SyntaxNodeVisitorTest {
 
     @ParameterizedTest
     @MethodSource("visitor")
+    void testVisitAliasPattern(TracingSyntaxNodeVisitor visitor) {
+        /* case a @ b -> a */
+        var cse = caseNode(
+                new Range(0, 0, 0, 15),
+                aliasPatternNode(new Range(0, 5, 0, 9),
+                        "a",
+                        idPatternNode(new Range(0, 8, 0, 9), "b")),
+                refNode(new Range(0, 14, 0, 15), "a"));
+
+        var expected = contains(
+                new Entry(IdPatternNode.class, new Range(0, 8, 1)),
+                new Entry(AliasPatternNode.class, new Range(0, 5, 4)),
+                new Entry(QualifiedIdNode.class, new Range(0, 14, 1)),
+                new Entry(ReferenceNode.class, new Range(0, 14, 1)),
+                new Entry(CaseNode.class, new Range(0, 0, 0, 15)));
+
+        expectEntries(visitor, cse, expected);
+    }
+
+    @ParameterizedTest
+    @MethodSource("visitor")
     void testVisitLiteralPattern(TracingSyntaxNodeVisitor visitor) {
         /* case 1.234e+2f -> x */
         var cse = caseNode(
@@ -395,11 +418,11 @@ public class SyntaxNodeVisitorTest {
     @ParameterizedTest
     @MethodSource("visitor")
     void testVisitBlock(TracingSyntaxNodeVisitor visitor) {
-        /*
+        /*-
          * {
-         * let x = "a"
-         * let y = 'a'
-         * 2.0
+         *     let x = "a"
+         *     let y = 'a'
+         *     2.0
          * }
          */
         var block = blockNode(
