@@ -14,6 +14,10 @@ public interface SyntaxNodeVisitor {
         visit(imp);
     }
 
+    default void visitImportSymbol(ImportSymbolNode sym) {
+        visit(sym);
+    }
+
     // Declarations
     default void visitDeclaration(DeclarationNode<?> decl) {
         decl.accept(this);

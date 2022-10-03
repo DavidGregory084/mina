@@ -219,7 +219,7 @@ public class Parser {
             var symbols = selector
                     .map(selectorCtx -> {
                         return selectorCtx.symbols.stream()
-                                .map(Token::getText)
+                                .map(sym -> importSymbolNode(tokenRange(sym), sym.getText()))
                                 .collect(Collectors2.toImmutableList());
                     })
                     .orElse(Lists.immutable.empty());

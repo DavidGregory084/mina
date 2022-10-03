@@ -130,7 +130,9 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 60),
                         nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.of("compilationUnit", "importDeclaration")));
+                        Lists.immutable.of(
+                            importSymbolNode(new Range(0, 25, 0, 40) ,"compilationUnit"),
+                            importSymbolNode(new Range(0, 42, 0, 59), "importDeclaration"))));
     }
 
     @Test
@@ -141,7 +143,9 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 50),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
-                        Lists.immutable.of("compilationUnit", "importDeclaration")));
+                        Lists.immutable.of(
+                            importSymbolNode(new Range(0, 15, 0, 30) ,"compilationUnit"),
+                            importSymbolNode(new Range(0, 32, 0, 49), "importDeclaration"))));
     }
 
     @Test
@@ -151,7 +155,7 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 30),
                         nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.of("ifExpr")));
+                        Lists.immutable.of(importSymbolNode(new Range(0, 24, 0, 30), "ifExpr"))));
     }
 
     @Test
@@ -161,7 +165,7 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 20),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
-                        Lists.immutable.of("ifExpr")));
+                        Lists.immutable.of(importSymbolNode(new Range(0, 14, 0, 20), "ifExpr"))));
     }
 
     @Test

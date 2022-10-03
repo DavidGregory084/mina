@@ -34,15 +34,19 @@ public class SyntaxNodes {
     public static ImportNode importNode(
             Range range,
             NamespaceIdNode namespace,
-            String symbol) {
+            ImportSymbolNode symbol) {
         return new ImportNode(range, namespace, Lists.immutable.of(symbol));
     }
 
     public static ImportNode importNode(
             Range range,
             NamespaceIdNode namespace,
-            ImmutableList<String> symbols) {
+            ImmutableList<ImportSymbolNode> symbols) {
         return new ImportNode(range, namespace, symbols);
+    }
+
+    public static ImportSymbolNode importSymbolNode(Range range, String symbol) {
+        return new ImportSymbolNode(range, symbol);
     }
 
     // Top level declarations
