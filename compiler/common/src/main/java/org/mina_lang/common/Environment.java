@@ -173,6 +173,7 @@ public record Environment<A> (MutableStack<Scope<A>> scopes) {
 
     public void popScope(Class<?> expected) {
         var poppedScope = scopes.pop();
+        System.err.println(poppedScope.getClass());
         assert expected.isAssignableFrom(poppedScope.getClass());
     }
 

@@ -20,15 +20,19 @@ public class Renamer {
      * It's possible for inner scopes to declare variables that shadow those in
      * outer scopes.
      * <p>
-     * This is used in a similar way to <a href="https://en.wikipedia.org/wiki/De_Bruijn_index">De Bruijn indices</a>,
+     * This is used in a similar way to
+     * <a href="https://en.wikipedia.org/wiki/De_Bruijn_index">De Bruijn
+     * indices</a>,
      * to disambiguate local variables bound in different scopes.
      * <p>
      * Inspired by Gabriella Gonzalez' blog post <a href=
      * "https://www.haskellforall.com/2021/08/namespaced-de-bruijn-indices.html">Namespaced
      * De Bruijn Indices</>.
      * <p>
-     * TODO: Find a good technique to disambiguate local variables bound in conditional constructs,
-     * which may occur at the same binding depth but in different conditional branches.
+     * TODO: Find a good technique to disambiguate local variables bound in
+     * conditional constructs,
+     * which may occur at the same binding depth but in different conditional
+     * branches.
      */
     private int localNameDepth = 0;
 
@@ -76,6 +80,7 @@ public class Renamer {
 
     public void unknownConstructorField(ConstructorName constr, String name, Meta<Void> meta) {
         diagnostics.reportError(meta.range(),
+                // TODO: Print qualified names according to how they are introduced
                 "Reference to unknown field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");
     }
 
@@ -468,7 +473,8 @@ public class Renamer {
         @Override
         public ConstructorPatternNode<Name> visitConstructorPattern(Meta<Void> meta, QualifiedIdNode id,
                 ImmutableList<FieldPatternNode<Name>> fields) {
-            return constructorPatternNode(new Meta<>(meta.range(), Nameless.INSTANCE), id, fields);
+            // TODO: Fix ranges of looked-up entities
+            return constructorPatternNode(environment.lookupValue(id.canonicalName()).get(), id, fields);
         }
 
         @Override
@@ -493,13 +499,13 @@ public class Renamer {
                 }
 
                 if (fieldPat.pattern().isEmpty()) {
-                    var fieldName = new FieldName(constr, fieldPat.field());
-                    var fieldMeta = new Meta<Name>(fieldPat.meta().range(), fieldName);
+                    var patName = new LocalName(fieldPat.field(), localNameDepth);
+                    var patMeta = new Meta<Name>(fieldPat.range(), patName);
 
                     // Only check the current case scope because pattern bindings can shadow outer
                     // definitions
                     enclosingCase.populateValueOrElse(
-                            fieldPat.field(), fieldMeta,
+                            fieldPat.field(), patMeta,
                             Renamer.this::duplicateDefinition);
                 }
             });
@@ -508,18 +514,11 @@ public class Renamer {
         @Override
         public FieldPatternNode<Name> visitFieldPattern(Meta<Void> meta, String field,
                 Optional<PatternNode<Name>> pattern) {
-            var enclosingConstructor = environment.enclosingConstructorPattern();
             var fieldPatternMeta = pattern
-                    // There's a pattern, so don't introduce a name for this field
+                    // There's a nested pattern, so don't introduce a name for this field
                     .map(pat -> new Meta<Name>(meta.range(), Nameless.INSTANCE))
-                    // Otherwise check whether the field exists
-                    .orElseGet(() -> {
-                        return enclosingConstructor
-                                .flatMap(ConstructorPatternScope::constr)
-                                .flatMap(constrName -> {
-                                    return environment.lookupField(constrName, field);
-                                }).orElseGet(() -> new Meta<Name>(meta.range(), Nameless.INSTANCE));
-                    });
+                    .or(() -> environment.lookupValue(field))
+                    .orElseGet(() -> new Meta<Name>(meta.range(), Nameless.INSTANCE));
             return fieldPatternNode(fieldPatternMeta, field, pattern);
         }
 

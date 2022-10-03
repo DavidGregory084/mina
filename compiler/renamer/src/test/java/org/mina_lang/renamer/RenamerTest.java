@@ -1370,13 +1370,6 @@ public class RenamerTest {
     }
 
     @Test
-    void renameLiteralBoolean() {
-        var originalNode = boolNode(Range.EMPTY, true);
-        var expectedNode = boolNode(Meta.of(Nameless.INSTANCE), true);
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
-    }
-
-    @Test
     void renameEmptyMatch() {
         var paramAName = new LocalName("a", 1);
 
@@ -1430,6 +1423,107 @@ public class RenamerTest {
                                         idPatternNode(Meta.of(innerParamName), "a"),
                                         refNode(Meta.of(innerParamName), "a")))));
 
+        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+    }
+
+    @Test
+    void renameMatchCaseConstructorPatterns() {
+        /*-
+         * list -> match list with {
+         *   case Cons { head } -> Some(head)
+         *   case Nil {} -> None()
+         * }
+         */
+        var originalNode = lambdaNode(
+                Range.EMPTY,
+                Lists.immutable.of(
+                        paramNode(Range.EMPTY, "list")),
+                matchNode(
+                        Range.EMPTY,
+                        refNode(Range.EMPTY, "list"),
+                        Lists.immutable.of(
+                                caseNode(
+                                        Range.EMPTY,
+                                        constructorPatternNode(
+                                                Range.EMPTY,
+                                                idNode(Range.EMPTY, "Cons"),
+                                                Lists.immutable.of(
+                                                        fieldPatternNode(Range.EMPTY, "head", Optional.empty()))),
+                                        applyNode(
+                                                Range.EMPTY,
+                                                refNode(Range.EMPTY, "Some"),
+                                                Lists.immutable.of(refNode(Range.EMPTY, "head")))),
+                                caseNode(
+                                        Range.EMPTY,
+                                        constructorPatternNode(
+                                                Range.EMPTY,
+                                                idNode(Range.EMPTY, "Nil"),
+                                                Lists.immutable.empty()),
+                                        applyNode(
+                                                Range.EMPTY,
+                                                refNode(Range.EMPTY, "None"),
+                                                Lists.immutable.empty())))));
+
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var lambdaParamName = new LocalName("list", 1);
+        var fieldPatName = new LocalName("head", 2);
+
+        var listMeta = Meta.of(new DataName(new QualifiedName(namespaceName, "List")));
+        var consMeta = Meta.<Name>of(new ConstructorName(listMeta.meta(), new QualifiedName(namespaceName, "Cons")));
+        var nilMeta = Meta.<Name>of(new ConstructorName(listMeta.meta(), new QualifiedName(namespaceName, "Nil")));
+        var optionMeta = Meta.of(new DataName(new QualifiedName(namespaceName, "Option")));
+        var someMeta = Meta.<Name>of(new ConstructorName(optionMeta.meta(), new QualifiedName(namespaceName, "Some")));
+        var noneMeta = Meta.<Name>of(new ConstructorName(optionMeta.meta(), new QualifiedName(namespaceName, "None")));
+        var headMeta = Meta.<Name>of(new FieldName((ConstructorName) consMeta.meta(), "head"));
+
+        var expectedNode = lambdaNode(
+                Meta.of(Nameless.INSTANCE),
+                Lists.immutable.of(
+                        paramNode(Meta.of(lambdaParamName), "list")),
+                matchNode(
+                        Meta.of(Nameless.INSTANCE),
+                        refNode(Meta.of(lambdaParamName), "list"),
+                        Lists.immutable.of(
+                                caseNode(
+                                        Meta.of(Nameless.INSTANCE),
+                                        constructorPatternNode(
+                                                consMeta,
+                                                idNode(Range.EMPTY, "Cons"),
+                                                Lists.immutable.of(
+                                                        fieldPatternNode(Meta.of(fieldPatName), "head",
+                                                                Optional.empty()))),
+                                        applyNode(
+                                                Meta.of(Nameless.INSTANCE),
+                                                refNode(someMeta, "Some"),
+                                                Lists.immutable.of(refNode(Meta.of(fieldPatName), "head")))),
+                                caseNode(
+                                        Meta.of(Nameless.INSTANCE),
+                                        constructorPatternNode(
+                                                nilMeta,
+                                                idNode(Range.EMPTY, "Nil"),
+                                                Lists.immutable.empty()),
+                                        applyNode(
+                                                Meta.of(Nameless.INSTANCE),
+                                                refNode(noneMeta, "None"),
+                                                Lists.immutable.empty())))));
+
+        var imports = new ImportedScope<Name>();
+
+        imports.populateValue("Cons", consMeta);
+        imports.populateValue("Nil", nilMeta);
+        imports.populateValue("Some", someMeta);
+        imports.populateValue("None", noneMeta);
+        imports.populateField((ConstructorName) consMeta.meta(), "head", headMeta);
+
+        var environment = Environment.of(imports);
+
+        testSuccessfulRename(environment, originalNode, expectedNode);
+    }
+
+    @Test
+    void renameLiteralBoolean() {
+        var originalNode = boolNode(Range.EMPTY, true);
+        var expectedNode = boolNode(Meta.of(Nameless.INSTANCE), true);
         testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
     }
 
