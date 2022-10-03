@@ -7,7 +7,6 @@ import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
 
-// TODO: Consider adding local variable depth to Scopes so that we can ask for LocalNames with a given depth?
 public sealed interface Scope<A> permits ImportedScope, NamespaceScope, DataScope, ConstructorScope, BlockScope, LambdaScope, CaseScope, ConstructorPatternScope, TypeLambdaScope {
     MutableMap<String, Meta<A>> values();
 
