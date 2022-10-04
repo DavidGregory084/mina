@@ -13,18 +13,30 @@ public record TypeLambdaNode<A> (Meta<A> meta, ImmutableList<TypeVarNode<A>> arg
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitTypeLambda(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitTypeLambda(this);
+
+        var result = visitor.visitTypeLambda(
                 meta(),
                 args().collect(visitor::visitTypeVar),
                 visitor.visitType(body()));
+
+        visitor.postVisitTypeLambda(result);
+
+        return result;
     }
 
     @Override
-    public <B> TypeLambdaNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitTypeLambda(
+    public <B> TypeLambdaNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitTypeLambda(this);
+
+        var result = visitor.visitTypeLambda(
                 meta(),
-                args().collect(transformer::visitTypeVar),
-                transformer.visitType(body()));
+                args().collect(visitor::visitTypeVar),
+                visitor.visitType(body()));
+
+        visitor.postVisitTypeLambda(result);
+
+        return result;
     }
 }

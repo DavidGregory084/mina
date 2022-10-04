@@ -12,8 +12,8 @@ The project structure is as follows:
 * `compiler` - this subfolder contains subprojects that implement the compiler phases.
     * `compiler/common` - this contains shared data structures that are used by all compiler phases. Many of these definitions exactly mirror those from the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/). Mina is designed to integrate with LSP, but we don't want to depend on the Java LSP4J library throughout the compiler.
     * `compiler/syntax` - this contains the definition of the abstract syntax tree and utilities for working with trees.
-    * `compiler/parser` - this contains the ANTLR grammar of the language and a parser for namespace definitions.
-    * `compiler/renamer` - unimplemented; this will contain the name resolution phase for the compiler.
+    * `compiler/parser` - this contains the ANTLR grammar of the language and the parsing phase for namespace definitions.
+    * `compiler/renamer` - this contains the name resolution phase, which is responsible for resolving imports and attributing syntax trees with fully qualified names.
     * `compiler/outliner` - unimplemented; this will contain the outline type signature computation phase: we assume that well-formed user-supplied type signatures are correct, so we can start compiling definitions that depend on them earlier.
     * Missing phase folders:
         * `compiler/typechecker` - this will contain a phase for kind-checking data types and type-checking let bindings.

@@ -1,6 +1,6 @@
 namespace Mina/Examples/DeclareGadt {
     data Expr[A] {
-        case Int(i: Int): Expr[Int]
+        case Num(i: Int): Expr[Int]
         case Add(l: Expr[Int], r: Expr[Int]): Expr[Int]
         case Mul(l: Expr[Int], r: Expr[Int]): Expr[Int]
         case Eq(l: Expr[Int], r: Expr[Int]): Expr[Boolean]

@@ -13,18 +13,30 @@ public record BlockNode<A> (Meta<A> meta, ImmutableList<LetNode<A>> declarations
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitBlock(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitBlock(this);
+
+        var result = visitor.visitBlock(
                 meta(),
                 declarations().collect(let -> let.accept(visitor)),
                 visitor.visitExpr(result()));
+
+        visitor.postVisitBlock(result);
+
+        return result;
     }
 
     @Override
-    public <B> BlockNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitBlock(
+    public <B> BlockNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitBlock(this);
+
+        var result = visitor.visitBlock(
                 meta(),
-                declarations().collect(let -> let.accept(transformer)),
-                transformer.visitExpr(result()));
+                declarations().collect(let -> let.accept(visitor)),
+                visitor.visitExpr(result()));
+
+        visitor.postVisitBlock(result);
+
+        return result;
     }
 }

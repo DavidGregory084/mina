@@ -2,6 +2,7 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
+import org.mina_lang.common.LocalName;
 import org.mina_lang.common.Meta;
 
 public record ParamNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> typeAnnotation) implements MetaNode<A> {
@@ -13,18 +14,34 @@ public record ParamNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> typ
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitParam(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitParam(this);
+
+        var result = visitor.visitParam(
                 meta(),
                 name(),
                 typeAnnotation().map(visitor::visitType));
+
+        visitor.postVisitParam(result);
+
+        return result;
     }
 
     @Override
-    public <B> ParamNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitParam(
+    public <B> ParamNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitParam(this);
+
+        var result = visitor.visitParam(
                 meta(),
                 name(),
-                typeAnnotation().map(transformer::visitType));
+                typeAnnotation().map(visitor::visitType));
+
+        visitor.postVisitParam(result);
+
+        return result;
+    }
+
+    public LocalName getName(int localNameDepth) {
+        return new LocalName(name(), localNameDepth);
     }
 }

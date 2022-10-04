@@ -9,12 +9,18 @@ public record IntNode<A>(Meta<A> meta, int value) implements LiteralNode<A> {
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitInt(meta(), value());
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitInt(this);
+        var result = visitor.visitInt(meta(), value());
+        visitor.postVisitInt(result);
+        return result;
     }
 
     @Override
-    public <B> IntNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitInt(meta(), value());
+    public <B> IntNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitInt(this);
+        var result = visitor.visitInt(meta(), value());
+        visitor.postVisitInt(result);
+        return result;
     }
 }

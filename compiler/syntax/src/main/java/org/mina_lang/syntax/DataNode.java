@@ -16,21 +16,33 @@ public record DataNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitData(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitData(this);
+
+        var result = visitor.visitData(
                 meta(),
                 name(),
                 typeParams().collect(visitor::visitTypeVar),
                 constructors().collect(constr -> constr.accept(visitor)));
+
+        visitor.postVisitData(result);
+
+        return result;
     }
 
     @Override
-    public <B> DataNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitData(
+    public <B> DataNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitData(this);
+
+        var result = visitor.visitData(
                 meta(),
                 name(),
-                typeParams().collect(transformer::visitTypeVar),
-                constructors().collect(constr -> constr.accept(transformer)));
+                typeParams().collect(visitor::visitTypeVar),
+                constructors().collect(constr -> constr.accept(visitor)));
+
+        visitor.postVisitData(result);
+
+        return result;
     }
 
     public DataName getName(NamespaceName namespace) {

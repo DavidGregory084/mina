@@ -28,6 +28,9 @@ dependencies {
     // Parser
     implementation(project(":compiler:parser"))
 
+    // Renamer
+    implementation(project(":compiler:renamer"))
+
     // Logging
     implementation(libs.bundles.slf4j)
     runtimeOnly(libs.logback)

@@ -2,9 +2,9 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
-import org.mina_lang.common.Meta;
+import org.mina_lang.common.Range;
 
-public record QualifiedIdNode<A> (Meta<A> meta, Optional<NamespaceIdNode> ns, String name) implements MetaNode<A> {
+public record QualifiedIdNode (Range range, Optional<NamespaceIdNode> ns, String name) implements SyntaxNode {
 
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -12,21 +12,7 @@ public record QualifiedIdNode<A> (Meta<A> meta, Optional<NamespaceIdNode> ns, St
         visitor.visitQualifiedId(this);
     }
 
-    @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitQualifiedId(
-            meta(),
-            ns(),
-            name()
-        );
-    }
-
-    @Override
-    public <B> QualifiedIdNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitQualifiedId(
-            meta(),
-            ns(),
-            name()
-        );
+    public String canonicalName() {
+        return ns().map(ns -> ns.getName().canonicalName() + ".").orElse("") + name();
     }
 }

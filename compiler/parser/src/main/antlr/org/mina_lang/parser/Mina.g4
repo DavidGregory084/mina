@@ -88,20 +88,19 @@ matchExpr: MATCH expr WITH LBRACE matchCase* RBRACE;
 
 matchCase: CASE pattern ARROW expr;
 
-pattern: idPattern | literalPattern | constructorPattern;
+pattern: aliasPattern | idPattern | literalPattern | constructorPattern;
 
-idPattern: patternAlias? ID;
+aliasPattern: ID AT pattern;
 
-literalPattern: patternAlias? literal;
+idPattern: ID;
 
-constructorPattern:
-	patternAlias? qualifiedId LBRACE fieldPatterns? RBRACE;
+literalPattern: literal;
+
+constructorPattern: qualifiedId LBRACE fieldPatterns? RBRACE;
 
 fieldPatterns: fieldPattern (COMMA fieldPattern)*;
 
 fieldPattern: ID (COLON pattern)?;
-
-patternAlias: ID AT;
 
 applicableExpr:
 	parenExpr

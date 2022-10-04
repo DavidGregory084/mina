@@ -9,12 +9,18 @@ public record ForAllVarNode<A> (Meta<A> meta, String name) implements TypeVarNod
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitExistsVar(meta(), name());
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitForAllVar(this);
+        var result = visitor.visitForAllVar(meta(), name());
+        visitor.postVisitForAllVar(result);
+        return result;
     }
 
     @Override
-    public <B> ForAllVarNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitForAllVar(meta(), name());
+    public <B> ForAllVarNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitForAllVar(this);
+        var result = visitor.visitForAllVar(meta(), name());
+        visitor.postVisitForAllVar(result);
+        return result;
     }
 }

@@ -34,6 +34,7 @@ tasks.withType<JavaCompile> {
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
+    enableAssertions = true
 }
 
 jacoco {

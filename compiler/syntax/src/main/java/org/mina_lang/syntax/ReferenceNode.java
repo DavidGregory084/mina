@@ -2,7 +2,7 @@ package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
 
-public record ReferenceNode<A> (Meta<A> meta, QualifiedIdNode<A> id) implements ExprNode<A> {
+public record ReferenceNode<A> (Meta<A> meta, QualifiedIdNode id) implements ExprNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         id.accept(visitor);
@@ -10,12 +10,18 @@ public record ReferenceNode<A> (Meta<A> meta, QualifiedIdNode<A> id) implements 
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitReference(meta(), id().accept(visitor));
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitReference(this);
+        var result = visitor.visitReference(meta(), id());
+        visitor.postVisitReference(result);
+        return result;
     }
 
     @Override
-    public <B> ReferenceNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitReference(meta(), id().accept(transformer));
+    public <B> ReferenceNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitReference(this);
+        var result = visitor.visitReference(meta(), id());
+        visitor.postVisitReference(result);
+        return result;
     }
 }

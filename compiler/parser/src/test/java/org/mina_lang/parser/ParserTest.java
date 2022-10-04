@@ -14,7 +14,6 @@ import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Range;
 import org.mina_lang.parser.Parser.Visitor;
-import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.syntax.SyntaxNode;
 
@@ -131,7 +130,9 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 60),
                         nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.of("compilationUnit", "importDeclaration")));
+                        Lists.immutable.of(
+                            importSymbolNode(new Range(0, 25, 0, 40) ,"compilationUnit"),
+                            importSymbolNode(new Range(0, 42, 0, 59), "importDeclaration"))));
     }
 
     @Test
@@ -142,7 +143,9 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 50),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
-                        Lists.immutable.of("compilationUnit", "importDeclaration")));
+                        Lists.immutable.of(
+                            importSymbolNode(new Range(0, 15, 0, 30) ,"compilationUnit"),
+                            importSymbolNode(new Range(0, 32, 0, 49), "importDeclaration"))));
     }
 
     @Test
@@ -152,7 +155,7 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 30),
                         nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.of("ifExpr")));
+                        Lists.immutable.of(importSymbolNode(new Range(0, 24, 0, 30), "ifExpr"))));
     }
 
     @Test
@@ -162,7 +165,7 @@ public class ParserTest {
                 importNode(
                         new Range(0, 0, 0, 20),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
-                        Lists.immutable.of("ifExpr")));
+                        Lists.immutable.of(importSymbolNode(new Range(0, 14, 0, 20), "ifExpr"))));
     }
 
     @Test
@@ -681,7 +684,7 @@ public class ParserTest {
                         Lists.immutable.of(
                                 caseNode(
                                         new Range(0, 15, 0, 26),
-                                        idPatternNode(new Range(0, 20, 0, 21), Optional.empty(), "y"),
+                                        idPatternNode(new Range(0, 20, 0, 21), "y"),
                                         refNode(new Range(0, 25, 0, 26), "z")))));
     }
 
@@ -690,7 +693,7 @@ public class ParserTest {
         testSuccessfulParse("case x @ y -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 15),
-                        idPatternNode(new Range(0, 5, 0, 10), Optional.of("x"), "y"),
+                        aliasPatternNode(new Range(0, 5, 0, 10), "x", idPatternNode(new Range(0, 9, 0, 10), "y")),
                         refNode(new Range(0, 14, 0, 15), "x")));
     }
 
@@ -699,7 +702,7 @@ public class ParserTest {
         testSuccessfulParse("case 1 -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 11),
-                        literalPatternNode(new Range(0, 5, 0, 6), Optional.empty(), intNode(new Range(0, 5, 0, 6), 1)),
+                        literalPatternNode(new Range(0, 5, 0, 6), intNode(new Range(0, 5, 0, 6), 1)),
                         refNode(new Range(0, 10, 0, 11), "x")));
     }
 
@@ -708,8 +711,8 @@ public class ParserTest {
         testSuccessfulParse("case x @ 1 -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 15),
-                        literalPatternNode(new Range(0, 5, 0, 10), Optional.of("x"),
-                                intNode(new Range(0, 9, 0, 10), 1)),
+                        aliasPatternNode(new Range(0, 5, 0, 10), "x",
+                                literalPatternNode(new Range(0, 9, 0, 10), intNode(new Range(0, 9, 0, 10), 1))),
                         refNode(new Range(0, 14, 0, 15), "x")));
     }
 
@@ -718,7 +721,7 @@ public class ParserTest {
         testSuccessfulParse("case 9_999_999L -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 20),
-                        literalPatternNode(new Range(0, 5, 0, 15), Optional.empty(),
+                        literalPatternNode(new Range(0, 5, 0, 15),
                                 longNode(new Range(0, 5, 0, 15), 9999999L)),
                         refNode(new Range(0, 19, 0, 20), "x")));
     }
@@ -728,7 +731,7 @@ public class ParserTest {
         testSuccessfulParse("case true -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 14),
-                        literalPatternNode(new Range(0, 5, 0, 9), Optional.empty(),
+                        literalPatternNode(new Range(0, 5, 0, 9),
                                 boolNode(new Range(0, 5, 0, 9), true)),
                         refNode(new Range(0, 13, 0, 14), "x")));
     }
@@ -738,7 +741,7 @@ public class ParserTest {
         testSuccessfulParse("case '\\r' -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 14),
-                        literalPatternNode(new Range(0, 5, 0, 9), Optional.empty(),
+                        literalPatternNode(new Range(0, 5, 0, 9),
                                 charNode(new Range(0, 5, 0, 9), '\r')),
                         refNode(new Range(0, 13, 0, 14), "x")));
     }
@@ -748,7 +751,7 @@ public class ParserTest {
         testSuccessfulParse("case \"Hello\\n\" -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 19),
-                        literalPatternNode(new Range(0, 5, 0, 14), Optional.empty(),
+                        literalPatternNode(new Range(0, 5, 0, 14),
                                 stringNode(new Range(0, 5, 0, 14), "Hello\n")),
                         refNode(new Range(0, 18, 0, 19), "x")));
     }
@@ -758,7 +761,7 @@ public class ParserTest {
         testSuccessfulParse("case 1.234e+2f -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 19),
-                        literalPatternNode(new Range(0, 5, 0, 14), Optional.empty(),
+                        literalPatternNode(new Range(0, 5, 0, 14),
                                 floatNode(new Range(0, 5, 0, 14), 1.234e+2f)),
                         refNode(new Range(0, 18, 0, 19), "x")));
     }
@@ -768,7 +771,7 @@ public class ParserTest {
         testSuccessfulParse("case 1.234e+2 -> x", Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 18),
-                        literalPatternNode(new Range(0, 5, 0, 13), Optional.empty(),
+                        literalPatternNode(new Range(0, 5, 0, 13),
                                 doubleNode(new Range(0, 5, 0, 13), 1.234e+2)),
                         refNode(new Range(0, 17, 0, 18), "x")));
     }
@@ -781,7 +784,6 @@ public class ParserTest {
                         new Range(0, 0, 0, 26),
                         constructorPatternNode(
                                 new Range(0, 5, 0, 18),
-                                Optional.empty(),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
                                 Lists.immutable.of(
                                         fieldPatternNode(new Range(0, 12, 0, 16), "head",
@@ -795,13 +797,13 @@ public class ParserTest {
                 Parser::getMatchCaseVisitor, MinaParser::matchCase,
                 caseNode(
                         new Range(0, 0, 0, 33),
-                        constructorPatternNode(
-                                new Range(0, 5, 0, 25),
-                                Optional.of("cons"),
-                                idNode(new Range(0, 12, 0, 16), "Cons"),
-                                Lists.immutable.of(
-                                        fieldPatternNode(new Range(0, 19, 0, 23), "head",
-                                                Optional.empty()))),
+                        aliasPatternNode(new Range(0, 5, 0, 25), "cons",
+                                constructorPatternNode(
+                                        new Range(0, 12, 0, 25),
+                                        idNode(new Range(0, 12, 0, 16), "Cons"),
+                                        Lists.immutable.of(
+                                                fieldPatternNode(new Range(0, 19, 0, 23), "head",
+                                                        Optional.empty())))),
                         refNode(new Range(0, 29, 0, 33), "head")));
     }
 
@@ -813,7 +815,6 @@ public class ParserTest {
                         new Range(0, 0, 0, 41),
                         constructorPatternNode(
                                 new Range(0, 5, 0, 33),
-                                Optional.empty(),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
                                 Lists.immutable.of(
                                         fieldPatternNode(new Range(0, 12, 0, 16), "head",
@@ -821,7 +822,6 @@ public class ParserTest {
                                         fieldPatternNode(new Range(0, 18, 0, 30), "tail", Optional.of(
                                                 constructorPatternNode(
                                                         new Range(0, 24, 0, 30),
-                                                        Optional.empty(),
                                                         idNode(new Range(0, 24, 0, 27), "Nil"),
                                                         Lists.immutable.empty()))))),
                         refNode(new Range(0, 37, 0, 41), "head")));
@@ -835,17 +835,16 @@ public class ParserTest {
                         new Range(0, 0, 0, 47),
                         constructorPatternNode(
                                 new Range(0, 5, 0, 39),
-                                Optional.empty(),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
                                 Lists.immutable.of(
                                         fieldPatternNode(new Range(0, 12, 0, 16), "head",
                                                 Optional.empty()),
                                         fieldPatternNode(new Range(0, 18, 0, 36), "tail", Optional.of(
-                                                constructorPatternNode(
-                                                        new Range(0, 24, 0, 36),
-                                                        Optional.of("nil"),
-                                                        idNode(new Range(0, 30, 0, 33), "Nil"),
-                                                        Lists.immutable.empty()))))),
+                                                aliasPatternNode(new Range(0, 24, 0, 36), "nil",
+                                                        constructorPatternNode(
+                                                                new Range(0, 30, 0, 36),
+                                                                idNode(new Range(0, 30, 0, 33), "Nil"),
+                                                                Lists.immutable.empty())))))),
                         refNode(new Range(0, 43, 0, 47), "head")));
     }
 

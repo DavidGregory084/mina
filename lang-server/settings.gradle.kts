@@ -1,2 +1,3 @@
-include(":compiler:parser")
 include(":compiler:syntax")
+include(":compiler:parser")
+include(":compiler:renamer")

@@ -24,25 +24,37 @@ public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitLetFn(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitLetFn(this);
+
+        var result = visitor.visitLetFn(
                 meta(),
                 name(),
                 typeParams().collect(visitor::visitTypeVar),
                 valueParams().collect(param -> param.accept(visitor)),
                 returnType().map(visitor::visitType),
                 visitor.visitExpr(expr()));
+
+        visitor.postVisitLetFn(result);
+
+        return result;
     }
 
     @Override
-    public <B> LetFnNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitLetFn(
+    public <B> LetFnNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitLetFn(this);
+
+        var result = visitor.visitLetFn(
                 meta(),
                 name(),
-                typeParams().collect(transformer::visitTypeVar),
-                valueParams().collect(param -> param.accept(transformer)),
-                returnType().map(transformer::visitType),
-                transformer.visitExpr(expr()));
+                typeParams().collect(visitor::visitTypeVar),
+                valueParams().collect(param -> param.accept(visitor)),
+                returnType().map(visitor::visitType),
+                visitor.visitExpr(expr()));
+
+        visitor.postVisitLetFn(result);
+
+        return result;
     }
 
     public LetName getName(NamespaceName namespace) {

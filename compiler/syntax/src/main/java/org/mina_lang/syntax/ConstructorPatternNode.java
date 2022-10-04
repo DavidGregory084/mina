@@ -3,9 +3,7 @@ package org.mina_lang.syntax;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-import java.util.Optional;
-
-public record ConstructorPatternNode<A> (Meta<A> meta, Optional<String> alias, QualifiedIdNode<A> id,
+public record ConstructorPatternNode<A> (Meta<A> meta, QualifiedIdNode id,
         ImmutableList<FieldPatternNode<A>> fields) implements PatternNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -15,20 +13,30 @@ public record ConstructorPatternNode<A> (Meta<A> meta, Optional<String> alias, Q
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitConstructorPattern(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitConstructorPattern(this);
+
+        var result = visitor.visitConstructorPattern(
                 meta(),
-                alias(),
-                id().accept(visitor),
+                id(),
                 fields().collect(field -> field.accept(visitor)));
+
+        visitor.postVisitConstructorPattern(result);
+
+        return result;
     }
 
     @Override
-    public <B> ConstructorPatternNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitConstructorPattern(
+    public <B> ConstructorPatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitConstructorPattern(this);
+
+        var result = visitor.visitConstructorPattern(
                 meta(),
-                alias(),
-                id().accept(transformer),
-                fields().collect(field -> field.accept(transformer)));
+                id(),
+                fields().collect(field -> field.accept(visitor)));
+
+        visitor.postVisitConstructorPattern(result);
+
+        return result;
     }
 }

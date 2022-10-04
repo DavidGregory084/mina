@@ -14,20 +14,32 @@ public record TypeApplyNode<A> (Meta<A> meta, TypeNode<A> type, ImmutableList<Ty
     }
 
     @Override
-    public <B> B accept(MetaNodeVisitor<A, B> visitor) {
-        return visitor.visitTypeApply(
+    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        visitor.preVisitTypeApply(this);
+
+        var result = visitor.visitTypeApply(
             meta(),
             visitor.visitType(type()),
             args().collect(visitor::visitType)
         );
+
+        visitor.postVisitTypeApply(result);
+
+        return result;
     }
 
     @Override
-    public <B> TypeApplyNode<B> accept(MetaNodeTransformer<A, B> transformer) {
-        return transformer.visitTypeApply(
+    public <B> TypeApplyNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        visitor.preVisitTypeApply(this);
+
+        var result = visitor.visitTypeApply(
             meta(),
-            transformer.visitType(type()),
-            args().collect(transformer::visitType)
+            visitor.visitType(type()),
+            args().collect(visitor::visitType)
         );
+
+        visitor.postVisitTypeApply(result);
+
+        return result;
     }
 }
