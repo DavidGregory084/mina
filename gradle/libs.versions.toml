@@ -1,19 +1,20 @@
 [versions]
-antlr = "4.10.1"
-apacheCommonsText = "1.9"
+antlr = "4.11.1"
+apacheCommonsText = "1.10.0"
 eclipseCollections = "11.1.0"
+gradleBuildInfo = "0.2.1"
 gradleNode = "3.4.0"
 gradleVersions = "0.42.0"
 hamcrest = "2.2"
 jacoco = "0.8.8"
-junit = "5.9.0"
-junixSocket = "2.5.1"
-logback = "1.2.11"
-lsp4j = "0.15.0"
-picocli = "4.6.3"
-protobuf = "3.20.0"
-protobufGradle = "0.8.19"
-slf4j = "1.7.36"
+junit = "5.9.1"
+junixSocket = "2.6.1"
+logback = "1.4.4"
+lsp4j = "0.17.0"
+picocli = "4.7.0"
+protobuf = "3.21.9"
+protobufGradle = "0.9.1"
+slf4j = "2.0.3"
 
 [libraries]
 antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
@@ -38,6 +39,7 @@ eclipseCollections = ["eclipseCollectionsApi", "eclipseCollections"]
 slf4j = ["slf4jApi", "julToSlf4j"]
 
 [plugins]
+gradleBuildInfo = { id = "com.opencastsoftware.gradle.buildinfo", version.ref = "gradleBuildInfo" }
 gradleNode = { id = "com.github.node-gradle.node", version.ref = "gradleNode" }
 gradleVersions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersions" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufGradle" }

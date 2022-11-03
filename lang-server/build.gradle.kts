@@ -1,7 +1,7 @@
 plugins {
     application
     `java-project-convention`
-    id("com.opencastsoftware.gradle.buildinfo") version "0.1.0"
+    alias(libs.plugins.gradleBuildInfo)
 }
 
 dependencies {
