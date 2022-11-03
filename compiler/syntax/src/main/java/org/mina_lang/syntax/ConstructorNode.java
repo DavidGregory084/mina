@@ -2,6 +2,10 @@ package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.*;
+import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.DataName;
+import org.mina_lang.common.names.NamespaceName;
+import org.mina_lang.common.names.QualifiedName;
 
 import java.util.Optional;
 

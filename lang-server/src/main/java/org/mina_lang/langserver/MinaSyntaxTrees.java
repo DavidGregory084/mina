@@ -4,7 +4,7 @@ import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
-import org.mina_lang.common.Name;
+import org.mina_lang.common.names.Name;
 import org.mina_lang.syntax.NamespaceNode;
 
 import java.util.concurrent.CompletableFuture;

@@ -2,7 +2,7 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
-import org.mina_lang.common.LocalName;
+import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.Meta;
 
 public record ParamNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> typeAnnotation) implements MetaNode<A> {

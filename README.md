@@ -14,7 +14,6 @@ The project structure is as follows:
     * `compiler/syntax` - this contains the definition of the abstract syntax tree and utilities for working with trees.
     * `compiler/parser` - this contains the ANTLR grammar of the language and the parsing phase for namespace definitions.
     * `compiler/renamer` - this contains the name resolution phase, which is responsible for resolving imports and attributing syntax trees with fully qualified names.
-    * `compiler/outliner` - unimplemented; this will contain the outline type signature computation phase: we assume that well-formed user-supplied type signatures are correct, so we can start compiling definitions that depend on them earlier.
     * Missing phase folders:
         * `compiler/typechecker` - this will contain a phase for kind-checking data types and type-checking let bindings.
         * `compiler/simplifier` - this will contain a phase for lowering the user-facing syntax trees into the intermediate language.
