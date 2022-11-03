@@ -26,7 +26,7 @@ tasks.generateGrammarSource {
     // See: https://github.com/antlr/antlr4/issues/2335
     val outputDir = file("build/generated-src/antlr/main/org/mina_lang/parser")
     // the directory must exist or ANTLR bails
-    outputDir.mkdirs()
+    doFirst { outputDir.mkdirs() }
     arguments = arguments + listOf(
         "-visitor",
         "-no-listener",
