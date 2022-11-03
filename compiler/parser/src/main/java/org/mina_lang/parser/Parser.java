@@ -145,7 +145,7 @@ public class Parser {
         return new Range(startPos, endPos);
     }
 
-    abstract class Visitor<A extends ParserRuleContext, B> extends MinaBaseVisitor<B> {
+    abstract class Visitor<A extends ParserRuleContext, B> extends MinaParserBaseVisitor<B> {
         public B visitNullable(ParseTree tree) {
             return tree != null ? visit(tree) : null;
         }
