@@ -20,9 +20,16 @@ jobs:
           java-version: 17
 
       - name: Submit Gradle Dependencies
-        uses: mikepenz/gradle-dependency-submission@v0.0.4
+        uses: mikepenz/gradle-dependency-submission@v0.8.2
         with:
-          gradle-project-path: ".;.;.;.;.;.;."
-          gradle-dependency-path: "gradle-plugin/build.gradle;compiler/common/build.gradle;compiler/syntax/build.gradle;compiler/parser/build.gradle;compiler/intermediate/build.gradle;compiler/jvm/build.gradle;lang-server/build.gradle"
-          gradle-build-module: ":mina-gradle-plugin;:compiler:common;:compiler:syntax;:compiler:parser;:compiler:intermediate;:compiler:jvm;:lang-server"
-          gradle-build-configuration: "runtimeClasspath;runtimeClasspath;runtimeClasspath;runtimeClasspath;runtimeClasspath;runtimeClasspath;runtimeClasspath"
+          gradle-build-module:
+            :compiler:common
+            :compiler:intermediate
+            :compiler:jvm
+            :compiler:parser
+            :compiler:renamer
+            :compiler:syntax
+            :mina-gradle-plugin
+            :lang-server
+          sub-module-module: INDIVIDUAL_DEEP
+
