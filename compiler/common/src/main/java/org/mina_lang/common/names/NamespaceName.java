@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.names;
 
 import org.eclipse.collections.api.list.ImmutableList;
 

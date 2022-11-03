@@ -1,9 +1,10 @@
-package org.mina_lang.common;
+package org.mina_lang.common.diagnostics;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.*;
 
 public abstract class BaseDiagnosticCollector implements DiagnosticCollector {
     ConcurrentLinkedQueue<Diagnostic> diagnostics = new ConcurrentLinkedQueue<>();

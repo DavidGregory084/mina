@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.scopes;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -6,6 +6,8 @@ import java.util.function.BiConsumer;
 import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
+import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.Meta;
 
 public sealed interface Scope<A> permits ImportedScope, NamespaceScope, DataScope, ConstructorScope, BlockScope, LambdaScope, CaseScope, ConstructorPatternScope, TypeLambdaScope {
     MutableMap<String, Meta<A>> values();

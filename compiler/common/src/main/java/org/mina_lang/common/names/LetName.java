@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.names;
 
 public record LetName(QualifiedName name) implements Named {
 

@@ -1,10 +1,10 @@
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.DataName;
+import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.NamespaceName;
-import org.mina_lang.common.QualifiedName;
+import org.mina_lang.common.names.NamespaceName;
+import org.mina_lang.common.names.QualifiedName;
 
 public record DataNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<A>> typeParams,
         ImmutableList<ConstructorNode<A>> constructors) implements DeclarationNode<A> {

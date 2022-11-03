@@ -1,6 +1,6 @@
-package org.mina_lang.common;
+package org.mina_lang.common.names;
 
-public record ConstructorName(DataName enclosing, QualifiedName name) implements Named {
+public record DataName(QualifiedName name) implements Named {
 
     @Override
     public String localName() {

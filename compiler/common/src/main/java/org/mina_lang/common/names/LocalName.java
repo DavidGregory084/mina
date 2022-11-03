@@ -1,6 +1,6 @@
-package org.mina_lang.common;
+package org.mina_lang.common.names;
 
-public record TypeVarName(String name) implements Named {
+public record LocalName(String name, int index) implements Named {
 
     @Override
     public String localName() {

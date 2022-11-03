@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.*;
-import org.mina_lang.common.DiagnosticCollector;
+import org.mina_lang.common.diagnostics.DiagnosticCollector;
 
 public interface LSPDiagnosticCollector extends DiagnosticCollector {
     default List<Diagnostic> getLSPDiagnostics(String uri) {

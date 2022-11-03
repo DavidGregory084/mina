@@ -9,9 +9,9 @@ import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.mina_lang.common.BaseDiagnosticCollector;
 import org.mina_lang.common.Position;
 import org.mina_lang.common.Range;
+import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 
 public abstract class ANTLRDiagnosticCollector extends BaseDiagnosticCollector implements ANTLRErrorListener {
     @Override

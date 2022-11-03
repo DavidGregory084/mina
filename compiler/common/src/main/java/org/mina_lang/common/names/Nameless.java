@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.names;
 
 public enum Nameless implements Name {
     INSTANCE

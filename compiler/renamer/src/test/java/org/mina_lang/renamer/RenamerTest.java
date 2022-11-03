@@ -10,6 +10,9 @@ import java.util.Optional;
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.*;
+import org.mina_lang.common.diagnostics.Diagnostic;
+import org.mina_lang.common.names.*;
+import org.mina_lang.common.scopes.ImportedScope;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
 

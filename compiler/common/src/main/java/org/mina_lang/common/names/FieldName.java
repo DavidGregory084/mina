@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.names;
 
 public record FieldName(ConstructorName constructor, String name) implements Named {
 

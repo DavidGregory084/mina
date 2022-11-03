@@ -7,6 +7,10 @@ import java.util.Optional;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.*;
+import org.mina_lang.common.diagnostics.DiagnosticCollector;
+import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
+import org.mina_lang.common.names.*;
+import org.mina_lang.common.scopes.*;
 import org.mina_lang.syntax.*;
 
 public class Renamer {
@@ -58,7 +62,7 @@ public class Renamer {
     }
 
     public Void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
-            Meta<Name> existing) {
+                                         Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 existing.range(),
                 "Original definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");

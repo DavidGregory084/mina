@@ -2,6 +2,7 @@ package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.*;
+import org.mina_lang.common.names.NamespaceName;
 
 public record NamespaceNode<A> (Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
         ImmutableList<DeclarationNode<A>> declarations) implements MetaNode<A> {

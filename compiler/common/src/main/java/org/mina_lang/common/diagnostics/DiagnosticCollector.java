@@ -1,8 +1,9 @@
-package org.mina_lang.common;
+package org.mina_lang.common.diagnostics;
 
 import java.util.List;
 
 import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Range;
 
 public interface DiagnosticCollector {
     public List<Diagnostic> getDiagnostics();

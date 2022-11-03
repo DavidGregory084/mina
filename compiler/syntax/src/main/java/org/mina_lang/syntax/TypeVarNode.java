@@ -1,6 +1,6 @@
 package org.mina_lang.syntax;
 
-import org.mina_lang.common.TypeVarName;
+import org.mina_lang.common.names.TypeVarName;
 
 public sealed interface TypeVarNode<A> extends TypeNode<A>permits ExistsVarNode, ForAllVarNode {
     public String name();

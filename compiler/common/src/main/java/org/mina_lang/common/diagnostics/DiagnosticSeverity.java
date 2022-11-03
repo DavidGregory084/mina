@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.diagnostics;
 
 public enum DiagnosticSeverity {
     Error(1),
