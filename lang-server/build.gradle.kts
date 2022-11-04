@@ -31,6 +31,9 @@ dependencies {
     // Renamer
     implementation(project(":compiler:renamer"))
 
+    // Typechecker
+    implementation(project(":compiler:typechecker"))
+
     // Logging
     implementation(libs.bundles.slf4j)
     runtimeOnly(libs.logback)

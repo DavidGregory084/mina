@@ -1,5 +1,8 @@
 namespace Mina/Examples/DeclareList {
-    import Mina/Examples/DeclareOption.{ Option, Some, None }
+    data Option[A] {
+        case Some(value: A)
+        case None()
+    }
 
     data List[A] {
         case Cons(head: A, tail: List[A])
@@ -16,4 +19,10 @@ namespace Mina/Examples/DeclareList {
         case Cons { head, tail: Nil {} } -> Some(head)
         case Cons { tail } -> lastOption(tail)
     }
+
+    let someOne = (a, b) -> headOption(Cons(a, Cons(b, Nil())))
+    let someBrokenCode = lastOption(None())
+    let none = headOption(Nil())
+
+    let foo = if "a" then 1 else 2
 }

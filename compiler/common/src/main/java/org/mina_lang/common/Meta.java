@@ -7,8 +7,8 @@ public record Meta<A>(Range range, A meta) {
         return new Meta<A>(range, meta());
     }
 
-    public Meta<A> withMeta(A meta) {
-        return new Meta<A>(range(), meta);
+    public <B> Meta<B> withMeta(B meta) {
+        return new Meta<B>(range(), meta);
     }
 
     public static Meta<Void> of(Range range) {

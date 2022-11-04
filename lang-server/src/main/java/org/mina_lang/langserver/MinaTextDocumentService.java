@@ -6,6 +6,7 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 import org.mina_lang.common.Environment;
 import org.mina_lang.parser.Parser;
 import org.mina_lang.renamer.Renamer;
+import org.mina_lang.typechecker.Typechecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,10 +47,13 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(document, diagnostics -> {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
                     try {
-                        var parsed = new Parser(diagnostics).parse(charStream);
+                        var parser = new Parser(diagnostics);
                         var renamer = new Renamer(diagnostics, Environment.empty());
+                        var typechecker = new Typechecker(diagnostics, Environment.empty());
+                        var parsed = parser.parse(charStream);
                         var renamed = renamer.rename(parsed);
-                        return renamed;
+                        var checked = typechecker.typecheck(renamed);
+                        return checked;
                     } catch (Exception e) {
                         logger.error("Exception while processing syntax tree", e);
                         throw e;
@@ -69,10 +73,13 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(updatedDocument, diagnostics -> {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
                     try {
-                        var parsed = new Parser(diagnostics).parse(charStream);
+                        var parser = new Parser(diagnostics);
                         var renamer = new Renamer(diagnostics, Environment.empty());
+                        var typechecker = new Typechecker(diagnostics, Environment.empty());
+                        var parsed = parser.parse(charStream);
                         var renamed = renamer.rename(parsed);
-                        return renamed;
+                        var checked = typechecker.typecheck(renamed);
+                        return checked;
                     } catch (Exception e) {
                         logger.error("Exception while processing syntax tree", e);
                         throw e;
