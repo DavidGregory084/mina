@@ -21,6 +21,7 @@ version = "0.1.0-SNAPSHOT"
 dependencies {
     testImplementation(libs.junitJupiter)
     testImplementation(libs.hamcrest)
+    testImplementation(libs.jqwik)
 }
 
 java {

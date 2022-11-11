@@ -1,5 +1,5 @@
 package org.mina_lang.common.types;
 
-public enum Star implements Kind {
+public enum TypeKind implements Kind {
     INSTANCE
 }

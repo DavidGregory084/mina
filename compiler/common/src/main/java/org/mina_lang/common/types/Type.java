@@ -13,24 +13,17 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public Type accept(TypeTransformer visitor);
 
-    public static Type BOOLEAN = new TypeConstructor(
-            new QualifiedName(new NamespaceName(Lists.immutable.empty(), "Primitives"), "Boolean"), Star.INSTANCE);
+    public static Type BOOLEAN = new BuiltInType("Boolean", TypeKind.INSTANCE);
 
-    public static Type CHAR = new TypeConstructor(
-            new QualifiedName(new NamespaceName(Lists.immutable.empty(), "Primitives"), "Char"), Star.INSTANCE);
+    public static Type CHAR = new BuiltInType("Char", TypeKind.INSTANCE);
 
-    public static Type STRING = new TypeConstructor(
-            new QualifiedName(new NamespaceName(Lists.immutable.empty(), "Primitives"), "String"), Star.INSTANCE);
+    public static Type STRING = new BuiltInType("String", TypeKind.INSTANCE);
 
-    public static Type INT = new TypeConstructor(
-            new QualifiedName(new NamespaceName(Lists.immutable.empty(), "Primitives"), "Int"), Star.INSTANCE);
+    public static Type INT = new BuiltInType("Int", TypeKind.INSTANCE);
 
-    public static Type LONG = new TypeConstructor(
-            new QualifiedName(new NamespaceName(Lists.immutable.empty(), "Primitives"), "Long"), Star.INSTANCE);
+    public static Type LONG = new BuiltInType("Long", TypeKind.INSTANCE);
 
-    public static Type FLOAT = new TypeConstructor(
-            new QualifiedName(new NamespaceName(Lists.immutable.empty(), "Primitives"), "Float"), Star.INSTANCE);
+    public static Type FLOAT = new BuiltInType("Float", TypeKind.INSTANCE);
 
-    public static Type DOUBLE = new TypeConstructor(
-            new QualifiedName(new NamespaceName(Lists.immutable.empty(), "Primitives"), "Double"), Star.INSTANCE);
+    public static Type DOUBLE = new BuiltInType("Double", TypeKind.INSTANCE);
 }

@@ -17,9 +17,11 @@ public interface TypeTransformer {
 
     TypeConstructor visitTypeConstructor(TypeConstructor tyCon);
 
+    BuiltInType visitBuiltInType(BuiltInType primTy);
+
     TypeApply visitTypeApply(TypeApply tyApp);
 
     TypeVar visitTypeVar(TypeVar tyVar);
 
-    UnsolvedType visiUnsolvedType(UnsolvedType unsolved);
+    UnsolvedType visitUnsolvedType(UnsolvedType unsolved);
 }

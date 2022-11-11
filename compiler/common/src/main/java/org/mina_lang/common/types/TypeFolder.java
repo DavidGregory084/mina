@@ -23,6 +23,8 @@ public interface TypeFolder<A> {
 
     A visitTypeConstructor(TypeConstructor tyCon);
 
+    A visitBuiltInType(BuiltInType primTy);
+
     A visitTypeApply(TypeApply tyApp);
 
     A visitTypeVar(TypeVar tyVar);

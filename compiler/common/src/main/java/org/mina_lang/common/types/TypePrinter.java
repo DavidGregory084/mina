@@ -16,32 +16,36 @@ public class TypePrinter implements TypeFolder<Doc> {
 
     @Override
     public Doc visitPropositionType(PropositionType propType) {
-        return null;
+        // Don't tell users about propositional types
+        return visitType(propType.type());
     }
 
     @Override
     public Doc visitImplicationType(ImplicationType implType) {
-        return null;
+        // Don't tell users about implication types
+        return visitType(implType.impliedType());
     }
 
     @Override
     public Doc visitTypeConstructor(TypeConstructor tyCon) {
-        // TODO: Disambiguate names properly
+        // TODO: Disambiguate names properly by accepting import environment in
+        // constructor
         return Doc.text(tyCon.name().name());
+    }
+
+    @Override
+    public Doc visitBuiltInType(BuiltInType primTy) {
+        return Doc.text(primTy.name());
     }
 
     @Override
     public Doc visitTypeApply(TypeApply tyApp) {
         var appliedType = tyApp.type().accept(this);
 
-        Doc typeArgs = tyApp.typeArguments().isEmpty() ? Doc.empty()
-                : tyApp.typeArguments().stream()
-                        .map(ty -> ty.accept(this))
-                        .reduce(Doc.empty(), (left, right) -> {
-                            return left instanceof Doc.Empty ? right
-                                    : left.append(Doc.text(",")).appendLineOrSpace(right);
-                        })
-                        .bracket(2, Doc.text("["), Doc.text("]"));
+        Doc typeArgs = Doc.intersperse(
+                Doc.text(",").append(Doc.lineOrSpace()),
+                tyApp.typeArguments().stream().map(ty -> ty.accept(this)))
+                .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
 
         return appliedType.append(typeArgs);
     }
