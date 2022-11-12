@@ -23,5 +23,5 @@ public interface TypeTransformer {
 
     TypeVar visitTypeVar(TypeVar tyVar);
 
-    UnsolvedType visitUnsolvedType(UnsolvedType unsolved);
+    MonoType visitUnsolvedType(UnsolvedType unsolved);
 }

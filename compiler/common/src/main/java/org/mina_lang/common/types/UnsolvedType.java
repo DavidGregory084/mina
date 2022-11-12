@@ -14,7 +14,7 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
     }
 
     @Override
-    public UnsolvedType accept(TypeTransformer visitor) {
+    public MonoType accept(TypeTransformer visitor) {
         return visitor.visitUnsolvedType(this);
     }
 }

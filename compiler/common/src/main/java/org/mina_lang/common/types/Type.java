@@ -9,6 +9,11 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public Kind kind();
 
+    @Override
+    default <A> A accept(SortFolder<A> visitor) {
+        return visitor.visitType(this);
+    }
+
     public <A> A accept(TypeFolder<A> visitor);
 
     public Type accept(TypeTransformer visitor);

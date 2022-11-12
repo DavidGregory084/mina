@@ -7,4 +7,14 @@ public record UnsolvedKind(int id) implements Kind {
         var prefixChar = (char) ('A' + rem);
         return String.valueOf(prefixChar) + String.valueOf(div);
     }
+
+    @Override
+    public <A> A accept(KindFolder<A> visitor) {
+        return visitor.visitUnsolvedKind(this);
+    }
+
+    @Override
+    public Kind accept(KindTransformer visitor) {
+        return visitor.visitUnsolvedKind(this);
+    }
 }
