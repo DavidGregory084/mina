@@ -61,13 +61,13 @@ public class TypePrinterTest {
                 new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE));
         var listIntDoc = new TypeApply(listTy, Lists.immutable.of(Type.INT), TypeKind.INSTANCE).accept(printer);
         assertThat(listIntDoc.render(80), is(equalTo("List[Int]")));
-        assertThat(listIntDoc.render(4), is(equalTo("List[\n  Int\n]")));
+        assertThat(listIntDoc.render(4), is(equalTo(String.format("List[%n  Int%n]"))));
 
         var eitherTy = new TypeConstructor(
                 new QualifiedName(new NamespaceName(Lists.immutable.of("Mina", "Test"), "Printer"), "Either"),
                 new HigherKind(Lists.immutable.of(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE));
         var eitherStringIntDoc = new TypeApply(eitherTy, Lists.immutable.of(Type.STRING, Type.INT), TypeKind.INSTANCE).accept(printer);
         assertThat(eitherStringIntDoc.render(80), is(equalTo("Either[String, Int]")));
-        assertThat(eitherStringIntDoc.render(4), is(equalTo("Either[\n  String,\n  Int\n]")));
+        assertThat(eitherStringIntDoc.render(4), is(equalTo(String.format("Either[%n  String,%n  Int%n]"))));
     }
 }
