@@ -40,14 +40,33 @@ public class TypePrinter implements TypeFolder<Doc> {
 
     @Override
     public Doc visitTypeApply(TypeApply tyApp) {
-        var appliedType = tyApp.type().accept(this);
+        if (Type.isFunction(tyApp)) {
+            var argTypes = tyApp.typeArguments().take(tyApp.typeArguments().size() - 1);
+            var returnType = tyApp.typeArguments().getLast();
 
-        Doc typeArgs = Doc.intersperse(
-                Doc.text(",").append(Doc.lineOrSpace()),
-                tyApp.typeArguments().stream().map(ty -> ty.accept(this)))
-                .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
+            var argDoc = argTypes.size() == 1
+                    ? Type.isFunction(argTypes.get(0))
+                            ? visitType(argTypes.get(0)).bracket(2, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"))
+                            : visitType(argTypes.get(0))
+                    : Doc.intersperse(
+                            Doc.text(",").append(Doc.lineOrSpace()),
+                            argTypes.stream().map(this::visitType))
+                            .bracket(2, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"));
 
-        return appliedType.append(typeArgs);
+            return Doc.group(
+                    argDoc
+                            .appendSpace(Doc.text("->"))
+                            .append(Doc.lineOrSpace().append(visitType(returnType)).indent(2)));
+        } else {
+            var appliedType = tyApp.type().accept(this);
+
+            Doc typeArgs = Doc.intersperse(
+                    Doc.text(",").append(Doc.lineOrSpace()),
+                    tyApp.typeArguments().stream().map(this::visitType))
+                    .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
+
+            return appliedType.append(typeArgs);
+        }
     }
 
     @Override

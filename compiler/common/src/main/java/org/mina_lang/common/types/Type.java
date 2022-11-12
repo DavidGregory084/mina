@@ -1,8 +1,9 @@
 package org.mina_lang.common.types;
 
 import org.eclipse.collections.api.factory.Lists;
-import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.common.names.QualifiedName;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 sealed public interface Type extends Sort permits PolyType, MonoType {
     public Polarity polarity();
@@ -18,17 +19,39 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public Type accept(TypeTransformer visitor);
 
-    public static Type BOOLEAN = new BuiltInType("Boolean", TypeKind.INSTANCE);
+    public static boolean isFunction(Type type) {
+        if (type instanceof TypeApply tyApp) {
+            if (tyApp.type() instanceof BuiltInType builtIn) {
+                return "->".equals(builtIn.name());
+            }
+        }
 
-    public static Type CHAR = new BuiltInType("Char", TypeKind.INSTANCE);
+        return false;
+    }
 
-    public static Type STRING = new BuiltInType("String", TypeKind.INSTANCE);
+    public static Type function(ImmutableList<Type> argTypes, Type returnType) {
+        var appliedTypes = argTypes.newWith(returnType);
+        var kind = new HigherKind(appliedTypes.collect(typ -> TypeKind.INSTANCE), TypeKind.INSTANCE);
+        return new TypeApply(new BuiltInType("->", kind), appliedTypes, TypeKind.INSTANCE);
+    }
 
-    public static Type INT = new BuiltInType("Int", TypeKind.INSTANCE);
+    public static BuiltInType BOOLEAN = new BuiltInType("Boolean", TypeKind.INSTANCE);
 
-    public static Type LONG = new BuiltInType("Long", TypeKind.INSTANCE);
+    public static BuiltInType CHAR = new BuiltInType("Char", TypeKind.INSTANCE);
 
-    public static Type FLOAT = new BuiltInType("Float", TypeKind.INSTANCE);
+    public static BuiltInType STRING = new BuiltInType("String", TypeKind.INSTANCE);
 
-    public static Type DOUBLE = new BuiltInType("Double", TypeKind.INSTANCE);
+    public static BuiltInType INT = new BuiltInType("Int", TypeKind.INSTANCE);
+
+    public static BuiltInType LONG = new BuiltInType("Long", TypeKind.INSTANCE);
+
+    public static BuiltInType FLOAT = new BuiltInType("Float", TypeKind.INSTANCE);
+
+    public static BuiltInType DOUBLE = new BuiltInType("Double", TypeKind.INSTANCE);
+
+    public static ImmutableSet<BuiltInType> builtIns = Sets.immutable.of(
+            Type.BOOLEAN,
+            Type.CHAR, Type.STRING,
+            Type.INT, Type.LONG,
+            Type.FLOAT, Type.DOUBLE);
 }
