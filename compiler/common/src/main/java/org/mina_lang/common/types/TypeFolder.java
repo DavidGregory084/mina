@@ -9,9 +9,7 @@ public interface TypeFolder<A> {
         return poly.accept(this);
     }
 
-    A visitForAllType(ForAllType forall);
-
-    A visitExistsType(ExistsType exists);
+    A visitTypeLambda(TypeLambda tyLam);
 
     A visitPropositionType(PropositionType propType);
 
@@ -27,7 +25,13 @@ public interface TypeFolder<A> {
 
     A visitTypeApply(TypeApply tyApp);
 
-    A visitTypeVar(TypeVar tyVar);
+    default A visitTypeVar(TypeVar tyVar) {
+        return tyVar.accept(this);
+    }
+
+    A visitForAllVar(ForAllVar forall);
+
+    A visitExistsVar(ExistsVar exists);
 
     A visitUnsolvedType(UnsolvedType unsolved);
 }

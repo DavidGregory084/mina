@@ -7,6 +7,7 @@ import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.factory.Stacks;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.Name;
 import org.mina_lang.common.scopes.*;
 
 /**
@@ -182,9 +183,17 @@ public record Environment<A> (MutableStack<Scope<A>> scopes) {
         return new Environment<>(Stacks.mutable.empty());
     }
 
-    public static <A> Environment<A> of(ImportedScope<A> scope) {
+    public static <A> Environment<A> of(Scope<A> scope) {
         var scopeStack = Stacks.mutable.<Scope<A>>empty();
         scopeStack.push(scope);
         return new Environment<>(scopeStack);
+    }
+
+    public static Environment<Name> withBuiltInNames() {
+        return Environment.of(BuiltInScope.withBuiltInNames());
+    }
+
+    public static Environment<Attributes> withBuiltInTypes() {
+        return Environment.of(BuiltInScope.withBuiltInTypes());
     }
 }

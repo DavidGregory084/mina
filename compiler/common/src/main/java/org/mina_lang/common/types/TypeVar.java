@@ -1,14 +1,14 @@
 package org.mina_lang.common.types;
 
-public record TypeVar(String name, Kind kind) implements MonoType {
+public sealed interface TypeVar extends MonoType permits ExistsVar, ForAllVar {
 
     @Override
-    public <A> A accept(TypeFolder<A> visitor) {
-        return visitor.visitTypeVar(this);
+    default <A> A accept(TypeFolder<A> visitor) {
+        return this.accept(visitor);
     }
 
     @Override
-    public TypeVar accept(TypeTransformer visitor) {
-        return visitor.visitTypeVar(this);
+    default TypeVar accept(TypeTransformer visitor) {
+        return this.accept(visitor);
     }
 }

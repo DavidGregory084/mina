@@ -28,13 +28,8 @@ public class SortPrinter implements SortFolder<Doc> {
     }
 
     @Override
-    public Doc visitForAllType(ForAllType forall) {
-        return typePrint.visitForAllType(forall);
-    }
-
-    @Override
-    public Doc visitExistsType(ExistsType exists) {
-        return typePrint.visitExistsType(exists);
+    public Doc visitTypeLambda(TypeLambda tyLam) {
+        return typePrint.visitTypeLambda(tyLam);
     }
 
     @Override
@@ -63,8 +58,13 @@ public class SortPrinter implements SortFolder<Doc> {
     }
 
     @Override
-    public Doc visitTypeVar(TypeVar tyVar) {
-        return typePrint.visitTypeVar(tyVar);
+    public Doc visitForAllVar(ForAllVar forall) {
+        return typePrint.visitForAllVar(forall);
+    }
+
+    @Override
+    public Doc visitExistsVar(ExistsVar exists) {
+        return typePrint.visitExistsVar(exists);
     }
 
     @Override

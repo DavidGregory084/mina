@@ -1,6 +1,5 @@
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -48,6 +47,8 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
     public static BuiltInType FLOAT = new BuiltInType("Float", TypeKind.INSTANCE);
 
     public static BuiltInType DOUBLE = new BuiltInType("Double", TypeKind.INSTANCE);
+
+    public static BuiltInType NAMESPACE = new BuiltInType("Namespace", TypeKind.INSTANCE);
 
     public static ImmutableSet<BuiltInType> builtIns = Sets.immutable.of(
             Type.BOOLEAN,

@@ -9,7 +9,7 @@ import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.Meta;
 
-public sealed interface Scope<A> permits ImportedScope, NamespaceScope, DataScope, ConstructorScope, BlockScope, LambdaScope, CaseScope, ConstructorPatternScope, TypeLambdaScope {
+public sealed interface Scope<A> permits BuiltInScope, ImportedScope, NamespaceScope, DataScope, ConstructorScope, BlockScope, LambdaScope, CaseScope, ConstructorPatternScope, TypeLambdaScope {
     MutableMap<String, Meta<A>> values();
 
     MutableMap<String, Meta<A>> types();

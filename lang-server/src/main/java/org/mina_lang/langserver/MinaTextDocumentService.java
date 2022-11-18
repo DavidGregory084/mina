@@ -48,8 +48,8 @@ public class MinaTextDocumentService implements TextDocumentService {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
                     try {
                         var parser = new Parser(diagnostics);
-                        var renamer = new Renamer(diagnostics, Environment.empty());
-                        var typechecker = new Typechecker(diagnostics, Environment.empty());
+                        var renamer = new Renamer(diagnostics, Environment.withBuiltInNames());
+                        var typechecker = new Typechecker(diagnostics, Environment.withBuiltInTypes());
                         var parsed = parser.parse(charStream);
                         var renamed = renamer.rename(parsed);
                         var checked = typechecker.typecheck(renamed);
@@ -74,8 +74,8 @@ public class MinaTextDocumentService implements TextDocumentService {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
                     try {
                         var parser = new Parser(diagnostics);
-                        var renamer = new Renamer(diagnostics, Environment.empty());
-                        var typechecker = new Typechecker(diagnostics, Environment.empty());
+                        var renamer = new Renamer(diagnostics, Environment.withBuiltInNames());
+                        var typechecker = new Typechecker(diagnostics, Environment.withBuiltInTypes());
                         var parsed = parser.parse(charStream);
                         var renamed = renamer.rename(parsed);
                         var checked = typechecker.typecheck(renamed);

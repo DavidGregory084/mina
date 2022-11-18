@@ -9,7 +9,7 @@ public record ForAllVarNode<A> (Meta<A> meta, String name) implements TypeVarNod
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(TypeNodeFolder<A, B> visitor) {
         visitor.preVisitForAllVar(this);
         var result = visitor.visitForAllVar(meta(), name());
         visitor.postVisitForAllVar(result);

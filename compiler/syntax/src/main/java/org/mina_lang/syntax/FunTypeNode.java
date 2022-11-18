@@ -13,7 +13,7 @@ public record FunTypeNode<A> (Meta<A> meta, ImmutableList<TypeNode<A>> argTypes,
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(TypeNodeFolder<A, B> visitor) {
         visitor.preVisitFunType(this);
 
         var result = visitor.visitFunType(

@@ -5,13 +5,18 @@ import com.opencastsoftware.prettier4j.Doc;
 public class TypePrinter implements TypeFolder<Doc> {
 
     @Override
-    public Doc visitForAllType(ForAllType forall) {
-        return null;
-    }
+    public Doc visitTypeLambda(TypeLambda tyLam) {
+        var argDoc = tyLam.args().size() == 1
+                ? visitType(tyLam.args().get(0))
+                : Doc.intersperse(
+                        Doc.text(",").append(Doc.lineOrSpace()),
+                        tyLam.args().stream().map(this::visitType))
+                        .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
 
-    @Override
-    public Doc visitExistsType(ExistsType exists) {
-        return null;
+        return Doc.group(
+                argDoc
+                        .appendSpace(Doc.text("=>"))
+                        .append(Doc.lineOrSpace().append(visitType(tyLam.body())).indent(2)));
     }
 
     @Override
@@ -70,8 +75,13 @@ public class TypePrinter implements TypeFolder<Doc> {
     }
 
     @Override
-    public Doc visitTypeVar(TypeVar tyVar) {
-        return Doc.text(tyVar.name());
+    public Doc visitExistsVar(ExistsVar exists) {
+        return Doc.text(exists.name());
+    }
+
+    @Override
+    public Doc visitForAllVar(ForAllVar forall) {
+        return Doc.text(forall.name());
     }
 
     @Override

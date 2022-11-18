@@ -5,9 +5,11 @@ public interface TypeTransformer {
 
     PolyType visitPolyType(PolyType poly);
 
-    ForAllType visitForAllType(ForAllType forall);
+    TypeLambda visitTypeLambda(TypeLambda tyLam);
 
-    ExistsType visitExistsType(ExistsType exists);
+    ForAllVar visitForAllVar(ForAllVar forall);
+
+    ExistsVar visitExistsVar(ExistsVar exists);
 
     PropositionType visitPropositionType(PropositionType propType);
 
