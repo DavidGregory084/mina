@@ -1,5 +1,7 @@
 package org.mina_lang.common.types;
 
+import java.util.Map;
+
 public sealed interface MonoType extends Type permits TypeConstructor, BuiltInType, TypeApply, TypeVar, UnsolvedType {
     @Override
     default Polarity polarity() {
@@ -8,4 +10,16 @@ public sealed interface MonoType extends Type permits TypeConstructor, BuiltInTy
 
     @Override
     MonoType accept(TypeTransformer visitor);
+
+    @Override
+    default public MonoType substitute(Map<UnsolvedType, MonoType> substitution) {
+        return this.accept(new TypeSubstitutionTransformer(substitution));
+    }
+
+    @Override
+    default public MonoType substitute(
+            Map<UnsolvedType, MonoType> typeSubstitution,
+            Map<UnsolvedKind, Kind> kindSubstitution) {
+        return this.accept(new TypeSubstitutionTransformer(typeSubstitution, kindSubstitution));
+    }
 }

@@ -14,7 +14,7 @@ import org.mina_lang.common.scopes.Scope;
 import org.mina_lang.common.scopes.TypeLambdaScope;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
-
+import org.w3c.dom.Attr;
 import com.opencastsoftware.prettier4j.Doc;
 
 public class Typechecker {
@@ -94,6 +94,69 @@ public class Typechecker {
         return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
     }
 
+    void instantiateLeftKind(UnsolvedKind unsolved, Kind superKind) {
+        if (superKind instanceof UnsolvedKind otherUnsolved) {
+            environment.solveKind(otherUnsolved, unsolved);
+        } else if (superKind instanceof TypeKind) {
+            environment.solveKind(unsolved, TypeKind.INSTANCE);
+        } else if (superKind instanceof HigherKind higherSup) {
+            var newHkArgs = higherSup.argKinds().collect(arg -> varSupply.newUnsolvedKind());
+            // var newHk = new HigherKind(
+            //     newHkArgs,
+            //     varSupply.newUnsolvedKind());
+
+            // environment.solveKind(unsolved, newHk);
+        }
+    }
+
+    void instantiateRightKind(UnsolvedKind unsolved, Kind subKind) {
+        if (subKind instanceof UnsolvedKind otherUnsolved) {
+            environment.solveKind(otherUnsolved, unsolved);
+        } else if (subKind instanceof TypeKind) {
+            environment.solveKind(unsolved, TypeKind.INSTANCE);
+        } else if (subKind instanceof HigherKind) {
+
+        }
+    }
+
+    boolean checkSubKind(Kind solvedSubKind, Kind solvedSuperKind) {
+
+        if (solvedSubKind == TypeKind.INSTANCE && solvedSuperKind == TypeKind.INSTANCE) {
+            // Complete and Easy's <:Var rule for types
+            return true;
+        } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub &&
+                solvedSuperKind instanceof UnsolvedKind unsolvedSuper &&
+                unsolvedSub.id() == unsolvedSuper.id()) {
+            // Complete and Easy's <:Exvar rule for types
+            return true;
+        } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub
+                && !unsolvedSub.isFreeIn(solvedSuperKind)) {
+            // Complete and Easy's <:InstantiateL for types
+            instantiateLeftKind(unsolvedSub, solvedSuperKind);
+
+        } else if (solvedSuperKind instanceof UnsolvedKind unsolvedSup
+                && !unsolvedSup.isFreeIn(solvedSubKind)) {
+            // Complete and Easy's <:InstantiateR for types
+            instantiateRightKind(unsolvedSup, solvedSubKind);
+
+        } else if (solvedSubKind instanceof HigherKind higherSub &&
+                solvedSuperKind instanceof HigherKind higherSup &&
+                higherSub.argKinds().size() == higherSup.argKinds().size()) {
+            // Complete and Easy's <:-> for types
+            var argsSubKinded = higherSub.argKinds()
+                    .zip(higherSup.argKinds())
+                    .allSatisfy(pair -> {
+                        return checkSubKind(pair.getTwo(), pair.getOne());
+                    });
+
+            var resultSubKinded = checkSubKind(higherSub.resultKind(), higherSup.resultKind());
+
+            return argsSubKinded && resultSubKinded;
+        } else {
+            return false;
+        }
+    }
+
     TypeNode<Attributes> inferType(TypeNode<Name> typ) {
         if (typ instanceof TypeApplyNode<Name> tyApp) {
             var inferredType = inferType(tyApp.type());
@@ -117,6 +180,7 @@ public class Typechecker {
 
                 // TODO: Figure out whether hardcoding a proper type here can be wrong vs. user
                 // code
+                // Yes e.g. [A] => Either[String, A] ??
                 var appliedKind = new HigherKind(
                         inferredArgs.collect(argTy -> (Kind) argTy.meta().meta().sort()),
                         TypeKind.INSTANCE);
@@ -173,11 +237,11 @@ public class Typechecker {
         if (typ instanceof TypeLambdaNode<Name> tyLam) {
             withScope(new TypeLambdaScope<>(), () -> {
                 var inferredArgs = tyLam.args()
-                    .collect(tyArg -> (TypeVarNode<Attributes>) inferType(tyArg));
+                        .collect(tyArg -> (TypeVarNode<Attributes>) inferType(tyArg));
                 var inferredArgKinds = inferredArgs
-                    .collect(tyArg -> (Kind) tyArg.meta().meta().sort());
+                        .collect(tyArg -> (Kind) tyArg.meta().meta().sort());
 
-                // Type lambda should return proper type
+                // Type lambda should return a proper type
                 var checkedReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
 
                 var updatedMeta = updateMetaWith(tyLam.meta(), new HigherKind(inferredArgKinds, TypeKind.INSTANCE));
@@ -187,10 +251,10 @@ public class Typechecker {
         } else {
             var inferredType = inferType(typ);
 
-            // TODO: Add an error kind to place in Meta when we have a mismatch?
-            if (!expectedKind.equals(inferredType.meta().meta().sort())) {
+            if (!checkSubKind(inferredType.meta(), expectedKind)) {
                 mismatchedKind(inferredType.meta(), expectedKind);
             }
+            ;
 
             return inferredType;
         }

@@ -4,6 +4,8 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.ImmutableSet;
 
+import java.util.Map;
+
 sealed public interface Type extends Sort permits PolyType, MonoType {
     public Polarity polarity();
 
@@ -18,6 +20,16 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public Type accept(TypeTransformer visitor);
 
+    default public Type substitute(Map<UnsolvedType, MonoType> substitution) {
+        return this.accept(new TypeSubstitutionTransformer(substitution));
+    }
+
+    default public Type substitute(
+            Map<UnsolvedType, MonoType> typeSubstitution,
+            Map<UnsolvedKind, Kind> kindSubstitution) {
+        return this.accept(new TypeSubstitutionTransformer(typeSubstitution, kindSubstitution));
+    }
+
     public static boolean isFunction(Type type) {
         if (type instanceof TypeApply tyApp) {
             if (tyApp.type() instanceof BuiltInType builtIn) {
@@ -28,7 +40,7 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
         return false;
     }
 
-    public static Type function(ImmutableList<Type> argTypes, Type returnType) {
+    public static TypeApply function(ImmutableList<Type> argTypes, Type returnType) {
         var appliedTypes = argTypes.newWith(returnType);
         var kind = new HigherKind(appliedTypes.collect(typ -> TypeKind.INSTANCE), TypeKind.INSTANCE);
         return new TypeApply(new BuiltInType("->", kind), appliedTypes, TypeKind.INSTANCE);

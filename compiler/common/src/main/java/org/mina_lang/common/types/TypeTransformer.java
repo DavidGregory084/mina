@@ -1,21 +1,23 @@
 package org.mina_lang.common.types;
 
 public interface TypeTransformer {
-    Type visitType(Type type);
+    default Type visitType(Type type) {
+        return type.accept(this);
+    }
 
-    PolyType visitPolyType(PolyType poly);
+    default PolyType visitPolyType(PolyType poly) {
+        return poly.accept(this);
+    }
 
     TypeLambda visitTypeLambda(TypeLambda tyLam);
-
-    ForAllVar visitForAllVar(ForAllVar forall);
-
-    ExistsVar visitExistsVar(ExistsVar exists);
 
     PropositionType visitPropositionType(PropositionType propType);
 
     ImplicationType visitImplicationType(ImplicationType implType);
 
-    MonoType visitMonoType(MonoType mono);
+    default MonoType visitMonoType(MonoType mono) {
+        return mono.accept(this);
+    }
 
     TypeConstructor visitTypeConstructor(TypeConstructor tyCon);
 
@@ -23,7 +25,13 @@ public interface TypeTransformer {
 
     TypeApply visitTypeApply(TypeApply tyApp);
 
-    TypeVar visitTypeVar(TypeVar tyVar);
+    default TypeVar visitTypeVar(TypeVar tyVar) {
+        return tyVar.accept(this);
+    }
+
+    ForAllVar visitForAllVar(ForAllVar forall);
+
+    ExistsVar visitExistsVar(ExistsVar exists);
 
     MonoType visitUnsolvedType(UnsolvedType unsolved);
 }

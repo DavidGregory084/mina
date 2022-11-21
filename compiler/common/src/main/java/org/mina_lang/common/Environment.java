@@ -1,14 +1,17 @@
 package org.mina_lang.common;
 
-import java.util.Optional;
-import java.util.function.BiConsumer;
-
 import org.eclipse.collections.api.block.function.Function3;
+import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.factory.Stacks;
+import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.scopes.*;
+import org.mina_lang.common.types.*;
+
+import java.util.Optional;
+import java.util.function.BiConsumer;
 
 /**
  * Represents a name or type environment as a stack of scopes,
@@ -19,7 +22,10 @@ import org.mina_lang.common.scopes.*;
  * <a href="https://rustc-dev-guide.rust-lang.org/name-resolution.html">Guide To
  * Rustc Development</a>.
  */
-public record Environment<A> (MutableStack<Scope<A>> scopes) {
+public record Environment<A> (
+    MutableStack<Scope<A>> scopes,
+    MutableMap<UnsolvedType, MonoType> typeSubstitution,
+    MutableMap<UnsolvedKind, Kind> kindSubstitution) {
 
     public Scope<A> topScope() {
         return scopes.peek();
@@ -179,14 +185,55 @@ public record Environment<A> (MutableStack<Scope<A>> scopes) {
         assert expected.isAssignableFrom(poppedScope.getClass());
     }
 
+    public void solveType(UnsolvedType unsolved, MonoType newSolution) {
+        // Substitute unsolved types in existing solutions
+        typeSubstitution()
+                .forEach((existing, solution) -> {
+                    typeSubstitution()
+                            .put(existing, solution.substitute(Maps.mutable.of(unsolved, newSolution)));
+                });
+
+        // Remove redundant solutions
+        typeSubstitution()
+                .removeIf((existing, solution) -> unsolved.equals(solution));
+
+        // Add the new solution
+        typeSubstitution()
+                .put(unsolved, newSolution);
+    }
+
+    public void solveKind(UnsolvedKind unsolved, Kind newSolution) {
+        // Substitute unsolved kinds in existing solutions
+        kindSubstitution()
+                .forEach((existing, solution) -> {
+                    kindSubstitution()
+                            .put(existing, solution.substitute(Maps.mutable.of(unsolved, newSolution)));
+                });
+
+        // Remove redundant solutions
+        kindSubstitution()
+                .removeIf((existing, solution) -> unsolved.equals(solution));
+
+        // Add the new solution
+        kindSubstitution()
+                .put(unsolved, newSolution);
+    }
+
+    public void defaultKinds() {
+        var kindTransformer = new KindDefaultingTransformer();
+        var typeTransformer = new TypeSubstitutionTransformer(kindTransformer);
+        typeSubstitution().forEach((unsolved, solution) -> solution.accept(typeTransformer));
+        kindSubstitution().forEach((unsolved, solution) -> solution.accept(kindTransformer));
+    }
+
     public static <A> Environment<A> empty() {
-        return new Environment<>(Stacks.mutable.empty());
+        return new Environment<>(Stacks.mutable.empty(), Maps.mutable.empty(), Maps.mutable.empty());
     }
 
     public static <A> Environment<A> of(Scope<A> scope) {
         var scopeStack = Stacks.mutable.<Scope<A>>empty();
         scopeStack.push(scope);
-        return new Environment<>(scopeStack);
+        return new Environment<>(scopeStack, Maps.mutable.empty(), Maps.mutable.empty());
     }
 
     public static Environment<Name> withBuiltInNames() {

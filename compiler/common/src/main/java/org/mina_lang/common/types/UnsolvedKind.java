@@ -17,4 +17,29 @@ public record UnsolvedKind(int id) implements Kind {
     public Kind accept(KindTransformer visitor) {
         return visitor.visitUnsolvedKind(this);
     }
+
+    public boolean isFreeIn(Kind kind) {
+        return this.accept(new KindFolder<Boolean>() {
+            @Override
+            public Boolean visitTypeKind(TypeKind typ) {
+                return false;
+            }
+
+            @Override
+            public Boolean visitUnsolvedKind(UnsolvedKind unsolved) {
+                return id() == unsolved.id();
+            }
+
+            @Override
+            public Boolean visitHigherKind(HigherKind higher) {
+                var occursInArgs = higher
+                        .argKinds()
+                        .anySatisfy(arg -> arg.accept(this));
+                var occursInResult = higher
+                        .resultKind()
+                        .accept(this);
+                return occursInArgs || occursInResult;
+            }
+        });
+    }
 }
