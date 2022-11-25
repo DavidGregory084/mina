@@ -9,6 +9,9 @@ sealed public interface TypeNode<A>
         return accept((TypeNodeFolder<A, B>) visitor);
     }
 
-    @Override
-    <B> TypeNode<B> accept(MetaNodeTransformer<A, B> transformer);
+    <B> TypeNode<B> accept(TypeNodeTransformer<A, B> transformer);
+
+    default <B> TypeNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        return accept((TypeNodeTransformer<A, B>) visitor);
+    }
 }

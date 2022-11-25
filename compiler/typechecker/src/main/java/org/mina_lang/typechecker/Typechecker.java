@@ -10,24 +10,29 @@ import org.mina_lang.common.Environment;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.names.Name;
+import org.mina_lang.common.scopes.NamespaceScope;
 import org.mina_lang.common.scopes.Scope;
-import org.mina_lang.common.scopes.TypeLambdaScope;
-import org.mina_lang.common.types.*;
+import org.mina_lang.common.types.Sort;
+import org.mina_lang.common.types.Type;
+import org.mina_lang.common.types.TypePrinter;
+import org.mina_lang.common.types.UnsolvedVariableSupply;
 import org.mina_lang.syntax.*;
-import org.w3c.dom.Attr;
+
 import com.opencastsoftware.prettier4j.Doc;
 
 public class Typechecker {
 
     private DiagnosticCollector diagnostics;
     private Environment<Attributes> environment;
+    private UnsolvedVariableSupply varSupply;
+    private Kindchecker kindchecker;
     private TypePrinter typePrinter = new TypePrinter();
-    private KindPrinter kindPrinter = new KindPrinter();
-    private UnsolvedVariableSupply varSupply = new UnsolvedVariableSupply();
 
-    public Typechecker(DiagnosticCollector diagnostics, Environment<Attributes> globalEnv) {
+    public Typechecker(DiagnosticCollector diagnostics, Environment<Attributes> environment) {
         this.diagnostics = diagnostics;
-        this.environment = globalEnv;
+        this.environment = environment;
+        this.varSupply = new UnsolvedVariableSupply();
+        this.kindchecker = new Kindchecker(diagnostics, environment, varSupply);
     }
 
     public Environment<Attributes> getEnvironment() {
@@ -41,17 +46,9 @@ public class Typechecker {
         return result;
     }
 
-    void mismatchedKind(Meta<Attributes> meta, Kind expectedType) {
-        var expected = expectedType.accept(kindPrinter);
-        var actual = ((Kind) meta.meta().sort()).accept(kindPrinter);
-
-        var message = Doc.group(
-                Doc.text("Mismatched kind!")
-                        .appendLineOrSpace(Doc.text("Expected: ").append(expected))
-                        .appendLineOr(Doc.text(", "), Doc.text("Actual: ").append(actual)))
-                .render(80);
-
-        diagnostics.reportError(meta.range(), message);
+    Meta<Attributes> updateMetaWith(Meta<Name> meta, Sort sort) {
+        var attributes = meta.meta().withSort(sort);
+        return meta.withMeta(attributes);
     }
 
     void mismatchedType(Meta<Attributes> meta, Type expectedType) {
@@ -67,11 +64,6 @@ public class Typechecker {
         diagnostics.reportError(meta.range(), message);
     }
 
-    Meta<Attributes> updateMetaWith(Meta<Name> meta, Sort sort) {
-        var attributes = meta.meta().withSort(sort);
-        return meta.withMeta(attributes);
-    }
-
     public NamespaceNode<Attributes> typecheck(NamespaceNode<Name> namespace) {
         return inferNamespace(namespace);
     }
@@ -84,182 +76,12 @@ public class Typechecker {
         return inferExpr(node);
     }
 
-    public TypeNode<Attributes> typecheck(TypeNode<Name> node) {
-        return inferType(node);
-    }
-
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
-        var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
-        var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
-        return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
-    }
-
-    void instantiateLeftKind(UnsolvedKind unsolved, Kind superKind) {
-        if (superKind instanceof UnsolvedKind otherUnsolved) {
-            environment.solveKind(otherUnsolved, unsolved);
-        } else if (superKind instanceof TypeKind) {
-            environment.solveKind(unsolved, TypeKind.INSTANCE);
-        } else if (superKind instanceof HigherKind higherSup) {
-            var newHkArgs = higherSup.argKinds().collect(arg -> varSupply.newUnsolvedKind());
-            // var newHk = new HigherKind(
-            //     newHkArgs,
-            //     varSupply.newUnsolvedKind());
-
-            // environment.solveKind(unsolved, newHk);
-        }
-    }
-
-    void instantiateRightKind(UnsolvedKind unsolved, Kind subKind) {
-        if (subKind instanceof UnsolvedKind otherUnsolved) {
-            environment.solveKind(otherUnsolved, unsolved);
-        } else if (subKind instanceof TypeKind) {
-            environment.solveKind(unsolved, TypeKind.INSTANCE);
-        } else if (subKind instanceof HigherKind) {
-
-        }
-    }
-
-    boolean checkSubKind(Kind solvedSubKind, Kind solvedSuperKind) {
-
-        if (solvedSubKind == TypeKind.INSTANCE && solvedSuperKind == TypeKind.INSTANCE) {
-            // Complete and Easy's <:Var rule for types
-            return true;
-        } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub &&
-                solvedSuperKind instanceof UnsolvedKind unsolvedSuper &&
-                unsolvedSub.id() == unsolvedSuper.id()) {
-            // Complete and Easy's <:Exvar rule for types
-            return true;
-        } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub
-                && !unsolvedSub.isFreeIn(solvedSuperKind)) {
-            // Complete and Easy's <:InstantiateL for types
-            instantiateLeftKind(unsolvedSub, solvedSuperKind);
-
-        } else if (solvedSuperKind instanceof UnsolvedKind unsolvedSup
-                && !unsolvedSup.isFreeIn(solvedSubKind)) {
-            // Complete and Easy's <:InstantiateR for types
-            instantiateRightKind(unsolvedSup, solvedSubKind);
-
-        } else if (solvedSubKind instanceof HigherKind higherSub &&
-                solvedSuperKind instanceof HigherKind higherSup &&
-                higherSub.argKinds().size() == higherSup.argKinds().size()) {
-            // Complete and Easy's <:-> for types
-            var argsSubKinded = higherSub.argKinds()
-                    .zip(higherSup.argKinds())
-                    .allSatisfy(pair -> {
-                        return checkSubKind(pair.getTwo(), pair.getOne());
-                    });
-
-            var resultSubKinded = checkSubKind(higherSub.resultKind(), higherSup.resultKind());
-
-            return argsSubKinded && resultSubKinded;
-        } else {
-            return false;
-        }
-    }
-
-    TypeNode<Attributes> inferType(TypeNode<Name> typ) {
-        if (typ instanceof TypeApplyNode<Name> tyApp) {
-            var inferredType = inferType(tyApp.type());
-            var inferredTypeKind = (Kind) inferredType.meta().meta().sort();
-
-            // Types should be fully applied
-            if (inferredTypeKind instanceof HigherKind hk &&
-                    hk.argKinds().size() == tyApp.args().size()) {
-
-                var checkedArgs = tyApp.args()
-                        .zip(hk.argKinds())
-                        .collect(pair -> checkType(pair.getOne(), pair.getTwo()));
-
-                var updatedMeta = updateMetaWith(tyApp.meta(), TypeKind.INSTANCE);
-
-                return typeApplyNode(updatedMeta, inferredType, checkedArgs);
-
-            } else {
-                var inferredArgs = tyApp.args()
-                        .collect(this::inferType);
-
-                // TODO: Figure out whether hardcoding a proper type here can be wrong vs. user
-                // code
-                // Yes e.g. [A] => Either[String, A] ??
-                var appliedKind = new HigherKind(
-                        inferredArgs.collect(argTy -> (Kind) argTy.meta().meta().sort()),
-                        TypeKind.INSTANCE);
-
-                var updatedMeta = updateMetaWith(tyApp.meta(), appliedKind);
-
-                // FIXME: This causes doubling of diagnostics when inferType is called within
-                // checkType, which happens a lot
-                mismatchedKind(updatedMeta, inferredTypeKind);
-
-                return typeApplyNode(updatedMeta, inferredType, inferredArgs);
-            }
-
-        } else if (typ instanceof FunTypeNode<Name> funTy) {
-            var inferredArgs = funTy.argTypes()
-                    .collect(argTy -> checkType(argTy, TypeKind.INSTANCE));
-
-            var inferredReturn = checkType(funTy.returnType(), TypeKind.INSTANCE);
-
-            // Function types are essentially poly-kinded so any number of args
-            // produces a proper type
-            var updatedMeta = updateMetaWith(funTy.meta(), TypeKind.INSTANCE);
-
-            return funTypeNode(updatedMeta, inferredArgs, inferredReturn);
-
-        } else if (typ instanceof ForAllVarNode<Name> forall) {
-            var unsolvedKind = varSupply.newUnsolvedKind();
-            var updatedMeta = updateMetaWith(forall.meta(), unsolvedKind);
-
-            environment.populateType(forall.name(), updatedMeta);
-
-            return forAllVarNode(updatedMeta, forall.name());
-
-        } else if (typ instanceof ExistsVarNode<Name> exists) {
-            var unsolvedKind = varSupply.newUnsolvedKind();
-            var updatedMeta = updateMetaWith(exists.meta(), unsolvedKind);
-
-            environment.populateType(exists.name(), updatedMeta);
-
-            return existsVarNode(updatedMeta, exists.name());
-
-        } else if (typ instanceof TypeReferenceNode<Name> tyRef) {
-            // Lookup from the environment
-            var envType = environment.lookupType(tyRef.id().canonicalName()).get();
-            var updatedMeta = updateMetaWith(tyRef.meta(), envType.meta().sort());
-
-            return typeRefNode(updatedMeta, tyRef.id());
-        }
-
-        return null;
-    }
-
-    TypeNode<Attributes> checkType(TypeNode<Name> typ, Kind expectedKind) {
-        if (typ instanceof TypeLambdaNode<Name> tyLam) {
-            withScope(new TypeLambdaScope<>(), () -> {
-                var inferredArgs = tyLam.args()
-                        .collect(tyArg -> (TypeVarNode<Attributes>) inferType(tyArg));
-                var inferredArgKinds = inferredArgs
-                        .collect(tyArg -> (Kind) tyArg.meta().meta().sort());
-
-                // Type lambda should return a proper type
-                var checkedReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
-
-                var updatedMeta = updateMetaWith(tyLam.meta(), new HigherKind(inferredArgKinds, TypeKind.INSTANCE));
-
-                return typeLambdaNode(updatedMeta, inferredArgs, checkedReturn);
-            });
-        } else {
-            var inferredType = inferType(typ);
-
-            if (!checkSubKind(inferredType.meta(), expectedKind)) {
-                mismatchedKind(inferredType.meta(), expectedKind);
-            }
-            ;
-
-            return inferredType;
-        }
-
-        return null;
+        return withScope(new NamespaceScope<>(namespace.getName()), () -> {
+            var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
+            var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
+            return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
+        });
     }
 
     DeclarationNode<Attributes> inferDeclaration(DeclarationNode<Name> declaration) {
@@ -269,17 +91,15 @@ public class Typechecker {
 
         } else if (declaration instanceof LetNode<Name> let) {
             return let.type().map(typ -> {
-                // Check kind for the type ascription - it should be a proper type
-                var kindedType = checkType(typ, TypeKind.INSTANCE);
-                // TODO: code to convert from TypeNode to Type in a given Environment
-                // var expectedType = kindedType.meta().meta().sort();
-                // // Check expr against expected type
-                // var checkedExpr = checkExpr(let.expr(), (Type) expectedType);
-                return letNode((Meta<Attributes>) null, let.name(), kindedType, null);
+                var kindedType = kindchecker.kindcheck(typ);
+                var expectedType = kindedType.accept(new TypeAnnotationFolder(environment));
+                var checkedExpr = checkExpr(let.expr(), expectedType);
+                var updatedMeta = updateMetaWith(let.meta(), (Type) checkedExpr.meta().meta().sort());
+                return letNode(updatedMeta, let.name(), kindedType, checkedExpr);
             }).orElseGet(() -> {
-                // Infer type of expr
                 var inferredExpr = inferExpr(let.expr());
-                return letNode((Meta<Attributes>) null, null, Optional.empty(), inferredExpr);
+                var updatedMeta = updateMetaWith(let.meta(), (Type) inferredExpr.meta().meta().sort());
+                return letNode(updatedMeta, let.name(), Optional.empty(), inferredExpr);
             });
         }
 

@@ -84,6 +84,7 @@ export async function activate(context: ExtensionContext) {
       command: javaExecutable,
       args: [
         `-DLOG_FOLDER=${context.logUri.fsPath}`,
+        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
         ...gcOptions,
         "-cp",
         getServerClasspath.stdout,

@@ -17,7 +17,7 @@ public record ExistsVarNode<A> (Meta<A> meta, String name) implements TypeVarNod
     }
 
     @Override
-    public <B> ExistsVarNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> ExistsVarNode<B> accept(TypeNodeTransformer<A, B> visitor) {
         visitor.preVisitExistsVar(this);
         var result = visitor.visitExistsVar(meta(), name());
         visitor.postVisitExistsVar(result);

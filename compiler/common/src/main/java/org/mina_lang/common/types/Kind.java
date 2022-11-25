@@ -13,6 +13,10 @@ public sealed interface Kind extends Sort permits TypeKind, HigherKind, Unsolved
     Kind accept(KindTransformer visitor);
 
     default Kind substitute(Map<UnsolvedKind, Kind> substitution) {
-        return this.accept(new KindSubstitutionTransformer(substitution));
+        return accept(new KindSubstitutionTransformer(substitution));
+    }
+
+    default Kind defaultKind() {
+        return accept(new KindDefaultingTransformer());
     }
 }

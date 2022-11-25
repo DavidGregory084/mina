@@ -195,11 +195,11 @@ public record Environment<A> (
 
         // Remove redundant solutions
         typeSubstitution()
-                .removeIf((existing, solution) -> unsolved.equals(solution));
+                .removeIf((existing, solution) -> existing.equals(solution));
 
         // Add the new solution
         typeSubstitution()
-                .put(unsolved, newSolution);
+                .put(unsolved, newSolution.substitute(typeSubstitution()));
     }
 
     public void solveKind(UnsolvedKind unsolved, Kind newSolution) {
@@ -212,18 +212,22 @@ public record Environment<A> (
 
         // Remove redundant solutions
         kindSubstitution()
-                .removeIf((existing, solution) -> unsolved.equals(solution));
+                .removeIf((existing, solution) -> existing.equals(solution));
 
         // Add the new solution
         kindSubstitution()
-                .put(unsolved, newSolution);
+                .put(unsolved, newSolution.substitute(kindSubstitution()));
     }
 
     public void defaultKinds() {
         var kindTransformer = new KindDefaultingTransformer();
         var typeTransformer = new TypeSubstitutionTransformer(kindTransformer);
-        typeSubstitution().forEach((unsolved, solution) -> solution.accept(typeTransformer));
-        kindSubstitution().forEach((unsolved, solution) -> solution.accept(kindTransformer));
+        typeSubstitution().forEach((unsolved, solution) -> {
+            typeSubstitution().put(unsolved, solution.accept(typeTransformer));
+        });
+        kindSubstitution().forEach((unsolved, solution) -> {
+            kindSubstitution().put(unsolved, solution.accept(kindTransformer));
+        });
     }
 
     public static <A> Environment<A> empty() {

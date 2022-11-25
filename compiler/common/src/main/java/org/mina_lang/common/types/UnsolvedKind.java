@@ -19,7 +19,7 @@ public record UnsolvedKind(int id) implements Kind {
     }
 
     public boolean isFreeIn(Kind kind) {
-        return this.accept(new KindFolder<Boolean>() {
+        return kind.accept(new KindFolder<Boolean>() {
             @Override
             public Boolean visitTypeKind(TypeKind typ) {
                 return false;

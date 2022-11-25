@@ -14,6 +14,6 @@ public class KindDefaultingTransformer extends KindSubstitutionTransformer {
 
     @Override
     public Kind visitUnsolvedKind(UnsolvedKind unsolved) {
-        return this.substitution.getOrDefault(unsolved, TypeKind.INSTANCE);
+        return substitution.getOrDefault(unsolved, TypeKind.INSTANCE);
     }
 }

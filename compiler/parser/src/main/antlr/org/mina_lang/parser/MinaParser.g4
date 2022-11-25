@@ -53,7 +53,7 @@ applicableType:
     | applicableType typeApplication;
 
 typeApplication:
-    LSQUARE typeReference (COMMA typeReference)* RSQUARE;
+    LSQUARE type (COMMA type)* RSQUARE;
 
 parenType: LSQUARE type RSQUARE;
 

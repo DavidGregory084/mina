@@ -53,5 +53,4 @@ public interface TypeNodeFolder<A, B> {
     B visitExistsVar(Meta<A> meta, String name);
 
     default void postVisitExistsVar(B existsVar) {}
-
 }

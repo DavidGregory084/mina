@@ -28,7 +28,7 @@ public record TypeApplyNode<A>(Meta<A> meta, TypeNode<A> type, ImmutableList<Typ
     }
 
     @Override
-    public <B> TypeApplyNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> TypeApplyNode<B> accept(TypeNodeTransformer<A, B> visitor) {
         visitor.preVisitTypeApply(this);
 
         var result = visitor.visitTypeApply(

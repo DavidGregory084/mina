@@ -19,7 +19,7 @@ public record TypeReferenceNode<A> (Meta<A> meta, QualifiedIdNode id) implements
     }
 
     @Override
-    public <B> TypeReferenceNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> TypeReferenceNode<B> accept(TypeNodeTransformer<A, B> visitor) {
         visitor.preVisitTypeReference(this);
         var result = visitor.visitTypeReference(meta(), id());
         visitor.preVisitTypeReference(this);

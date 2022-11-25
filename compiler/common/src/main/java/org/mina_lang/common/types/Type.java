@@ -1,10 +1,10 @@
 package org.mina_lang.common.types;
 
+import java.util.Map;
+
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.ImmutableSet;
-
-import java.util.Map;
 
 sealed public interface Type extends Sort permits PolyType, MonoType {
     public Polarity polarity();
@@ -21,13 +21,17 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
     public Type accept(TypeTransformer visitor);
 
     default public Type substitute(Map<UnsolvedType, MonoType> substitution) {
-        return this.accept(new TypeSubstitutionTransformer(substitution));
+        return accept(new TypeSubstitutionTransformer(substitution));
     }
 
     default public Type substitute(
             Map<UnsolvedType, MonoType> typeSubstitution,
             Map<UnsolvedKind, Kind> kindSubstitution) {
-        return this.accept(new TypeSubstitutionTransformer(typeSubstitution, kindSubstitution));
+        return accept(new TypeSubstitutionTransformer(typeSubstitution, kindSubstitution));
+    }
+
+    default public Type defaultKinds() {
+        return accept(new TypeSubstitutionTransformer(new KindDefaultingTransformer()));
     }
 
     public static boolean isFunction(Type type) {

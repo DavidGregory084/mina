@@ -6,7 +6,12 @@ public sealed interface TypeVarNode<A> extends TypeNode<A>permits ExistsVarNode,
     public String name();
 
     @Override
-    <B> TypeVarNode<B> accept(MetaNodeTransformer<A, B> transformer);
+    <B> TypeVarNode<B> accept(TypeNodeTransformer<A, B> transformer);
+
+    @Override
+    default <B> TypeVarNode<B> accept(MetaNodeTransformer<A, B> transformer) {
+        return accept((TypeNodeTransformer<A, B>) transformer);
+    }
 
     public default TypeVarName getName() {
         return new TypeVarName(name());
