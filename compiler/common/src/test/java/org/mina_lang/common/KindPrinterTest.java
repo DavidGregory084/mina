@@ -39,20 +39,20 @@ public class KindPrinterTest {
     @Test
     void testHigherKindPrinting() {
         var unaryKind = new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE);
-        assertThat(unaryKind.accept(printer).render(80), is(equalTo("* -> *")));
-        assertThat(unaryKind.accept(printer).render(4), is(equalTo(String.format("* ->%n  *"))));
+        assertThat(unaryKind.accept(printer).render(80), is(equalTo("* => *")));
+        assertThat(unaryKind.accept(printer).render(4), is(equalTo(String.format("* =>%n  *"))));
 
         var binaryKind = new HigherKind(Lists.immutable.of(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
-        assertThat(binaryKind.accept(printer).render(80), is(equalTo("(*, *) -> *")));
-        assertThat(binaryKind.accept(printer).render(10), is(equalTo(String.format("(*, *) ->%n  *"))));
-        assertThat(binaryKind.accept(printer).render(4), is(equalTo(String.format("(%n  *,%n  *%n) ->%n  *"))));
+        assertThat(binaryKind.accept(printer).render(80), is(equalTo("[*, *] => *")));
+        assertThat(binaryKind.accept(printer).render(10), is(equalTo(String.format("[*, *] =>%n  *"))));
+        assertThat(binaryKind.accept(printer).render(4), is(equalTo(String.format("[%n  *,%n  *%n] =>%n  *"))));
 
         var higherKind = new HigherKind(
                 Lists.immutable.of(new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE)),
                 TypeKind.INSTANCE);
 
-        assertThat(higherKind.accept(printer).render(80), is(equalTo("(* -> *) -> *")));
-        assertThat(higherKind.accept(printer).render(10), is(equalTo(String.format("(* -> *) ->%n  *"))));
-        assertThat(higherKind.accept(printer).render(4), is(equalTo(String.format("(%n  * ->%n    *%n) ->%n  *"))));
+        assertThat(higherKind.accept(printer).render(80), is(equalTo("[* => *] => *")));
+        assertThat(higherKind.accept(printer).render(10), is(equalTo(String.format("[* => *] =>%n  *"))));
+        assertThat(higherKind.accept(printer).render(4), is(equalTo(String.format("[%n  * =>%n    *%n] =>%n  *"))));
     }
 }

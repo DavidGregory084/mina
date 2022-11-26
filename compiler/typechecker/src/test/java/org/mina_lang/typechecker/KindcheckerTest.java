@@ -137,7 +137,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 applyRange,
-                "Mismatched type application! Expected: * -> *, Actual: (A1, B1) -> C1");
+                "Mismatched type application! Expected: * => *, Actual: [A1, B1] => C1");
     }
 
     @Test
@@ -226,7 +226,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 applyRange,
-                "Mismatched type application! Expected: (*, *) -> *, Actual: A1 -> B1");
+                "Mismatched type application! Expected: [*, *] => *, Actual: A1 => B1");
     }
 
     @Test
@@ -253,7 +253,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 applyRange,
-                "Mismatched type application! Expected: *, Actual: A1 -> B1");
+                "Mismatched type application! Expected: *, Actual: A1 => B1");
     }
 
     @Test
@@ -325,7 +325,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 funArgRange,
-                "Mismatched kind! Expected: *, Actual: (*, *) -> *");
+                "Mismatched kind! Expected: *, Actual: [*, *] => *");
     }
 
     @Test
@@ -368,7 +368,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 funReturnRange,
-                "Mismatched kind! Expected: *, Actual: * -> *");
+                "Mismatched kind! Expected: *, Actual: * => *");
     }
 
     @Test
@@ -376,12 +376,12 @@ public class KindcheckerTest {
         var typeVarFName = new TypeVarName("F");
         var typeVarAName = new TypeVarName("A");
 
-        // * -> *
+        // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         // *
         var typeVarAKind = TypeKind.INSTANCE;
 
-        // [* -> *, *] -> *
+        // [* => *, *] => *
         var typeLambdaKind = new HigherKind(typeVarFKind, typeVarAKind, TypeKind.INSTANCE);
 
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
@@ -422,14 +422,14 @@ public class KindcheckerTest {
         var typeVarGName = new TypeVarName("G");
         var typeVarAName = new TypeVarName("A");
 
-        // * -> *
+        // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        // * -> *
+        // * => *
         var typeVarGKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         // *
         var typeVarAKind = TypeKind.INSTANCE;
 
-        // (* -> *, * -> *, *) -> *
+        // [* => *, * => *, *] => *
         var typeLambdaKind = new HigherKind(typeVarFKind, typeVarGKind, typeVarAKind, TypeKind.INSTANCE);
 
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
@@ -475,22 +475,22 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindcheckTypeLambdaWithComplexFunction() {
+    void kindcheckTypeLambdaWithComplexFunctionType() {
         var typeVarFName = new TypeVarName("F");
         var typeVarGName = new TypeVarName("G");
         var typeVarAName = new TypeVarName("A");
         var typeVarBName = new TypeVarName("B");
 
-        // * -> *
+        // * => *
         var typeVarGKind = new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE);
-        // (* -> *, *) -> *
+        // [* => *, *] => *
         var typeVarFKind = new HigherKind(Lists.immutable.of(typeVarGKind, TypeKind.INSTANCE), TypeKind.INSTANCE);
         // *
         var typeVarAKind = TypeKind.INSTANCE;
         // *
         var typeVarBKind = TypeKind.INSTANCE;
 
-        // (* -> *, (* -> *, *) -> *, *, *) -> *
+        // [* => *, [* => *, *] => *, *, *] => *
         var typeLambdaKind = new HigherKind(
                 Lists.immutable.of(typeVarFKind, typeVarGKind, typeVarAKind, typeVarBKind),
                 TypeKind.INSTANCE);
@@ -618,7 +618,7 @@ public class KindcheckerTest {
         var functorAttrs = new Attributes(functorDataName, functorKind);
         var functorMeta = new Meta<Attributes>(Range.EMPTY, functorAttrs);
 
-        // * -> *
+        // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         var typeVarFName = new TypeVarName("F");
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
