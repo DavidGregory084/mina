@@ -14,7 +14,7 @@ lsp4j = "0.19.0"
 picocli = "4.7.0"
 protobuf = "3.21.10"
 protobufGradle = "0.9.1"
-slf4j = "2.0.4"
+slf4j = "2.0.5"
 
 [libraries]
 antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
