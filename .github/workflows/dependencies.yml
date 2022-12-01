@@ -31,5 +31,3 @@ jobs:
             :compiler:syntax
             :mina-gradle-plugin
             :lang-server
-          gradle-build-configuration: |-
-            runtimeClasspath
