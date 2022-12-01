@@ -1,10 +1,8 @@
 package org.mina_lang.common.types;
 
-import java.util.Map;
-
-import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.map.ImmutableMap;
 
 sealed public interface Type extends Sort permits PolyType, MonoType {
     public Polarity polarity();
@@ -20,13 +18,9 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public Type accept(TypeTransformer visitor);
 
-    default public Type substitute(Map<UnsolvedType, MonoType> substitution) {
-        return accept(new TypeSubstitutionTransformer(substitution));
-    }
-
     default public Type substitute(
-            Map<UnsolvedType, MonoType> typeSubstitution,
-            Map<UnsolvedKind, Kind> kindSubstitution) {
+            UnionFind<MonoType> typeSubstitution,
+            UnionFind<Kind> kindSubstitution) {
         return accept(new TypeSubstitutionTransformer(typeSubstitution, kindSubstitution));
     }
 
@@ -66,9 +60,12 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public static BuiltInType NAMESPACE = new BuiltInType("Namespace", TypeKind.INSTANCE);
 
-    public static ImmutableSet<BuiltInType> builtIns = Sets.immutable.of(
-            Type.BOOLEAN,
-            Type.CHAR, Type.STRING,
-            Type.INT, Type.LONG,
-            Type.FLOAT, Type.DOUBLE);
+    public static ImmutableMap<String, BuiltInType> builtIns = Maps.immutable.<String, BuiltInType>empty()
+            .newWithKeyValue("Boolean", Type.BOOLEAN)
+            .newWithKeyValue("Char", Type.CHAR)
+            .newWithKeyValue("String", Type.STRING)
+            .newWithKeyValue("Int", Type.INT)
+            .newWithKeyValue("Long", Type.LONG)
+            .newWithKeyValue("Float", Type.FLOAT)
+            .newWithKeyValue("Double", Type.DOUBLE);
 }

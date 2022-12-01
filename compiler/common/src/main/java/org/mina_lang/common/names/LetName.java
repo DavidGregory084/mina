@@ -1,6 +1,6 @@
 package org.mina_lang.common.names;
 
-public record LetName(QualifiedName name) implements Named {
+public record LetName(QualifiedName name) implements DeclarationName {
 
     @Override
     public String localName() {

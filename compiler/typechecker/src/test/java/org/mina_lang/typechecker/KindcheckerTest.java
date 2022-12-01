@@ -6,13 +6,11 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.Attributes;
-import org.mina_lang.common.Environment;
-import org.mina_lang.common.Meta;
-import org.mina_lang.common.Range;
+import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.scopes.BuiltInScope;
@@ -20,13 +18,26 @@ import org.mina_lang.common.scopes.ImportedScope;
 import org.mina_lang.common.types.HigherKind;
 import org.mina_lang.common.types.TypeKind;
 import org.mina_lang.common.types.UnsolvedVariableSupply;
+import org.mina_lang.syntax.DataNode;
 import org.mina_lang.syntax.TypeNode;
 
 import net.jqwik.api.*;
 
 public class KindcheckerTest {
     void testSuccessfulKindcheck(
-            Environment<Attributes> environment,
+            TypeEnvironment environment,
+            DataNode<Name> originalNode,
+            DataNode<Attributes> expectedNode) {
+        var diagnostics = new ErrorCollector();
+        var varSupply = new UnsolvedVariableSupply();
+        var kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+        var kindcheckedNode = kindchecker.kindcheck(originalNode);
+        assertThat(diagnostics.getDiagnostics(), is(empty()));
+        assertThat(kindcheckedNode, is(equalTo(expectedNode)));
+    }
+
+    void testSuccessfulKindcheck(
+            TypeEnvironment environment,
             TypeNode<Name> originalNode,
             TypeNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
@@ -38,7 +49,19 @@ public class KindcheckerTest {
     }
 
     ErrorCollector testFailedKindcheck(
-            Environment<Attributes> environment,
+            TypeEnvironment environment,
+            DataNode<Name> originalNode) {
+        var diagnostics = new ErrorCollector();
+        var varSupply = new UnsolvedVariableSupply();
+        var kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+        kindchecker.kindcheck(originalNode);
+        var errors = diagnostics.getErrors();
+        assertThat("There should be kind errors", errors, is(not(empty())));
+        return diagnostics;
+    }
+
+    ErrorCollector testFailedKindcheck(
+            TypeEnvironment environment,
             TypeNode<Name> originalNode) {
         var diagnostics = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
@@ -73,10 +96,10 @@ public class KindcheckerTest {
 
         var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(listDataName.localName(), listMeta);
-        environment.populateType(listDataName.canonicalName(), listMeta);
+        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
+        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -118,10 +141,10 @@ public class KindcheckerTest {
 
         var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(listDataName.localName(), listMeta);
-        environment.populateType(listDataName.canonicalName(), listMeta);
+        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
+        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(applyRange, Nameless.INSTANCE),
@@ -161,10 +184,10 @@ public class KindcheckerTest {
 
         var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(eitherDataName.localName(), eitherMeta);
-        environment.populateType(eitherDataName.canonicalName(), eitherMeta);
+        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
+        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -207,10 +230,10 @@ public class KindcheckerTest {
 
         var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(eitherDataName.localName(), eitherMeta);
-        environment.populateType(eitherDataName.canonicalName(), eitherMeta);
+        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
+        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(applyRange, Nameless.INSTANCE),
@@ -248,7 +271,7 @@ public class KindcheckerTest {
                 typeRefNode(intMetaWithoutType, "Int"),
                 Lists.immutable.of(typeRefNode(stringMetaWithoutType, "String")));
 
-        var collector = testFailedKindcheck(Environment.withBuiltInTypes(), originalNode);
+        var collector = testFailedKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -282,7 +305,7 @@ public class KindcheckerTest {
                         typeRefNode(stringMeta, "String")),
                 typeRefNode(stringMeta, "String"));
 
-        testSuccessfulKindcheck(Environment.withBuiltInTypes(), originalNode, expectedNode);
+        testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -308,10 +331,10 @@ public class KindcheckerTest {
 
         var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(eitherDataName.localName(), eitherMeta);
-        environment.populateType(eitherDataName.canonicalName(), eitherMeta);
+        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
+        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
 
         var originalNode = funTypeNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -351,10 +374,10 @@ public class KindcheckerTest {
 
         var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(listDataName.localName(), listMeta);
-        environment.populateType(listDataName.canonicalName(), listMeta);
+        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
+        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
 
         var originalNode = funTypeNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -395,8 +418,8 @@ public class KindcheckerTest {
         var originalNode = typeLambdaNode(
                 Meta.of(Nameless.INSTANCE),
                 Lists.immutable.of(
-                    forAllVarNode(Meta.of(typeVarFName), "F"),
-                    forAllVarNode(Meta.of(typeVarAName), "A")),
+                        forAllVarNode(Meta.of(typeVarFName), "F"),
+                        forAllVarNode(Meta.of(typeVarAName), "A")),
                 typeApplyNode(
                         Meta.of(Nameless.INSTANCE),
                         typeRefNode(Meta.of(typeVarFName), "F"),
@@ -406,14 +429,14 @@ public class KindcheckerTest {
         var expectedNode = typeLambdaNode(
                 typeLambdaMeta,
                 Lists.immutable.of(
-                    forAllVarNode(typeVarFMeta, "F"),
-                    forAllVarNode(typeVarAMeta, "A")),
+                        forAllVarNode(typeVarFMeta, "F"),
+                        forAllVarNode(typeVarAMeta, "A")),
                 typeApplyNode(
                         namelessMeta,
                         typeRefNode(typeVarFMeta, "F"),
                         Lists.immutable.of(typeRefNode(typeVarAMeta, "A"))));
 
-        testSuccessfulKindcheck(Environment.withBuiltInTypes(), originalNode, expectedNode);
+        testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -471,7 +494,7 @@ public class KindcheckerTest {
                                         typeRefNode(typeVarGMeta, "G"),
                                         Lists.immutable.of(typeRefNode(typeVarAMeta, "A"))))));
 
-        testSuccessfulKindcheck(Environment.withBuiltInTypes(), originalNode, expectedNode);
+        testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -565,11 +588,11 @@ public class KindcheckerTest {
                                         typeRefNode(typeVarGMeta, "G"),
                                         Lists.immutable.of(typeRefNode(typeVarBMeta, "B"))))));
 
-        testSuccessfulKindcheck(Environment.withBuiltInTypes(), originalNode, expectedNode);
+        testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
-    void kindCheckHigherTyCon() {
+    void kindcheckHigherTyCon() {
         var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
 
         var functorName = new QualifiedName(nsName, "Functor");
@@ -586,12 +609,12 @@ public class KindcheckerTest {
 
         var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(listDataName.localName(), listMeta);
-        environment.populateType(listDataName.canonicalName(), listMeta);
-        environment.populateType(functorDataName.localName(), functorMeta);
-        environment.populateType(functorDataName.canonicalName(), functorMeta);
+        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
+        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
+        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
+        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
 
         // Functor[List]
         var originalNode = typeApplyNode(
@@ -609,7 +632,7 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindCheckEtaExpandHigherTyCon() {
+    void kindcheckEtaExpandHigherTyCon() {
         var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
 
         var functorName = new QualifiedName(nsName, "Functor");
@@ -625,10 +648,10 @@ public class KindcheckerTest {
 
         var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(functorDataName.localName(), functorMeta);
-        environment.populateType(functorDataName.canonicalName(), functorMeta);
+        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
+        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
 
         // F => Functor[F]
         var originalNode = typeLambdaNode(
@@ -652,7 +675,7 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindCheckHigherTyConTypeLambda() {
+    void kindcheckHigherTyConTypeLambda() {
         var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
 
         var functorName = new QualifiedName(nsName, "Functor");
@@ -668,10 +691,10 @@ public class KindcheckerTest {
 
         var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(functorDataName.localName(), functorMeta);
-        environment.populateType(functorDataName.canonicalName(), functorMeta);
+        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
+        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
 
         var typeLambdaKind = new HigherKind(typeVarFKind, TypeKind.INSTANCE);
 
@@ -697,7 +720,7 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindCheckBinaryTyConAdaptedToUnary() {
+    void kindcheckBinaryTyConAdaptedToUnary() {
         var typeVarAName = new TypeVarName("A");
         var typeVarAKind = TypeKind.INSTANCE;
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
@@ -721,12 +744,12 @@ public class KindcheckerTest {
 
         var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
 
-        var environment = Environment.withBuiltInTypes();
+        var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.populateType(eitherDataName.localName(), eitherMeta);
-        environment.populateType(eitherDataName.canonicalName(), eitherMeta);
-        environment.populateType(functorDataName.localName(), functorMeta);
-        environment.populateType(functorDataName.canonicalName(), functorMeta);
+        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
+        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
+        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
+        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
 
         var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
 
@@ -763,6 +786,161 @@ public class KindcheckerTest {
         testSuccessfulKindcheck(environment, originalNode, expectedNode);
     }
 
+    @Test
+    void kindcheckListDataType() {
+        var typeVarAName = (Name) new TypeVarName("A");
+        var typeVarAKind = TypeKind.INSTANCE;
+        var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
+
+        var listName = new QualifiedName(nsName, "List");
+        var listDataName = new DataName(listName);
+        var listKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
+        var listAttrs = new Attributes(listDataName, listKind);
+        var listMeta = new Meta<Attributes>(Range.EMPTY, listAttrs);
+
+        var consName = new QualifiedName(nsName, "Cons");
+        var consConstrName = new ConstructorName(listDataName, consName);
+        var consAttrs = new Attributes(consConstrName, listKind);
+        var consMeta = new Meta<Attributes>(Range.EMPTY, consAttrs);
+
+        var headName = new FieldName(consConstrName, "head");
+        var headAttrs = new Attributes(headName, TypeKind.INSTANCE);
+        var headMeta = new Meta<Attributes>(Range.EMPTY, headAttrs);
+
+        var nilName = new QualifiedName(nsName, "Nil");
+        var nilConstrName = new ConstructorName(listDataName, nilName);
+        var nilAttrs = new Attributes(nilConstrName, listKind);
+        var nilMeta = new Meta<Attributes>(Range.EMPTY, nilAttrs);
+
+        /*-
+         * data List[A] {
+         *   case Cons(head: A)
+         *   case Nil()
+         * }
+         */
+        var originalNode = dataNode(
+                Meta.of(listDataName),
+                "List",
+                Lists.immutable.of(
+                        forAllVarNode(Meta.of(typeVarAName), "A")),
+                Lists.immutable.of(
+                        constructorNode(
+                                Meta.<Name>of(consConstrName),
+                                "Cons",
+                                Lists.immutable.of(
+                                        constructorParamNode(
+                                                Meta.<Name>of(headName), "head",
+                                                typeRefNode(Meta.of(typeVarAName), "A"))),
+                                Optional.empty()),
+                        constructorNode(
+                                Meta.<Name>of(nilConstrName),
+                                "Nil",
+                                Lists.immutable.empty(),
+                                Optional.empty())));
+
+        var expectedNode = dataNode(
+                listMeta,
+                "List",
+                Lists.immutable.of(
+                        forAllVarNode(typeVarAMeta, "A")),
+                Lists.immutable.of(
+                        constructorNode(
+                                consMeta,
+                                "Cons",
+                                Lists.immutable.of(
+                                        constructorParamNode(
+                                                headMeta, "head",
+                                                typeRefNode(typeVarAMeta, "A"))),
+                                Optional.empty()),
+                        constructorNode(
+                                nilMeta,
+                                "Nil",
+                                Lists.immutable.empty(),
+                                Optional.empty())));
+
+        testSuccessfulKindcheck(TypeEnvironment.empty(), originalNode, expectedNode);
+    }
+
+    @Test
+    void kindcheckFixDataType() {
+        var typeVarFName = (Name) new TypeVarName("F");
+        var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
+        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
+
+        var fixName = new QualifiedName(nsName, "Fix");
+        var fixDataName = new DataName(fixName);
+        var fixKind = new HigherKind(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
+        var fixAttrs = new Attributes(fixDataName, fixKind);
+        var fixMeta = new Meta<Attributes>(Range.EMPTY, fixAttrs);
+
+        var unfixName = new QualifiedName(nsName, "Cons");
+        var unfixConstrName = new ConstructorName(fixDataName, unfixName);
+        var unfixAttrs = new Attributes(unfixConstrName, fixKind);
+        var unfixMeta = new Meta<Attributes>(Range.EMPTY, unfixAttrs);
+
+        var unfixFieldName = new FieldName(unfixConstrName, "head");
+        var unfixFieldAttrs = new Attributes(unfixFieldName, TypeKind.INSTANCE);
+        var unfixFieldMeta = new Meta<Attributes>(Range.EMPTY, unfixFieldAttrs);
+
+        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
+
+        /*-
+         * data Fix[F] { case Unfix(unfix: F[Fix[F]]) }
+         */
+        var originalNode = dataNode(
+                Meta.of(fixDataName),
+                "Fix",
+                Lists.immutable.of(
+                        forAllVarNode(Meta.of(typeVarFName), "F")),
+                Lists.immutable.of(
+                        constructorNode(
+                                Meta.<Name>of(unfixConstrName),
+                                "Unfix",
+                                Lists.immutable.of(
+                                        constructorParamNode(
+                                                Meta.<Name>of(unfixFieldName),
+                                                "unfix",
+                                                typeApplyNode(Meta.of(Nameless.INSTANCE),
+                                                        typeRefNode(Meta.of(typeVarFName), "F"),
+                                                        Lists.immutable.of(
+                                                                typeApplyNode(
+                                                                        Meta.of(Nameless.INSTANCE),
+                                                                        typeRefNode(Meta.of(fixDataName), "Fix"),
+                                                                        Lists.immutable.of(typeRefNode(
+                                                                                Meta.of(typeVarFName), "F"))))))),
+                                Optional.empty())));
+
+        var expectedNode = dataNode(
+                fixMeta,
+                "Fix",
+                Lists.immutable.of(
+                        forAllVarNode(typeVarFMeta, "F")),
+                Lists.immutable.of(
+                        constructorNode(
+                                unfixMeta,
+                                "Unfix",
+                                Lists.immutable.of(
+                                        constructorParamNode(
+                                                unfixFieldMeta,
+                                                "unfix",
+                                                typeApplyNode(
+                                                        namelessMeta,
+                                                        typeRefNode(typeVarFMeta, "F"),
+                                                        Lists.immutable.of(
+                                                                typeApplyNode(
+                                                                        namelessMeta,
+                                                                        typeRefNode(fixMeta, "Fix"),
+                                                                        Lists.immutable.of(
+                                                                                typeRefNode(typeVarFMeta, "F"))))))),
+                                Optional.empty())));
+
+        testSuccessfulKindcheck(TypeEnvironment.empty(), originalNode, expectedNode);
+    }
+
     @Property
     void kindcheckBuiltInTypes(@ForAll("builtIns") Map.Entry<String, Meta<Attributes>> builtIn) {
         var originalRange = new Range(0, 1, 0, 1);
@@ -770,13 +948,13 @@ public class KindcheckerTest {
         var builtInName = builtIn.getKey();
         var builtInMeta = builtIn.getValue().withRange(originalRange);
 
-        var metaWithoutType = builtInMeta.withMeta(builtInMeta.meta().name());
+        var metaWithName = builtInMeta.withMeta(builtInMeta.meta().name());
 
-        var originalNode = typeRefNode(metaWithoutType, builtInName);
+        var originalNode = typeRefNode(metaWithName, builtInName);
 
         var expectedNode = typeRefNode(builtInMeta, builtInName);
 
-        testSuccessfulKindcheck(Environment.withBuiltInTypes(), originalNode, expectedNode);
+        testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Provide

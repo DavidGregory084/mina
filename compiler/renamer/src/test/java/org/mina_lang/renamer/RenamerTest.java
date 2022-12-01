@@ -114,7 +114,7 @@ public class RenamerTest {
         var expectedNode = namespaceNode(Meta.of(namespaceName), idNode,
                 Lists.immutable.empty(), Lists.immutable.empty());
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     // Declarations
@@ -140,7 +140,7 @@ public class RenamerTest {
                 Lists.immutable.of(dataNode(Meta.of(dataName), "Void",
                         Lists.immutable.empty(), Lists.immutable.empty())));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -161,7 +161,7 @@ public class RenamerTest {
                         dataNode(originalDataRange, "Void", Lists.immutable.empty(), Lists.immutable.empty()),
                         dataNode(duplicateDataRange, "Void", Lists.immutable.empty(), Lists.immutable.empty())));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
@@ -206,7 +206,7 @@ public class RenamerTest {
                                                 Lists.immutable.empty(),
                                                 Optional.empty())))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -236,7 +236,7 @@ public class RenamerTest {
                                 constructorNode(duplicateConstructorRange, "True", Lists.immutable.empty(),
                                         Optional.empty())))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         var diagnostics = collector.getDiagnostics();
 
@@ -282,7 +282,7 @@ public class RenamerTest {
                                 constructorNode(Range.EMPTY, "Number", Lists.immutable.empty(),
                                         Optional.empty())))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
@@ -359,7 +359,7 @@ public class RenamerTest {
                                 Lists.immutable.of(forAllVarNode(Meta.<Name>of(tyVarName), "A")),
                                 Lists.immutable.of(expectedConsNode, expectedNilNode))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -398,7 +398,7 @@ public class RenamerTest {
                                 Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
                                 Lists.immutable.of(originalConsNode, originalNilNode))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -445,7 +445,7 @@ public class RenamerTest {
                                         forAllVarNode(duplicateTyParamRange, "A")),
                                 Lists.immutable.of(originalConsNode, originalNilNode))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
@@ -491,7 +491,7 @@ public class RenamerTest {
                                 Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
                                 Lists.immutable.of(originalConsNode, originalNilNode))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateFieldDefinition(
                 collector.getDiagnostics(),
@@ -516,7 +516,7 @@ public class RenamerTest {
         var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
                 Lists.immutable.of(letNode(Meta.of(letName), "one", intNode(Meta.of(Nameless.INSTANCE), 1))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -537,7 +537,7 @@ public class RenamerTest {
                         letNode(originalLetRange, "one", intNode(Range.EMPTY, 1)),
                         letNode(duplicateLetRange, "one", intNode(Range.EMPTY, 2))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateValueDefinition(
                 collector.getDiagnostics(),
@@ -586,7 +586,7 @@ public class RenamerTest {
                                         Lists.immutable.of(paramNode(Meta.of(paramAName), "a")),
                                         refNode(Meta.of(paramAName), "a")))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -613,7 +613,7 @@ public class RenamerTest {
                         letNode(Meta.of(barName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1)),
                         letNode(Meta.of(fooName), "foo", refNode(Meta.of(barName), "bar"))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -633,7 +633,7 @@ public class RenamerTest {
                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1)),
                         letNode(Range.EMPTY, "foo", refNode(unknownReferenceRange, "baz"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -681,7 +681,7 @@ public class RenamerTest {
                                 typeRefNode(Meta.of(typeVarAName), "A"),
                                 refNode(Meta.of(paramAName), "a"))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -705,7 +705,7 @@ public class RenamerTest {
                                 typeRefNode(Range.EMPTY, "A"),
                                 refNode(Range.EMPTY, "a"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -737,7 +737,7 @@ public class RenamerTest {
                                 typeRefNode(Range.EMPTY, "A"),
                                 refNode(Range.EMPTY, "a"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
@@ -767,7 +767,7 @@ public class RenamerTest {
                                 typeRefNode(Range.EMPTY, "A"),
                                 refNode(unknownParamRange, "x"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -799,7 +799,7 @@ public class RenamerTest {
                                 typeRefNode(Range.EMPTY, "A"),
                                 refNode(Range.EMPTY, "a"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateValueDefinition(
                 collector.getDiagnostics(),
@@ -827,7 +827,7 @@ public class RenamerTest {
                         forAllVarNode(Meta.of(typeVarBName), "B")),
                 typeRefNode(Meta.of(typeVarAName), "A"));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -850,7 +850,7 @@ public class RenamerTest {
                         existsVarNode(Meta.of(typeVarBName), "?B")),
                 typeRefNode(Meta.of(typeVarAName), "?A"));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -866,7 +866,7 @@ public class RenamerTest {
                         forAllVarNode(duplicateTypeVarRange, "A")),
                 typeRefNode(Range.EMPTY, "A"));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateTypeDefinition(
                 collector.getDiagnostics(),
@@ -903,7 +903,7 @@ public class RenamerTest {
                                 typeRefNode(Meta.of(typeVarBName), "B")),
                         typeRefNode(Meta.of(typeVarAName), "A")));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -921,7 +921,7 @@ public class RenamerTest {
                                 typeRefNode(unknownTypeVarRange, "B")),
                         typeRefNode(Range.EMPTY, "A")));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -955,7 +955,7 @@ public class RenamerTest {
                         typeRefNode(Meta.of(typeVarFName), "F"),
                         Lists.immutable.of(typeRefNode(Meta.of(typeVarAName), "A"))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -971,7 +971,7 @@ public class RenamerTest {
                         typeRefNode(Range.EMPTY, "F"),
                         Lists.immutable.of(typeRefNode(unknownTypeVarRange, "A"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -996,7 +996,7 @@ public class RenamerTest {
                         paramNode(Meta.of(paramName), "a")),
                 refNode(Meta.of(paramName), "a"));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1025,7 +1025,7 @@ public class RenamerTest {
                         Lists.immutable.of(paramNode(new Meta<>(innerParamRange, innerParamName), "a")),
                         refNode(Meta.of(innerParamName), "a")));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1038,7 +1038,7 @@ public class RenamerTest {
                 Lists.immutable.of(paramNode(Range.EMPTY, "a")),
                 refNode(unknownVariableRange, "x"));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -1068,7 +1068,7 @@ public class RenamerTest {
                         letNode(Meta.of(localLetName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
                 refNode(Meta.of(localLetName), "bar"));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1090,7 +1090,7 @@ public class RenamerTest {
                         letNode(duplicateLetRange, "bar", intNode(Range.EMPTY, 1))),
                 refNode(Range.EMPTY, "bar"));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateValueDefinition(
                 collector.getDiagnostics(),
@@ -1115,7 +1115,7 @@ public class RenamerTest {
                         letNode(invalidRefRange, "bar", intNode(Range.EMPTY, 1))),
                 refNode(Range.EMPTY, "bar"));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         // TODO: Specific error message for forward references
         assertDiagnostic(
@@ -1164,7 +1164,7 @@ public class RenamerTest {
                                         letNode(Meta.of(localBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
                                 refNode(Meta.of(localBarName), "bar")))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1207,7 +1207,7 @@ public class RenamerTest {
                                         letNode(Meta.of(localBazName), "baz", refNode(Meta.of(outerBarName), "bar"))),
                                 refNode(Meta.of(localBazName), "baz")))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1236,7 +1236,7 @@ public class RenamerTest {
                                 refNode(Range.EMPTY, "bar"))),
                         letNode(Range.EMPTY, "baz", refNode(invalidRefRange, "bar"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -1259,7 +1259,7 @@ public class RenamerTest {
                 intNode(Meta.of(Nameless.INSTANCE), 1),
                 intNode(Meta.of(Nameless.INSTANCE), 2));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1304,7 +1304,7 @@ public class RenamerTest {
                                         intNode(Meta.of(Nameless.INSTANCE), 2))),
                         refNode(Meta.of(secondLocalFooName), "foo")));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1330,7 +1330,7 @@ public class RenamerTest {
                         Range.EMPTY,
                         refNode(invalidRefRange, "foo")));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -1361,7 +1361,7 @@ public class RenamerTest {
                         refNode(Meta.of(paramFName), "f"),
                         Lists.immutable.of(refNode(Meta.of(paramAName), "a"))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1377,7 +1377,7 @@ public class RenamerTest {
                         refNode(invalidRefRange, "f"),
                         Lists.immutable.of(refNode(Range.EMPTY, "a"))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -1406,7 +1406,7 @@ public class RenamerTest {
                         refNode(Meta.of(paramAName), "a"),
                         Lists.immutable.empty()));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1455,7 +1455,7 @@ public class RenamerTest {
 
                 ));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1490,7 +1490,7 @@ public class RenamerTest {
                                                 idPatternNode(Meta.of(innerParamName), "x")),
                                         refNode(Meta.of(aliasParamName), "a")))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1511,7 +1511,7 @@ public class RenamerTest {
                                         aliasPatternNode(originalVarRange, "a", idPatternNode(duplicateVarRange, "a")),
                                         refNode(Range.EMPTY, "a")))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDuplicateValueDefinition(
                 collector.getDiagnostics(),
@@ -1549,7 +1549,7 @@ public class RenamerTest {
                                         idPatternNode(Meta.of(innerParamName), "a"),
                                         refNode(Meta.of(innerParamName), "a")))));
 
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -1635,14 +1635,14 @@ public class RenamerTest {
 
         var imports = new ImportedScope<Name>();
 
-        imports.populateValue("Cons", consMeta);
-        imports.populateValue("Nil", nilMeta);
-        imports.populateValue("Some", someMeta);
-        imports.populateValue("None", noneMeta);
+        imports.putValueIfAbsent("Cons", consMeta);
+        imports.putValueIfAbsent("Nil", nilMeta);
+        imports.putValueIfAbsent("Some", someMeta);
+        imports.putValueIfAbsent("None", noneMeta);
 
-        imports.populateField((ConstructorName) consMeta.meta(), "head", headMeta);
+        imports.putFieldIfAbsent((ConstructorName) consMeta.meta(), "head", headMeta);
 
-        var environment = Environment.of(imports);
+        var environment = NameEnvironment.of(imports);
 
         testSuccessfulRename(environment, originalNode, expectedNode);
     }
@@ -1733,14 +1733,14 @@ public class RenamerTest {
 
         var imports = new ImportedScope<Name>();
 
-        imports.populateValue("Cons", consMeta);
-        imports.populateValue("Nil", nilMeta);
-        imports.populateValue("Some", someMeta);
-        imports.populateValue("None", noneMeta);
+        imports.putValueIfAbsent("Cons", consMeta);
+        imports.putValueIfAbsent("Nil", nilMeta);
+        imports.putValueIfAbsent("Some", someMeta);
+        imports.putValueIfAbsent("None", noneMeta);
 
-        imports.populateField((ConstructorName) consMeta.meta(), "head", headMeta);
+        imports.putFieldIfAbsent((ConstructorName) consMeta.meta(), "head", headMeta);
 
-        var environment = Environment.of(imports);
+        var environment = NameEnvironment.of(imports);
 
         testSuccessfulRename(environment, originalNode, expectedNode);
     }
@@ -1831,14 +1831,14 @@ public class RenamerTest {
 
         var imports = new ImportedScope<Name>();
 
-        imports.populateValue("Cons", consMeta);
-        imports.populateValue("Nil", nilMeta);
-        imports.populateValue("Some", someMeta);
-        imports.populateValue("None", noneMeta);
+        imports.putValueIfAbsent("Cons", consMeta);
+        imports.putValueIfAbsent("Nil", nilMeta);
+        imports.putValueIfAbsent("Some", someMeta);
+        imports.putValueIfAbsent("None", noneMeta);
 
-        imports.populateField((ConstructorName) consMeta.meta(), "head", headMeta);
+        imports.putFieldIfAbsent((ConstructorName) consMeta.meta(), "head", headMeta);
 
-        var environment = Environment.of(imports);
+        var environment = NameEnvironment.of(imports);
 
         testSuccessfulRename(environment, originalNode, expectedNode);
     }
@@ -1872,7 +1872,7 @@ public class RenamerTest {
                                                 refNode(Range.EMPTY, "Some"),
                                                 Lists.immutable.of(refNode(Range.EMPTY, "head")))))));
 
-        var collector = testFailedRename(Environment.empty(), originalNode);
+        var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -1920,14 +1920,14 @@ public class RenamerTest {
 
         var imports = new ImportedScope<Name>();
 
-        imports.populateValue("Cons", consMeta);
-        imports.populateValue("Nil", nilMeta);
-        imports.populateValue("Some", someMeta);
-        imports.populateValue("None", noneMeta);
+        imports.putValueIfAbsent("Cons", consMeta);
+        imports.putValueIfAbsent("Nil", nilMeta);
+        imports.putValueIfAbsent("Some", someMeta);
+        imports.putValueIfAbsent("None", noneMeta);
 
-        imports.populateField((ConstructorName) consMeta.meta(), "head", headMeta);
+        imports.putFieldIfAbsent((ConstructorName) consMeta.meta(), "head", headMeta);
 
-        var environment = Environment.of(imports);
+        var environment = NameEnvironment.of(imports);
 
         var collector = testFailedRename(environment, originalNode);
 
@@ -1941,48 +1941,48 @@ public class RenamerTest {
     void renameLiteralBoolean() {
         var originalNode = boolNode(Range.EMPTY, true);
         var expectedNode = boolNode(Meta.of(Nameless.INSTANCE), true);
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLiteralChar() {
         var originalNode = charNode(Range.EMPTY, 'a');
         var expectedNode = charNode(Meta.of(Nameless.INSTANCE), 'a');
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLiteralString() {
         var originalNode = stringNode(Range.EMPTY, "abc");
         var expectedNode = stringNode(Meta.of(Nameless.INSTANCE), "abc");
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLiteralInt() {
         var originalNode = intNode(Range.EMPTY, 1);
         var expectedNode = intNode(Meta.of(Nameless.INSTANCE), 1);
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLiteralLong() {
         var originalNode = longNode(Range.EMPTY, 1L);
         var expectedNode = longNode(Meta.of(Nameless.INSTANCE), 1L);
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLiteralFloat() {
         var originalNode = floatNode(Range.EMPTY, 0.1f);
         var expectedNode = floatNode(Meta.of(Nameless.INSTANCE), 0.1f);
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLiteralDouble() {
         var originalNode = doubleNode(Range.EMPTY, 0.1);
         var expectedNode = doubleNode(Meta.of(Nameless.INSTANCE), 0.1);
-        testSuccessfulRename(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 }

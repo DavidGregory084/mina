@@ -20,6 +20,10 @@ public record ConstructorNode<A> (Meta<A> meta, String name, ImmutableList<Const
 
     @Override
     public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        return accept((DataNodeFolder<A, B>) visitor);
+    }
+
+    public <B> B accept(DataNodeFolder<A, B> visitor) {
         visitor.preVisitConstructor(this);
 
         var result = visitor.visitConstructor(
@@ -35,6 +39,10 @@ public record ConstructorNode<A> (Meta<A> meta, String name, ImmutableList<Const
 
     @Override
     public <B> ConstructorNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        return accept((DataNodeTransformer<A, B>) visitor);
+    }
+
+    public <B> ConstructorNode<B> accept(DataNodeTransformer<A, B> visitor) {
         visitor.preVisitConstructor(this);
 
         var result = visitor.visitConstructor(

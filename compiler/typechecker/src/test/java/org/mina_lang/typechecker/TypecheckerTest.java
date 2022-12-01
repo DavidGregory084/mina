@@ -7,10 +7,7 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.Attributes;
-import org.mina_lang.common.Environment;
-import org.mina_lang.common.Meta;
-import org.mina_lang.common.Range;
+import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.Nameless;
@@ -21,7 +18,7 @@ import org.mina_lang.syntax.NamespaceNode;
 
 public class TypecheckerTest {
     void testSuccessfulTypecheck(
-            Environment<Attributes> environment,
+            TypeEnvironment environment,
             NamespaceNode<Name> originalNode,
             NamespaceNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
@@ -32,7 +29,7 @@ public class TypecheckerTest {
     }
 
     void testSuccessfulTypecheck(
-            Environment<Attributes> environment,
+            TypeEnvironment environment,
             DeclarationNode<Name> originalNode,
             DeclarationNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
@@ -43,7 +40,7 @@ public class TypecheckerTest {
     }
 
     void testSuccessfulTypecheck(
-            Environment<Attributes> environment,
+            TypeEnvironment environment,
             ExprNode<Name> originalNode,
             ExprNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
@@ -54,7 +51,7 @@ public class TypecheckerTest {
     }
 
     ErrorCollector testFailedTypecheck(
-            Environment<Attributes> environment,
+            TypeEnvironment environment,
             ExprNode<Name> originalNode) {
         var diagnostics = new ErrorCollector();
         var typechecker = new Typechecker(diagnostics, environment);
@@ -77,7 +74,7 @@ public class TypecheckerTest {
         /* true */
         var originalNode = boolNode(Meta.<Name>of(Nameless.INSTANCE), true);
         var expectedNode = boolNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.BOOLEAN)), true);
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -85,7 +82,7 @@ public class TypecheckerTest {
         /* 'c' */
         var originalNode = charNode(Meta.<Name>of(Nameless.INSTANCE), 'c');
         var expectedNode = charNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.CHAR)), 'c');
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -93,7 +90,7 @@ public class TypecheckerTest {
         /* "foo" */
         var originalNode = stringNode(Meta.<Name>of(Nameless.INSTANCE), "foo");
         var expectedNode = stringNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.STRING)), "foo");
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -101,7 +98,7 @@ public class TypecheckerTest {
         /* 1 */
         var originalNode = intNode(Meta.<Name>of(Nameless.INSTANCE), 1);
         var expectedNode = intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 1);
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -109,7 +106,7 @@ public class TypecheckerTest {
         /* 1L */
         var originalNode = longNode(Meta.<Name>of(Nameless.INSTANCE), 1L);
         var expectedNode = longNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.LONG)), 1L);
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -117,7 +114,7 @@ public class TypecheckerTest {
         /* 0.1F */
         var originalNode = floatNode(Meta.<Name>of(Nameless.INSTANCE), 0.1F);
         var expectedNode = floatNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.FLOAT)), 0.1F);
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -125,7 +122,7 @@ public class TypecheckerTest {
         /* 0.1 */
         var originalNode = doubleNode(Meta.<Name>of(Nameless.INSTANCE), 0.1);
         var expectedNode = doubleNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.DOUBLE)), 0.1);
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -143,7 +140,7 @@ public class TypecheckerTest {
                 intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 1),
                 intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 2));
 
-        testSuccessfulTypecheck(Environment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
@@ -157,7 +154,7 @@ public class TypecheckerTest {
                 intNode(Meta.of(Nameless.INSTANCE), 1),
                 intNode(Meta.of(Nameless.INSTANCE), 2));
 
-        var collector = testFailedTypecheck(Environment.empty(), originalNode);
+        var collector = testFailedTypecheck(TypeEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -176,7 +173,7 @@ public class TypecheckerTest {
                 intNode(Meta.of(Nameless.INSTANCE), 1),
                 stringNode(new Meta<Name>(elseRange, Nameless.INSTANCE), "a"));
 
-        var collector = testFailedTypecheck(Environment.empty(), originalNode);
+        var collector = testFailedTypecheck(TypeEnvironment.empty(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),

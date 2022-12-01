@@ -4,14 +4,13 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.function.Supplier;
 
-import org.mina_lang.common.Attributes;
-import org.mina_lang.common.Environment;
-import org.mina_lang.common.Meta;
-import org.mina_lang.common.Range;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
+import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.Name;
-import org.mina_lang.common.scopes.Scope;
-import org.mina_lang.common.scopes.TypeLambdaScope;
+import org.mina_lang.common.scopes.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
@@ -19,13 +18,13 @@ import com.opencastsoftware.prettier4j.Doc;
 
 public class Kindchecker {
     private DiagnosticCollector diagnostics;
-    private Environment<Attributes> environment;
+    private TypeEnvironment environment;
     private UnsolvedVariableSupply varSupply;
     private KindPrinter kindPrinter = new KindPrinter();
 
     public Kindchecker(
             DiagnosticCollector diagnostics,
-            Environment<Attributes> environment,
+            TypeEnvironment environment,
             UnsolvedVariableSupply varSupply) {
         this.diagnostics = diagnostics;
         this.environment = environment;
@@ -39,26 +38,26 @@ public class Kindchecker {
         return result;
     }
 
+    void withScope(Scope<Attributes> scope, Runnable fn) {
+        environment.pushScope(scope);
+        fn.run();
+        environment.popScope(scope.getClass());
+        return;
+    }
+
+    UnsolvedKind newUnsolvedKind() {
+        var newUnsolved = varSupply.newUnsolvedKind();
+        environment.putUnsolvedKind(newUnsolved);
+        return newUnsolved;
+    }
+
     public DataNode<Attributes> kindcheck(DataNode<Name> node) {
         var inferredData = inferData(node);
         // FIXME: Defaulting should be done after kind-checking mutually-dependent
         // groups of definitions in dependency order, not after checking each
         // definition.
-        // environment.defaultKinds();
-        // var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
-        // return inferredData.accept(new TypeNodeSubstitutionTransformer(kindDefaulting));
-        return inferredData;
-    }
-
-    public ConstructorNode<Attributes> kindcheck(ConstructorNode<Name> node) {
-        var inferredConstr = inferConstructor(node);
-        // FIXME: Defaulting should be done after kind-checking mutually-dependent
-        // groups of definitions in dependency order, not after checking each
-        // definition.
-        // environment.defaultKinds();
-        // var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
-        // return inferredConstr.accept(new TypeNodeSubstitutionTransformer(kindDefaulting));
-        return inferredConstr;
+        var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
+        return inferredData.accept(new DataNodeSubstitutionTransformer(kindDefaulting));
     }
 
     public TypeNode<Attributes> kindcheck(TypeNode<Name> node) {
@@ -66,7 +65,6 @@ public class Kindchecker {
         // FIXME: Defaulting should be done after kind-checking mutually-dependent
         // groups of definitions in dependency order, not after checking each
         // definition.
-        environment.defaultKinds();
         var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
         return inferredType.accept(new TypeNodeSubstitutionTransformer(kindDefaulting));
     }
@@ -113,121 +111,164 @@ public class Kindchecker {
     }
 
     void instantiateAsSubKind(UnsolvedKind unsolved, Kind superKind) {
-        if (superKind instanceof UnsolvedKind otherUnsolved) {
-            // Complete and Easy's InstLReach for types
-            environment.solveKind(otherUnsolved, unsolved);
-        } else if (superKind instanceof TypeKind) {
-            // Complete and Easy's InstLSolve for types
-            environment.solveKind(unsolved, TypeKind.INSTANCE);
-        } else if (superKind instanceof HigherKind higherSup) {
-            // Complete and Easy's InstLArr for types
-            var newHkArgs = higherSup
-                    .argKinds()
-                    .collect(arg -> varSupply.newUnsolvedKind());
+        withScope(new InstantiateKindScope<>(), () -> {
+            if (superKind instanceof UnsolvedKind otherUnsolved) {
+                // Complete and Easy's InstLReach for types
+                environment.solveKind(otherUnsolved, unsolved);
+            } else if (superKind instanceof TypeKind) {
+                // Complete and Easy's InstLSolve for types
+                environment.solveKind(unsolved, TypeKind.INSTANCE);
+            } else if (superKind instanceof HigherKind higherSup) {
+                // Complete and Easy's InstLArr for types
+                var newHkArgs = higherSup
+                        .argKinds()
+                        .collect(arg -> newUnsolvedKind());
 
-            var newHkResult = varSupply.newUnsolvedKind();
+                var newHkResult = newUnsolvedKind();
 
-            var newHk = new HigherKind(
-                    newHkArgs.collect(arg -> (Kind) arg),
-                    newHkResult);
+                var newHk = new HigherKind(
+                        newHkArgs.collect(arg -> (Kind) arg),
+                        newHkResult);
 
-            environment.solveKind(unsolved, newHk);
+                environment.solveKind(unsolved, newHk);
 
-            newHkArgs
-                    .zip(higherSup.argKinds())
-                    .forEach(pair -> {
-                        instantiateAsSuperKind(pair.getOne(), pair.getTwo());
-                    });
+                newHkArgs
+                        .zip(higherSup.argKinds())
+                        .forEach(pair -> {
+                            instantiateAsSuperKind(pair.getOne(), pair.getTwo());
+                        });
 
-            instantiateAsSubKind(
-                    newHkResult,
-                    higherSup.resultKind().substitute(environment.kindSubstitution()));
-        }
+                instantiateAsSubKind(
+                        newHkResult,
+                        higherSup.resultKind().substitute(environment.kindSubstitution()));
+            }
+        });
     }
 
     void instantiateAsSuperKind(UnsolvedKind unsolved, Kind subKind) {
-        if (subKind instanceof UnsolvedKind otherUnsolved) {
-            // Complete and Easy's InstRReach for types
-            environment.solveKind(otherUnsolved, unsolved);
-        } else if (subKind instanceof TypeKind) {
-            // Complete and Easy's InstRSolve for types
-            environment.solveKind(unsolved, TypeKind.INSTANCE);
-        } else if (subKind instanceof HigherKind higherSub) {
-            // Complete and Easy's InstRArr for types
-            var newHkArgs = higherSub
-                    .argKinds()
-                    .collect(arg -> varSupply.newUnsolvedKind());
+        withScope(new InstantiateKindScope<>(), () -> {
+            if (subKind instanceof UnsolvedKind otherUnsolved) {
+                // Complete and Easy's InstRReach for types
+                environment.solveKind(otherUnsolved, unsolved);
+            } else if (subKind instanceof TypeKind) {
+                // Complete and Easy's InstRSolve for types
+                environment.solveKind(unsolved, TypeKind.INSTANCE);
+            } else if (subKind instanceof HigherKind higherSub) {
+                // Complete and Easy's InstRArr for types
+                var newHkArgs = higherSub
+                        .argKinds()
+                        .collect(arg -> newUnsolvedKind());
 
-            var newHkResult = varSupply.newUnsolvedKind();
+                var newHkResult = newUnsolvedKind();
 
-            var newHk = new HigherKind(
-                    newHkArgs.collect(arg -> (Kind) arg),
-                    newHkResult);
+                var newHk = new HigherKind(
+                        newHkArgs.collect(arg -> (Kind) arg),
+                        newHkResult);
 
-            environment.solveKind(unsolved, newHk);
+                environment.solveKind(unsolved, newHk);
 
-            newHkArgs
-                    .zip(higherSub.argKinds())
-                    .forEach(pair -> {
-                        instantiateAsSubKind(pair.getOne(), pair.getTwo());
-                    });
+                newHkArgs
+                        .zip(higherSub.argKinds())
+                        .forEach(pair -> {
+                            instantiateAsSubKind(pair.getOne(), pair.getTwo());
+                        });
 
-            instantiateAsSuperKind(
-                    newHkResult,
-                    higherSub.resultKind().substitute(environment.kindSubstitution()));
-        }
+                instantiateAsSuperKind(
+                        newHkResult,
+                        higherSub.resultKind().substitute(environment.kindSubstitution()));
+            }
+        });
     }
 
     boolean checkSubKind(Kind subKind, Kind superKind) {
-        var solvedSubKind = subKind.substitute(environment.kindSubstitution());
-        var solvedSuperKind = superKind.substitute(environment.kindSubstitution());
+        return withScope(new CheckSubkindScope<>(), () -> {
+            var solvedSubKind = subKind.substitute(environment.kindSubstitution());
+            var solvedSuperKind = superKind.substitute(environment.kindSubstitution());
 
-        if (solvedSubKind == TypeKind.INSTANCE && solvedSuperKind == TypeKind.INSTANCE) {
-            // Complete and Easy's <:Var rule for types
-            return true;
-        } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub &&
-                solvedSuperKind instanceof UnsolvedKind unsolvedSuper &&
-                unsolvedSub.id() == unsolvedSuper.id()) {
-            // Complete and Easy's <:Exvar rule for types
-            return true;
-        } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub
-                && !unsolvedSub.isFreeIn(solvedSuperKind)) {
-            // Complete and Easy's <:InstantiateL for types
-            instantiateAsSubKind(unsolvedSub, solvedSuperKind);
+            if (solvedSubKind == TypeKind.INSTANCE && solvedSuperKind == TypeKind.INSTANCE) {
+                // Complete and Easy's <:Var rule for types
+                return true;
+            } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub &&
+                    solvedSuperKind instanceof UnsolvedKind unsolvedSuper &&
+                    unsolvedSub.id() == unsolvedSuper.id()) {
+                // Complete and Easy's <:Exvar rule for types
+                return true;
+            } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub
+                    && !unsolvedSub.isFreeIn(solvedSuperKind)) {
+                // Complete and Easy's <:InstantiateL for types
+                instantiateAsSubKind(unsolvedSub, solvedSuperKind);
 
-            return true;
+                return true;
 
-        } else if (solvedSuperKind instanceof UnsolvedKind unsolvedSup
-                && !unsolvedSup.isFreeIn(solvedSubKind)) {
-            // Complete and Easy's <:InstantiateR for types
-            instantiateAsSuperKind(unsolvedSup, solvedSubKind);
+            } else if (solvedSuperKind instanceof UnsolvedKind unsolvedSup
+                    && !unsolvedSup.isFreeIn(solvedSubKind)) {
+                // Complete and Easy's <:InstantiateR for types
+                instantiateAsSuperKind(unsolvedSup, solvedSubKind);
 
-            return true;
+                return true;
 
-        } else if (solvedSubKind instanceof HigherKind higherSub &&
-                solvedSuperKind instanceof HigherKind higherSup &&
-                higherSub.argKinds().size() == higherSup.argKinds().size()) {
-            // Complete and Easy's <:-> for types
-            var argsSubKinded = higherSub.argKinds()
-                    .zip(higherSup.argKinds())
-                    .allSatisfy(pair -> {
-                        return checkSubKind(pair.getTwo(), pair.getOne());
-                    });
+            } else if (solvedSubKind instanceof HigherKind higherSub &&
+                    solvedSuperKind instanceof HigherKind higherSup &&
+                    higherSub.argKinds().size() == higherSup.argKinds().size()) {
+                // Complete and Easy's <:-> for types
+                var argsSubKinded = higherSub.argKinds()
+                        .zip(higherSup.argKinds())
+                        .allSatisfy(pair -> {
+                            return checkSubKind(pair.getTwo(), pair.getOne());
+                        });
 
-            var resultSubKinded = checkSubKind(higherSub.resultKind(), higherSup.resultKind());
+                var resultSubKinded = checkSubKind(higherSub.resultKind(), higherSup.resultKind());
 
-            return argsSubKinded && resultSubKinded;
-        } else {
-            return false;
-        }
+                return argsSubKinded && resultSubKinded;
+            } else {
+                return false;
+            }
+        });
     }
 
     DataNode<Attributes> inferData(DataNode<Name> data) {
-        return null;
+        var dataName = (DataName) data.meta().meta();
+
+        return withScope(new DataScope<>(dataName), () -> {
+            var inferredParams = data.typeParams()
+                    .collect(tyParam -> (TypeVarNode<Attributes>) inferType(tyParam));
+
+            var inferredKind = new HigherKind(
+                    inferredParams.collect(param -> (Kind) param.meta().meta().sort()),
+                    TypeKind.INSTANCE);
+
+            var updatedMeta = updateMetaWith(data.meta(), inferredKind);
+
+            environment.putType(dataName.localName(), updatedMeta);
+            environment.putType(dataName.canonicalName(), updatedMeta);
+
+            var inferredConstrs = data.constructors()
+                    .collect(constr -> inferConstructor(constr, inferredKind));
+
+            return dataNode(updatedMeta, data.name(), inferredParams, inferredConstrs);
+        });
     }
 
-    ConstructorNode<Attributes> inferConstructor(ConstructorNode<Name> constr) {
-        return null;
+    ConstructorNode<Attributes> inferConstructor(ConstructorNode<Name> constr, Kind dataKind) {
+        var constrName = (ConstructorName) constr.meta().meta();
+
+        return withScope(new ConstructorScope<>(constrName), () -> {
+            var inferredParams = constr.params()
+                    .collect(param -> inferConstructorParam(param));
+            var checkedReturn = constr.type()
+                    .map(returnType -> checkType(returnType, TypeKind.INSTANCE));
+
+            var updatedMeta = updateMetaWith(constr.meta(), dataKind);
+
+            return constructorNode(updatedMeta, constr.name(), inferredParams, checkedReturn);
+        });
+    }
+
+    ConstructorParamNode<Attributes> inferConstructorParam(ConstructorParamNode<Name> constrParam) {
+        var checkedAnnotation = checkType(constrParam.typeAnnotation(), TypeKind.INSTANCE);
+        var updatedMeta = updateMetaWith(constrParam.meta(), TypeKind.INSTANCE);
+
+        return constructorParamNode(updatedMeta, constrParam.name(), checkedAnnotation);
     }
 
     TypeNode<Attributes> inferType(TypeNode<Name> typ) {
@@ -268,9 +309,9 @@ public class Kindchecker {
 
             } else {
                 var unsolvedArgs = tyApp.args()
-                        .collect(arg -> varSupply.newUnsolvedKind());
+                        .collect(arg -> newUnsolvedKind());
 
-                var unsolvedReturn = varSupply.newUnsolvedKind();
+                var unsolvedReturn = newUnsolvedKind();
 
                 var appliedKind = new HigherKind(
                         unsolvedArgs.collect(arg -> (Kind) arg),
@@ -303,18 +344,18 @@ public class Kindchecker {
             return funTypeNode(updatedMeta, inferredArgs, inferredReturn);
 
         } else if (typ instanceof ForAllVarNode<Name> forall) {
-            var unsolvedKind = varSupply.newUnsolvedKind();
+            var unsolvedKind = newUnsolvedKind();
             var updatedMeta = updateMetaWith(forall.meta(), unsolvedKind);
 
-            environment.populateType(forall.name(), updatedMeta);
+            environment.putTypeIfAbsent(forall.name(), updatedMeta);
 
             return forAllVarNode(updatedMeta, forall.name());
 
         } else if (typ instanceof ExistsVarNode<Name> exists) {
-            var unsolvedKind = varSupply.newUnsolvedKind();
+            var unsolvedKind = newUnsolvedKind();
             var updatedMeta = updateMetaWith(exists.meta(), unsolvedKind);
 
-            environment.populateType(exists.name(), updatedMeta);
+            environment.putTypeIfAbsent(exists.name(), updatedMeta);
 
             return existsVarNode(updatedMeta, exists.name());
 
@@ -336,16 +377,14 @@ public class Kindchecker {
                 var knownArgs = tyLam.args()
                         .zip(hk.argKinds())
                         .collect(pair -> {
-                            if (pair.getOne() instanceof ForAllVarNode<Name> forall) {
-                                var updatedMeta = updateMetaWith(forall.meta(), pair.getTwo());
-                                environment.populateType(forall.name(), updatedMeta);
-                                return (TypeVarNode<Attributes>) forAllVarNode(updatedMeta, forall.name());
-                            } else if (pair.getOne() instanceof ExistsVarNode<Name> exists) {
-                                var updatedMeta = updateMetaWith(exists.meta(), pair.getTwo());
-                                environment.populateType(exists.name(), updatedMeta);
-                                return (TypeVarNode<Attributes>) existsVarNode(updatedMeta, exists.name());
+                            var tyArg = pair.getOne();
+                            var updatedMeta = updateMetaWith(tyArg.meta(), pair.getTwo());
+                            environment.putTypeIfAbsent(tyArg.name(), updatedMeta);
+                            if (tyArg instanceof ForAllVarNode) {
+                                return (TypeVarNode<Attributes>) forAllVarNode(updatedMeta, tyArg.name());
+                            } else {
+                                return (TypeVarNode<Attributes>) existsVarNode(updatedMeta, tyArg.name());
                             }
-                            return null;
                         });
 
                 var knownArgKinds = knownArgs

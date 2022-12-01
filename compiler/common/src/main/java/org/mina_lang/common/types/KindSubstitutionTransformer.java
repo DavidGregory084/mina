@@ -1,17 +1,13 @@
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.factory.Maps;
-
-import java.util.Map;
-
 public class KindSubstitutionTransformer implements KindTransformer {
 
-    protected Map<UnsolvedKind, Kind> substitution = Maps.mutable.empty();
+    protected UnionFind<Kind> substitution;
 
     public KindSubstitutionTransformer() {
     }
 
-    public KindSubstitutionTransformer(Map<UnsolvedKind, Kind> substitution) {
+    public KindSubstitutionTransformer(UnionFind<Kind> substitution) {
         this.substitution = substitution;
     }
 
@@ -22,7 +18,8 @@ public class KindSubstitutionTransformer implements KindTransformer {
 
     @Override
     public Kind visitUnsolvedKind(UnsolvedKind unsolved) {
-        return substitution.getOrDefault(unsolved, unsolved);
+        var solution = substitution.find(unsolved);
+        return solution.equals(unsolved) ? solution : solution.accept(this);
     }
 
     @Override

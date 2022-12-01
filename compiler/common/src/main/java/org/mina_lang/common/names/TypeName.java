@@ -1,14 +1,5 @@
 package org.mina_lang.common.names;
 
-public record TypeName(QualifiedName name) implements Named {
+public sealed interface TypeName extends DeclarationName permits DataName, ConstructorName {
 
-    @Override
-    public String localName() {
-        return name.name();
-    }
-
-    @Override
-    public String canonicalName() {
-        return name.canonicalName();
-    }
 }

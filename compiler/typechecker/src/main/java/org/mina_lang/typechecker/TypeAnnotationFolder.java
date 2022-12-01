@@ -7,16 +7,16 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.BuiltInName;
-import org.mina_lang.common.names.ConstructorName;
-import org.mina_lang.common.names.DataName;
+import org.mina_lang.common.names.TypeName;
+import org.mina_lang.common.names.TypeVarName;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.QualifiedIdNode;
 import org.mina_lang.syntax.TypeNodeFolder;
 
 public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
-    private Environment<Attributes> environment;
-    private MutableMap<String, TypeVar> tyVars = Maps.mutable.empty();
+    protected Environment<Attributes> environment;
+    protected MutableMap<String, TypeVar> tyVars = Maps.mutable.empty();
 
     public TypeAnnotationFolder(Environment<Attributes> environment) {
         this.environment = environment;
@@ -38,21 +38,15 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
         if (name instanceof BuiltInName builtInName) {
             // Built in types
-            return Type.builtIns.detect(builtInTy -> builtInTy.name().equals(builtInName.name()));
-        } else if (tyVars.containsKey(id.canonicalName())) {
+            return Type.builtIns.get(builtInName.name());
+        } else if (name instanceof TypeVarName) {
             // Bound type variables
             return tyVars.get(id.canonicalName());
-        } else if (name instanceof DataName dataName) {
+        } else if (name instanceof TypeName typeName) {
             // Data types
             var typeMeta = environment.lookupType(id.canonicalName()).get();
             return new TypeConstructor(
-                    dataName.name(),
-                    (Kind) typeMeta.meta().sort());
-        } else if (name instanceof ConstructorName constrName) {
-            // Data constructors
-            var typeMeta = environment.lookupType(id.canonicalName()).get();
-            return new TypeConstructor(
-                    constrName.name(),
+                    typeName.name(),
                     (Kind) typeMeta.meta().sort());
         }
 

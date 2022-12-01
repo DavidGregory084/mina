@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.types;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -8,8 +8,6 @@ import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
-import org.mina_lang.common.scopes.TypeLambdaScope;
-import org.mina_lang.common.types.*;
 
 import net.jqwik.api.*;
 

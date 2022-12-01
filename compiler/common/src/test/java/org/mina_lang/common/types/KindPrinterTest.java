@@ -1,4 +1,4 @@
-package org.mina_lang.common;
+package org.mina_lang.common.types;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -6,10 +6,6 @@ import static org.hamcrest.Matchers.is;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.types.HigherKind;
-import org.mina_lang.common.types.KindPrinter;
-import org.mina_lang.common.types.TypeKind;
-import org.mina_lang.common.types.UnsolvedKind;
 
 public class KindPrinterTest {
     KindPrinter printer = new KindPrinter();

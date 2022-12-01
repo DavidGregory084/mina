@@ -1,12 +1,13 @@
-package org.mina_lang.typechecker;
+package org.mina_lang.common.types;
+
+import java.util.Set;
+import java.util.function.BinaryOperator;
 
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.factory.primitive.ObjectIntMaps;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
-
-import java.util.Set;
-import java.util.function.BinaryOperator;
+import org.eclipse.collections.impl.collector.Collectors2;
 
 public class UnionFind<A> {
     private final MutableMap<A, A> representative = Maps.mutable.empty();
@@ -43,6 +44,12 @@ public class UnionFind<A> {
 
     public Set<A> elements() {
         return parent.keySet();
+    }
+
+    public Set<A> representatives() {
+        return elements().stream()
+                .map(this::find)
+                .collect(Collectors2.toSet());
     }
 
     public boolean contains(A element) {

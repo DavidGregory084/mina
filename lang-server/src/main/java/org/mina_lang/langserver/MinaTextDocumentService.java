@@ -1,17 +1,19 @@
 package org.mina_lang.langserver;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.mina_lang.common.Environment;
+import org.mina_lang.common.NameEnvironment;
+import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.parser.Parser;
 import org.mina_lang.renamer.Renamer;
 import org.mina_lang.typechecker.Typechecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 public class MinaTextDocumentService implements TextDocumentService {
     private Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
@@ -48,8 +50,8 @@ public class MinaTextDocumentService implements TextDocumentService {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
                     try {
                         var parser = new Parser(diagnostics);
-                        var renamer = new Renamer(diagnostics, Environment.withBuiltInNames());
-                        var typechecker = new Typechecker(diagnostics, Environment.withBuiltInTypes());
+                        var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
                         var parsed = parser.parse(charStream);
                         var renamed = renamer.rename(parsed);
                         var checked = typechecker.typecheck(renamed);
@@ -74,8 +76,8 @@ public class MinaTextDocumentService implements TextDocumentService {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
                     try {
                         var parser = new Parser(diagnostics);
-                        var renamer = new Renamer(diagnostics, Environment.withBuiltInNames());
-                        var typechecker = new Typechecker(diagnostics, Environment.withBuiltInTypes());
+                        var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
                         var parsed = parser.parse(charStream);
                         var renamed = renamer.rename(parsed);
                         var checked = typechecker.typecheck(renamed);

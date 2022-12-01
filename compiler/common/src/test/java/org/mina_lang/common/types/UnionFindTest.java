@@ -1,13 +1,9 @@
-package org.mina_lang.typechecker;
+package org.mina_lang.common.types;
 
 import net.jqwik.api.*;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.tuple.Twin;
 import org.eclipse.collections.impl.tuple.Tuples;
-import org.mina_lang.common.types.HigherKind;
-import org.mina_lang.common.types.Kind;
-import org.mina_lang.common.types.TypeKind;
-import org.mina_lang.common.types.UnsolvedKind;
 
 import java.util.List;
 import java.util.Set;

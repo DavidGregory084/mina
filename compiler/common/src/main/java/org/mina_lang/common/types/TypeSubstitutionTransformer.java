@@ -1,12 +1,8 @@
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.factory.Maps;
-
-import java.util.Map;
-
 public class TypeSubstitutionTransformer implements TypeTransformer {
 
-    private Map<UnsolvedType, MonoType> typeSubstitution = Maps.mutable.empty();
+    private UnionFind<MonoType> typeSubstitution;
     private KindSubstitutionTransformer kindTransformer;
 
     public TypeSubstitutionTransformer(KindSubstitutionTransformer kindTransformer) {
@@ -14,20 +10,20 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
     }
 
     public TypeSubstitutionTransformer(
-            Map<UnsolvedType, MonoType> typeSubstitution,
+            UnionFind<MonoType> typeSubstitution,
             KindSubstitutionTransformer kindTransformer) {
         this.typeSubstitution = typeSubstitution;
         this.kindTransformer = kindTransformer;
     }
 
     public TypeSubstitutionTransformer(
-            Map<UnsolvedType, MonoType> typeSubstitution,
-            Map<UnsolvedKind, Kind> kindSubstitution) {
+            UnionFind<MonoType> typeSubstitution,
+            UnionFind<Kind> kindSubstitution) {
         this.typeSubstitution = typeSubstitution;
         this.kindTransformer = new KindSubstitutionTransformer(kindSubstitution);
     }
 
-    public TypeSubstitutionTransformer(Map<UnsolvedType, MonoType> typeSubstitution) {
+    public TypeSubstitutionTransformer(UnionFind<MonoType> typeSubstitution) {
         this.typeSubstitution = typeSubstitution;
     }
 
@@ -89,10 +85,9 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
 
     @Override
     public MonoType visitUnsolvedType(UnsolvedType unsolved) {
-        if (typeSubstitution.containsKey(unsolved)) {
-            return typeSubstitution
-                    .get(unsolved)
-                    .accept(this);
+        var solution = typeSubstitution.find(unsolved);
+        if (!solution.equals(unsolved)) {
+            return solution.accept(this);
         } else {
             return new UnsolvedType(
                     unsolved.id(),

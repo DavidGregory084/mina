@@ -1,7 +1,5 @@
 package org.mina_lang.common.types;
 
-import java.util.Map;
-
 public sealed interface Kind extends Sort permits TypeKind, HigherKind, UnsolvedKind {
     @Override
     default <A> A accept(SortFolder<A> visitor) {
@@ -12,7 +10,7 @@ public sealed interface Kind extends Sort permits TypeKind, HigherKind, Unsolved
 
     Kind accept(KindTransformer visitor);
 
-    default Kind substitute(Map<UnsolvedKind, Kind> substitution) {
+    default Kind substitute(UnionFind<Kind> substitution) {
         return accept(new KindSubstitutionTransformer(substitution));
     }
 

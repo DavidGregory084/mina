@@ -17,6 +17,10 @@ public record DataNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<
 
     @Override
     public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        return accept((DataNodeFolder<A, B>) visitor);
+    }
+
+    public <B> B accept(DataNodeFolder<A, B> visitor) {
         visitor.preVisitData(this);
 
         var result = visitor.visitData(
@@ -32,6 +36,10 @@ public record DataNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<
 
     @Override
     public <B> DataNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        return accept((DataNodeTransformer<A, B>) visitor);
+    }
+
+    public <B> DataNode<B> accept(DataNodeTransformer<A, B> visitor) {
         visitor.preVisitData(this);
 
         var result = visitor.visitData(
