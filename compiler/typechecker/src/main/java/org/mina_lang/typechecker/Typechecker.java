@@ -291,25 +291,45 @@ public class Typechecker {
                     && !unsolvedSub.isFreeIn(solvedSuperType)) {
                 // Complete and Easy's <:InstantiateL rule
                 instantiateAsSubType(unsolvedSub, solvedSuperType);
+
                 return true;
+
             } else if (solvedSuperType instanceof UnsolvedType unsolvedSup
                     && !unsolvedSup.isFreeIn(solvedSubType)) {
                 // Complete and Easy's <:InstantiateR rule
                 instantiateAsSuperType(unsolvedSup, solvedSubType);
+
                 return true;
-            } else if (solvedSubType instanceof TypeApply tyAppSub &&
-                    solvedSuperType instanceof TypeApply tyAppSup &&
+
+            } else if (Type.isFunction(solvedSubType) && solvedSubType instanceof TypeApply tyAppSub &&
+                    Type.isFunction(solvedSuperType) && solvedSuperType instanceof TypeApply tyAppSup &&
                     tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
                 // Complete and Easy's <:-> rule
-                var argsSubTyped = tyAppSub.typeArguments()
-                        .zip(tyAppSup.typeArguments())
+                var argsSubTyped = tyAppSub.typeArguments().take(tyAppSub.typeArguments().size() - 1)
+                        .zip(tyAppSup.typeArguments().take(tyAppSup.typeArguments().size() - 1))
                         .allSatisfy(pair -> {
                             return checkSubType(pair.getTwo(), pair.getOne());
                         });
 
-                var resultSubTyped = checkSubType(tyAppSub.type(), tyAppSup.type());
+                var resultSubTyped = checkSubType(
+                        tyAppSub.typeArguments().getLast(),
+                        tyAppSup.typeArguments().getLast());
 
                 return argsSubTyped && resultSubTyped;
+            } else if (solvedSubType instanceof TypeApply tyAppSub &&
+                    solvedSuperType instanceof TypeApply tyAppSup &&
+                    tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
+                // Complete and Easy's <:-> rule extended to other type constructors
+                var tyConSubTyped = checkSubType(tyAppSub.type(), tyAppSup.type());
+
+                var tyArgsSubTyped = tyAppSub.typeArguments()
+                        .zip(tyAppSup.typeArguments())
+                        .allSatisfy(pair -> {
+                            return checkSubType(pair.getOne(), pair.getTwo());
+                        });
+
+                return tyConSubTyped && tyArgsSubTyped;
+
             } else {
                 return false;
             }
@@ -401,17 +421,6 @@ public class Typechecker {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
             var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
-
-            environment.topScope()
-                    .types()
-                    .forEachKeyValue((nm, ty) -> System.err
-                            .println(nm + ": " + ((Kind) ty.meta().sort()).accept(new KindPrinter()).render(80)));
-
-            environment.topScope()
-                    .values()
-                    .forEachKeyValue((nm, ty) -> System.err
-                            .println(nm + ": " + ((Type) ty.meta().sort()).accept(new TypePrinter()).render(80)));
-
             return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
         });
     }
@@ -477,11 +486,6 @@ public class Typechecker {
 
         } else if (expr instanceof MatchNode<Name> match) {
 
-        } else if (expr instanceof ReferenceNode<Name> reference) {
-            // // Lookup from the environment
-            // var envType = environment.lookupValue(reference.id().canonicalName()).get();
-            // var updatedMeta = updateMetaWith(reference.meta(), envType.meta().sort());
-            // return refNode(updatedMeta, reference.id());
         } else if (expr instanceof LiteralNode<Name> literal) {
             return inferLiteral(literal);
         } else if (expr instanceof ApplyNode<Name> apply) {
@@ -493,6 +497,11 @@ public class Typechecker {
             // 1);
             // apply.args().collect(this::inferExpr).zip(argTypes);
             // }
+        } else if (expr instanceof ReferenceNode<Name> reference) {
+            var envType = environment.lookupValue(reference.id().canonicalName()).get();
+            var updatedMeta = updateMetaWith(reference.meta(), envType.meta().sort());
+
+            return refNode(updatedMeta, reference.id());
         }
 
         return null;

@@ -5,12 +5,16 @@ import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.List;
+import java.util.Map;
 
+import net.jqwik.api.*;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.Nameless;
+import org.mina_lang.common.scopes.BuiltInScope;
+import org.mina_lang.common.types.BuiltInType;
 import org.mina_lang.common.types.Type;
 import org.mina_lang.syntax.DeclarationNode;
 import org.mina_lang.syntax.ExprNode;
@@ -181,4 +185,15 @@ public class TypecheckerTest {
                 "Mismatched type! Expected: Int, Actual: String");
     }
 
+    @Property
+    void checkBuiltInSubTypeReflexivity(@ForAll("builtIns") Type builtIn) {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        assertThat(typechecker.checkSubType(builtIn, builtIn), is(true));
+    }
+
+    @Provide
+    Arbitrary<BuiltInType> builtIns() {
+        return Arbitraries.of(Type.builtIns.toSet());
+    }
 }
