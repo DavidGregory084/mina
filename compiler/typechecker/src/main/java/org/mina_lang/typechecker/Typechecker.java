@@ -129,8 +129,12 @@ public class Typechecker {
             if (superType instanceof UnsolvedType otherUnsolved) {
                 // Complete and Easy's InstLReach rule
                 environment.solveType(otherUnsolved, unsolved);
-            } else if (superType instanceof BuiltInType builtInSup) {
+            } else if (superType instanceof ForAllVar forall) {
                 // Complete and Easy's InstLSolve rule
+                environment.solveType(unsolved, forall);
+            } else if (superType instanceof ExistsVar exists) {
+                environment.solveType(unsolved, exists);
+            } else if (superType instanceof BuiltInType builtInSup) {
                 environment.solveType(unsolved, builtInSup);
             } else if (superType instanceof TypeConstructor tyConSup) {
                 environment.solveType(unsolved, tyConSup);
@@ -196,10 +200,14 @@ public class Typechecker {
             if (subType instanceof UnsolvedType otherUnsolved) {
                 // Complete and Easy's InstRReach rule
                 environment.solveType(otherUnsolved, unsolved);
+            } else if (subType instanceof ForAllVar forall) {
+                // Complete and Easy's InstRSolve rule
+                environment.solveType(unsolved, forall);
+            } else if (subType instanceof ExistsVar exists) {
+                environment.solveType(unsolved, exists);
             } else if (subType instanceof BuiltInType builtIn) {
                 environment.solveType(unsolved, builtIn);
             } else if (subType instanceof TypeConstructor tyCon) {
-                // Complete and Easy's InstRSolve rule
                 environment.solveType(unsolved, tyCon);
             } else if (Type.isFunction(subType) &&
                     subType instanceof TypeApply funTypeSub) {

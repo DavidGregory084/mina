@@ -5,20 +5,24 @@ import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.List;
-import java.util.Map;
 
-import net.jqwik.api.*;
+import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.*;
+import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.Range;
+import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.Nameless;
-import org.mina_lang.common.scopes.BuiltInScope;
-import org.mina_lang.common.types.BuiltInType;
-import org.mina_lang.common.types.Type;
+import org.mina_lang.common.names.NamespaceName;
+import org.mina_lang.common.names.QualifiedName;
+import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.DeclarationNode;
 import org.mina_lang.syntax.ExprNode;
 import org.mina_lang.syntax.NamespaceNode;
+
+import net.jqwik.api.*;
 
 public class TypecheckerTest {
     void testSuccessfulTypecheck(
@@ -186,10 +190,89 @@ public class TypecheckerTest {
     }
 
     @Property
-    void checkBuiltInSubTypeReflexivity(@ForAll("builtIns") Type builtIn) {
+    void checkUnsolvedSuperTyping(@ForAll("types") Type type) {
         var diagnostics = new ErrorCollector();
         var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
-        assertThat(typechecker.checkSubType(builtIn, builtIn), is(true));
+        var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
+        assertThat(typechecker.checkSubType(type, unsolved), is(true));
+    }
+
+    @Property
+    void checkUnsolvedSubTyping(@ForAll("types") Type type) {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
+        assertThat(typechecker.checkSubType(unsolved, type), is(true));
+    }
+
+    @Property
+    void checkUnsolvedSubTypeReflexivity() {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
+        assertThat(typechecker.checkSubType(unsolved, unsolved), is(true));
+    }
+
+    @Property
+    void checkSubTypeReflexivity(@ForAll("types") Type type) {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        assertThat(typechecker.checkSubType(type, type), is(true));
+    }
+
+    @Provide
+    Arbitrary<Type> types() {
+        return Arbitraries.lazyOf(
+                () -> simpleTypes(),
+                () -> simpleTypes().list().ofMinSize(1).ofMaxSize(4).map(types -> {
+                    var tyList = Lists.immutable.ofAll(types);
+                    var funArgTys = tyList.take(tyList.size() - 1);
+                    var funReturnTy = tyList.getLast();
+                    return Type.function(funArgTys, funReturnTy);
+                }),
+                () -> simpleTypes().list().ofMinSize(1).ofMaxSize(3).flatMap(types -> {
+                    var tyArgs = Lists.immutable.ofAll(types);
+                    var tyArgKinds = Lists.mutable.withNValues(
+                            types.size() + 1,
+                            () -> (Kind) TypeKind.INSTANCE);
+                    var tyConKind = new HigherKind(tyArgKinds.toImmutable());
+                    return Arbitraries.strings()
+                            .ofMinLength(2)
+                            .ofMaxLength(20)
+                            .map(tyName -> {
+                                var tyConName = new QualifiedName(
+                                        new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker"), tyName);
+                                return new TypeApply(
+                                        new TypeConstructor(tyConName, tyConKind),
+                                        tyArgs,
+                                        TypeKind.INSTANCE);
+                            });
+                }));
+    }
+
+    @Provide
+    Arbitrary<Type> simpleTypes() {
+        return Arbitraries.oneOf(tyVars(), tyCons(), builtIns());
+    }
+
+    @Provide
+    Arbitrary<TypeVar> tyVars() {
+        return Arbitraries.oneOf(
+                Arbitraries.chars()
+                        .filter(Character::isAlphabetic)
+                        .map(c -> new ForAllVar(c.toString(), TypeKind.INSTANCE)),
+                Arbitraries.chars()
+                        .filter(Character::isAlphabetic)
+                        .map(c -> new ExistsVar("?" + c.toString(), TypeKind.INSTANCE)));
+    }
+
+    @Provide
+    Arbitrary<TypeConstructor> tyCons() {
+        return Arbitraries.strings()
+                .ofMaxLength(20)
+                .map(name -> new TypeConstructor(
+                        new QualifiedName(new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker"), name),
+                        TypeKind.INSTANCE));
     }
 
     @Provide
