@@ -17,7 +17,7 @@ public record IntNode<A>(Meta<A> meta, int value) implements LiteralNode<A> {
     }
 
     @Override
-    public <B> IntNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> IntNode<B> accept(LiteralNodeTransformer<A, B> visitor) {
         visitor.preVisitInt(this);
         var result = visitor.visitInt(meta(), value());
         visitor.postVisitInt(result);

@@ -8,21 +8,14 @@ import java.util.List;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.Attributes;
-import org.mina_lang.common.Meta;
-import org.mina_lang.common.Range;
-import org.mina_lang.common.TypeEnvironment;
+import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.Diagnostic;
-import org.mina_lang.common.names.Name;
-import org.mina_lang.common.names.Nameless;
-import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.common.names.QualifiedName;
+import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
-import org.mina_lang.syntax.DeclarationNode;
-import org.mina_lang.syntax.ExprNode;
-import org.mina_lang.syntax.NamespaceNode;
+import org.mina_lang.syntax.*;
 
 import net.jqwik.api.*;
+import net.jqwik.api.Tuple.Tuple2;
 
 public class TypecheckerTest {
     void testSuccessfulTypecheck(
@@ -60,6 +53,17 @@ public class TypecheckerTest {
 
     ErrorCollector testFailedTypecheck(
             TypeEnvironment environment,
+            DeclarationNode<Name> originalNode) {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, environment);
+        typechecker.typecheck(originalNode);
+        var errors = diagnostics.getErrors();
+        assertThat("There should be type errors", errors, is(not(empty())));
+        return diagnostics;
+    }
+
+    ErrorCollector testFailedTypecheck(
+            TypeEnvironment environment,
             ExprNode<Name> originalNode) {
         var diagnostics = new ErrorCollector();
         var typechecker = new Typechecker(diagnostics, environment);
@@ -75,6 +79,88 @@ public class TypecheckerTest {
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
         assertThat(firstDiagnostic.range(), is(equalTo(range)));
         assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
+    }
+
+    @Provide
+    Arbitrary<Tuple2<LiteralNode<Name>, BuiltInType>> literals() {
+        return Arbitraries.oneOf(
+                Arbitraries.of(true, false)
+                        .map(b -> Tuple.of(boolNode(Meta.of(Nameless.INSTANCE), b), Type.BOOLEAN)),
+                Arbitraries.chars()
+                        .map(c -> Tuple.of(charNode(Meta.of(Nameless.INSTANCE), c), Type.CHAR)),
+                Arbitraries.strings().ofMaxLength(100)
+                        .map(s -> Tuple.of(stringNode(Meta.of(Nameless.INSTANCE), s), Type.STRING)),
+                Arbitraries.integers()
+                        .map(i -> Tuple.of(intNode(Meta.of(Nameless.INSTANCE), i), Type.INT)),
+                Arbitraries.longs()
+                        .map(l -> Tuple.of(longNode(Meta.of(Nameless.INSTANCE), l), Type.LONG)),
+                Arbitraries.floats()
+                        .map(f -> Tuple.of(floatNode(Meta.of(Nameless.INSTANCE), f), Type.FLOAT)),
+                Arbitraries.doubles()
+                        .map(d -> Tuple.of(doubleNode(Meta.of(Nameless.INSTANCE), d), Type.DOUBLE)));
+    }
+
+    @Provide
+    Arbitrary<Tuple2<LiteralNode<Name>, BuiltInType>> illTypedLiterals() {
+        return Arbitraries.lazy(() -> literals().flatMap(tuple -> {
+            return builtIns()
+                    .filter(builtIn -> !builtIn.equals(tuple.get2()))
+                    .map(builtIn -> Tuple.of(tuple.get1(), builtIn));
+        }));
+
+    }
+
+    @Property
+    void typecheckLetBoundLiteral(@ForAll("literals") Tuple2<LiteralNode<Name>, BuiltInType> tuple) {
+        var originalLiteralNode = tuple.get1();
+        var expectedType = tuple.get2();
+
+        var expectedLiteralNode = originalLiteralNode.accept(new LiteralNodeMetaTransformer<Name, Attributes>() {
+            @Override
+            public Meta<Attributes> updateMeta(Meta<Name> meta) {
+                return meta.withMeta(new Attributes(meta.meta(), expectedType));
+            }
+        });
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+        var qualName = new QualifiedName(nsName, "testLiteral");
+        var letName = new LetName(qualName);
+
+        var builtInName = new BuiltInName(expectedType.name());
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testLiteral",
+                typeRefNode(Meta.of(builtInName), expectedType.name()),
+                originalLiteralNode);
+
+        var expectedNode = letNode(
+                Meta.of(new Attributes(letName, expectedType)),
+                "testLiteral",
+                typeRefNode(Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)), expectedType.name()),
+                expectedLiteralNode);
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Property
+    void typecheckWrongLetSignature(@ForAll("illTypedLiterals") Tuple2<LiteralNode<Name>, BuiltInType> tuple) {
+        var originalLiteralNode = tuple.get1();
+        var incorrectExpectedType = tuple.get2();
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+        var qualName = new QualifiedName(nsName, "testLiteral");
+        var letName = new LetName(qualName);
+
+        var builtInName = new BuiltInName(incorrectExpectedType.name());
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testLiteral",
+                typeRefNode(Meta.of(builtInName), incorrectExpectedType.name()),
+                originalLiteralNode);
+
+        testFailedTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode);
     }
 
     @Test

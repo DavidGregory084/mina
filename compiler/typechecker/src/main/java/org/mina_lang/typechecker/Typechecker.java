@@ -571,8 +571,7 @@ public class Typechecker {
             var consequent = inferExpr(ifExpr.consequent());
             var consequentType = (Type) consequent.meta().meta().sort();
             var alternative = checkExpr(ifExpr.alternative(), consequentType);
-            var attributes = ifExpr.meta().meta().withSort(consequentType);
-            var updatedMeta = ifExpr.meta().withMeta(attributes);
+            var updatedMeta = updateMetaWith(ifExpr.meta(), consequentType);
             return ifNode(updatedMeta, condition, consequent, alternative);
         } else if (expr instanceof LambdaNode<Name> lambda) {
 

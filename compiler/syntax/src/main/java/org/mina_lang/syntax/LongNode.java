@@ -17,7 +17,7 @@ public record LongNode<A>(Meta<A> meta, long value) implements LiteralNode<A> {
     }
 
     @Override
-    public <B> LongNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> LongNode<B> accept(LiteralNodeTransformer<A, B> visitor) {
         visitor.preVisitLong(this);
         var result = visitor.visitLong(meta(), value());
         visitor.postVisitLong(result);
