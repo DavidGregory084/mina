@@ -5,16 +5,16 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.eclipse.collections.api.block.function.Function3;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.CheckSubtypeScope;
-import org.mina_lang.common.scopes.InstantiateTypeScope;
-import org.mina_lang.common.scopes.NamespaceScope;
-import org.mina_lang.common.scopes.Scope;
+import org.mina_lang.common.scopes.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
@@ -417,12 +417,58 @@ public class Typechecker {
 
         var constrFnType = Type.function(constrParamTypes, constrReturnType);
 
-        var constrType = new TypeLambda(
-                typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
-                constrFnType,
-                dataKind);
+        if (typeParamTypes.isEmpty()) {
+            return constrFnType;
+        } else {
+            return new TypeLambda(
+                    typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
+                    constrFnType,
+                    dataKind);
+        }
+    }
 
-        return constrType;
+    Type createLetFnType(
+            ImmutableList<TypeVar> typeParamTypes,
+            ImmutableList<ParamNode<Attributes>> valueParams,
+            ExprNode<Attributes> bodyExpr) {
+
+        var valueParamTypes = valueParams.collect(param -> {
+            var paramType = environment.lookupValue(param.name()).get();
+            return (Type) paramType.meta().sort();
+        });
+
+        var bodyType = (Type) bodyExpr.meta().meta().sort();
+
+        var functionType = Type.function(valueParamTypes, bodyType);
+
+        if (typeParamTypes.isEmpty()) {
+            return functionType;
+        } else {
+            return new TypeLambda(
+                    typeParamTypes,
+                    functionType,
+                    new HigherKind(typeParamTypes.collect(param -> param.kind()), TypeKind.INSTANCE));
+        }
+    }
+
+    <A> A withTypeParams(
+            Supplier<ImmutableList<TypeVarNode<Name>>> getTyParams,
+            Function3<ImmutableList<TypeVarNode<Attributes>>, ImmutableList<TypeVar>, TypeAnnotationFolder, A> fn) {
+        var typeFolder = new TypeAnnotationFolder(environment);
+        var tyParams = getTyParams.get();
+
+        if (tyParams.isEmpty()) {
+            return fn.value(Lists.immutable.empty(), Lists.immutable.empty(), typeFolder);
+        } else {
+            return withScope(new TypeLambdaScope<>(), () -> {
+                var kindedTyParams = tyParams
+                        .collect(tyParam -> (TypeVarNode<Attributes>) kindchecker.kindcheck(tyParam));
+                var tyParamTypes = kindedTyParams
+                        .collect(tyParam -> (TypeVar) typeFolder.visitTypeVar(tyParam));
+
+                return fn.value(kindedTyParams, tyParamTypes, typeFolder);
+            });
+        }
     }
 
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
@@ -453,7 +499,30 @@ public class Typechecker {
             return kindedData;
 
         } else if (declaration instanceof LetFnNode<Name> letFn) {
+            return withTypeParams(letFn::typeParams, (tyParams, tyParamTypes, typeFolder) -> {
+                return withScope(new LambdaScope<>(), () -> {
+                    var letFnName = (LetName) letFn.meta().meta();
 
+                    var checkedParams = letFn.valueParams()
+                            .collect(param -> inferParam(typeFolder, param));
+                    var checkedReturn = letFn.returnType()
+                            .map(kindchecker::inferType);
+
+                    var expectedType = checkedReturn.map(typeFolder::visitType);
+
+                    var checkedBody = expectedType
+                            .map(expected -> checkExpr(letFn.expr(), expected))
+                            .orElseGet(() -> inferExpr(letFn.expr()));
+
+                    var letFnType = createLetFnType(tyParamTypes, checkedParams, checkedBody);
+
+                    var typedMeta = updateMetaWith(letFn.meta(), letFnType);
+                    environment.putValue(letFnName.localName(), typedMeta);
+                    environment.putValue(letFnName.canonicalName(), typedMeta);
+
+                    return letFnNode(typedMeta, letFn.name(), tyParams, checkedParams, checkedReturn, checkedBody);
+                });
+            });
         } else if (declaration instanceof LetNode<Name> let) {
             var letName = (LetName) let.meta().meta();
 
@@ -479,6 +548,21 @@ public class Typechecker {
         return null;
     }
 
+    ParamNode<Attributes> inferParam(TypeAnnotationFolder typeFolder, ParamNode<Name> param) {
+        var checkedAnnotation = param.typeAnnotation()
+                .map(tyAnn -> kindchecker.kindcheck(tyAnn));
+
+        var paramType = checkedAnnotation
+                .map(kindedAnn -> kindedAnn.accept(typeFolder))
+                .orElseGet(() -> newUnsolvedType(TypeKind.INSTANCE));
+
+        var updatedMeta = updateMetaWith(param.meta(), paramType);
+
+        environment.putValue(param.name(), updatedMeta);
+
+        return paramNode(updatedMeta, param.name(), checkedAnnotation);
+    }
+
     ExprNode<Attributes> inferExpr(ExprNode<Name> expr) {
         if (expr instanceof BlockNode<Name> block) {
 
@@ -500,10 +584,9 @@ public class Typechecker {
             // var inferredExpr = inferExpr(apply.expr());
             // var inferredType = (Type) inferredExpr.meta().meta().sort();
             // if (Type.isFunction(inferredType)) {
-            // var funType = (TypeApply) inferredType;
-            // var argTypes = funType.typeArguments().take(funType.typeArguments().size() -
-            // 1);
-            // apply.args().collect(this::inferExpr).zip(argTypes);
+            //     var funType = (TypeApply) inferredType;
+            //     var argTypes = funType.typeArguments().take(funType.typeArguments().size() - 1);
+            //     apply.args().collect(this::inferExpr).zip(argTypes);
             // }
         } else if (expr instanceof ReferenceNode<Name> reference) {
             var envType = environment.lookupValue(reference.id().canonicalName()).get();
