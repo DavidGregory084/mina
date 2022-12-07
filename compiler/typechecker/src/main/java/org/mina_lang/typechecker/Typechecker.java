@@ -625,20 +625,10 @@ public class Typechecker {
     }
 
     ExprNode<Attributes> checkExpr(ExprNode<Name> expr, Type expectedType) {
-        if (expr instanceof BlockNode<Name> block) {
-
-        } else if (expr instanceof IfNode<Name> ifExpr) {
-
-        } else if (expr instanceof LambdaNode<Name> lambda) {
-
-        } else if (expr instanceof MatchNode<Name> match) {
-
-        } else if (expr instanceof ReferenceNode<Name> reference) {
+        if (expr instanceof LambdaNode<Name> lambda) {
 
         } else if (expr instanceof LiteralNode<Name> literal) {
             return checkLiteral(literal, expectedType);
-        } else if (expr instanceof ApplyNode<Name> apply) {
-
         } else {
             var inferredExpr = inferExpr(expr);
             var inferredType = (Type) inferredExpr.meta().meta().sort();

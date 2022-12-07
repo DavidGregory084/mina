@@ -111,10 +111,6 @@ public class Renamer {
                             this::duplicateValueDefinition);
                     namespaceScope.putValueIfAbsent(constrName.canonicalName(), constrMeta);
 
-                    namespaceScope.putTypeIfAbsentOrElse(constrName.localName(), constrMeta,
-                            this::duplicateTypeDefinition);
-                    namespaceScope.putTypeIfAbsent(constrName.canonicalName(), constrMeta);
-
                     constr.params().forEach(constrParam -> {
                         var fieldName = new FieldName(constrName, constrParam.name());
                         var fieldMeta = new Meta<Name>(constrParam.range(), fieldName);

@@ -8,7 +8,10 @@ import java.util.List;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.*;
+import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.Range;
+import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
@@ -16,6 +19,7 @@ import org.mina_lang.syntax.*;
 
 import net.jqwik.api.*;
 import net.jqwik.api.Tuple.Tuple2;
+import net.jqwik.api.Tuple.Tuple3;
 
 public class TypecheckerTest {
     void testSuccessfulTypecheck(
@@ -101,17 +105,17 @@ public class TypecheckerTest {
     }
 
     @Provide
-    Arbitrary<Tuple2<LiteralNode<Name>, BuiltInType>> illTypedLiterals() {
+    Arbitrary<Tuple3<LiteralNode<Name>, BuiltInType, BuiltInType>> illTypedLiterals() {
         return Arbitraries.lazy(() -> literals().flatMap(tuple -> {
             return builtIns()
                     .filter(builtIn -> !builtIn.equals(tuple.get2()))
-                    .map(builtIn -> Tuple.of(tuple.get1(), builtIn));
+                    .map(builtIn -> Tuple.of(tuple.get1(), tuple.get2(), builtIn));
         }));
 
     }
 
     @Property
-    void typecheckLetBoundLiteral(@ForAll("literals") Tuple2<LiteralNode<Name>, BuiltInType> tuple) {
+    void typecheckAnnotatedLiteralLetBinding(@ForAll("literals") Tuple2<LiteralNode<Name>, BuiltInType> tuple) {
         var originalLiteralNode = tuple.get1();
         var expectedType = tuple.get2();
 
@@ -144,9 +148,39 @@ public class TypecheckerTest {
     }
 
     @Property
-    void typecheckWrongLetSignature(@ForAll("illTypedLiterals") Tuple2<LiteralNode<Name>, BuiltInType> tuple) {
+    void typecheckUnannotatedLiteralLetBinding(@ForAll("literals") Tuple2<LiteralNode<Name>, BuiltInType> tuple) {
         var originalLiteralNode = tuple.get1();
-        var incorrectExpectedType = tuple.get2();
+        var expectedType = tuple.get2();
+
+        var expectedLiteralNode = originalLiteralNode.accept(new LiteralNodeMetaTransformer<Name, Attributes>() {
+            @Override
+            public Meta<Attributes> updateMeta(Meta<Name> meta) {
+                return meta.withMeta(new Attributes(meta.meta(), expectedType));
+            }
+        });
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+        var qualName = new QualifiedName(nsName, "testLiteral");
+        var letName = new LetName(qualName);
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testLiteral",
+                originalLiteralNode);
+
+        var expectedNode = letNode(
+                Meta.of(new Attributes(letName, expectedType)),
+                "testLiteral",
+                expectedLiteralNode);
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Property
+    void typecheckWrongLetAnnotation(@ForAll("illTypedLiterals") Tuple3<LiteralNode<Name>, BuiltInType, BuiltInType> tuple) {
+        var originalLiteralNode = tuple.get1();
+        var actualLiteralType = tuple.get2();
+        var incorrectExpectedType = tuple.get3();
 
         var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
         var qualName = new QualifiedName(nsName, "testLiteral");
@@ -160,7 +194,203 @@ public class TypecheckerTest {
                 typeRefNode(Meta.of(builtInName), incorrectExpectedType.name()),
                 originalLiteralNode);
 
-        testFailedTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode);
+        var collector = testFailedTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode);
+
+        assertDiagnostic(
+            collector.getDiagnostics(),
+            originalLiteralNode.range(),
+            "Mismatched type! Expected: " + incorrectExpectedType.name() + ", Actual: " + actualLiteralType.name());
+    }
+
+    @Test
+    void typecheckAnnotatedLetBoundReference() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+
+        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
+        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
+
+        var boolConstrType = Type.function(
+                        Lists.immutable.empty(),
+                        new TypeConstructor(boolName.name(), TypeKind.INSTANCE));
+
+        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
+
+        var trueMeta = Meta.of(new Attributes(trueName, boolConstrType));
+
+        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
+
+        var falseMeta = Meta.of(new Attributes(falseName, boolConstrType));
+
+        environment.putType("Bool", boolMeta);
+        environment.putValue("True", trueMeta);
+        environment.putValue("False", falseMeta);
+
+        var originalBoolNode = refNode(trueMeta.withMeta(trueMeta.meta().name()), "True");
+        var expectedBoolNode = refNode(trueMeta, "True");
+
+        var qualLetName = new QualifiedName(nsName, "testBool");
+        var letName = new LetName(qualLetName);
+
+        var originalBoolConstrTypeNode = funTypeNode(
+            Meta.of(Nameless.INSTANCE),
+            Lists.immutable.empty(),
+            typeRefNode(Meta.of(boolName), "Bool"));
+
+        var expectedBoolConstrTypeNode = funTypeNode(
+            Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
+            Lists.immutable.empty(),
+            typeRefNode(Meta.of(new Attributes(boolName, TypeKind.INSTANCE)), "Bool"));
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testBool",
+                originalBoolConstrTypeNode,
+                originalBoolNode);
+
+        var expectedNode = letNode(
+                Meta.of(new Attributes(letName, boolConstrType)),
+                "testBool",
+                expectedBoolConstrTypeNode,
+                expectedBoolNode);
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
+    }
+
+    @Test
+    void typecheckIllTypedLetBoundReference() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+
+        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
+        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
+
+        var boolConstrType = Type.function(
+                        Lists.immutable.empty(),
+                        new TypeConstructor(boolName.name(), TypeKind.INSTANCE));
+
+        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
+
+        var trueMeta = Meta.of(new Attributes(trueName, boolConstrType));
+
+        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
+
+        var falseMeta = Meta.of(new Attributes(falseName, boolConstrType));
+
+        environment.putType("Bool", boolMeta);
+        environment.putValue("True", trueMeta);
+        environment.putValue("False", falseMeta);
+
+        var boolReferenceRange = new Range(0, 1, 0, 1);
+        var originalBoolNode = refNode(new Meta<>(boolReferenceRange, trueMeta.meta().name()), "True");
+
+        var qualLetName = new QualifiedName(nsName, "testBool");
+        var letName = new LetName(qualLetName);
+
+        var originalBoolConstrTypeNode = funTypeNode(
+            Meta.of(Nameless.INSTANCE),
+            Lists.immutable.of(typeRefNode(Meta.of(new BuiltInName("Int")), "Int")),
+            typeRefNode(Meta.of(boolName), "Bool"));
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testBool",
+                originalBoolConstrTypeNode,
+                originalBoolNode);
+
+        var collector = testFailedTypecheck(environment, originalNode);
+
+        assertDiagnostic(
+            collector.getDiagnostics(),
+            boolReferenceRange,
+            "Mismatched type! Expected: Int -> Bool, Actual: () -> Bool");
+    }
+
+    @Test
+    void typecheckUnannotatedLetBoundReference() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+
+        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
+        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
+
+        var boolConstrType = Type.function(
+                        Lists.immutable.empty(),
+                        new TypeConstructor(boolName.name(), TypeKind.INSTANCE));
+
+        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
+
+        var trueMeta = Meta.of(new Attributes(trueName, boolConstrType));
+
+        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
+
+        var falseMeta = Meta.of(new Attributes(falseName, boolConstrType));
+
+        environment.putType("Bool", boolMeta);
+        environment.putValue("True", trueMeta);
+        environment.putValue("False", falseMeta);
+
+        var originalBoolNode = refNode(trueMeta.withMeta(trueMeta.meta().name()), "True");
+        var expectedBoolNode = refNode(trueMeta, "True");
+
+        var qualLetName = new QualifiedName(nsName, "testBool");
+        var letName = new LetName(qualLetName);
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testBool",
+                originalBoolNode);
+
+        var expectedNode = letNode(
+                Meta.of(new Attributes(letName, boolConstrType)),
+                "testBool",
+                expectedBoolNode);
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
+    }
+
+
+    @Test
+    void typecheckReference() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+
+        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
+        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
+
+        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
+
+        var trueMeta = Meta.of(new Attributes(
+                trueName,
+                Type.function(
+                        Lists.immutable.empty(),
+                        new TypeConstructor(trueName.name(), TypeKind.INSTANCE))));
+
+        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
+
+        var falseMeta = Meta.of(new Attributes(
+                falseName,
+                Type.function(
+                        Lists.immutable.empty(),
+                        new TypeConstructor(falseName.name(), TypeKind.INSTANCE))));
+
+        environment.putType("Bool", boolMeta);
+        environment.putValue("True", trueMeta);
+        environment.putValue("False", falseMeta);
+
+        var originalTrueNode = refNode(trueMeta.withMeta(trueMeta.meta().name()), "True");
+        var expectedTrueNode = refNode(trueMeta, "True");
+
+        testSuccessfulTypecheck(environment, originalTrueNode, expectedTrueNode);
+
+        var originalFalseNode = refNode(falseMeta.withMeta(falseMeta.meta().name()), "False");
+        var expectedFalseNode = refNode(falseMeta, "False");
+
+        testSuccessfulTypecheck(environment, originalFalseNode, expectedFalseNode);
     }
 
     @Test

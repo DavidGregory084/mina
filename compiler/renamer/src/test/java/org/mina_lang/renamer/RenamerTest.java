@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.eclipse.collections.api.factory.Lists;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.Diagnostic;
@@ -240,7 +241,7 @@ public class RenamerTest {
 
         var diagnostics = collector.getDiagnostics();
 
-        assertThat(diagnostics, hasSize(2));
+        assertThat(diagnostics, hasSize(1));
 
         assertDuplicateValueDefinition(
                 diagnostics,
@@ -249,6 +250,7 @@ public class RenamerTest {
                 "True");
     }
 
+    @Disabled("At present constructors do not introduce a new type")
     @Test
     void renameDataCollidingWithConstructor() {
         var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
