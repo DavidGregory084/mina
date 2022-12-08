@@ -233,9 +233,10 @@ public class Kindchecker {
             var inferredParams = data.typeParams()
                     .collect(tyParam -> (TypeVarNode<Attributes>) inferType(tyParam));
 
-            var inferredKind = new HigherKind(
-                    inferredParams.collect(param -> (Kind) param.meta().meta().sort()),
-                    TypeKind.INSTANCE);
+            var inferredKind = data.typeParams().isEmpty() ? TypeKind.INSTANCE
+                    : new HigherKind(
+                            inferredParams.collect(param -> (Kind) param.meta().meta().sort()),
+                            TypeKind.INSTANCE);
 
             var updatedMeta = updateMetaWith(data.meta(), inferredKind);
 
@@ -318,14 +319,18 @@ public class Kindchecker {
                         unsolvedReturn);
 
                 if (inferredTypeKind instanceof UnsolvedKind unsolved) {
-                    environment.solveKind(unsolved, appliedKind);
-                } else {
-                    mismatchedTypeApplication(tyApp.range(), appliedKind, inferredTypeKind);
+                    instantiateAsSubKind(unsolved, appliedKind);
+                } else if (inferredTypeKind instanceof HigherKind hk) {
+                    instantiateAsSubKind(unsolvedReturn, hk.resultKind());
                 }
 
                 var checkedArgs = tyApp.args()
                         .zip(unsolvedArgs)
                         .collect(pair -> checkType(pair.getOne(), pair.getTwo()));
+
+                if (!(inferredTypeKind instanceof UnsolvedKind)){
+                    mismatchedTypeApplication(tyApp.range(), appliedKind, inferredTypeKind);
+                }
 
                 var updatedMeta = updateMetaWith(tyApp.meta(), unsolvedReturn);
 
@@ -379,7 +384,7 @@ public class Kindchecker {
                         .collect(pair -> {
                             var tyArg = pair.getOne();
                             var updatedMeta = updateMetaWith(tyArg.meta(), pair.getTwo());
-                            environment.putTypeIfAbsent(tyArg.name(), updatedMeta);
+                            environment.putType(tyArg.name(), updatedMeta);
                             if (tyArg instanceof ForAllVarNode) {
                                 return (TypeVarNode<Attributes>) forAllVarNode(updatedMeta, tyArg.name());
                             } else {

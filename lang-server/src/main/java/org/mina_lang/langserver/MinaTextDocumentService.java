@@ -11,6 +11,7 @@ import org.mina_lang.common.NameEnvironment;
 import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.parser.Parser;
 import org.mina_lang.renamer.Renamer;
+import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.typechecker.Typechecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class MinaTextDocumentService implements TextDocumentService {
             var document = params.getTextDocument();
             var documentUri = document.getUri();
             documents.addDocument(params);
-            var parsingFuture = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<NamespaceNode<?>> parsingFuture = CompletableFuture.supplyAsync(() -> {
                 return withDiagnostics(document, diagnostics -> {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
                     try {
@@ -53,9 +54,16 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
                         var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
                         var parsed = parser.parse(charStream);
-                        var renamed = renamer.rename(parsed);
-                        var checked = typechecker.typecheck(renamed);
-                        return checked;
+                        if (diagnostics.getDiagnostics().isEmpty()) {
+                            var renamed = renamer.rename(parsed);
+                            if (diagnostics.getDiagnostics().isEmpty()) {
+                                return typechecker.typecheck(renamed);
+                            } else {
+                                return renamed;
+                            }
+                        } else {
+                            return parsed;
+                        }
                     } catch (Exception e) {
                         logger.error("Exception while processing syntax tree", e);
                         throw e;
@@ -71,7 +79,7 @@ public class MinaTextDocumentService implements TextDocumentService {
         server.ifShouldNotify(() -> {
             var documentUri = params.getTextDocument().getUri();
             var updatedDocument = documents.updateDocument(params);
-            var parsingFuture = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<NamespaceNode<?>> parsingFuture = CompletableFuture.supplyAsync(() -> {
                 return withDiagnostics(updatedDocument, diagnostics -> {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
                     try {
@@ -79,9 +87,16 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
                         var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
                         var parsed = parser.parse(charStream);
-                        var renamed = renamer.rename(parsed);
-                        var checked = typechecker.typecheck(renamed);
-                        return checked;
+                        if (diagnostics.getDiagnostics().isEmpty()) {
+                            var renamed = renamer.rename(parsed);
+                            if (diagnostics.getDiagnostics().isEmpty()) {
+                                return typechecker.typecheck(renamed);
+                            } else {
+                                return renamed;
+                            }
+                        } else {
+                            return parsed;
+                        }
                     } catch (Exception e) {
                         logger.error("Exception while processing syntax tree", e);
                         throw e;

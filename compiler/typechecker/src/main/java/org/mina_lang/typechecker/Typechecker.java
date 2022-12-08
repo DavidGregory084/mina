@@ -27,6 +27,7 @@ public class Typechecker {
     private UnsolvedVariableSupply varSupply;
     private Kindchecker kindchecker;
     private TypePrinter typePrinter = new TypePrinter();
+    private KindPrinter kindPrinter = new KindPrinter();
 
     public Typechecker(DiagnosticCollector diagnostics, TypeEnvironment environment) {
         this.diagnostics = diagnostics;
@@ -268,10 +269,13 @@ public class Typechecker {
 
     boolean checkSubType(Type subType, Type superType) {
         return withScope(new CheckSubtypeScope<>(), () -> {
-            var solvedSubType = subType
-                    .substitute(environment.typeSubstitution(), environment.kindSubstitution());
-            var solvedSuperType = superType
-                    .substitute(environment.typeSubstitution(), environment.kindSubstitution());
+            var solvedSubType = subType.substitute(
+                    environment.typeSubstitution(),
+                    environment.kindSubstitution());
+
+            var solvedSuperType = superType.substitute(
+                    environment.typeSubstitution(),
+                    environment.kindSubstitution());
 
             if (solvedSubType instanceof ForAllVar subTy &&
                     solvedSuperType instanceof ForAllVar supTy &&
@@ -296,14 +300,16 @@ public class Typechecker {
                 // Complete and Easy's <:Exvar rule
                 return true;
             } else if (solvedSubType instanceof UnsolvedType unsolvedSub
-                    && !unsolvedSub.isFreeIn(solvedSuperType)) {
+                    && !unsolvedSub.isFreeIn(solvedSuperType)
+                    && kindchecker.checkSubKind(unsolvedSub.kind(), solvedSuperType.kind())) {
                 // Complete and Easy's <:InstantiateL rule
                 instantiateAsSubType(unsolvedSub, solvedSuperType);
 
                 return true;
 
             } else if (solvedSuperType instanceof UnsolvedType unsolvedSup
-                    && !unsolvedSup.isFreeIn(solvedSubType)) {
+                    && !unsolvedSup.isFreeIn(solvedSubType)
+                    && kindchecker.checkSubKind(solvedSubType.kind(), unsolvedSup.kind())) {
                 // Complete and Easy's <:InstantiateR rule
                 instantiateAsSuperType(unsolvedSup, solvedSubType);
 
@@ -412,7 +418,8 @@ public class Typechecker {
                 .map(typ -> typeFolder.visitType(typ))
                 .orElseGet(() -> {
                     var tyCon = new TypeConstructor(dataName.name(), dataKind);
-                    return new TypeApply(tyCon, typeParamTypes, TypeKind.INSTANCE);
+                    return typeParamTypes.isEmpty() ? tyCon
+                            : new TypeApply(tyCon, typeParamTypes, TypeKind.INSTANCE);
                 });
 
         var constrFnType = Type.function(constrParamTypes, constrReturnType);
@@ -475,6 +482,20 @@ public class Typechecker {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
             var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
+            environment.topScope().types().forEach((nm, meta) -> {
+                var kind = (Kind) meta.meta().sort();
+                var doc = Doc.text(nm)
+                        .append(Doc.text(":"))
+                        .appendSpace(kind.accept(kindPrinter));
+                System.err.println(doc.render(80));
+            });
+            environment.topScope().values().forEach((nm, meta) -> {
+                var type = (Type) meta.meta().sort();
+                var doc = Doc.text(nm)
+                        .append(Doc.text(":"))
+                        .appendSpace(type.accept(typePrinter));
+                System.err.println(doc.render(80));
+            });
             return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
         });
     }
@@ -483,17 +504,23 @@ public class Typechecker {
         if (declaration instanceof DataNode<Name> data) {
             var kindedData = kindchecker.kindcheck(data);
 
-            var dataName = (DataName) kindedData.meta().meta().name();
+            var dataName = (Named) kindedData.meta().meta().name();
             environment.putType(dataName.localName(), kindedData.meta());
             environment.putType(dataName.canonicalName(), kindedData.meta());
 
             kindedData.constructors().forEach(kindedConstr -> {
-                var constrName = (ConstructorName) kindedConstr.meta().meta().name();
+                var constrName = (Named) kindedConstr.meta().meta().name();
+
                 var constrType = createConstructorType(kindedData, kindedConstr);
                 var constrAttrs = kindedConstr.meta().meta().withSort(constrType);
+
                 var constrTypeMeta = kindedConstr.meta().withMeta(constrAttrs);
                 environment.putValue(constrName.localName(), constrTypeMeta);
                 environment.putValue(constrName.canonicalName(), constrTypeMeta);
+
+                // kindedConstr.params().forEach(constrParam -> {
+
+                // });
             });
 
             return kindedData;
@@ -501,46 +528,51 @@ public class Typechecker {
         } else if (declaration instanceof LetFnNode<Name> letFn) {
             return withTypeParams(letFn::typeParams, (tyParams, tyParamTypes, typeFolder) -> {
                 return withScope(new LambdaScope<>(), () -> {
-                    var letFnName = (LetName) letFn.meta().meta();
+                    var letFnName = (Named) letFn.meta().meta();
 
-                    var checkedParams = letFn.valueParams()
+                    var inferredParams = letFn.valueParams()
                             .collect(param -> inferParam(typeFolder, param));
-                    var checkedReturn = letFn.returnType()
+                    var kindedReturn = letFn.returnType()
                             .map(kindchecker::inferType);
 
-                    var expectedType = checkedReturn.map(typeFolder::visitType);
+                    var expectedType = kindedReturn.map(typeFolder::visitType);
 
                     var checkedBody = expectedType
                             .map(expected -> checkExpr(letFn.expr(), expected))
                             .orElseGet(() -> inferExpr(letFn.expr()));
 
-                    var letFnType = createLetFnType(tyParamTypes, checkedParams, checkedBody);
+                    var letFnType = createLetFnType(tyParamTypes, inferredParams, checkedBody);
 
                     var typedMeta = updateMetaWith(letFn.meta(), letFnType);
                     environment.putValue(letFnName.localName(), typedMeta);
                     environment.putValue(letFnName.canonicalName(), typedMeta);
 
-                    return letFnNode(typedMeta, letFn.name(), tyParams, checkedParams, checkedReturn, checkedBody);
+                    return letFnNode(typedMeta, letFn.name(), tyParams, inferredParams, kindedReturn, checkedBody);
                 });
             });
         } else if (declaration instanceof LetNode<Name> let) {
-            var letName = (LetName) let.meta().meta();
+            var letName = (Named) let.meta().meta();
 
             return let.type().map(typ -> {
                 var kindedType = kindchecker.kindcheck(typ);
                 var expectedType = kindedType.accept(new TypeAnnotationFolder(environment));
+
                 var checkedExpr = checkExpr(let.expr(), expectedType);
                 var checkedType = (Type) checkedExpr.meta().meta().sort();
+
                 var typedMeta = updateMetaWith(let.meta(), checkedType);
                 environment.putValue(letName.localName(), typedMeta);
                 environment.putValue(letName.canonicalName(), typedMeta);
+
                 return letNode(typedMeta, let.name(), kindedType, checkedExpr);
             }).orElseGet(() -> {
                 var inferredExpr = inferExpr(let.expr());
                 var inferredType = (Type) inferredExpr.meta().meta().sort();
+
                 var typedMeta = updateMetaWith(let.meta(), inferredType);
                 environment.putValue(letName.localName(), typedMeta);
                 environment.putValue(letName.canonicalName(), typedMeta);
+
                 return letNode(typedMeta, let.name(), Optional.empty(), inferredExpr);
             });
         }
@@ -565,28 +597,102 @@ public class Typechecker {
 
     ExprNode<Attributes> inferExpr(ExprNode<Name> expr) {
         if (expr instanceof BlockNode<Name> block) {
+            return withScope(new BlockScope<>(), () -> {
+                var inferredDeclarations = block
+                        .declarations()
+                        .collect(let -> (LetNode<Attributes>) inferDeclaration(let));
 
+                var inferredResult = inferExpr(block.result());
+
+                var updatedMeta = updateMetaWith(
+                        block.meta(),
+                        (Type) inferredResult.meta().meta().sort());
+
+                return blockNode(updatedMeta, inferredDeclarations, inferredResult);
+            });
         } else if (expr instanceof IfNode<Name> ifExpr) {
             var condition = checkExpr(ifExpr.condition(), Type.BOOLEAN);
+
             var consequent = inferExpr(ifExpr.consequent());
             var consequentType = (Type) consequent.meta().meta().sort();
+
             var alternative = checkExpr(ifExpr.alternative(), consequentType);
+
             var updatedMeta = updateMetaWith(ifExpr.meta(), consequentType);
+
             return ifNode(updatedMeta, condition, consequent, alternative);
         } else if (expr instanceof LambdaNode<Name> lambda) {
+            return withScope(new LambdaScope<>(), () -> {
+                var typeFolder = new TypeAnnotationFolder(environment);
 
+                var inferredArgs = lambda.params()
+                        .collect(param -> inferParam(typeFolder, param));
+
+                var inferredBody = inferExpr(lambda.body());
+
+                var inferredType = Type.function(
+                        inferredArgs.collect(arg -> (Type) arg.meta().meta().sort()),
+                        (Type) inferredBody.meta().meta().sort());
+
+                var updatedMeta = updateMetaWith(
+                        lambda.meta(),
+                        inferredType.substitute(
+                                environment.typeSubstitution(),
+                                environment.kindSubstitution()));
+
+                return lambdaNode(updatedMeta, inferredArgs, inferredBody);
+            });
         } else if (expr instanceof MatchNode<Name> match) {
 
         } else if (expr instanceof LiteralNode<Name> literal) {
             return inferLiteral(literal);
         } else if (expr instanceof ApplyNode<Name> apply) {
-            // var inferredExpr = inferExpr(apply.expr());
-            // var inferredType = (Type) inferredExpr.meta().meta().sort();
-            // if (Type.isFunction(inferredType)) {
-            //     var funType = (TypeApply) inferredType;
-            //     var argTypes = funType.typeArguments().take(funType.typeArguments().size() - 1);
-            //     apply.args().collect(this::inferExpr).zip(argTypes);
-            // }
+            var inferredExpr = inferExpr(apply.expr());
+
+            var inferredType = ((Type) inferredExpr.meta().meta().sort())
+                    .substitute(environment.typeSubstitution(), environment.kindSubstitution());
+
+            if (Type.isFunction(inferredType) &&
+                    inferredType instanceof TypeApply funType &&
+                    apply.args().size() == (funType.typeArguments().size() - 1)) {
+
+                var checkedArgs = apply.args()
+                        .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
+                        .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
+
+                var updatedMeta = updateMetaWith(apply.meta(), funType.typeArguments().getLast());
+
+                return applyNode(updatedMeta, inferredExpr, checkedArgs);
+            } else {
+                var unsolvedArgs = apply.args()
+                        .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+
+                var unsolvedReturn = newUnsolvedType(TypeKind.INSTANCE);
+
+                var appliedType = Type.function(
+                        unsolvedArgs.collect(arg -> (Type) arg),
+                        unsolvedReturn);
+
+                // Don't need to do an occurs check here as these are fresh unsolved types
+                if (inferredType instanceof UnsolvedType unsolved) {
+                    instantiateAsSubType(unsolved, appliedType);
+                } else if (Type.isFunction(inferredType) &&
+                        inferredType instanceof TypeApply funType) {
+                    instantiateAsSubType(unsolvedReturn, funType.typeArguments().getLast());
+                }
+
+                var checkedArgs = apply.args()
+                        .zip(unsolvedArgs)
+                        .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
+
+                if (!(inferredType instanceof UnsolvedType)) {
+                    mismatchedApplication(apply.range(), appliedType, inferredType);
+                }
+
+                var updatedMeta = updateMetaWith(apply.meta(), unsolvedReturn);
+
+                return applyNode(updatedMeta, inferredExpr, checkedArgs);
+            }
         } else if (expr instanceof ReferenceNode<Name> reference) {
             var envType = environment.lookupValue(reference.id().canonicalName()).get();
             var updatedMeta = updateMetaWith(reference.meta(), envType.meta().sort());
@@ -625,8 +731,32 @@ public class Typechecker {
     }
 
     ExprNode<Attributes> checkExpr(ExprNode<Name> expr, Type expectedType) {
-        if (expr instanceof LambdaNode<Name> lambda) {
+        if (expr instanceof LambdaNode<Name> lambda &&
+                expectedType instanceof TypeApply funType &&
+                lambda.params().size() == (funType.typeArguments().size() - 1)) {
+            return withScope(new LambdaScope<>(), () -> {
+                var knownParams = lambda.params()
+                        .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
+                        .collect(pair -> {
+                            var param = pair.getOne();
+                            var updatedMeta = updateMetaWith(param.meta(), pair.getTwo());
+                            var kindedAnnotation = param.typeAnnotation().map(kindchecker::kindcheck);
+                            environment.putValue(param.name(), updatedMeta);
+                            return paramNode(updatedMeta, param.name(), kindedAnnotation);
+                        });
 
+                var knownParamTypes = knownParams
+                        .collect(param -> (Type) param.meta().meta().sort());
+
+                var checkedReturn = checkExpr(lambda.body(), funType.typeArguments().getLast());
+
+                var updatedMeta = updateMetaWith(
+                        lambda.meta(),
+                        Type.function(knownParamTypes, (Type) checkedReturn.meta().meta().sort()));
+
+                return lambdaNode(updatedMeta, knownParams, checkedReturn);
+
+            });
         } else if (expr instanceof LiteralNode<Name> literal) {
             return checkLiteral(literal, expectedType);
         } else {
@@ -640,8 +770,6 @@ public class Typechecker {
 
             return inferredExpr;
         }
-
-        return null;
     }
 
     LiteralNode<Attributes> checkLiteral(LiteralNode<Name> literal, Type expectedType) {

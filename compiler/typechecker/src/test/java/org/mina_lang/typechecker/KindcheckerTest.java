@@ -98,8 +98,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
-        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
+        environment.putType(listDataName.localName(), listMeta);
+        environment.putType(listDataName.canonicalName(), listMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -143,8 +143,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
-        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
+        environment.putType(listDataName.localName(), listMeta);
+        environment.putType(listDataName.canonicalName(), listMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(applyRange, Nameless.INSTANCE),
@@ -160,7 +160,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 applyRange,
-                "Mismatched type application! Expected: * => *, Actual: [A1, B1] => C1");
+                "Mismatched type application! Expected: * => *, Actual: [*, *] => *");
     }
 
     @Test
@@ -186,8 +186,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
-        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
+        environment.putType(eitherDataName.localName(), eitherMeta);
+        environment.putType(eitherDataName.canonicalName(), eitherMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -232,8 +232,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
-        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
+        environment.putType(eitherDataName.localName(), eitherMeta);
+        environment.putType(eitherDataName.canonicalName(), eitherMeta);
 
         var originalNode = typeApplyNode(
                 new Meta<Name>(applyRange, Nameless.INSTANCE),
@@ -249,7 +249,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 applyRange,
-                "Mismatched type application! Expected: [*, *] => *, Actual: A1 => B1");
+                "Mismatched type application! Expected: [*, *] => *, Actual: * => *");
     }
 
     @Test
@@ -276,7 +276,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 applyRange,
-                "Mismatched type application! Expected: *, Actual: A1 => B1");
+                "Mismatched type application! Expected: *, Actual: * => B1");
     }
 
     @Test
@@ -333,8 +333,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
-        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
+        environment.putType(eitherDataName.localName(), eitherMeta);
+        environment.putType(eitherDataName.canonicalName(), eitherMeta);
 
         var originalNode = funTypeNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -376,8 +376,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
-        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
+        environment.putType(listDataName.localName(), listMeta);
+        environment.putType(listDataName.canonicalName(), listMeta);
 
         var originalNode = funTypeNode(
                 new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
@@ -611,10 +611,10 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(listDataName.localName(), listMeta);
-        environment.putTypeIfAbsent(listDataName.canonicalName(), listMeta);
-        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
-        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
+        environment.putType(listDataName.localName(), listMeta);
+        environment.putType(listDataName.canonicalName(), listMeta);
+        environment.putType(functorDataName.localName(), functorMeta);
+        environment.putType(functorDataName.canonicalName(), functorMeta);
 
         // Functor[List]
         var originalNode = typeApplyNode(
@@ -650,8 +650,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
-        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
+        environment.putType(functorDataName.localName(), functorMeta);
+        environment.putType(functorDataName.canonicalName(), functorMeta);
 
         // F => Functor[F]
         var originalNode = typeLambdaNode(
@@ -693,8 +693,8 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
-        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
+        environment.putType(functorDataName.localName(), functorMeta);
+        environment.putType(functorDataName.canonicalName(), functorMeta);
 
         var typeLambdaKind = new HigherKind(typeVarFKind, TypeKind.INSTANCE);
 
@@ -746,10 +746,10 @@ public class KindcheckerTest {
 
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putTypeIfAbsent(eitherDataName.localName(), eitherMeta);
-        environment.putTypeIfAbsent(eitherDataName.canonicalName(), eitherMeta);
-        environment.putTypeIfAbsent(functorDataName.localName(), functorMeta);
-        environment.putTypeIfAbsent(functorDataName.canonicalName(), functorMeta);
+        environment.putType(eitherDataName.localName(), eitherMeta);
+        environment.putType(eitherDataName.canonicalName(), eitherMeta);
+        environment.putType(functorDataName.localName(), functorMeta);
+        environment.putType(functorDataName.canonicalName(), functorMeta);
 
         var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
 
