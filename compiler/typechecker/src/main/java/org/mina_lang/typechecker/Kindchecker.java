@@ -4,8 +4,10 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.function.Supplier;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.*;
+import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.Range;
+import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
@@ -70,7 +72,8 @@ public class Kindchecker {
     }
 
     Meta<Attributes> updateMetaWith(Meta<Name> meta, Sort sort) {
-        var attributes = meta.meta().withSort(sort);
+        var substituted = ((Kind) sort).substitute(environment.kindSubstitution());
+        var attributes = meta.meta().withSort(substituted);
         return meta.withMeta(attributes);
     }
 
@@ -328,7 +331,7 @@ public class Kindchecker {
                         .zip(unsolvedArgs)
                         .collect(pair -> checkType(pair.getOne(), pair.getTwo()));
 
-                if (!(inferredTypeKind instanceof UnsolvedKind)){
+                if (!(inferredTypeKind instanceof UnsolvedKind)) {
                     mismatchedTypeApplication(tyApp.range(), appliedKind, inferredTypeKind);
                 }
 

@@ -26,14 +26,17 @@ public class Typechecker {
     private TypeEnvironment environment;
     private UnsolvedVariableSupply varSupply;
     private Kindchecker kindchecker;
-    private TypePrinter typePrinter = new TypePrinter();
-    private KindPrinter kindPrinter = new KindPrinter();
+    private SortSubstitutionTransformer sortTransformer;
+    private SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
 
     public Typechecker(DiagnosticCollector diagnostics, TypeEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
         this.varSupply = new UnsolvedVariableSupply();
         this.kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+        this.sortTransformer = new SortSubstitutionTransformer(
+                environment.typeSubstitution(),
+                environment.kindSubstitution());
     }
 
     public TypeEnvironment getEnvironment() {
@@ -84,19 +87,56 @@ public class Typechecker {
         return inferExpr(node);
     }
 
+    Kind getKind(MetaNode<Attributes> node) {
+        return (Kind) node.meta().meta().sort();
+    }
+
+    Type getType(MetaNode<Attributes> node) {
+        return (Type) node.meta().meta().sort();
+    }
+
     Meta<Attributes> updateMetaWith(Meta<Name> meta, Sort sort) {
-        var attributes = meta.meta().withSort(sort);
+        var substituted = sort.accept(sortTransformer);
+        var attributes = meta.meta().withSort(substituted);
         return meta.withMeta(attributes);
+    }
+
+    void putTypeDeclaration(Scope<Attributes> scope, Meta<Attributes> meta) {
+        var name = (Named) meta.meta().name();
+        scope.putType(name.localName(), meta);
+        scope.putType(name.canonicalName(), meta);
+        return;
+    }
+
+    void putValueDeclaration(Scope<Attributes> scope, Meta<Attributes> meta) {
+        var name = (Named) meta.meta().name();
+        scope.putValue(name.localName(), meta);
+        scope.putValue(name.canonicalName(), meta);
+        return;
+    }
+
+    void putTypeDeclaration(Meta<Attributes> meta) {
+        var name = (Named) meta.meta().name();
+        environment.putType(name.localName(), meta);
+        environment.putType(name.canonicalName(), meta);
+        return;
+    }
+
+    void putValueDeclaration(Meta<Attributes> meta) {
+        var name = (Named) meta.meta().name();
+        environment.putValue(name.localName(), meta);
+        environment.putValue(name.canonicalName(), meta);
+        return;
     }
 
     void mismatchedType(Range range, Type actualType, Type expectedType) {
         var expected = expectedType
                 .substitute(environment.typeSubstitution(), environment.kindSubstitution())
-                .accept(typePrinter);
+                .accept(sortPrinter);
 
         var actual = actualType
                 .substitute(environment.typeSubstitution(), environment.kindSubstitution())
-                .accept(typePrinter);
+                .accept(sortPrinter);
 
         var message = Doc.group(
                 Doc.text("Mismatched type!")
@@ -110,11 +150,11 @@ public class Typechecker {
     void mismatchedApplication(Range range, Type actualType, Type expectedType) {
         var expected = expectedType
                 .substitute(environment.typeSubstitution(), environment.kindSubstitution())
-                .accept(typePrinter);
+                .accept(sortPrinter);
 
         var actual = actualType
                 .substitute(environment.typeSubstitution(), environment.kindSubstitution())
-                .accept(typePrinter);
+                .accept(sortPrinter);
 
         var message = Doc.group(
                 Doc.text("Mismatched application!")
@@ -356,20 +396,17 @@ public class Typechecker {
 
         namespace.declarations().forEach(decl -> {
             if (decl instanceof DataNode<Name> data) {
-                var dataName = (DataName) data.meta().meta();
                 var dataKind = newUnsolvedKind();
                 var dataMeta = updateMetaWith(data.meta(), dataKind);
 
-                namespaceScope.putType(dataName.localName(), dataMeta);
-                namespaceScope.putType(dataName.canonicalName(), dataMeta);
+                putTypeDeclaration(namespaceScope, dataMeta);
 
                 data.constructors().forEach(constr -> {
                     var constrName = (ConstructorName) constr.meta().meta();
                     var constrType = newUnsolvedType(dataKind);
-                    var constrMeta = updateMetaWith(data.meta(), constrType);
+                    var constrMeta = updateMetaWith(constr.meta(), constrType);
 
-                    namespaceScope.putValue(constrName.localName(), constrMeta);
-                    namespaceScope.putValue(constrName.canonicalName(), constrMeta);
+                    putValueDeclaration(namespaceScope, constrMeta);
 
                     constr.params().forEach(constrParam -> {
                         var fieldType = newUnsolvedType(TypeKind.INSTANCE);
@@ -380,20 +417,14 @@ public class Typechecker {
                 });
 
             } else if (decl instanceof LetFnNode<Name> letFn) {
-                var letFnName = (LetName) letFn.meta().meta();
                 var letFnType = newUnsolvedType();
                 var letFnMeta = updateMetaWith(letFn.meta(), letFnType);
-
-                namespaceScope.putValue(letFnName.localName(), letFnMeta);
-                namespaceScope.putValue(letFnName.canonicalName(), letFnMeta);
+                putValueDeclaration(namespaceScope, letFnMeta);
 
             } else if (decl instanceof LetNode<Name> let) {
-                var letName = (LetName) let.meta().meta();
                 var letType = newUnsolvedType();
                 var letMeta = updateMetaWith(let.meta(), letType);
-
-                namespaceScope.putValue(letName.localName(), letMeta);
-                namespaceScope.putValue(letName.canonicalName(), letMeta);
+                putValueDeclaration(letMeta);
             }
         });
 
@@ -404,7 +435,7 @@ public class Typechecker {
             DataNode<Attributes> data,
             ConstructorNode<Attributes> constr) {
         var dataName = (DataName) data.meta().meta().name();
-        var dataKind = (Kind) data.meta().meta().sort();
+        var dataKind = getKind(data);
 
         var typeFolder = new TypeAnnotationFolder(environment);
 
@@ -444,9 +475,7 @@ public class Typechecker {
             return (Type) paramType.meta().sort();
         });
 
-        var bodyType = (Type) bodyExpr.meta().meta().sort();
-
-        var functionType = Type.function(valueParamTypes, bodyType);
+        var functionType = Type.function(valueParamTypes, getType(bodyExpr));
 
         if (typeParamTypes.isEmpty()) {
             return functionType;
@@ -482,20 +511,27 @@ public class Typechecker {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
             var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
+            System.err.println("Types ---------------------------");
             environment.topScope().types().forEach((nm, meta) -> {
-                var kind = (Kind) meta.meta().sort();
-                var doc = Doc.text(nm)
-                        .append(Doc.text(":"))
-                        .appendSpace(kind.accept(kindPrinter));
-                System.err.println(doc.render(80));
+                if (!nm.contains(".")) {
+                    var kind = (Kind) meta.meta().sort();
+                    var doc = Doc.text(nm)
+                            .append(Doc.text(":"))
+                            .appendSpace(kind.accept(sortPrinter));
+                    System.err.println(doc.render(80));
+                }
             });
+            System.err.println("\nValues --------------------------");
             environment.topScope().values().forEach((nm, meta) -> {
-                var type = (Type) meta.meta().sort();
-                var doc = Doc.text(nm)
-                        .append(Doc.text(":"))
-                        .appendSpace(type.accept(typePrinter));
-                System.err.println(doc.render(80));
+                if (!nm.contains(".")) {
+                    var type = (Type) meta.meta().sort();
+                    var doc = Doc.text(nm)
+                            .append(Doc.text(":"))
+                            .appendSpace(type.accept(sortPrinter));
+                    System.err.println(doc.render(80));
+                }
             });
+            System.err.println("---------------------------------\n");
             return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
         });
     }
@@ -504,32 +540,26 @@ public class Typechecker {
         if (declaration instanceof DataNode<Name> data) {
             var kindedData = kindchecker.kindcheck(data);
 
-            var dataName = (Named) kindedData.meta().meta().name();
-            environment.putType(dataName.localName(), kindedData.meta());
-            environment.putType(dataName.canonicalName(), kindedData.meta());
+            putTypeDeclaration(kindedData.meta());
 
             kindedData.constructors().forEach(kindedConstr -> {
-                var constrName = (Named) kindedConstr.meta().meta().name();
-
                 var constrType = createConstructorType(kindedData, kindedConstr);
                 var constrAttrs = kindedConstr.meta().meta().withSort(constrType);
-
                 var constrTypeMeta = kindedConstr.meta().withMeta(constrAttrs);
-                environment.putValue(constrName.localName(), constrTypeMeta);
-                environment.putValue(constrName.canonicalName(), constrTypeMeta);
 
+                putValueDeclaration(constrTypeMeta);
+
+                // TODO: Populate constructor fields for pattern matching
                 // kindedConstr.params().forEach(constrParam -> {
 
                 // });
             });
 
-            return kindedData;
+            return dataNode(kindedData.meta(), null, null, null);
 
         } else if (declaration instanceof LetFnNode<Name> letFn) {
-            return withTypeParams(letFn::typeParams, (tyParams, tyParamTypes, typeFolder) -> {
+            var letFnNode = withTypeParams(letFn::typeParams, (tyParams, tyParamTypes, typeFolder) -> {
                 return withScope(new LambdaScope<>(), () -> {
-                    var letFnName = (Named) letFn.meta().meta();
-
                     var inferredParams = letFn.valueParams()
                             .collect(param -> inferParam(typeFolder, param));
                     var kindedReturn = letFn.returnType()
@@ -542,39 +572,39 @@ public class Typechecker {
                             .orElseGet(() -> inferExpr(letFn.expr()));
 
                     var letFnType = createLetFnType(tyParamTypes, inferredParams, checkedBody);
-
                     var typedMeta = updateMetaWith(letFn.meta(), letFnType);
-                    environment.putValue(letFnName.localName(), typedMeta);
-                    environment.putValue(letFnName.canonicalName(), typedMeta);
 
                     return letFnNode(typedMeta, letFn.name(), tyParams, inferredParams, kindedReturn, checkedBody);
                 });
             });
-        } else if (declaration instanceof LetNode<Name> let) {
-            var letName = (Named) let.meta().meta();
 
-            return let.type().map(typ -> {
+            putValueDeclaration(letFnNode.meta());
+
+            return letFnNode;
+
+        } else if (declaration instanceof LetNode<Name> let) {
+            var letNode = let.type().map(typ -> {
                 var kindedType = kindchecker.kindcheck(typ);
                 var expectedType = kindedType.accept(new TypeAnnotationFolder(environment));
 
                 var checkedExpr = checkExpr(let.expr(), expectedType);
-                var checkedType = (Type) checkedExpr.meta().meta().sort();
+                var checkedType = getType(checkedExpr);
 
                 var typedMeta = updateMetaWith(let.meta(), checkedType);
-                environment.putValue(letName.localName(), typedMeta);
-                environment.putValue(letName.canonicalName(), typedMeta);
 
                 return letNode(typedMeta, let.name(), kindedType, checkedExpr);
             }).orElseGet(() -> {
                 var inferredExpr = inferExpr(let.expr());
-                var inferredType = (Type) inferredExpr.meta().meta().sort();
+                var inferredType = getType(inferredExpr);
 
                 var typedMeta = updateMetaWith(let.meta(), inferredType);
-                environment.putValue(letName.localName(), typedMeta);
-                environment.putValue(letName.canonicalName(), typedMeta);
 
                 return letNode(typedMeta, let.name(), Optional.empty(), inferredExpr);
             });
+
+            putValueDeclaration(letNode.meta());
+
+            return letNode;
         }
 
         return null;
@@ -604,9 +634,7 @@ public class Typechecker {
 
                 var inferredResult = inferExpr(block.result());
 
-                var updatedMeta = updateMetaWith(
-                        block.meta(),
-                        (Type) inferredResult.meta().meta().sort());
+                var updatedMeta = updateMetaWith(block.meta(), getType(inferredResult));
 
                 return blockNode(updatedMeta, inferredDeclarations, inferredResult);
             });
@@ -614,7 +642,7 @@ public class Typechecker {
             var condition = checkExpr(ifExpr.condition(), Type.BOOLEAN);
 
             var consequent = inferExpr(ifExpr.consequent());
-            var consequentType = (Type) consequent.meta().meta().sort();
+            var consequentType = getType(consequent);
 
             var alternative = checkExpr(ifExpr.alternative(), consequentType);
 
@@ -631,8 +659,8 @@ public class Typechecker {
                 var inferredBody = inferExpr(lambda.body());
 
                 var inferredType = Type.function(
-                        inferredArgs.collect(arg -> (Type) arg.meta().meta().sort()),
-                        (Type) inferredBody.meta().meta().sort());
+                        inferredArgs.collect(this::getType),
+                        getType(inferredBody));
 
                 var updatedMeta = updateMetaWith(
                         lambda.meta(),
@@ -649,8 +677,9 @@ public class Typechecker {
         } else if (expr instanceof ApplyNode<Name> apply) {
             var inferredExpr = inferExpr(apply.expr());
 
-            var inferredType = ((Type) inferredExpr.meta().meta().sort())
-                    .substitute(environment.typeSubstitution(), environment.kindSubstitution());
+            var inferredType = getType(inferredExpr).substitute(
+                    environment.typeSubstitution(),
+                    environment.kindSubstitution());
 
             if (Type.isFunction(inferredType) &&
                     inferredType instanceof TypeApply funType &&
@@ -745,14 +774,13 @@ public class Typechecker {
                             return paramNode(updatedMeta, param.name(), kindedAnnotation);
                         });
 
-                var knownParamTypes = knownParams
-                        .collect(param -> (Type) param.meta().meta().sort());
+                var knownParamTypes = knownParams.collect(this::getType);
 
                 var checkedReturn = checkExpr(lambda.body(), funType.typeArguments().getLast());
 
                 var updatedMeta = updateMetaWith(
                         lambda.meta(),
-                        Type.function(knownParamTypes, (Type) checkedReturn.meta().meta().sort()));
+                        Type.function(knownParamTypes, getType(checkedReturn)));
 
                 return lambdaNode(updatedMeta, knownParams, checkedReturn);
 
@@ -761,7 +789,7 @@ public class Typechecker {
             return checkLiteral(literal, expectedType);
         } else {
             var inferredExpr = inferExpr(expr);
-            var inferredType = (Type) inferredExpr.meta().meta().sort();
+            var inferredType = getType(inferredExpr);
 
             // TODO: Add an error type to place in Meta when we have a mismatch?
             if (!checkSubType(inferredType, expectedType)) {
