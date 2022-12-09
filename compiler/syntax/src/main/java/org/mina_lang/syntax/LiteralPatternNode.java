@@ -26,7 +26,7 @@ public record LiteralPatternNode<A>(Meta<A> meta, LiteralNode<A> literal) implem
     }
 
     @Override
-    public <B> LiteralPatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> LiteralPatternNode<B> accept(PatternNodeTransformer<A, B> visitor) {
         visitor.preVisitLiteralPattern(this);
 
         var result = visitor.visitLiteralPattern(

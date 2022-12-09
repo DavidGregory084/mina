@@ -27,7 +27,7 @@ public record ConstructorPatternNode<A> (Meta<A> meta, QualifiedIdNode id,
     }
 
     @Override
-    public <B> ConstructorPatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> ConstructorPatternNode<B> accept(PatternNodeTransformer<A, B> visitor) {
         visitor.preVisitConstructorPattern(this);
 
         var result = visitor.visitConstructorPattern(

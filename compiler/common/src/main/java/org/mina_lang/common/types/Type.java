@@ -1,5 +1,8 @@
 package org.mina_lang.common.types;
 
+import java.util.Arrays;
+
+import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.map.ImmutableMap;
@@ -36,6 +39,12 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
         }
 
         return false;
+    }
+
+    public static TypeApply function(Type... types) {
+        return function(
+                Lists.immutable.of(Arrays.copyOfRange(types, 0, types.length - 1)),
+                types[types.length - 1]);
     }
 
     public static TypeApply function(ImmutableList<Type> argTypes, Type returnType) {

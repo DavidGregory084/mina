@@ -28,6 +28,10 @@ public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternN
 
     @Override
     public <B> FieldPatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        return accept((PatternNodeTransformer<A, B>) visitor);
+    }
+
+    public <B> FieldPatternNode<B> accept(PatternNodeTransformer<A, B> visitor) {
         visitor.preVisitFieldPattern(this);
 
         var result = visitor.visitFieldPattern(

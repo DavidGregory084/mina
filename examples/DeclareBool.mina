@@ -1,0 +1,6 @@
+namespace Mina/Examples/DeclareBool {
+    data Bool {
+        case True()
+        case False()
+    }
+}

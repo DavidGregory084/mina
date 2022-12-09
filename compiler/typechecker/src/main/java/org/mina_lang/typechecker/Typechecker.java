@@ -76,15 +76,18 @@ public class Typechecker {
     }
 
     public NamespaceNode<Attributes> typecheck(NamespaceNode<Name> namespace) {
-        return inferNamespace(namespace);
+        var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
+        return inferNamespace(namespace).accept(metaTransformer);
     }
 
     public DeclarationNode<Attributes> typecheck(DeclarationNode<Name> node) {
-        return inferDeclaration(node);
+        var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
+        return inferDeclaration(node).accept(metaTransformer);
     }
 
     public ExprNode<Attributes> typecheck(ExprNode<Name> node) {
-        return inferExpr(node);
+        var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
+        return inferExpr(node).accept(metaTransformer);
     }
 
     Kind getKind(MetaNode<Attributes> node) {
@@ -662,11 +665,7 @@ public class Typechecker {
                         inferredArgs.collect(this::getType),
                         getType(inferredBody));
 
-                var updatedMeta = updateMetaWith(
-                        lambda.meta(),
-                        inferredType.substitute(
-                                environment.typeSubstitution(),
-                                environment.kindSubstitution()));
+                var updatedMeta = updateMetaWith(lambda.meta(), inferredType);
 
                 return lambdaNode(updatedMeta, inferredArgs, inferredBody);
             });
@@ -677,9 +676,7 @@ public class Typechecker {
         } else if (expr instanceof ApplyNode<Name> apply) {
             var inferredExpr = inferExpr(apply.expr());
 
-            var inferredType = getType(inferredExpr).substitute(
-                    environment.typeSubstitution(),
-                    environment.kindSubstitution());
+            var inferredType = getType(inferredExpr);
 
             if (Type.isFunction(inferredType) &&
                     inferredType instanceof TypeApply funType &&
