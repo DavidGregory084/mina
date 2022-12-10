@@ -13,7 +13,7 @@ public record ExistsVar(String name, Kind kind) implements TypeVar {
     }
 
     @Override
-    public ExistsVar accept(TypeTransformer visitor) {
+    public MonoType accept(TypeTransformer visitor) {
         return visitor.visitExistsVar(this);
     }
 }

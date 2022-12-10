@@ -30,7 +30,8 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
     @Override
     public TypeLambda visitTypeLambda(TypeLambda tyLam) {
         return new TypeLambda(
-                tyLam.args().collect(tyArg -> tyArg.accept(this)),
+                // Safe to cast, since do not manipulate type variables here
+                tyLam.args().collect(tyArg -> (TypeVar) tyArg.accept(this)),
                 tyLam.body().accept(this),
                 tyLam.kind().accept(kindTransformer));
     }
@@ -45,8 +46,8 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
     @Override
     public ExistsVar visitExistsVar(ExistsVar exists) {
         return new ExistsVar(
-            exists.name(),
-            exists.kind().accept(kindTransformer));
+                exists.name(),
+                exists.kind().accept(kindTransformer));
     }
 
     @Override

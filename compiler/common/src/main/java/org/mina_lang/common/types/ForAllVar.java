@@ -13,7 +13,7 @@ public record ForAllVar(String name, Kind kind) implements TypeVar {
     }
 
     @Override
-    public ForAllVar accept(TypeTransformer visitor) {
+    public MonoType accept(TypeTransformer visitor) {
         return visitor.visitForAllVar(this);
     }
 }

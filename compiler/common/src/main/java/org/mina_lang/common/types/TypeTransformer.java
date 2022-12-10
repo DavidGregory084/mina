@@ -25,13 +25,13 @@ public interface TypeTransformer {
 
     TypeApply visitTypeApply(TypeApply tyApp);
 
-    default TypeVar visitTypeVar(TypeVar tyVar) {
+    default MonoType visitTypeVar(TypeVar tyVar) {
         return tyVar.accept(this);
     }
 
-    ForAllVar visitForAllVar(ForAllVar forall);
+    MonoType visitForAllVar(ForAllVar forall);
 
-    ExistsVar visitExistsVar(ExistsVar exists);
+    MonoType visitExistsVar(ExistsVar exists);
 
     MonoType visitUnsolvedType(UnsolvedType unsolved);
 }

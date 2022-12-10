@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -386,6 +387,43 @@ public class Typechecker {
                         });
 
                 return tyConSubTyped && tyArgsSubTyped;
+            } else if (solvedSuperType instanceof TypeLambda tyLam) {
+
+                var instantiated = Maps.mutable.<TypeVar, UnsolvedType>empty();
+
+                tyLam.args().forEach(tyParam -> {
+                    if (tyParam instanceof ForAllVar forall) {
+                        var typeVarName = new TypeVarName(forall.name());
+                        var typeVarAttrs = new Attributes(typeVarName, forall.kind());
+                        environment.putType(forall.name(), Meta.of(typeVarAttrs));
+                    } else if (tyParam instanceof ExistsVar exists) {
+                        var unsolved = newUnsolvedType(exists.kind());
+                        instantiated.put(exists, unsolved);
+                    }
+                });
+
+                var instantiator = new TypeInstantiationTransformer(instantiated.toImmutable());
+
+                return checkSubType(solvedSubType, tyLam.body().accept(instantiator));
+
+            } else if (solvedSubType instanceof TypeLambda tyLam) {
+
+                var instantiated = Maps.mutable.<TypeVar, UnsolvedType>empty();
+
+                tyLam.args().forEach(tyParam -> {
+                    if (tyParam instanceof ForAllVar forall) {
+                        var unsolved = newUnsolvedType(forall.kind());
+                        instantiated.put(forall, unsolved);
+                    } else if (tyParam instanceof ExistsVar exists) {
+                        var typeVarName = new TypeVarName(exists.name());
+                        var typeVarAttrs = new Attributes(typeVarName, exists.kind());
+                        environment.putType(exists.name(), Meta.of(typeVarAttrs));
+                    }
+                });
+
+                var instantiator = new TypeInstantiationTransformer(instantiated.toImmutable());
+
+                return checkSubType(tyLam.body().accept(instantiator), solvedSuperType);
 
             } else {
                 return false;
@@ -558,7 +596,7 @@ public class Typechecker {
                 // });
             });
 
-            return dataNode(kindedData.meta(), null, null, null);
+            return kindedData;
 
         } else if (declaration instanceof LetFnNode<Name> letFn) {
             var letFnNode = withTypeParams(letFn::typeParams, (tyParams, tyParamTypes, typeFolder) -> {
@@ -591,9 +629,8 @@ public class Typechecker {
                 var expectedType = kindedType.accept(new TypeAnnotationFolder(environment));
 
                 var checkedExpr = checkExpr(let.expr(), expectedType);
-                var checkedType = getType(checkedExpr);
 
-                var typedMeta = updateMetaWith(let.meta(), checkedType);
+                var typedMeta = updateMetaWith(let.meta(), expectedType);
 
                 return letNode(typedMeta, let.name(), kindedType, checkedExpr);
             }).orElseGet(() -> {
@@ -678,6 +715,25 @@ public class Typechecker {
 
             var inferredType = getType(inferredExpr);
 
+            if (inferredType instanceof TypeLambda tyLam) {
+                var instantiated = Maps.mutable.<TypeVar, UnsolvedType>empty();
+
+                tyLam.args().forEach(tyParam -> {
+                    if (tyParam instanceof ForAllVar forall) {
+                        var unsolved = newUnsolvedType(forall.kind());
+                        instantiated.put(forall, unsolved);
+                    } else if (tyParam instanceof ExistsVar exists) {
+                        var typeVarName = new TypeVarName(exists.name());
+                        var typeVarAttrs = new Attributes(typeVarName, exists.kind());
+                        environment.putType(exists.name(), Meta.of(typeVarAttrs));
+                    }
+                });
+
+                var instantiator = new TypeInstantiationTransformer(instantiated.toImmutable());
+
+                inferredType = tyLam.body().accept(instantiator);
+            }
+
             if (Type.isFunction(inferredType) &&
                     inferredType instanceof TypeApply funType &&
                     apply.args().size() == (funType.typeArguments().size() - 1)) {
@@ -757,7 +813,23 @@ public class Typechecker {
     }
 
     ExprNode<Attributes> checkExpr(ExprNode<Name> expr, Type expectedType) {
-        if (expr instanceof LambdaNode<Name> lambda &&
+        if (expectedType instanceof TypeLambda tyLam) {
+            return withScope(new InstantiateTypeScope<>(), () -> {
+                var instantiated = Maps.mutable.<TypeVar, UnsolvedType>empty();
+                tyLam.args().forEach(tyParam -> {
+                    if (tyParam instanceof ForAllVar forall) {
+                        var typeVarName = new TypeVarName(forall.name());
+                        var typeVarAttrs = new Attributes(typeVarName, forall.kind());
+                        environment.putType(forall.name(), Meta.of(typeVarAttrs));
+                    } else if (tyParam instanceof ExistsVar exists) {
+                        var unsolved = newUnsolvedType(exists.kind());
+                        instantiated.put(exists, unsolved);
+                    }
+                });
+                var instantiator = new TypeInstantiationTransformer(instantiated.toImmutable());
+                return checkExpr(expr, tyLam.body().accept(instantiator));
+            });
+        } else if (expr instanceof LambdaNode<Name> lambda &&
                 expectedType instanceof TypeApply funType &&
                 lambda.params().size() == (funType.typeArguments().size() - 1)) {
             return withScope(new LambdaScope<>(), () -> {

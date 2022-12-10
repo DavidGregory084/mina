@@ -8,7 +8,7 @@ public sealed interface TypeVar extends MonoType permits ExistsVar, ForAllVar {
     }
 
     @Override
-    default TypeVar accept(TypeTransformer visitor) {
+    default MonoType accept(TypeTransformer visitor) {
         return this.accept(visitor);
     }
 }
