@@ -302,7 +302,7 @@ public class TypecheckerTest {
     }
 
     @Test
-    @DisplayName("Annotated let bound lambdas typecheck successfully with unannotated parameters")
+    @DisplayName("Annotated let bound lambdas typecheck successfully without lambda parameter annotations")
     void typecheckAnnotatedLetLambdaParams() {
         var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testAnnotatedLambda"));
 
@@ -335,6 +335,90 @@ public class TypecheckerTest {
                                 new Attributes(new LocalName("i", 0), Type.INT)), "i")),
                         refNode(Meta.of(new Attributes(new LocalName("i", 0), Type.INT)),
                                 "i")));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Annotated let bound lambda with function argument typechecks successfully without lambda parameter annotations")
+    void typecheckAnnotatedLetLambdaFunctionParam() {
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testAnnotatedLambda"));
+
+        /*- let testAnnotatedLambda: (Int -> Int) -> Int = f -> f(1) */
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testAnnotatedLambda",
+                /*- (Int -> Int) -> Int */
+                funTypeNode(
+                        ExampleNodes.namelessMeta(),
+                        Lists.immutable.of(
+                                funTypeNode(
+                                        ExampleNodes.namelessMeta(),
+                                        Lists.immutable.of(ExampleNodes.Int.NAMED_TYPE_NODE),
+                                        ExampleNodes.Int.NAMED_TYPE_NODE)),
+                        ExampleNodes.Int.NAMED_TYPE_NODE),
+                /*- f -> f(1) */
+                lambdaNode(
+                        ExampleNodes.namelessMeta(),
+                        Lists.immutable.of(ExampleNodes.Param.namedNode("f")),
+                        applyNode(
+                                ExampleNodes.namelessMeta(),
+                                ExampleNodes.LocalVar.namedNode("f"),
+                                Lists.immutable.of(ExampleNodes.Int.namedNode(1)))));
+
+        var intToInt = Type.function(Type.INT, Type.INT);
+        var intToIntToInt = Type.function(intToInt, Type.INT);
+
+        var expectedNode = letNode(
+                Meta.of(new Attributes(letName, intToIntToInt)),
+                "testAnnotatedLambda",
+                funTypeNode(
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                        Lists.immutable.of(
+                                funTypeNode(
+                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                                        Lists.immutable.of(ExampleNodes.Int.KINDED_TYPE_NODE),
+                                        ExampleNodes.Int.KINDED_TYPE_NODE)),
+                        ExampleNodes.Int.KINDED_TYPE_NODE),
+                lambdaNode(
+                        ExampleNodes.namelessMeta(intToIntToInt),
+                        Lists.immutable.of(ExampleNodes.Param.typedNode("f", intToInt)),
+                        applyNode(
+                                ExampleNodes.namelessMeta(Type.INT),
+                                ExampleNodes.LocalVar.typedNode("f", intToInt),
+                                Lists.immutable.of(ExampleNodes.Int.typedNode(1)))));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Annotated let function with function argument typechecks successfully without parameter annotations")
+    void typecheckAnnotatedLetFnLambdaFunctionParam() {
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testAnnotatedLambda"));
+
+        /*- let testAnnotatedLambda(f): Int = f(1) */
+        var originalNode = letFnNode(
+                Meta.of(letName),
+                "testAnnotatedLambda",
+                Lists.immutable.of(ExampleNodes.Param.namedNode("f")),
+                ExampleNodes.Int.NAMED_TYPE_NODE,
+                applyNode(
+                        ExampleNodes.namelessMeta(),
+                        ExampleNodes.LocalVar.namedNode("f"),
+                        Lists.immutable.of(ExampleNodes.Int.namedNode(1))));
+
+        var intToInt = Type.function(Type.INT, Type.INT);
+        var intToIntToInt = Type.function(intToInt, Type.INT);
+
+        var expectedNode = letFnNode(
+                Meta.of(new Attributes(letName, intToIntToInt)),
+                "testAnnotatedLambda",
+                Lists.immutable.of(ExampleNodes.Param.typedNode("f", intToInt)),
+                ExampleNodes.Int.KINDED_TYPE_NODE,
+                applyNode(
+                        ExampleNodes.namelessMeta(Type.INT),
+                        ExampleNodes.LocalVar.typedNode("f", intToInt),
+                        Lists.immutable.of(ExampleNodes.Int.typedNode(1))));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -430,7 +514,8 @@ public class TypecheckerTest {
         var expectedNode = lambdaNode(
                 ExampleNodes.namelessMeta(Type.function(Type.INT, Type.INT)),
                 Lists.immutable.of(
-                        ExampleNodes.Param.typedNode("x", Type.INT, ExampleNodes.Int.KINDED_TYPE_NODE)),
+                        ExampleNodes.Param.typedNode("x", Type.INT,
+                                ExampleNodes.Int.KINDED_TYPE_NODE)),
                 ExampleNodes.Int.typedNode(1));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
@@ -459,6 +544,54 @@ public class TypecheckerTest {
                         ExampleNodes.Int.typedNode(2)));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Nullary application typechecks successfully")
+    void typecheckNullaryApplication() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        /*- f: () -> Int */
+        environment.putValue(
+                "f",
+                Meta.of(new Attributes(new LocalName("f", 0), Type.function(Type.INT))));
+
+        /*- f() */
+        var originalNode = applyNode(
+                ExampleNodes.namelessMeta(),
+                ExampleNodes.LocalVar.namedNode("f"),
+                Lists.immutable.empty());
+
+        var expectedNode = applyNode(
+                ExampleNodes.namelessMeta(Type.INT),
+                ExampleNodes.LocalVar.typedNode("f", Type.function(Type.INT)),
+                Lists.immutable.empty());
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Unary application typechecks successfully")
+    void typecheckUnaryApplication() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        /*- f: Int -> Int */
+        environment.putValue(
+                "f",
+                Meta.of(new Attributes(new LocalName("f", 0), Type.function(Type.INT, Type.INT))));
+
+        /*- f(1) */
+        var originalNode = applyNode(
+                ExampleNodes.namelessMeta(),
+                ExampleNodes.LocalVar.namedNode("f"),
+                Lists.immutable.of(ExampleNodes.Int.namedNode(1)));
+
+        var expectedNode = applyNode(
+                ExampleNodes.namelessMeta(Type.INT),
+                ExampleNodes.LocalVar.typedNode("f", Type.function(Type.INT, Type.INT)),
+                Lists.immutable.of(ExampleNodes.Int.typedNode(1)));
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
     }
 
     @Test
