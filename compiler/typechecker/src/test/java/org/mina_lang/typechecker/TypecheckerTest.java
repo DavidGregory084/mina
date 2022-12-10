@@ -125,9 +125,7 @@ public class TypecheckerTest {
                     }
                 });
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
-        var qualName = new QualifiedName(nsName, "testLiteral");
-        var letName = new LetName(qualName);
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testLiteral"));
 
         var builtInName = new BuiltInName(expectedType.name());
 
@@ -140,7 +138,8 @@ public class TypecheckerTest {
         var expectedNode = letNode(
                 Meta.of(new Attributes(letName, expectedType)),
                 "testLiteral",
-                typeRefNode(Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)),
+                typeRefNode(
+                        Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)),
                         expectedType.name()),
                 expectedLiteralNode);
 
@@ -161,9 +160,7 @@ public class TypecheckerTest {
                     }
                 });
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
-        var qualName = new QualifiedName(nsName, "testLiteral");
-        var letName = new LetName(qualName);
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testLiteral"));
 
         var originalNode = letNode(
                 Meta.of(letName),
@@ -196,9 +193,7 @@ public class TypecheckerTest {
         var actualLiteralType = tuple.get2();
         var incorrectExpectedType = tuple.get3();
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
-        var qualName = new QualifiedName(nsName, "testLiteral");
-        var letName = new LetName(qualName);
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testLiteral"));
 
         var builtInName = new BuiltInName(incorrectExpectedType.name());
 
@@ -213,62 +208,34 @@ public class TypecheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 originalLiteralNode.range(),
-                "Mismatched type! Expected: " + incorrectExpectedType.name() + ", Actual: "
-                        + actualLiteralType.name());
+                "Mismatched type! Expected: " + incorrectExpectedType.name() +
+                        ", Actual: " + actualLiteralType.name());
     }
 
     @Test
     @DisplayName("Correctly annotated let bindings to variables in the environment typecheck successfully")
     void typecheckAnnotatedLetBoundReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
+        environment.putType("Bool", ExampleNodes.Bool.META);
+        environment.putValue("True", ExampleNodes.True.META);
+        environment.putValue("False", ExampleNodes.False.META);
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+        var originalBoolNode = refNode(Meta.<Name>of(ExampleNodes.True.NAME), "True");
+        var expectedBoolNode = refNode(ExampleNodes.True.META, "True");
 
-        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
-        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testBool"));
 
-        var boolConstrType = Type.function(
-                Lists.immutable.empty(),
-                new TypeConstructor(boolName.name(), TypeKind.INSTANCE));
-
-        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
-
-        var trueMeta = Meta.of(new Attributes(trueName, boolConstrType));
-
-        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
-
-        var falseMeta = Meta.of(new Attributes(falseName, boolConstrType));
-
-        environment.putType("Bool", boolMeta);
-        environment.putValue("True", trueMeta);
-        environment.putValue("False", falseMeta);
-
-        var originalBoolNode = refNode(trueMeta.withMeta(trueMeta.meta().name()), "True");
-        var expectedBoolNode = refNode(trueMeta, "True");
-
-        var qualLetName = new QualifiedName(nsName, "testBool");
-        var letName = new LetName(qualLetName);
-
-        var originalBoolConstrTypeNode = funTypeNode(
-                Meta.of(Nameless.INSTANCE),
-                Lists.immutable.empty(),
-                typeRefNode(Meta.of(boolName), "Bool"));
-
-        var expectedBoolConstrTypeNode = funTypeNode(
-                Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
-                Lists.immutable.empty(),
-                typeRefNode(Meta.of(new Attributes(boolName, TypeKind.INSTANCE)), "Bool"));
-
+        /*- let testBool: () -> Bool = True */
         var originalNode = letNode(
-                Meta.of(letName),
+                Meta.<Name>of(letName),
                 "testBool",
-                originalBoolConstrTypeNode,
+                ExampleNodes.True.NAMED_TYPE_NODE,
                 originalBoolNode);
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, boolConstrType)),
+                Meta.of(new Attributes(letName, ExampleNodes.True.TYPE)),
                 "testBool",
-                expectedBoolConstrTypeNode,
+                ExampleNodes.True.KINDED_TYPE_NODE,
                 expectedBoolNode);
 
         testSuccessfulTypecheck(environment, originalNode, expectedNode);
@@ -278,43 +245,25 @@ public class TypecheckerTest {
     @DisplayName("Incorrectly annotated let bindings to variables in the environment fail to typecheck")
     void typecheckIllTypedLetBoundReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
-
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
-
-        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
-        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
-
-        var boolConstrType = Type.function(
-                Lists.immutable.empty(),
-                new TypeConstructor(boolName.name(), TypeKind.INSTANCE));
-
-        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
-
-        var trueMeta = Meta.of(new Attributes(trueName, boolConstrType));
-
-        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
-
-        var falseMeta = Meta.of(new Attributes(falseName, boolConstrType));
-
-        environment.putType("Bool", boolMeta);
-        environment.putValue("True", trueMeta);
-        environment.putValue("False", falseMeta);
+        environment.putType("Bool", ExampleNodes.Bool.META);
+        environment.putValue("True", ExampleNodes.True.META);
+        environment.putValue("False", ExampleNodes.False.META);
 
         var boolReferenceRange = new Range(0, 1, 0, 1);
-        var originalBoolNode = refNode(new Meta<>(boolReferenceRange, trueMeta.meta().name()), "True");
+        var originalBoolNode = refNode(new Meta<Name>(boolReferenceRange, ExampleNodes.True.NAME), "True");
 
-        var qualLetName = new QualifiedName(nsName, "testBool");
-        var letName = new LetName(qualLetName);
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testBool"));
 
-        var originalBoolConstrTypeNode = funTypeNode(
+        var illTypedBoolConstrTypeNode = funTypeNode(
                 Meta.of(Nameless.INSTANCE),
                 Lists.immutable.of(typeRefNode(Meta.of(new BuiltInName("Int")), "Int")),
-                typeRefNode(Meta.of(boolName), "Bool"));
+                typeRefNode(Meta.of(ExampleNodes.Bool.NAME), "Bool"));
 
+        /*- let testBool: Int -> Bool = True */
         var originalNode = letNode(
-                Meta.of(letName),
+                Meta.<Name>of(letName),
                 "testBool",
-                originalBoolConstrTypeNode,
+                illTypedBoolConstrTypeNode,
                 originalBoolNode);
 
         var collector = testFailedTypecheck(environment, originalNode);
@@ -329,41 +278,23 @@ public class TypecheckerTest {
     @DisplayName("Unannotated let bindings to variables in the environment typecheck successfully")
     void typecheckUnannotatedLetBoundReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
+        environment.putType("Bool", ExampleNodes.Bool.META);
+        environment.putValue("True", ExampleNodes.True.META);
+        environment.putValue("False", ExampleNodes.False.META);
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+        var originalBoolNode = refNode(Meta.<Name>of(ExampleNodes.True.NAME), "True");
+        var expectedBoolNode = refNode(ExampleNodes.True.META, "True");
 
-        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
-        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testBool"));
 
-        var boolConstrType = Type.function(
-                Lists.immutable.empty(),
-                new TypeConstructor(boolName.name(), TypeKind.INSTANCE));
-
-        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
-
-        var trueMeta = Meta.of(new Attributes(trueName, boolConstrType));
-
-        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
-
-        var falseMeta = Meta.of(new Attributes(falseName, boolConstrType));
-
-        environment.putType("Bool", boolMeta);
-        environment.putValue("True", trueMeta);
-        environment.putValue("False", falseMeta);
-
-        var originalBoolNode = refNode(trueMeta.withMeta(trueMeta.meta().name()), "True");
-        var expectedBoolNode = refNode(trueMeta, "True");
-
-        var qualLetName = new QualifiedName(nsName, "testBool");
-        var letName = new LetName(qualLetName);
-
+        /*- let testBool = True */
         var originalNode = letNode(
                 Meta.of(letName),
                 "testBool",
                 originalBoolNode);
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, boolConstrType)),
+                Meta.of(new Attributes(letName, ExampleNodes.True.TYPE)),
                 "testBool",
                 expectedBoolNode);
 
@@ -373,9 +304,7 @@ public class TypecheckerTest {
     @Test
     @DisplayName("Annotated let bound lambdas typecheck successfully with unannotated parameters")
     void typecheckAnnotatedLetLambdaParams() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
-        var qualName = new QualifiedName(nsName, "testAnnotatedLambda");
-        var letName = new LetName(qualName);
+        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testAnnotatedLambda"));
 
         /*- let testAnnotatedLambda: Int -> Int = i -> i */
         var originalNode = letNode(
@@ -395,13 +324,17 @@ public class TypecheckerTest {
                 "testAnnotatedLambda",
                 funTypeNode(
                         Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
-                        Lists.immutable.of(typeRefNode(Meta.of(new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE)), "Int")),
-                        typeRefNode(Meta.of(new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE)), "Int")),
+                        Lists.immutable.of(typeRefNode(Meta.of(new Attributes(
+                                new BuiltInName("Int"), TypeKind.INSTANCE)), "Int")),
+                        typeRefNode(Meta.of(new Attributes(new BuiltInName("Int"),
+                                TypeKind.INSTANCE)), "Int")),
                 lambdaNode(
-                        Meta.of(new Attributes(Nameless.INSTANCE, Type.function(Type.INT, Type.INT))),
-                        Lists.immutable.of(paramNode(Meta.of(new Attributes(new LocalName("i", 0), Type.INT)), "i")),
-                        refNode(Meta.of(new Attributes(new LocalName("i", 0), Type.INT)), "i")));
-
+                        Meta.of(new Attributes(Nameless.INSTANCE,
+                                Type.function(Type.INT, Type.INT))),
+                        Lists.immutable.of(paramNode(Meta.of(
+                                new Attributes(new LocalName("i", 0), Type.INT)), "i")),
+                        refNode(Meta.of(new Attributes(new LocalName("i", 0), Type.INT)),
+                                "i")));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -413,16 +346,16 @@ public class TypecheckerTest {
     void typecheckIf() {
         /* if true then 1 else 2 */
         var originalNode = ifNode(
-                Meta.<Name>of(Nameless.INSTANCE),
-                boolNode(Meta.<Name>of(Nameless.INSTANCE), true),
-                intNode(Meta.<Name>of(Nameless.INSTANCE), 1),
-                intNode(Meta.<Name>of(Nameless.INSTANCE), 2));
+                ExampleNodes.namelessMeta(),
+                ExampleNodes.Boolean.namedNode(true),
+                ExampleNodes.Int.namedNode(1),
+                ExampleNodes.Int.namedNode(2));
 
         var expectedNode = ifNode(
-                Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)),
-                boolNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.BOOLEAN)), true),
-                intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 1),
-                intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 2));
+                ExampleNodes.namelessMeta(Type.INT),
+                ExampleNodes.Boolean.typedNode(true),
+                ExampleNodes.Int.typedNode(1),
+                ExampleNodes.Int.typedNode(2));
 
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
@@ -434,10 +367,10 @@ public class TypecheckerTest {
 
         /* if "true" then 1 else 2 */
         var originalNode = ifNode(
-                Meta.of(Nameless.INSTANCE),
-                stringNode(new Meta<Name>(condRange, Nameless.INSTANCE), "true"),
-                intNode(Meta.of(Nameless.INSTANCE), 1),
-                intNode(Meta.of(Nameless.INSTANCE), 2));
+                ExampleNodes.namelessMeta(),
+                stringNode(new Meta<>(condRange, Nameless.INSTANCE), "true"),
+                ExampleNodes.Int.namedNode(1),
+                ExampleNodes.Int.namedNode(2));
 
         var collector = testFailedTypecheck(TypeEnvironment.empty(), originalNode);
 
@@ -454,10 +387,10 @@ public class TypecheckerTest {
 
         /* if true then 1 else "a" */
         var originalNode = ifNode(
-                Meta.of(Nameless.INSTANCE),
-                boolNode(Meta.of(Nameless.INSTANCE), true),
-                intNode(Meta.of(Nameless.INSTANCE), 1),
-                stringNode(new Meta<Name>(elseRange, Nameless.INSTANCE), "a"));
+                ExampleNodes.namelessMeta(),
+                ExampleNodes.Boolean.namedNode(true),
+                ExampleNodes.Int.namedNode(1),
+                stringNode(new Meta<>(elseRange, Nameless.INSTANCE), "a"));
 
         var collector = testFailedTypecheck(TypeEnvironment.empty(), originalNode);
 
@@ -472,15 +405,14 @@ public class TypecheckerTest {
     void typecheckNullaryLambda() {
         /*- () -> 1 */
         var originalNode = lambdaNode(
-                Meta.<Name>of(Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.empty(),
-                intNode(Meta.of(Nameless.INSTANCE), 1));
+                ExampleNodes.Int.namedNode(1));
 
         var expectedNode = lambdaNode(
-                Meta.of(new Attributes(Nameless.INSTANCE,
-                        Type.function(Lists.immutable.empty(), Type.INT))),
+                ExampleNodes.namelessMeta(Type.function(Type.INT)),
                 Lists.immutable.empty(),
-                intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 1));
+                ExampleNodes.Int.typedNode(1));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -490,27 +422,16 @@ public class TypecheckerTest {
     void typecheckUnaryLambda() {
         /*- (x: Int) -> 1 */
         var originalNode = lambdaNode(
-                Meta.<Name>of(Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
-                        paramNode(
-                                Meta.of(new LocalName("x", 0)),
-                                "x",
-                                typeRefNode(Meta.of(new BuiltInName("Int")), "Int"))),
-                intNode(Meta.of(Nameless.INSTANCE), 1));
+                        ExampleNodes.Param.namedNode("x", ExampleNodes.Int.NAMED_TYPE_NODE)),
+                ExampleNodes.Int.namedNode(1));
 
         var expectedNode = lambdaNode(
-                Meta.of(new Attributes(Nameless.INSTANCE,
-                        Type.function(Lists.immutable.of(Type.INT), Type.INT))),
+                ExampleNodes.namelessMeta(Type.function(Type.INT, Type.INT)),
                 Lists.immutable.of(
-                        paramNode(
-                                Meta.of(new Attributes(new LocalName("x", 0),
-                                        Type.INT)),
-                                "x",
-                                typeRefNode(Meta.of(
-                                        new Attributes(new BuiltInName("Int"),
-                                                TypeKind.INSTANCE)),
-                                        "Int"))),
-                intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 1));
+                        ExampleNodes.Param.typedNode("x", Type.INT, ExampleNodes.Int.KINDED_TYPE_NODE)),
+                ExampleNodes.Int.typedNode(1));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -520,26 +441,22 @@ public class TypecheckerTest {
     void typecheckUnaryLambdaIfExpression() {
         /*- bool -> if bool then 1 else 2 */
         var originalNode = lambdaNode(
-                Meta.<Name>of(Nameless.INSTANCE),
-                Lists.immutable.of(paramNode(Meta.of(new LocalName("bool", 0)), "bool")),
+                ExampleNodes.namelessMeta(),
+                Lists.immutable.of(ExampleNodes.Param.namedNode("bool")),
                 ifNode(
-                        Meta.of(Nameless.INSTANCE),
-                        refNode(Meta.of(new LocalName("bool", 0)), "bool"),
-                        intNode(Meta.of(Nameless.INSTANCE), 1),
-                        intNode(Meta.of(Nameless.INSTANCE), 2)));
+                        ExampleNodes.namelessMeta(),
+                        ExampleNodes.LocalVar.namedNode("bool"),
+                        ExampleNodes.Int.namedNode(1),
+                        ExampleNodes.Int.namedNode(2)));
 
         var expectedNode = lambdaNode(
-                Meta.of(new Attributes(Nameless.INSTANCE,
-                        Type.function(Lists.immutable.of(Type.BOOLEAN), Type.INT))),
-                Lists.immutable.of(paramNode(
-                        Meta.of(new Attributes(new LocalName("bool", 0), Type.BOOLEAN)),
-                        "bool")),
+                ExampleNodes.namelessMeta(Type.function(Type.BOOLEAN, Type.INT)),
+                Lists.immutable.of(ExampleNodes.Param.typedNode("bool", Type.BOOLEAN)),
                 ifNode(
-                        Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)),
-                        refNode(Meta.of(new Attributes(new LocalName("bool", 0), Type.BOOLEAN)),
-                                "bool"),
-                        intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 1),
-                        intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 2)));
+                        ExampleNodes.namelessMeta(Type.INT),
+                        ExampleNodes.LocalVar.typedNode("bool", Type.BOOLEAN),
+                        ExampleNodes.Int.typedNode(1),
+                        ExampleNodes.Int.typedNode(2)));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -548,40 +465,16 @@ public class TypecheckerTest {
     @DisplayName("References to variables in the environment typecheck successfully")
     void typecheckReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
+        environment.putType("Bool", ExampleNodes.Bool.META);
+        environment.putValue("True", ExampleNodes.True.META);
+        environment.putValue("False", ExampleNodes.False.META);
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
-
-        var boolName = new DataName(new QualifiedName(nsName, "Bool"));
-        var boolMeta = Meta.of(new Attributes(boolName, TypeKind.INSTANCE));
-
-        var trueName = new ConstructorName(boolName, new QualifiedName(nsName, "True"));
-
-        var trueMeta = Meta.of(new Attributes(
-                trueName,
-                Type.function(
-                        Lists.immutable.empty(),
-                        new TypeConstructor(trueName.name(), TypeKind.INSTANCE))));
-
-        var falseName = new ConstructorName(boolName, new QualifiedName(nsName, "False"));
-
-        var falseMeta = Meta.of(new Attributes(
-                falseName,
-                Type.function(
-                        Lists.immutable.empty(),
-                        new TypeConstructor(falseName.name(), TypeKind.INSTANCE))));
-
-        environment.putType("Bool", boolMeta);
-        environment.putValue("True", trueMeta);
-        environment.putValue("False", falseMeta);
-
-        var originalTrueNode = refNode(trueMeta.withMeta(trueMeta.meta().name()), "True");
-        var expectedTrueNode = refNode(trueMeta, "True");
-
+        var originalTrueNode = refNode(Meta.<Name>of(ExampleNodes.True.NAME), "True");
+        var expectedTrueNode = refNode(ExampleNodes.True.META, "True");
         testSuccessfulTypecheck(environment, originalTrueNode, expectedTrueNode);
 
-        var originalFalseNode = refNode(falseMeta.withMeta(falseMeta.meta().name()), "False");
-        var expectedFalseNode = refNode(falseMeta, "False");
-
+        var originalFalseNode = refNode(Meta.<Name>of(ExampleNodes.False.NAME), "False");
+        var expectedFalseNode = refNode(ExampleNodes.False.META, "False");
         testSuccessfulTypecheck(environment, originalFalseNode, expectedFalseNode);
     }
 
@@ -591,8 +484,8 @@ public class TypecheckerTest {
     @DisplayName("Boolean literals typecheck successfully")
     void typecheckLiteralBoolean() {
         /* true */
-        var originalNode = boolNode(Meta.<Name>of(Nameless.INSTANCE), true);
-        var expectedNode = boolNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.BOOLEAN)), true);
+        var originalNode = ExampleNodes.Boolean.namedNode(true);
+        var expectedNode = ExampleNodes.Boolean.typedNode(true);
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
@@ -600,8 +493,8 @@ public class TypecheckerTest {
     @DisplayName("Char literals typecheck successfully")
     void typecheckLiteralChar() {
         /* 'c' */
-        var originalNode = charNode(Meta.<Name>of(Nameless.INSTANCE), 'c');
-        var expectedNode = charNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.CHAR)), 'c');
+        var originalNode = ExampleNodes.Char.namedNode('c');
+        var expectedNode = ExampleNodes.Char.typedNode('c');
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
@@ -609,8 +502,8 @@ public class TypecheckerTest {
     @DisplayName("String literals typecheck successfully")
     void typecheckLiteralString() {
         /* "foo" */
-        var originalNode = stringNode(Meta.<Name>of(Nameless.INSTANCE), "foo");
-        var expectedNode = stringNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.STRING)), "foo");
+        var originalNode = ExampleNodes.String.namedNode("foo");
+        var expectedNode = ExampleNodes.String.typedNode("foo");
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
@@ -618,8 +511,8 @@ public class TypecheckerTest {
     @DisplayName("Int literals typecheck successfully")
     void typecheckLiteralInt() {
         /* 1 */
-        var originalNode = intNode(Meta.<Name>of(Nameless.INSTANCE), 1);
-        var expectedNode = intNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.INT)), 1);
+        var originalNode = ExampleNodes.Int.namedNode(1);
+        var expectedNode = ExampleNodes.Int.typedNode(1);
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
@@ -627,8 +520,8 @@ public class TypecheckerTest {
     @DisplayName("Long literals typecheck successfully")
     void typecheckLiteralLong() {
         /* 1L */
-        var originalNode = longNode(Meta.<Name>of(Nameless.INSTANCE), 1L);
-        var expectedNode = longNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.LONG)), 1L);
+        var originalNode = ExampleNodes.Long.namedNode(1L);
+        var expectedNode = ExampleNodes.Long.typedNode(1L);
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
@@ -636,8 +529,8 @@ public class TypecheckerTest {
     @DisplayName("Float literals typecheck successfully")
     void typecheckLiteralFloat() {
         /* 0.1F */
-        var originalNode = floatNode(Meta.<Name>of(Nameless.INSTANCE), 0.1F);
-        var expectedNode = floatNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.FLOAT)), 0.1F);
+        var originalNode = ExampleNodes.Float.namedNode(0.1F);
+        var expectedNode = ExampleNodes.Float.typedNode(0.1F);
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
@@ -645,8 +538,8 @@ public class TypecheckerTest {
     @DisplayName("Double literals typecheck successfully")
     void typecheckLiteralDouble() {
         /* 0.1 */
-        var originalNode = doubleNode(Meta.<Name>of(Nameless.INSTANCE), 0.1);
-        var expectedNode = doubleNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.DOUBLE)), 0.1);
+        var originalNode = ExampleNodes.Double.namedNode(0.1);
+        var expectedNode = ExampleNodes.Double.typedNode(0.1);
         testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
