@@ -19,4 +19,6 @@ namespace Mina/Examples/DeclareBool {
     let baz = const(const("a", "b"), id(2))
 
     let quu = constFn(1, 2)
+
+    let quux = a -> constFn(a, 1)
 }

@@ -1,24 +1,23 @@
 package org.mina_lang.typechecker;
 
+import static org.mina_lang.syntax.SyntaxNodes.*;
+
 import org.eclipse.collections.api.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.types.Sort;
-import org.mina_lang.common.types.Type;
-import org.mina_lang.common.types.TypeConstructor;
-import org.mina_lang.common.types.TypeKind;
+import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.LiteralNode;
 import org.mina_lang.syntax.ParamNode;
 import org.mina_lang.syntax.ReferenceNode;
 import org.mina_lang.syntax.TypeNode;
 
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.util.Optional;
-
 public class ExampleNodes {
-    public static NamespaceName NAMESPACE_NAME = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Typechecker");
+    public static NamespaceName TYPECHECKER_NAMESPACE = new NamespaceName(
+            Lists.immutable.of("Mina", "Test"), "Typechecker");
+
+    public static NamespaceName KINDCHECKER_NAMESPACE = new NamespaceName(
+            Lists.immutable.of("Mina", "Test"), "Kindchecker");
 
     public static Meta<Name> namelessMeta() {
         return Meta.of(Nameless.INSTANCE);
@@ -189,25 +188,28 @@ public class ExampleNodes {
     }
 
     public static class Bool {
-        public static DataName NAME = new DataName(new QualifiedName(NAMESPACE_NAME, "Bool"));
-        public static Meta<Attributes> META = Meta.of(new Attributes(NAME, TypeKind.INSTANCE));
+        public static DataName NAME = new DataName(new QualifiedName(TYPECHECKER_NAMESPACE, "Bool"));
+
+        public static Kind KIND = TypeKind.INSTANCE;
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Bool");
 
         public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "Bool");
+                Meta.of(new Attributes(NAME, KIND)), "Bool");
     }
 
     public static class True {
         public static ConstructorName NAME = new ConstructorName(
                 Bool.NAME,
-                new QualifiedName(NAMESPACE_NAME, "True"));
+                new QualifiedName(TYPECHECKER_NAMESPACE, "True"));
 
         public static Type TYPE = Type.function(
                 Lists.immutable.empty(),
                 new TypeConstructor(Bool.NAME.name(), TypeKind.INSTANCE));
 
-        public static Meta<Attributes> META = Meta.of(new Attributes(NAME, TYPE));
+        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
 
         public static TypeNode<Name> NAMED_TYPE_NODE = funTypeNode(
                 Meta.of(Nameless.INSTANCE),
@@ -223,13 +225,13 @@ public class ExampleNodes {
     public static class False {
         public static ConstructorName NAME = new ConstructorName(
                 Bool.NAME,
-                new QualifiedName(NAMESPACE_NAME, "False"));
+                new QualifiedName(TYPECHECKER_NAMESPACE, "False"));
 
         public static Type TYPE = Type.function(
                 Lists.immutable.empty(),
                 new TypeConstructor(Bool.NAME.name(), TypeKind.INSTANCE));
 
-        public static Meta<Attributes> META = Meta.of(new Attributes(NAME, TYPE));
+        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
 
         public static TypeNode<Name> NAMED_TYPE_NODE = funTypeNode(
                 Meta.of(Nameless.INSTANCE),
@@ -240,5 +242,99 @@ public class ExampleNodes {
                 Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
                 Lists.immutable.empty(),
                 Bool.KINDED_TYPE_NODE);
+    }
+
+    public static class List {
+        public static DataName NAME = new DataName(new QualifiedName(ExampleNodes.KINDCHECKER_NAMESPACE, "List"));
+
+        public static Kind KIND = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+
+        public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "List");
+
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
+                Meta.of(new Attributes(NAME, KIND)), "List");
+    }
+
+    public static class Cons {
+        public static ConstructorName NAME = new ConstructorName(
+                List.NAME,
+                new QualifiedName(KINDCHECKER_NAMESPACE, "Cons"));
+
+        public static Kind KIND = List.KIND;
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+
+        public static FieldName HEAD_NAME = new FieldName(NAME, "head");
+
+        public static Meta<Attributes> KINDED_HEAD_META = Meta.of(new Attributes(HEAD_NAME, TypeKind.INSTANCE));
+    }
+
+    public static class Nil {
+        public static ConstructorName NAME = new ConstructorName(
+                List.NAME,
+                new QualifiedName(KINDCHECKER_NAMESPACE, "Nil"));
+
+        public static Kind KIND = List.KIND;
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+    }
+
+    public static class Either {
+        public static DataName NAME = new DataName(new QualifiedName(ExampleNodes.KINDCHECKER_NAMESPACE, "Either"));
+
+        public static Kind KIND = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE);
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+
+        public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Either");
+
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
+                Meta.of(new Attributes(NAME, KIND)), "Either");
+    }
+
+    public static class Functor {
+        public static DataName NAME = new DataName(new QualifiedName(ExampleNodes.KINDCHECKER_NAMESPACE, "Functor"));
+
+        public static Kind KIND = new HigherKind(
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE),
+                TypeKind.INSTANCE);
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+
+        public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Functor");
+
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
+                Meta.of(new Attributes(NAME, KIND)), "Functor");
+    }
+
+    public static class Fix {
+        public static DataName NAME = new DataName(new QualifiedName(ExampleNodes.KINDCHECKER_NAMESPACE, "Fix"));
+
+        public static Kind KIND = new HigherKind(
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE),
+                TypeKind.INSTANCE);
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+
+        public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Fix");
+
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
+                Meta.of(new Attributes(NAME, KIND)), "Fix");
+    }
+
+    public static class Unfix {
+        public static ConstructorName NAME = new ConstructorName(
+                Fix.NAME,
+                new QualifiedName(KINDCHECKER_NAMESPACE, "Unfix"));
+
+        public static Kind KIND = Fix.KIND;
+
+        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+
+        public static FieldName UNFIX_NAME = new FieldName(NAME, "unfix");
+
+        public static Meta<Attributes> KINDED_UNFIX_META = Meta.of(new Attributes(UNFIX_NAME, TypeKind.INSTANCE));
     }
 }

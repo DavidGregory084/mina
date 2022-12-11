@@ -82,38 +82,21 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckListTypeApply() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-        var listName = new QualifiedName(nsName, "List");
-        var listDataName = new DataName(listName);
-        var listKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var listAttrs = new Attributes(listDataName, listKind);
-        var listMeta = new Meta<Attributes>(Range.EMPTY, listAttrs);
-
-        var listMetaWithoutType = listMeta.withMeta(listMeta.meta().name());
-
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(listDataName.localName(), listMeta);
-        environment.putType(listDataName.canonicalName(), listMeta);
+        environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
+        environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
 
+        /*- List[Int] */
         var originalNode = typeApplyNode(
-                new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
-                typeRefNode(listMetaWithoutType,
-                        idNode(Range.EMPTY, nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Kindchecker"),
-                                "List")),
-                Lists.immutable.of(typeRefNode(intMetaWithoutType, "Int")));
+                ExampleNodes.namelessMeta(),
+                ExampleNodes.List.NAMED_TYPE_NODE,
+                Lists.immutable.of(ExampleNodes.Int.NAMED_TYPE_NODE));
 
         var expectedNode = typeApplyNode(
-                new Meta<Attributes>(Range.EMPTY, new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
-                typeRefNode(listMeta,
-                        idNode(Range.EMPTY, nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Kindchecker"),
-                                "List")),
-                Lists.immutable.of(typeRefNode(intMeta, "Int")));
+                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                ExampleNodes.List.KINDED_TYPE_NODE,
+                Lists.immutable.of(ExampleNodes.Int.KINDED_TYPE_NODE));
 
         testSuccessfulKindcheck(environment, originalNode, expectedNode);
     }
@@ -122,38 +105,18 @@ public class KindcheckerTest {
     void kindcheckIllKindedListTypeApply() {
         var applyRange = new Range(0, 1, 0, 1);
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-        var listName = new QualifiedName(nsName, "List");
-        var listDataName = new DataName(listName);
-        var listKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var listAttrs = new Attributes(listDataName, listKind);
-        var listMeta = new Meta<Attributes>(Range.EMPTY, listAttrs);
-
-        var listMetaWithoutType = listMeta.withMeta(listMeta.meta().name());
-
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
-        var stringAttrs = new Attributes(new BuiltInName("String"), TypeKind.INSTANCE);
-        var stringMeta = new Meta<Attributes>(Range.EMPTY, stringAttrs);
-
-        var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(listDataName.localName(), listMeta);
-        environment.putType(listDataName.canonicalName(), listMeta);
+        environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
+        environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
 
+        /*- List[Int, String] */
         var originalNode = typeApplyNode(
                 new Meta<Name>(applyRange, Nameless.INSTANCE),
-                typeRefNode(listMetaWithoutType,
-                        idNode(Range.EMPTY, nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Kindchecker"),
-                                "List")),
+                ExampleNodes.List.NAMED_TYPE_NODE,
                 Lists.immutable.of(
-                        typeRefNode(intMetaWithoutType, "Int"),
-                        typeRefNode(stringMetaWithoutType, "String")));
+                        ExampleNodes.Int.NAMED_TYPE_NODE,
+                        ExampleNodes.String.NAMED_TYPE_NODE));
 
         var collector = testFailedKindcheck(environment, originalNode);
 
@@ -165,49 +128,25 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckEitherTypeApply() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-        var eitherName = new QualifiedName(nsName, "Either");
-        var eitherDataName = new DataName(eitherName);
-        var eitherKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var eitherAttrs = new Attributes(eitherDataName, eitherKind);
-        var eitherMeta = new Meta<Attributes>(Range.EMPTY, eitherAttrs);
-
-        var eitherMetaWithoutType = eitherMeta.withMeta(eitherMeta.meta().name());
-
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
-        var stringAttrs = new Attributes(new BuiltInName("String"), TypeKind.INSTANCE);
-        var stringMeta = new Meta<Attributes>(Range.EMPTY, stringAttrs);
-
-        var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(eitherDataName.localName(), eitherMeta);
-        environment.putType(eitherDataName.canonicalName(), eitherMeta);
+        environment.putType(ExampleNodes.Either.NAME.localName(), ExampleNodes.Either.KINDED_META);
+        environment.putType(ExampleNodes.Either.NAME.canonicalName(), ExampleNodes.Either.KINDED_META);
 
+        /*- Either[Int, String] */
         var originalNode = typeApplyNode(
-                new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
-                typeRefNode(
-                        eitherMetaWithoutType,
-                        idNode(Range.EMPTY, nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Kindchecker"),
-                                "Either")),
+                ExampleNodes.namelessMeta(),
+                ExampleNodes.Either.NAMED_TYPE_NODE,
                 Lists.immutable.of(
-                        typeRefNode(intMetaWithoutType, "Int"),
-                        typeRefNode(stringMetaWithoutType, "String")));
+                        ExampleNodes.Int.NAMED_TYPE_NODE,
+                        ExampleNodes.String.NAMED_TYPE_NODE));
 
         var expectedNode = typeApplyNode(
-                new Meta<Attributes>(Range.EMPTY, new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
-                typeRefNode(
-                        eitherMeta,
-                        idNode(Range.EMPTY, nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Kindchecker"),
-                                "Either")),
+                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                ExampleNodes.Either.KINDED_TYPE_NODE,
                 Lists.immutable.of(
-                        typeRefNode(intMeta, "Int"),
-                        typeRefNode(stringMeta, "String")));
+                        ExampleNodes.Int.KINDED_TYPE_NODE,
+                        ExampleNodes.String.KINDED_TYPE_NODE));
 
         testSuccessfulKindcheck(environment, originalNode, expectedNode);
     }
@@ -216,33 +155,17 @@ public class KindcheckerTest {
     void kindcheckIllKindedEitherTypeApply() {
         var applyRange = new Range(0, 1, 0, 1);
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-        var eitherName = new QualifiedName(nsName, "Either");
-        var eitherDataName = new DataName(eitherName);
-        var eitherKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var eitherAttrs = new Attributes(eitherDataName, eitherKind);
-        var eitherMeta = new Meta<Attributes>(Range.EMPTY, eitherAttrs);
-
-        var eitherMetaWithoutType = eitherMeta.withMeta(eitherMeta.meta().name());
-
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(eitherDataName.localName(), eitherMeta);
-        environment.putType(eitherDataName.canonicalName(), eitherMeta);
+        environment.putType(ExampleNodes.Either.NAME.localName(), ExampleNodes.Either.KINDED_META);
+        environment.putType(ExampleNodes.Either.NAME.canonicalName(), ExampleNodes.Either.KINDED_META);
 
+        /*- Either[Int] */
         var originalNode = typeApplyNode(
                 new Meta<Name>(applyRange, Nameless.INSTANCE),
-                typeRefNode(
-                        eitherMetaWithoutType,
-                        idNode(Range.EMPTY, nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Kindchecker"),
-                                "Either")),
+                ExampleNodes.Either.NAMED_TYPE_NODE,
                 Lists.immutable.of(
-                        typeRefNode(intMetaWithoutType, "Int")));
+                        ExampleNodes.Int.NAMED_TYPE_NODE));
 
         var collector = testFailedKindcheck(environment, originalNode);
 
@@ -256,20 +179,11 @@ public class KindcheckerTest {
     void kindcheckIllKindedIntTypeApply() {
         var applyRange = new Range(0, 1, 0, 1);
 
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
-        var stringAttrs = new Attributes(new BuiltInName("String"), TypeKind.INSTANCE);
-        var stringMeta = new Meta<Attributes>(Range.EMPTY, stringAttrs);
-
-        var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
-
+        /* Int[String] */
         var originalNode = typeApplyNode(
                 new Meta<Name>(applyRange, Nameless.INSTANCE),
-                typeRefNode(intMetaWithoutType, "Int"),
-                Lists.immutable.of(typeRefNode(stringMetaWithoutType, "String")));
+                ExampleNodes.Int.NAMED_TYPE_NODE,
+                Lists.immutable.of(ExampleNodes.String.NAMED_TYPE_NODE));
 
         var collector = testFailedKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode);
 
@@ -281,29 +195,20 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckFunType() {
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
-        var stringAttrs = new Attributes(new BuiltInName("String"), TypeKind.INSTANCE);
-        var stringMeta = new Meta<Attributes>(Range.EMPTY, stringAttrs);
-
-        var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
-
+        /*- (Int, String) -> String */
         var originalNode = funTypeNode(
-                new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
-                        typeRefNode(intMetaWithoutType, "Int"),
-                        typeRefNode(stringMetaWithoutType, "String")),
-                typeRefNode(stringMetaWithoutType, "String"));
+                        ExampleNodes.Int.NAMED_TYPE_NODE,
+                        ExampleNodes.String.NAMED_TYPE_NODE),
+                ExampleNodes.String.NAMED_TYPE_NODE);
 
         var expectedNode = funTypeNode(
-                new Meta<Attributes>(Range.EMPTY, new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
+                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                 Lists.immutable.of(
-                        typeRefNode(intMeta, "Int"),
-                        typeRefNode(stringMeta, "String")),
-                typeRefNode(stringMeta, "String"));
+                        ExampleNodes.Int.KINDED_TYPE_NODE,
+                        ExampleNodes.String.KINDED_TYPE_NODE),
+                ExampleNodes.String.KINDED_TYPE_NODE);
 
         testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -312,36 +217,22 @@ public class KindcheckerTest {
     void kindcheckIllKindedFunArgType() {
         var funArgRange = new Range(0, 1, 0, 1);
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-        var eitherName = new QualifiedName(nsName, "Either");
-        var eitherDataName = new DataName(eitherName);
-        var eitherKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var eitherAttrs = new Attributes(eitherDataName, eitherKind);
-        var eitherMeta = new Meta<Attributes>(funArgRange, eitherAttrs);
-
-        var eitherMetaWithoutType = eitherMeta.withMeta(eitherMeta.meta().name());
-
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
-        var stringAttrs = new Attributes(new BuiltInName("String"), TypeKind.INSTANCE);
-        var stringMeta = new Meta<Attributes>(Range.EMPTY, stringAttrs);
-
-        var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(eitherDataName.localName(), eitherMeta);
-        environment.putType(eitherDataName.canonicalName(), eitherMeta);
+        environment.putType(ExampleNodes.Either.NAME.localName(), ExampleNodes.Either.KINDED_META);
+        environment.putType(ExampleNodes.Either.NAME.canonicalName(), ExampleNodes.Either.KINDED_META);
 
+        var eitherApplyMeta = Meta
+                .<Name>of(ExampleNodes.Either.NAME)
+                .withRange(funArgRange);
+
+        /*- (Int, Either) -> String */
         var originalNode = funTypeNode(
-                new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
-                        typeRefNode(intMetaWithoutType, "Int"),
-                        typeRefNode(eitherMetaWithoutType, "Either")),
-                typeRefNode(stringMetaWithoutType, "String"));
+                        ExampleNodes.Int.NAMED_TYPE_NODE,
+                        typeRefNode(eitherApplyMeta, "Either")),
+                ExampleNodes.String.NAMED_TYPE_NODE);
 
         var collector = testFailedKindcheck(environment, originalNode);
 
@@ -355,36 +246,22 @@ public class KindcheckerTest {
     void kindcheckIllKindedFunReturnType() {
         var funReturnRange = new Range(0, 1, 0, 1);
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-        var listName = new QualifiedName(nsName, "List");
-        var listDataName = new DataName(listName);
-        var listKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var listAttrs = new Attributes(listDataName, listKind);
-        var listMeta = new Meta<Attributes>(funReturnRange, listAttrs);
-
-        var listMetaWithoutType = listMeta.withMeta(listMeta.meta().name());
-
-        var intAttrs = new Attributes(new BuiltInName("Int"), TypeKind.INSTANCE);
-        var intMeta = new Meta<Attributes>(Range.EMPTY, intAttrs);
-
-        var intMetaWithoutType = intMeta.withMeta(intMeta.meta().name());
-
-        var stringAttrs = new Attributes(new BuiltInName("String"), TypeKind.INSTANCE);
-        var stringMeta = new Meta<Attributes>(Range.EMPTY, stringAttrs);
-
-        var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(listDataName.localName(), listMeta);
-        environment.putType(listDataName.canonicalName(), listMeta);
+        environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
+        environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
 
+        var listReturnMeta = Meta
+                .<Name>of(ExampleNodes.List.NAME)
+                .withRange(funReturnRange);
+
+        /* (Int, String) -> List */
         var originalNode = funTypeNode(
-                new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
-                        typeRefNode(intMetaWithoutType, "Int"),
-                        typeRefNode(stringMetaWithoutType, "String")),
-                typeRefNode(listMetaWithoutType, "List"));
+                        ExampleNodes.Int.NAMED_TYPE_NODE,
+                        ExampleNodes.String.NAMED_TYPE_NODE),
+                typeRefNode(listReturnMeta, "List"));
 
         var collector = testFailedKindcheck(environment, originalNode);
 
@@ -410,18 +287,16 @@ public class KindcheckerTest {
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
-        var typeLambdaMeta = Meta.of(new Attributes(Nameless.INSTANCE, typeLambdaKind));
+        var typeLambdaMeta = ExampleNodes.namelessMeta(typeLambdaKind);
 
         // [F, A] => F[A]
         var originalNode = typeLambdaNode(
-                Meta.of(Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
                         forAllVarNode(Meta.of(typeVarAName), "A")),
                 typeApplyNode(
-                        Meta.of(Nameless.INSTANCE),
+                        ExampleNodes.namelessMeta(),
                         typeRefNode(Meta.of(typeVarFName), "F"),
                         Lists.immutable.of(
                                 typeRefNode(Meta.of(typeVarAName), "A"))));
@@ -432,7 +307,7 @@ public class KindcheckerTest {
                         forAllVarNode(typeVarFMeta, "F"),
                         forAllVarNode(typeVarAMeta, "A")),
                 typeApplyNode(
-                        namelessMeta,
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         typeRefNode(typeVarFMeta, "F"),
                         Lists.immutable.of(typeRefNode(typeVarAMeta, "A"))));
 
@@ -459,23 +334,21 @@ public class KindcheckerTest {
         var typeVarGMeta = Meta.of(new Attributes(typeVarGName, typeVarGKind));
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
-        var typeLambdaMeta = Meta.of(new Attributes(Nameless.INSTANCE, typeLambdaKind));
+        var typeLambdaMeta = ExampleNodes.namelessMeta(typeLambdaKind);
 
         // [F, G, A] => F[G[A]]
         var originalNode = typeLambdaNode(
-                new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
                         forAllVarNode(Meta.of(typeVarGName), "G"),
                         forAllVarNode(Meta.of(typeVarAName), "A")),
                 typeApplyNode(
-                        new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
+                        ExampleNodes.namelessMeta(),
                         typeRefNode(Meta.of(typeVarFName), "F"),
                         Lists.immutable.of(
                                 typeApplyNode(
-                                        new Meta<Name>(Range.EMPTY, Nameless.INSTANCE),
+                                        ExampleNodes.namelessMeta(),
                                         typeRefNode(Meta.of(typeVarGName), "G"),
                                         Lists.immutable.of(typeRefNode(Meta.of(typeVarAName), "A"))))));
 
@@ -486,11 +359,11 @@ public class KindcheckerTest {
                         forAllVarNode(typeVarGMeta, "G"),
                         forAllVarNode(typeVarAMeta, "A")),
                 typeApplyNode(
-                        namelessMeta,
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         typeRefNode(typeVarFMeta, "F"),
                         Lists.immutable.of(
                                 typeApplyNode(
-                                        namelessMeta,
+                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                                         typeRefNode(typeVarGMeta, "G"),
                                         Lists.immutable.of(typeRefNode(typeVarAMeta, "A"))))));
 
@@ -505,9 +378,9 @@ public class KindcheckerTest {
         var typeVarBName = new TypeVarName("B");
 
         // * => *
-        var typeVarGKind = new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE);
+        var typeVarGKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         // [* => *, *] => *
-        var typeVarFKind = new HigherKind(Lists.immutable.of(typeVarGKind, TypeKind.INSTANCE), TypeKind.INSTANCE);
+        var typeVarFKind = new HigherKind(typeVarGKind, TypeKind.INSTANCE, TypeKind.INSTANCE);
         // *
         var typeVarAKind = TypeKind.INSTANCE;
         // *
@@ -515,7 +388,7 @@ public class KindcheckerTest {
 
         // [* => *, [* => *, *] => *, *, *] => *
         var typeLambdaKind = new HigherKind(
-                Lists.immutable.of(typeVarFKind, typeVarGKind, typeVarAKind, typeVarBKind),
+                typeVarFKind, typeVarGKind, typeVarAKind, typeVarBKind,
                 TypeKind.INSTANCE);
 
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
@@ -523,38 +396,36 @@ public class KindcheckerTest {
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
         var typeVarBMeta = Meta.of(new Attributes(typeVarBName, typeVarBKind));
 
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
-        var typeLambdaMeta = Meta.of(new Attributes(Nameless.INSTANCE, typeLambdaKind));
+        var typeLambdaMeta = ExampleNodes.namelessMeta(typeLambdaKind);
 
         // [F, G, A, B] => F[G, A] -> F[G, B] -> G[B]
         var originalNode = typeLambdaNode(
-                Meta.of(Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
                         forAllVarNode(Meta.of(typeVarGName), "G"),
                         forAllVarNode(Meta.of(typeVarAName), "A"),
                         forAllVarNode(Meta.of(typeVarBName), "B")),
                 funTypeNode(
-                        Meta.of(Nameless.INSTANCE),
+                        ExampleNodes.namelessMeta(),
                         Lists.immutable.of(
                                 typeApplyNode(
-                                        Meta.of(Nameless.INSTANCE),
+                                        ExampleNodes.namelessMeta(),
                                         typeRefNode(Meta.of(typeVarFName), "F"),
                                         Lists.immutable.of(
                                                 typeRefNode(Meta.of(typeVarGName), "G"),
                                                 typeRefNode(Meta.of(typeVarAName), "A")))),
                         funTypeNode(
-                                Meta.of(Nameless.INSTANCE),
+                                ExampleNodes.namelessMeta(),
                                 Lists.immutable.of(
                                         typeApplyNode(
-                                                Meta.of(Nameless.INSTANCE),
+                                                ExampleNodes.namelessMeta(),
                                                 typeRefNode(Meta.of(typeVarFName), "F"),
                                                 Lists.immutable.of(
                                                         typeRefNode(Meta.of(typeVarGName), "G"),
                                                         typeRefNode(Meta.of(typeVarBName), "B")))),
                                 typeApplyNode(
-                                        Meta.of(Nameless.INSTANCE),
+                                        ExampleNodes.namelessMeta(),
                                         typeRefNode(Meta.of(typeVarGName), "G"),
                                         Lists.immutable.of(typeRefNode(Meta.of(typeVarBName), "B"))))));
 
@@ -566,25 +437,25 @@ public class KindcheckerTest {
                         forAllVarNode(typeVarAMeta, "A"),
                         forAllVarNode(typeVarBMeta, "B")),
                 funTypeNode(
-                        namelessMeta,
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         Lists.immutable.of(
                                 typeApplyNode(
-                                        namelessMeta,
+                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                                         typeRefNode(typeVarFMeta, "F"),
                                         Lists.immutable.of(
                                                 typeRefNode(typeVarGMeta, "G"),
                                                 typeRefNode(typeVarAMeta, "A")))),
                         funTypeNode(
-                                namelessMeta,
+                                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                                 Lists.immutable.of(
                                         typeApplyNode(
-                                                namelessMeta,
+                                                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                                                 typeRefNode(typeVarFMeta, "F"),
                                                 Lists.immutable.of(
                                                         typeRefNode(typeVarGMeta, "G"),
                                                         typeRefNode(typeVarBMeta, "B")))),
                                 typeApplyNode(
-                                        namelessMeta,
+                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                                         typeRefNode(typeVarGMeta, "G"),
                                         Lists.immutable.of(typeRefNode(typeVarBMeta, "B"))))));
 
@@ -593,82 +464,54 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckHigherTyCon() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-
-        var functorName = new QualifiedName(nsName, "Functor");
-        var functorDataName = new DataName(functorName);
-        var functorKind = new HigherKind(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
-        var functorAttrs = new Attributes(functorDataName, functorKind);
-        var functorMeta = new Meta<Attributes>(Range.EMPTY, functorAttrs);
-
-        var listName = new QualifiedName(nsName, "List");
-        var listDataName = new DataName(listName);
-        var listKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var listAttrs = new Attributes(listDataName, listKind);
-        var listMeta = new Meta<Attributes>(Range.EMPTY, listAttrs);
-
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(listDataName.localName(), listMeta);
-        environment.putType(listDataName.canonicalName(), listMeta);
-        environment.putType(functorDataName.localName(), functorMeta);
-        environment.putType(functorDataName.canonicalName(), functorMeta);
+        environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
+        environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
+        environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
+        environment.putType(ExampleNodes.Functor.NAME.canonicalName(), ExampleNodes.Functor.KINDED_META);
 
         // Functor[List]
         var originalNode = typeApplyNode(
                 Meta.of(Nameless.INSTANCE),
-                typeRefNode(Meta.of(functorDataName), "Functor"),
-                Lists.immutable.of(
-                        typeRefNode(Meta.of(listDataName), "List")));
+                ExampleNodes.Functor.NAMED_TYPE_NODE,
+                Lists.immutable.of(ExampleNodes.List.NAMED_TYPE_NODE));
 
         var expectedNode = typeApplyNode(
-                namelessMeta,
-                typeRefNode(functorMeta, "Functor"),
-                Lists.immutable.of(typeRefNode(listMeta, "List")));
+                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                ExampleNodes.Functor.KINDED_TYPE_NODE,
+                Lists.immutable.of(ExampleNodes.List.KINDED_TYPE_NODE));
 
         testSuccessfulKindcheck(environment, originalNode, expectedNode);
     }
 
     @Test
     void kindcheckEtaExpandHigherTyCon() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-
-        var functorName = new QualifiedName(nsName, "Functor");
-        var functorDataName = new DataName(functorName);
-        var functorKind = new HigherKind(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
-        var functorAttrs = new Attributes(functorDataName, functorKind);
-        var functorMeta = new Meta<Attributes>(Range.EMPTY, functorAttrs);
+        var environment = TypeEnvironment.withBuiltInTypes();
+        environment.pushScope(new ImportedScope<>());
+        environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
+        environment.putType(ExampleNodes.Functor.NAME.canonicalName(), ExampleNodes.Functor.KINDED_META);
 
         // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         var typeVarFName = new TypeVarName("F");
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
-        var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
-        environment.putType(functorDataName.localName(), functorMeta);
-        environment.putType(functorDataName.canonicalName(), functorMeta);
-
         // F => Functor[F]
         var originalNode = typeLambdaNode(
-                Meta.of(Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(forAllVarNode(Meta.of(typeVarFName), "F")),
                 typeApplyNode(
-                        Meta.of(Nameless.INSTANCE),
-                        typeRefNode(Meta.of(functorDataName), "Functor"),
-                        Lists.immutable.of(
-                                typeRefNode(Meta.of(typeVarFName), "F"))));
+                        ExampleNodes.namelessMeta(),
+                        ExampleNodes.Functor.NAMED_TYPE_NODE,
+                        Lists.immutable.of(typeRefNode(Meta.of(typeVarFName), "F"))));
 
         var expectedNode = typeLambdaNode(
-                Meta.of(new Attributes(Nameless.INSTANCE, functorKind)),
+                ExampleNodes.namelessMeta(ExampleNodes.Functor.KIND),
                 Lists.immutable.of(forAllVarNode(typeVarFMeta, "F")),
                 typeApplyNode(
-                        namelessMeta,
-                        typeRefNode(functorMeta, "Functor"),
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                        ExampleNodes.Functor.KINDED_TYPE_NODE,
                         Lists.immutable.of(typeRefNode(typeVarFMeta, "F"))));
 
         testSuccessfulKindcheck(environment, originalNode, expectedNode);
@@ -676,111 +519,78 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckHigherTyConTypeLambda() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-
-        var functorName = new QualifiedName(nsName, "Functor");
-        var functorDataName = new DataName(functorName);
-        var functorKind = new HigherKind(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
-        var functorAttrs = new Attributes(functorDataName, functorKind);
-        var functorMeta = new Meta<Attributes>(Range.EMPTY, functorAttrs);
-
-        // [* => *] => *
-        var typeVarFKind = new HigherKind(functorKind, TypeKind.INSTANCE);
-        var typeVarFName = new TypeVarName("F");
-        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
-
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedScope<>());
-        environment.putType(functorDataName.localName(), functorMeta);
-        environment.putType(functorDataName.canonicalName(), functorMeta);
+        environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
+        environment.putType(ExampleNodes.Functor.NAME.canonicalName(), ExampleNodes.Functor.KINDED_META);
+
+        // [* => *] => *
+        var typeVarFKind = new HigherKind(ExampleNodes.Functor.KIND, TypeKind.INSTANCE);
+        var typeVarFName = new TypeVarName("F");
+        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
         var typeLambdaKind = new HigherKind(typeVarFKind, TypeKind.INSTANCE);
 
         // F => F[Functor]
         var originalNode = typeLambdaNode(
-                Meta.of(Nameless.INSTANCE),
+                ExampleNodes.namelessMeta(),
                 Lists.immutable.of(forAllVarNode(Meta.of(typeVarFName), "F")),
                 typeApplyNode(
-                        Meta.of(Nameless.INSTANCE),
+                        ExampleNodes.namelessMeta(),
                         typeRefNode(Meta.of(typeVarFName), "F"),
-                        Lists.immutable.of(
-                                typeRefNode(Meta.of(functorDataName), "Functor"))));
+                        Lists.immutable.of(ExampleNodes.Functor.NAMED_TYPE_NODE)));
 
         var expectedNode = typeLambdaNode(
-                Meta.of(new Attributes(Nameless.INSTANCE, typeLambdaKind)),
+                ExampleNodes.namelessMeta(typeLambdaKind),
                 Lists.immutable.of(forAllVarNode(typeVarFMeta, "F")),
                 typeApplyNode(
-                        namelessMeta,
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         typeRefNode(typeVarFMeta, "F"),
-                        Lists.immutable.of(typeRefNode(functorMeta, "Functor"))));
+                        Lists.immutable.of(ExampleNodes.Functor.KINDED_TYPE_NODE)));
 
         testSuccessfulKindcheck(environment, originalNode, expectedNode);
     }
 
     @Test
     void kindcheckBinaryTyConAdaptedToUnary() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+        environment.pushScope(new ImportedScope<>());
+        environment.putType(ExampleNodes.Either.NAME.localName(), ExampleNodes.Either.KINDED_META);
+        environment.putType(ExampleNodes.Either.NAME.canonicalName(), ExampleNodes.Either.KINDED_META);
+        environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
+        environment.putType(ExampleNodes.Functor.NAME.canonicalName(), ExampleNodes.Functor.KINDED_META);
+
         var typeVarAName = new TypeVarName("A");
         var typeVarAKind = TypeKind.INSTANCE;
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-
-        var eitherName = new QualifiedName(nsName, "Either");
-        var eitherDataName = new DataName(eitherName);
-        var eitherKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var eitherAttrs = new Attributes(eitherDataName, eitherKind);
-        var eitherMeta = new Meta<Attributes>(Range.EMPTY, eitherAttrs);
-
-        var functorName = new QualifiedName(nsName, "Functor");
-        var functorDataName = new DataName(functorName);
-        var functorKind = new HigherKind(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
-        var functorAttrs = new Attributes(functorDataName, functorKind);
-        var functorMeta = new Meta<Attributes>(Range.EMPTY, functorAttrs);
-
-        var stringAttrs = new Attributes(new BuiltInName("String"), TypeKind.INSTANCE);
-        var stringMeta = new Meta<Attributes>(Range.EMPTY, stringAttrs);
-
-        var stringMetaWithoutType = stringMeta.withMeta(stringMeta.meta().name());
-
-        var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
-        environment.putType(eitherDataName.localName(), eitherMeta);
-        environment.putType(eitherDataName.canonicalName(), eitherMeta);
-        environment.putType(functorDataName.localName(), functorMeta);
-        environment.putType(functorDataName.canonicalName(), functorMeta);
-
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
         // Functor[A => Either[String, A]]
         var originalNode = typeApplyNode(
-                Meta.of(Nameless.INSTANCE),
-                typeRefNode(Meta.of(functorDataName), "Functor"),
+                ExampleNodes.namelessMeta(),
+                ExampleNodes.Functor.NAMED_TYPE_NODE,
                 Lists.immutable.of(
                         typeLambdaNode(
-                                Meta.of(Nameless.INSTANCE),
+                                ExampleNodes.namelessMeta(),
                                 Lists.immutable.of(forAllVarNode(Meta.of(typeVarAName), "A")),
                                 typeApplyNode(
-                                        Meta.of(Nameless.INSTANCE),
-                                        typeRefNode(Meta.of(eitherDataName), "Either"),
+                                        ExampleNodes.namelessMeta(),
+                                        ExampleNodes.Either.NAMED_TYPE_NODE,
                                         Lists.immutable.of(
-                                                typeRefNode(stringMetaWithoutType, "String"),
+                                                ExampleNodes.String.NAMED_TYPE_NODE,
                                                 typeRefNode(Meta.of(typeVarAName), "A"))))));
 
         var expectedNode = typeApplyNode(
-                namelessMeta,
-                typeRefNode(functorMeta, "Functor"),
+                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                ExampleNodes.Functor.KINDED_TYPE_NODE,
                 Lists.immutable.of(
                         typeLambdaNode(
-                                Meta.of(new Attributes(Nameless.INSTANCE,
-                                        new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE))),
+                                ExampleNodes.namelessMeta(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE)),
                                 Lists.immutable.of(forAllVarNode(typeVarAMeta, "A")),
                                 typeApplyNode(
-                                        namelessMeta,
-                                        typeRefNode(eitherMeta, "Either"),
+                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                                        ExampleNodes.Either.KINDED_TYPE_NODE,
                                         Lists.immutable.of(
-                                                typeRefNode(stringMeta, "String"),
+                                                ExampleNodes.String.KINDED_TYPE_NODE,
                                                 typeRefNode(typeVarAMeta, "A"))))));
 
         testSuccessfulKindcheck(environment, originalNode, expectedNode);
@@ -792,28 +602,6 @@ public class KindcheckerTest {
         var typeVarAKind = TypeKind.INSTANCE;
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-
-        var listName = new QualifiedName(nsName, "List");
-        var listDataName = new DataName(listName);
-        var listKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var listAttrs = new Attributes(listDataName, listKind);
-        var listMeta = new Meta<Attributes>(Range.EMPTY, listAttrs);
-
-        var consName = new QualifiedName(nsName, "Cons");
-        var consConstrName = new ConstructorName(listDataName, consName);
-        var consAttrs = new Attributes(consConstrName, listKind);
-        var consMeta = new Meta<Attributes>(Range.EMPTY, consAttrs);
-
-        var headName = new FieldName(consConstrName, "head");
-        var headAttrs = new Attributes(headName, TypeKind.INSTANCE);
-        var headMeta = new Meta<Attributes>(Range.EMPTY, headAttrs);
-
-        var nilName = new QualifiedName(nsName, "Nil");
-        var nilConstrName = new ConstructorName(listDataName, nilName);
-        var nilAttrs = new Attributes(nilConstrName, listKind);
-        var nilMeta = new Meta<Attributes>(Range.EMPTY, nilAttrs);
-
         /*-
          * data List[A] {
          *   case Cons(head: A)
@@ -821,41 +609,43 @@ public class KindcheckerTest {
          * }
          */
         var originalNode = dataNode(
-                Meta.of(listDataName),
+                Meta.<Name>of(ExampleNodes.List.NAME),
                 "List",
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarAName), "A")),
                 Lists.immutable.of(
                         constructorNode(
-                                Meta.<Name>of(consConstrName),
+                                Meta.<Name>of(ExampleNodes.Cons.NAME),
                                 "Cons",
                                 Lists.immutable.of(
                                         constructorParamNode(
-                                                Meta.<Name>of(headName), "head",
+                                                Meta.<Name>of(ExampleNodes.Cons.HEAD_NAME),
+                                                "head",
                                                 typeRefNode(Meta.of(typeVarAName), "A"))),
                                 Optional.empty()),
                         constructorNode(
-                                Meta.<Name>of(nilConstrName),
+                                Meta.<Name>of(ExampleNodes.Nil.NAME),
                                 "Nil",
                                 Lists.immutable.empty(),
                                 Optional.empty())));
 
         var expectedNode = dataNode(
-                listMeta,
+                ExampleNodes.List.KINDED_META,
                 "List",
                 Lists.immutable.of(
                         forAllVarNode(typeVarAMeta, "A")),
                 Lists.immutable.of(
                         constructorNode(
-                                consMeta,
+                                ExampleNodes.Cons.KINDED_META,
                                 "Cons",
                                 Lists.immutable.of(
                                         constructorParamNode(
-                                                headMeta, "head",
+                                                ExampleNodes.Cons.KINDED_HEAD_META,
+                                                "head",
                                                 typeRefNode(typeVarAMeta, "A"))),
                                 Optional.empty()),
                         constructorNode(
-                                nilMeta,
+                                ExampleNodes.Nil.KINDED_META,
                                 "Nil",
                                 Lists.immutable.empty(),
                                 Optional.empty())));
@@ -869,73 +659,55 @@ public class KindcheckerTest {
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Kindchecker");
-
-        var fixName = new QualifiedName(nsName, "Fix");
-        var fixDataName = new DataName(fixName);
-        var fixKind = new HigherKind(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
-        var fixAttrs = new Attributes(fixDataName, fixKind);
-        var fixMeta = new Meta<Attributes>(Range.EMPTY, fixAttrs);
-
-        var unfixName = new QualifiedName(nsName, "Cons");
-        var unfixConstrName = new ConstructorName(fixDataName, unfixName);
-        var unfixAttrs = new Attributes(unfixConstrName, fixKind);
-        var unfixMeta = new Meta<Attributes>(Range.EMPTY, unfixAttrs);
-
-        var unfixFieldName = new FieldName(unfixConstrName, "head");
-        var unfixFieldAttrs = new Attributes(unfixFieldName, TypeKind.INSTANCE);
-        var unfixFieldMeta = new Meta<Attributes>(Range.EMPTY, unfixFieldAttrs);
-
-        var namelessMeta = Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE));
-
         /*-
          * data Fix[F] { case Unfix(unfix: F[Fix[F]]) }
          */
         var originalNode = dataNode(
-                Meta.of(fixDataName),
+                Meta.<Name>of(ExampleNodes.Fix.NAME),
                 "Fix",
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F")),
                 Lists.immutable.of(
                         constructorNode(
-                                Meta.<Name>of(unfixConstrName),
+                                Meta.<Name>of(ExampleNodes.Unfix.NAME),
                                 "Unfix",
                                 Lists.immutable.of(
                                         constructorParamNode(
-                                                Meta.<Name>of(unfixFieldName),
+                                                Meta.<Name>of(ExampleNodes.Unfix.UNFIX_NAME),
                                                 "unfix",
-                                                typeApplyNode(Meta.of(Nameless.INSTANCE),
+                                                typeApplyNode(
+                                                        ExampleNodes.namelessMeta(),
                                                         typeRefNode(Meta.of(typeVarFName), "F"),
                                                         Lists.immutable.of(
                                                                 typeApplyNode(
-                                                                        Meta.of(Nameless.INSTANCE),
-                                                                        typeRefNode(Meta.of(fixDataName), "Fix"),
-                                                                        Lists.immutable.of(typeRefNode(
-                                                                                Meta.of(typeVarFName), "F"))))))),
+                                                                        ExampleNodes.namelessMeta(),
+                                                                        ExampleNodes.Fix.NAMED_TYPE_NODE,
+                                                                        Lists.immutable.of(
+                                                                                typeRefNode(Meta.of(typeVarFName),
+                                                                                        "F"))))))),
                                 Optional.empty())));
 
         var expectedNode = dataNode(
-                fixMeta,
+                ExampleNodes.Fix.KINDED_META,
                 "Fix",
                 Lists.immutable.of(
                         forAllVarNode(typeVarFMeta, "F")),
                 Lists.immutable.of(
                         constructorNode(
-                                unfixMeta,
+                                ExampleNodes.Unfix.KINDED_META,
                                 "Unfix",
                                 Lists.immutable.of(
                                         constructorParamNode(
-                                                unfixFieldMeta,
+                                                ExampleNodes.Unfix.KINDED_UNFIX_META,
                                                 "unfix",
                                                 typeApplyNode(
-                                                        namelessMeta,
+                                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                                                         typeRefNode(typeVarFMeta, "F"),
                                                         Lists.immutable.of(
                                                                 typeApplyNode(
-                                                                        namelessMeta,
-                                                                        typeRefNode(fixMeta, "Fix"),
-                                                                        Lists.immutable.of(
-                                                                                typeRefNode(typeVarFMeta, "F"))))))),
+                                                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                                                                        ExampleNodes.Fix.KINDED_TYPE_NODE,
+                                                                        Lists.immutable.of(typeRefNode(typeVarFMeta, "F"))))))),
                                 Optional.empty())));
 
         testSuccessfulKindcheck(TypeEnvironment.empty(), originalNode, expectedNode);

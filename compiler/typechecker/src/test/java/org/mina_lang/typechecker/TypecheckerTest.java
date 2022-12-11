@@ -125,7 +125,7 @@ public class TypecheckerTest {
                     }
                 });
 
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testLiteral"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testLiteral"));
 
         var builtInName = new BuiltInName(expectedType.name());
 
@@ -160,7 +160,7 @@ public class TypecheckerTest {
                     }
                 });
 
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testLiteral"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testLiteral"));
 
         var originalNode = letNode(
                 Meta.of(letName),
@@ -193,7 +193,7 @@ public class TypecheckerTest {
         var actualLiteralType = tuple.get2();
         var incorrectExpectedType = tuple.get3();
 
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testLiteral"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testLiteral"));
 
         var builtInName = new BuiltInName(incorrectExpectedType.name());
 
@@ -216,14 +216,14 @@ public class TypecheckerTest {
     @DisplayName("Correctly annotated let bindings to variables in the environment typecheck successfully")
     void typecheckAnnotatedLetBoundReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.putType("Bool", ExampleNodes.Bool.META);
-        environment.putValue("True", ExampleNodes.True.META);
-        environment.putValue("False", ExampleNodes.False.META);
+        environment.putType("Bool", ExampleNodes.Bool.KINDED_META);
+        environment.putValue("True", ExampleNodes.True.TYPED_META);
+        environment.putValue("False", ExampleNodes.False.TYPED_META);
 
         var originalBoolNode = refNode(Meta.<Name>of(ExampleNodes.True.NAME), "True");
-        var expectedBoolNode = refNode(ExampleNodes.True.META, "True");
+        var expectedBoolNode = refNode(ExampleNodes.True.TYPED_META, "True");
 
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testBool"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testBool"));
 
         /*- let testBool: () -> Bool = True */
         var originalNode = letNode(
@@ -245,14 +245,14 @@ public class TypecheckerTest {
     @DisplayName("Incorrectly annotated let bindings to variables in the environment fail to typecheck")
     void typecheckIllTypedLetBoundReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.putType("Bool", ExampleNodes.Bool.META);
-        environment.putValue("True", ExampleNodes.True.META);
-        environment.putValue("False", ExampleNodes.False.META);
+        environment.putType("Bool", ExampleNodes.Bool.KINDED_META);
+        environment.putValue("True", ExampleNodes.True.TYPED_META);
+        environment.putValue("False", ExampleNodes.False.TYPED_META);
 
         var boolReferenceRange = new Range(0, 1, 0, 1);
         var originalBoolNode = refNode(new Meta<Name>(boolReferenceRange, ExampleNodes.True.NAME), "True");
 
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testBool"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testBool"));
 
         var illTypedBoolConstrTypeNode = funTypeNode(
                 Meta.of(Nameless.INSTANCE),
@@ -278,14 +278,14 @@ public class TypecheckerTest {
     @DisplayName("Unannotated let bindings to variables in the environment typecheck successfully")
     void typecheckUnannotatedLetBoundReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.putType("Bool", ExampleNodes.Bool.META);
-        environment.putValue("True", ExampleNodes.True.META);
-        environment.putValue("False", ExampleNodes.False.META);
+        environment.putType("Bool", ExampleNodes.Bool.KINDED_META);
+        environment.putValue("True", ExampleNodes.True.TYPED_META);
+        environment.putValue("False", ExampleNodes.False.TYPED_META);
 
         var originalBoolNode = refNode(Meta.<Name>of(ExampleNodes.True.NAME), "True");
-        var expectedBoolNode = refNode(ExampleNodes.True.META, "True");
+        var expectedBoolNode = refNode(ExampleNodes.True.TYPED_META, "True");
 
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testBool"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testBool"));
 
         /*- let testBool = True */
         var originalNode = letNode(
@@ -304,7 +304,7 @@ public class TypecheckerTest {
     @Test
     @DisplayName("Annotated let bound lambdas typecheck successfully without lambda parameter annotations")
     void typecheckAnnotatedLetLambdaParams() {
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testAnnotatedLambda"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testAnnotatedLambda"));
 
         /*- let testAnnotatedLambda: Int -> Int = i -> i */
         var originalNode = letNode(
@@ -342,7 +342,7 @@ public class TypecheckerTest {
     @Test
     @DisplayName("Annotated let bound lambda with function argument typechecks successfully without lambda parameter annotations")
     void typecheckAnnotatedLetLambdaFunctionParam() {
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testAnnotatedLambda"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testAnnotatedLambda"));
 
         /*- let testAnnotatedLambda: (Int -> Int) -> Int = f -> f(1) */
         var originalNode = letNode(
@@ -394,7 +394,7 @@ public class TypecheckerTest {
     @Test
     @DisplayName("Annotated let function with function argument typechecks successfully without parameter annotations")
     void typecheckAnnotatedLetFnLambdaFunctionParam() {
-        var letName = new LetName(new QualifiedName(ExampleNodes.NAMESPACE_NAME, "testAnnotatedLambda"));
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testAnnotatedLambda"));
 
         /*- let testAnnotatedLambda(f): Int = f(1) */
         var originalNode = letFnNode(
@@ -598,16 +598,16 @@ public class TypecheckerTest {
     @DisplayName("References to variables in the environment typecheck successfully")
     void typecheckReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.putType("Bool", ExampleNodes.Bool.META);
-        environment.putValue("True", ExampleNodes.True.META);
-        environment.putValue("False", ExampleNodes.False.META);
+        environment.putType("Bool", ExampleNodes.Bool.KINDED_META);
+        environment.putValue("True", ExampleNodes.True.TYPED_META);
+        environment.putValue("False", ExampleNodes.False.TYPED_META);
 
         var originalTrueNode = refNode(Meta.<Name>of(ExampleNodes.True.NAME), "True");
-        var expectedTrueNode = refNode(ExampleNodes.True.META, "True");
+        var expectedTrueNode = refNode(ExampleNodes.True.TYPED_META, "True");
         testSuccessfulTypecheck(environment, originalTrueNode, expectedTrueNode);
 
         var originalFalseNode = refNode(Meta.<Name>of(ExampleNodes.False.NAME), "False");
-        var expectedFalseNode = refNode(ExampleNodes.False.META, "False");
+        var expectedFalseNode = refNode(ExampleNodes.False.TYPED_META, "False");
         testSuccessfulTypecheck(environment, originalFalseNode, expectedFalseNode);
     }
 

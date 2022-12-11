@@ -116,13 +116,13 @@ public class Kindchecker {
     void instantiateAsSubKind(UnsolvedKind unsolved, Kind superKind) {
         withScope(new InstantiateKindScope<>(), () -> {
             if (superKind instanceof UnsolvedKind otherUnsolved) {
-                // Complete and Easy's InstLReach for types
+                // Complete and Easy's InstLReach rule adapted to kinds
                 environment.solveKind(otherUnsolved, unsolved);
             } else if (superKind instanceof TypeKind) {
-                // Complete and Easy's InstLSolve for types
+                // Complete and Easy's InstLSolve rule adapted to kinds
                 environment.solveKind(unsolved, TypeKind.INSTANCE);
             } else if (superKind instanceof HigherKind higherSup) {
-                // Complete and Easy's InstLArr for types
+                // Complete and Easy's InstLArr rule adapted to kinds
                 var newHkArgs = higherSup
                         .argKinds()
                         .collect(arg -> newUnsolvedKind());
@@ -151,13 +151,13 @@ public class Kindchecker {
     void instantiateAsSuperKind(UnsolvedKind unsolved, Kind subKind) {
         withScope(new InstantiateKindScope<>(), () -> {
             if (subKind instanceof UnsolvedKind otherUnsolved) {
-                // Complete and Easy's InstRReach for types
+                // Complete and Easy's InstRReach rule adapted to kinds
                 environment.solveKind(otherUnsolved, unsolved);
             } else if (subKind instanceof TypeKind) {
-                // Complete and Easy's InstRSolve for types
+                // Complete and Easy's InstRSolve rule adapted to kinds
                 environment.solveKind(unsolved, TypeKind.INSTANCE);
             } else if (subKind instanceof HigherKind higherSub) {
-                // Complete and Easy's InstRArr for types
+                // Complete and Easy's InstRArr rule adapted to kinds
                 var newHkArgs = higherSub
                         .argKinds()
                         .collect(arg -> newUnsolvedKind());
@@ -189,23 +189,23 @@ public class Kindchecker {
             var solvedSuperKind = superKind.substitute(environment.kindSubstitution());
 
             if (solvedSubKind == TypeKind.INSTANCE && solvedSuperKind == TypeKind.INSTANCE) {
-                // Complete and Easy's <:Var rule for types
+                // Complete and Easy's <:Var rule adapted to kinds
                 return true;
             } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub &&
                     solvedSuperKind instanceof UnsolvedKind unsolvedSuper &&
                     unsolvedSub.id() == unsolvedSuper.id()) {
-                // Complete and Easy's <:Exvar rule for types
+                // Complete and Easy's <:Exvar rule adapted to kinds
                 return true;
             } else if (solvedSubKind instanceof UnsolvedKind unsolvedSub
                     && !unsolvedSub.isFreeIn(solvedSuperKind)) {
-                // Complete and Easy's <:InstantiateL for types
+                // Complete and Easy's <:InstantiateL rule adapted to kinds
                 instantiateAsSubKind(unsolvedSub, solvedSuperKind);
 
                 return true;
 
             } else if (solvedSuperKind instanceof UnsolvedKind unsolvedSup
                     && !unsolvedSup.isFreeIn(solvedSubKind)) {
-                // Complete and Easy's <:InstantiateR for types
+                // Complete and Easy's <:InstantiateR rule adapted to kinds
                 instantiateAsSuperKind(unsolvedSup, solvedSubKind);
 
                 return true;
@@ -213,7 +213,7 @@ public class Kindchecker {
             } else if (solvedSubKind instanceof HigherKind higherSub &&
                     solvedSuperKind instanceof HigherKind higherSup &&
                     higherSub.argKinds().size() == higherSup.argKinds().size()) {
-                // Complete and Easy's <:-> for types
+                // Complete and Easy's <:-> rule adapted to kinds
                 var argsSubKinded = higherSub.argKinds()
                         .zip(higherSup.argKinds())
                         .allSatisfy(pair -> {

@@ -2,11 +2,6 @@ package org.mina_lang.common.types;
 
 public record PropositionType(Type type, Proposition property) implements PolyType {
     @Override
-    public Polarity polarity() {
-        return type.polarity();
-    }
-
-    @Override
     public Kind kind() {
         return type.kind();
     }

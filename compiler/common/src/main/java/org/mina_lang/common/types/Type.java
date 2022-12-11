@@ -8,8 +8,6 @@ import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.map.ImmutableMap;
 
 sealed public interface Type extends Sort permits PolyType, MonoType {
-    public Polarity polarity();
-
     public Kind kind();
 
     @Override
