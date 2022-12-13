@@ -20,7 +20,7 @@ public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) impl
     }
 
     public Type instantiateAsSubTypeIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
-        var instantiated = Maps.mutable.<TypeVar, UnsolvedType>empty();
+        var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
 
         args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
@@ -40,7 +40,7 @@ public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) impl
     }
 
     public Type instantiateAsSuperTypeIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
-        var instantiated = Maps.mutable.<TypeVar, UnsolvedType>empty();
+        var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
 
         args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {

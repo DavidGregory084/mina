@@ -13,13 +13,10 @@ public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode
         implements DeclarationNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
-        // Visit types
         typeParams.forEach(tyParam -> tyParam.accept(visitor));
-        returnType.ifPresent(returnTy -> returnTy.accept(visitor));
-        // Visit values
         valueParams.forEach(param -> param.accept(visitor));
+        returnType.ifPresent(returnTy -> returnTy.accept(visitor));
         expr.accept(visitor);
-
         visitor.visitLetFn(this);
     }
 

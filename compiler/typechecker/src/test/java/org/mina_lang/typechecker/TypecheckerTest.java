@@ -15,6 +15,7 @@ import org.mina_lang.common.Range;
 import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
+import org.mina_lang.common.scopes.TypeLambdaScope;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
@@ -354,7 +355,8 @@ public class TypecheckerTest {
                         Lists.immutable.of(
                                 funTypeNode(
                                         ExampleNodes.namelessMeta(),
-                                        Lists.immutable.of(ExampleNodes.Int.NAMED_TYPE_NODE),
+                                        Lists.immutable.of(
+                                                ExampleNodes.Int.NAMED_TYPE_NODE),
                                         ExampleNodes.Int.NAMED_TYPE_NODE)),
                         ExampleNodes.Int.NAMED_TYPE_NODE),
                 /*- f -> f(1) */
@@ -376,8 +378,10 @@ public class TypecheckerTest {
                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         Lists.immutable.of(
                                 funTypeNode(
-                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                                        Lists.immutable.of(ExampleNodes.Int.KINDED_TYPE_NODE),
+                                        ExampleNodes.namelessMeta(
+                                                TypeKind.INSTANCE),
+                                        Lists.immutable.of(
+                                                ExampleNodes.Int.KINDED_TYPE_NODE),
                                         ExampleNodes.Int.KINDED_TYPE_NODE)),
                         ExampleNodes.Int.KINDED_TYPE_NODE),
                 lambdaNode(
@@ -392,7 +396,124 @@ public class TypecheckerTest {
     }
 
     @Test
-    @DisplayName("Annotated let function with function argument typechecks successfully without parameter annotations")
+    @DisplayName("Annotated polymorphic identity function typechecks successfully")
+    void typecheckAnnotatedPolyIdLet() {
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var tyVarAName = new TypeVarName("A");
+        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
+
+        var letType = new TypeLambda(
+                Lists.immutable.of(tyVarA),
+                Type.function(tyVarA, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var letMeta = Meta.of(new Attributes(letName, letType));
+
+        /*- let id: A => A -> A = a -> a  */
+        var originalNode = letNode(
+                Meta.of(letName),
+                "id",
+                typeLambdaNode(
+                        ExampleNodes.namelessMeta(),
+                        Lists.immutable.of(forAllVarNode(Meta.of(tyVarAName), "A")),
+                        funTypeNode(
+                                ExampleNodes.namelessMeta(),
+                                Lists.immutable.of(typeRefNode(Meta.of(tyVarAName), "A")),
+                                typeRefNode(Meta.of(tyVarAName), "A"))),
+                lambdaNode(
+                        Meta.of(Nameless.INSTANCE),
+                        Lists.immutable.of(ExampleNodes.Param.namedNode("a")),
+                        ExampleNodes.LocalVar.namedNode("a")));
+
+        var expectedNode = letNode(
+                letMeta,
+                "id",
+                typeLambdaNode(
+                        ExampleNodes.namelessMeta(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE)),
+                        Lists.immutable.of(forAllVarNode(tyVarAMeta, "A")),
+                        funTypeNode(
+                                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                                Lists.immutable.of(typeRefNode(tyVarAMeta, "A")),
+                                typeRefNode(tyVarAMeta, "A"))),
+                lambdaNode(
+                        ExampleNodes.namelessMeta(letType.body()),
+                        Lists.immutable.of(ExampleNodes.Param.typedNode("a", tyVarA)),
+                        ExampleNodes.LocalVar.typedNode("a", tyVarA)));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Annotated polymorphic const function typechecks successfully")
+    void typecheckAnnotatedPolyConstLet() {
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var tyVarAName = new TypeVarName("A");
+        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+
+        var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
+        var tyVarBName = new TypeVarName("B");
+        var tyVarBMeta = Meta.of(new Attributes(tyVarBName, TypeKind.INSTANCE));
+
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
+
+        var letType = new TypeLambda(
+                Lists.immutable.of(tyVarA, tyVarB),
+                Type.function(tyVarA, tyVarB, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var letMeta = Meta.of(new Attributes(letName, letType));
+
+        /*- let const: [A, B] => (A, B) -> A = (a, b) -> a  */
+        var originalNode = letNode(
+                Meta.of(letName),
+                "const",
+                typeLambdaNode(
+                        ExampleNodes.namelessMeta(),
+                        Lists.immutable.of(
+                                forAllVarNode(Meta.of(tyVarAName), "A"),
+                                forAllVarNode(Meta.of(tyVarBName), "B")),
+                        funTypeNode(
+                                ExampleNodes.namelessMeta(),
+                                Lists.immutable.of(
+                                        typeRefNode(Meta.of(tyVarAName), "A"),
+                                        typeRefNode(Meta.of(tyVarBName), "B")),
+                                typeRefNode(Meta.of(tyVarAName), "A"))),
+                lambdaNode(
+                        Meta.of(Nameless.INSTANCE),
+                        Lists.immutable.of(
+                                ExampleNodes.Param.namedNode("a"),
+                                ExampleNodes.Param.namedNode("b")),
+                        ExampleNodes.LocalVar.namedNode("a")));
+
+        var expectedNode = letNode(
+                letMeta,
+                "const",
+                typeLambdaNode(
+                        ExampleNodes.namelessMeta(
+                                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE)),
+                        Lists.immutable.of(
+                                forAllVarNode(tyVarAMeta, "A"),
+                                forAllVarNode(tyVarBMeta, "B")),
+                        funTypeNode(
+                                ExampleNodes.namelessMeta(TypeKind.INSTANCE),
+                                Lists.immutable.of(
+                                        typeRefNode(tyVarAMeta, "A"),
+                                        typeRefNode(tyVarBMeta, "B")),
+                                typeRefNode(tyVarAMeta, "A"))),
+                lambdaNode(
+                        ExampleNodes.namelessMeta(letType.body()),
+                        Lists.immutable.of(
+                                ExampleNodes.Param.typedNode("a", tyVarA),
+                                ExampleNodes.Param.typedNode("b", tyVarB)),
+                        ExampleNodes.LocalVar.typedNode("a", tyVarA)));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Annotated letfn with function argument typechecks successfully without parameter annotations")
     void typecheckAnnotatedLetFnLambdaFunctionParam() {
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testAnnotatedLambda"));
 
@@ -419,6 +540,90 @@ public class TypecheckerTest {
                         ExampleNodes.namelessMeta(Type.INT),
                         ExampleNodes.LocalVar.typedNode("f", intToInt),
                         Lists.immutable.of(ExampleNodes.Int.typedNode(1))));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Annotated polymorphic identity letfn typechecks successfully")
+    void typecheckAnnotatedPolyIdLetFn() {
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var tyVarAName = new TypeVarName("A");
+        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
+
+        var letType = new TypeLambda(
+                Lists.immutable.of(tyVarA),
+                Type.function(tyVarA, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var letMeta = Meta.of(new Attributes(letName, letType));
+
+        /*- let id[A](a: A): A = a  */
+        var originalNode = letFnNode(
+                Meta.of(letName),
+                "id",
+                Lists.immutable.of(forAllVarNode(Meta.of(tyVarAName), "A")),
+                Lists.immutable.of(ExampleNodes.Param.namedNode("a", typeRefNode(Meta.of(tyVarAName), "A"))),
+                typeRefNode(Meta.of(tyVarAName), "A"),
+                ExampleNodes.LocalVar.namedNode("a"));
+
+        var expectedNode = letFnNode(
+                letMeta,
+                "id",
+                Lists.immutable.of(forAllVarNode(tyVarAMeta, "A")),
+                Lists.immutable.of(ExampleNodes.Param.typedNode("a", tyVarA, typeRefNode(tyVarAMeta, "A"))),
+                typeRefNode(tyVarAMeta, "A"),
+                ExampleNodes.LocalVar.typedNode("a", tyVarA));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Annotated polymorphic const letfn typechecks successfully")
+    void typecheckAnnotatedPolyConstLetFn() {
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var tyVarAName = new TypeVarName("A");
+        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+
+        var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
+        var tyVarBName = new TypeVarName("B");
+        var tyVarBMeta = Meta.of(new Attributes(tyVarBName, TypeKind.INSTANCE));
+
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
+
+        var letType = new TypeLambda(
+                Lists.immutable.of(tyVarA, tyVarB),
+                Type.function(tyVarA, tyVarB, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var letMeta = Meta.of(new Attributes(letName, letType));
+
+        /*- let const[A, B](a: A, b: B): A = (a, b) -> a  */
+        var originalNode = letFnNode(
+                Meta.of(letName),
+                "const",
+                Lists.immutable.of(
+                        forAllVarNode(Meta.of(tyVarAName), "A"),
+                        forAllVarNode(Meta.of(tyVarBName), "B")),
+                Lists.immutable.of(
+                        ExampleNodes.Param.namedNode("a", typeRefNode(Meta.of(tyVarAName), "A")),
+                        ExampleNodes.Param.namedNode("b", typeRefNode(Meta.of(tyVarBName), "B"))),
+                typeRefNode(Meta.of(tyVarAName), "A"),
+                ExampleNodes.LocalVar.namedNode("a"));
+
+        var expectedNode = letFnNode(
+                letMeta,
+                "const",
+                Lists.immutable.of(
+                        forAllVarNode(tyVarAMeta, "A"),
+                        forAllVarNode(tyVarBMeta, "B")),
+                Lists.immutable.of(
+                        ExampleNodes.Param.typedNode("a", tyVarA, typeRefNode(tyVarAMeta, "A")),
+                        ExampleNodes.Param.typedNode("b", tyVarB, typeRefNode(tyVarBMeta, "B"))),
+                typeRefNode(tyVarAMeta, "A"),
+                ExampleNodes.LocalVar.typedNode("a", tyVarA));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -595,6 +800,83 @@ public class TypecheckerTest {
     }
 
     @Test
+    @DisplayName("Application of polymorphic identity function typechecks successfully")
+    void typecheckPolyIdFnApplication() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+
+        var idName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
+
+        var idType = new TypeLambda(
+                Lists.immutable.of(tyVarA),
+                Type.function(tyVarA, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var idMeta = Meta.of(new Attributes(idName, idType));
+
+        /*- id: A => A -> A  */
+        environment.putValue("id", idMeta);
+
+        /*- id(1) */
+        var originalNode = applyNode(
+                ExampleNodes.namelessMeta(),
+                refNode(Meta.of(idName), "id"),
+                Lists.immutable.of(ExampleNodes.Int.namedNode(1)));
+
+        var expectedNode = applyNode(
+                ExampleNodes.namelessMeta(Type.INT),
+                refNode(idMeta, "id"),
+                Lists.immutable.of(ExampleNodes.Int.typedNode(1)));
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Application of polymorphic const function typechecks successfully at different instantiations")
+    void typecheckPolyConstFnApplication() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
+
+        var constName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
+
+        var constType = new TypeLambda(
+                Lists.immutable.of(tyVarA, tyVarB),
+                Type.function(tyVarA, tyVarB, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var constMeta = Meta.of(new Attributes(constName, constType));
+
+        /*- const: [A, B] => (A, B) -> A  */
+        environment.putValue("const", constMeta);
+
+        /*- const(const(1, 'a'), "b") */
+        var originalNode = applyNode(
+                ExampleNodes.namelessMeta(),
+                refNode(Meta.of(constName), "const"),
+                Lists.immutable.of(
+                        applyNode(
+                                ExampleNodes.namelessMeta(),
+                                refNode(Meta.of(constName), "const"),
+                                Lists.immutable.of(ExampleNodes.Int.namedNode(1), ExampleNodes.Char.namedNode('a'))),
+                        ExampleNodes.String.namedNode("b")));
+
+        var expectedNode = applyNode(
+                ExampleNodes.namelessMeta(Type.INT),
+                refNode(constMeta, "const"),
+                Lists.immutable.of(
+                        applyNode(
+                                ExampleNodes.namelessMeta(Type.INT),
+                                refNode(constMeta, "const"),
+                                Lists.immutable.of(ExampleNodes.Int.typedNode(1), ExampleNodes.Char.typedNode('a'))),
+                        ExampleNodes.String.typedNode("b")));
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
+    }
+
+    @Test
     @DisplayName("References to variables in the environment typecheck successfully")
     void typecheckReference() {
         var environment = TypeEnvironment.withBuiltInTypes();
@@ -677,6 +959,42 @@ public class TypecheckerTest {
     }
 
     // Subtype checking
+
+    @Test
+    @DisplayName("Identity function type is subtype of its instantiations")
+    void checkIdPolyInstantiationSubtyping() {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+
+        var idPoly = new TypeLambda(
+                Lists.immutable.of(tyVarA),
+                Type.function(tyVarA, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var idInstantiation = Type.function(Type.INT, Type.INT);
+
+        assertThat(typechecker.checkSubType(idPoly, idInstantiation), is(true));
+    }
+
+    @Test
+    @DisplayName("Identity function type is not supertype of its instantiations")
+    void checkIdPolyInstantiationSupertyping() {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+
+        var idPoly = new TypeLambda(
+                Lists.immutable.of(tyVarA),
+                Type.function(tyVarA, tyVarA),
+                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+
+        var idInstantiation = Type.function(Type.INT, Type.INT);
+
+        assertThat(typechecker.checkSubType(idInstantiation, idPoly), is(false));
+    }
 
     @Property
     @Label("Unsolved types are supertype of any other type")
@@ -768,8 +1086,7 @@ public class TypecheckerTest {
         return Arbitraries.strings()
                 .ofMaxLength(20)
                 .map(name -> new TypeConstructor(
-                        new QualifiedName(new NamespaceName(Lists.immutable.of("Mina", "Test"),
-                                "Typechecker"), name),
+                        new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, name),
                         TypeKind.INSTANCE));
     }
 

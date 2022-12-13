@@ -6,9 +6,9 @@ import org.eclipse.collections.api.map.ImmutableMap;
 
 public class TypeInstantiationTransformer implements TypeTransformer {
 
-    public ImmutableMap<TypeVar, UnsolvedType> instantiatedVariables;
+    public ImmutableMap<TypeVar, MonoType> instantiatedVariables;
 
-    public TypeInstantiationTransformer(ImmutableMap<TypeVar, UnsolvedType> instantiatedVariables) {
+    public TypeInstantiationTransformer(ImmutableMap<TypeVar, MonoType> instantiatedVariables) {
         this.instantiatedVariables = instantiatedVariables;
     }
 

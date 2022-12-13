@@ -3,6 +3,7 @@ package org.mina_lang.typechecker;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.collections.api.block.function.Function3;
@@ -523,6 +524,17 @@ public class Typechecker {
         }
     }
 
+    <A> A withPolyInstantiation(Type inferredType, Function<Type, A> fn) {
+        if (inferredType instanceof TypeLambda tyLam) {
+            return withScope(new InstantiateTypeScope<>(), () -> {
+                // Keep instantiating binders until we have something else
+                return withPolyInstantiation(tyLam.instantiateAsSubTypeIn(environment, varSupply), fn);
+            });
+        } else {
+            return fn.apply(inferredType);
+        }
+    }
+
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
@@ -547,7 +559,7 @@ public class Typechecker {
                     System.err.println(doc.render(80));
                 }
             });
-            System.err.println("---------------------------------\n");
+            System.err.println("\n---------------------------------\n\n");
             return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
         });
     }
@@ -579,7 +591,7 @@ public class Typechecker {
                     var inferredParams = letFn.valueParams()
                             .collect(param -> inferParam(typeFolder, param));
                     var kindedReturn = letFn.returnType()
-                            .map(kindchecker::inferType);
+                            .map(kindchecker::kindcheck);
 
                     var expectedType = kindedReturn.map(typeFolder::visitType);
 
@@ -688,53 +700,51 @@ public class Typechecker {
         } else if (expr instanceof ApplyNode<Name> apply) {
             var inferredExpr = inferExpr(apply.expr());
 
-            var inferredType = getType(inferredExpr);
+            return withPolyInstantiation(getType(inferredExpr), inferredType -> {
+                if (Type.isFunction(inferredType) &&
+                        inferredType instanceof TypeApply funType &&
+                        apply.args().size() == (funType.typeArguments().size() - 1)) {
 
-            if (inferredType instanceof TypeLambda tyLam) {
-                inferredType = tyLam.instantiateAsSubTypeIn(environment, varSupply);
-            }
+                    var checkedArgs = apply.args()
+                            .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
+                            .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
 
-            if (Type.isFunction(inferredType) &&
-                    inferredType instanceof TypeApply funType &&
-                    apply.args().size() == (funType.typeArguments().size() - 1)) {
+                    var updatedMeta = updateMetaWith(apply.meta(), funType.typeArguments().getLast());
 
-                var checkedArgs = apply.args()
-                        .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
-                        .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
+                    return applyNode(updatedMeta, inferredExpr, checkedArgs);
+                } else {
+                    var unsolvedArgs = apply.args()
+                            .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
 
-                var updatedMeta = updateMetaWith(apply.meta(), funType.typeArguments().getLast());
+                    var unsolvedReturn = newUnsolvedType(TypeKind.INSTANCE);
 
-                return applyNode(updatedMeta, inferredExpr, checkedArgs);
-            } else {
-                var unsolvedArgs = apply.args()
-                        .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+                    var appliedType = Type.function(
+                            unsolvedArgs.collect(arg -> (Type) arg),
+                            unsolvedReturn);
 
-                var unsolvedReturn = newUnsolvedType(TypeKind.INSTANCE);
+                    // Don't need to do an occurs check here as these are fresh unsolved types
+                    if (inferredType instanceof UnsolvedType unsolved) {
+                        instantiateAsSubType(unsolved, appliedType);
+                    } else if (Type.isFunction(inferredType) &&
+                            inferredType instanceof TypeApply funType) {
+                        // We have an argument mismatch, but we can instantiate the return type
+                        // to improve type errors
+                        instantiateAsSubType(unsolvedReturn, funType.typeArguments().getLast());
+                    }
 
-                var appliedType = Type.function(
-                        unsolvedArgs.collect(arg -> (Type) arg),
-                        unsolvedReturn);
+                    var checkedArgs = apply.args()
+                            .zip(unsolvedArgs)
+                            .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
 
-                // Don't need to do an occurs check here as these are fresh unsolved types
-                if (inferredType instanceof UnsolvedType unsolved) {
-                    instantiateAsSubType(unsolved, appliedType);
-                } else if (Type.isFunction(inferredType) &&
-                        inferredType instanceof TypeApply funType) {
-                    instantiateAsSubType(unsolvedReturn, funType.typeArguments().getLast());
+                    if (!(inferredType instanceof UnsolvedType)) {
+                        mismatchedApplication(apply.range(), appliedType, inferredType);
+                    }
+
+                    var updatedMeta = updateMetaWith(apply.meta(), unsolvedReturn);
+
+                    return applyNode(updatedMeta, inferredExpr, checkedArgs);
                 }
-
-                var checkedArgs = apply.args()
-                        .zip(unsolvedArgs)
-                        .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
-
-                if (!(inferredType instanceof UnsolvedType)) {
-                    mismatchedApplication(apply.range(), appliedType, inferredType);
-                }
-
-                var updatedMeta = updateMetaWith(apply.meta(), unsolvedReturn);
-
-                return applyNode(updatedMeta, inferredExpr, checkedArgs);
-            }
+            });
         } else if (expr instanceof ReferenceNode<Name> reference) {
             var envType = environment.lookupValue(reference.id().canonicalName()).get();
             var updatedMeta = updateMetaWith(reference.meta(), envType.meta().sort());

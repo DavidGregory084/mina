@@ -26,6 +26,7 @@ let client: LanguageClient;
 export async function activate(context: ExtensionContext) {
   const runtimes = await findRuntimes({ withVersion: true, withTags: true });
   const javaHomeRuntime = runtimes.find((runtime) => runtime.isJavaHomeEnv);
+  const profilingEnabled = false;
 
   if (javaHomeRuntime) {
     const fileDownloader = await getApi();
@@ -66,6 +67,18 @@ export async function activate(context: ExtensionContext) {
       { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
     );
 
+    // const getProfilingAgentClasspath = profilingEnabled && await util.promisify(child_process.execFile)(
+    //   javaExecutable,
+    //   [
+    //     "-jar",
+    //     `"${coursierJar.fsPath}"`,
+    //     "fetch",
+    //     "--classpath",
+    //     "io.pyroscope:agent:0.10.2"
+    //   ],
+    //   { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
+    // );
+
     // As per [https://access.redhat.com/documentation/en-us/openjdk/11/html/using_shenandoah_garbage_collector_with_openjdk_11/shenandoah-gc-basic-configuration]
     const gcOptions = [
         "-XX:+UseShenandoahGC",
@@ -79,6 +92,13 @@ export async function activate(context: ExtensionContext) {
       gcOptions.push("-XX:+UseTransparentHugePages");
     }
 
+    // const profilingOptions = profilingEnabled ? [
+    //   `-javaagent:${getProfilingAgentClasspath.stdout.trim()}`,
+    //   "-Dpyroscope.application.name=mina-lang-server",
+    //   "-Dpyroscope.server.address=http://localhost:4040",
+    //   "-Dpyroscope.format=jfr",
+    // ] : [];
+
     const serverOptions: ServerOptions = {
       transport: TransportKind.pipe,
       command: javaExecutable,
@@ -86,10 +106,11 @@ export async function activate(context: ExtensionContext) {
         `-DLOG_FOLDER=${context.logUri.fsPath}`,
         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
         ...gcOptions,
+        // ...profilingOptions,
         "-cp",
-        getServerClasspath.stdout,
+        getServerClasspath.stdout.trim(),
         "org.mina_lang.langserver.MinaServerLauncher",
-      ],
+      ]
     };
 
     const clientOptions: LanguageClientOptions = {
