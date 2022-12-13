@@ -1,5 +1,6 @@
 package org.mina_lang.typechecker;
 
+import static com.spotify.hamcrest.optional.OptionalMatchers.optionalWithValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
@@ -15,7 +16,6 @@ import org.mina_lang.common.Range;
 import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.TypeLambdaScope;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
@@ -85,6 +85,78 @@ public class TypecheckerTest {
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
         assertThat(firstDiagnostic.range(), is(equalTo(range)));
         assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
+    }
+
+    // Data declarations
+
+    @Test
+    @DisplayName("List data type typechecks successfully")
+    void typecheckListDataType() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var originalNode = ExampleNodes.List.NAMED_NODE;
+
+        var expectedNode = ExampleNodes.List.KINDED_NODE;
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
+
+        var listLocalEntry = environment.lookupType("List");
+        assertThat(listLocalEntry, is(optionalWithValue(ExampleNodes.List.KINDED_META)));
+        var listCanonicalEntry = environment.lookupType("Mina/Test/Kindchecker.List");
+        assertThat(listCanonicalEntry, is(optionalWithValue(ExampleNodes.List.KINDED_META)));
+
+        var consLocalEntry = environment.lookupValue("Cons");
+
+        assertThat(
+                consLocalEntry,
+                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Cons.NAME, ExampleNodes.Cons.TYPE)))));
+
+        var consCanonicalEntry = environment.lookupValue("Mina/Test/Kindchecker.Cons");
+
+        assertThat(
+                consCanonicalEntry,
+                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Cons.NAME, ExampleNodes.Cons.TYPE)))));
+
+        var nilLocalEntry = environment.lookupValue("Nil");
+
+        assertThat(
+                nilLocalEntry,
+                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Nil.NAME, ExampleNodes.Nil.TYPE)))));
+
+        var nilCanonicalEntry = environment.lookupValue("Mina/Test/Kindchecker.Nil");
+
+        assertThat(
+                nilCanonicalEntry,
+                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Nil.NAME, ExampleNodes.Nil.TYPE)))));
+    }
+
+    @Test
+    @DisplayName("Fix data type typechecks successfully")
+    void typecheckFixDataType() {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var originalNode = ExampleNodes.Fix.NAMED_NODE;
+
+        var expectedNode = ExampleNodes.Fix.KINDED_NODE;
+
+        testSuccessfulTypecheck(environment, originalNode, expectedNode);
+
+        var fixLocalEntry = environment.lookupType("Fix");
+        assertThat(fixLocalEntry, is(optionalWithValue(ExampleNodes.Fix.KINDED_META)));
+        var fixCanonicalEntry = environment.lookupType("Mina/Test/Kindchecker.Fix");
+        assertThat(fixCanonicalEntry, is(optionalWithValue(ExampleNodes.Fix.KINDED_META)));
+
+        var unfixLocalEntry = environment.lookupValue("Unfix");
+
+        assertThat(
+                unfixLocalEntry,
+                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Unfix.NAME, ExampleNodes.Unfix.TYPE)))));
+
+        var unfixCanonicalEntry = environment.lookupValue("Mina/Test/Kindchecker.Unfix");
+
+        assertThat(
+                unfixCanonicalEntry,
+                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Unfix.NAME, ExampleNodes.Unfix.TYPE)))));
     }
 
     @Provide

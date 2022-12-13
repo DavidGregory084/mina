@@ -6,6 +6,7 @@ gradleBuildInfo = "0.2.1"
 gradleNode = "3.5.0"
 gradleVersions = "0.44.0"
 hamcrest = "2.2"
+hamcrestOptional = "1.3.1"
 jacoco = "0.8.8"
 jqwik = "1.7.1"
 junit = "5.9.1"
@@ -25,6 +26,7 @@ eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", v
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipseCollections" }
 gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "hamcrestOptional" }
 jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
 julToSlf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }

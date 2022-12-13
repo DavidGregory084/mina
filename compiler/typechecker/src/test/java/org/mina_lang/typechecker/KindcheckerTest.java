@@ -598,117 +598,27 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckListDataType() {
-        var typeVarAName = (Name) new TypeVarName("A");
-        var typeVarAKind = TypeKind.INSTANCE;
-        var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
-
         /*-
          * data List[A] {
          *   case Cons(head: A)
          *   case Nil()
          * }
          */
-        var originalNode = dataNode(
-                Meta.<Name>of(ExampleNodes.List.NAME),
-                "List",
-                Lists.immutable.of(
-                        forAllVarNode(Meta.of(typeVarAName), "A")),
-                Lists.immutable.of(
-                        constructorNode(
-                                Meta.<Name>of(ExampleNodes.Cons.NAME),
-                                "Cons",
-                                Lists.immutable.of(
-                                        constructorParamNode(
-                                                Meta.<Name>of(ExampleNodes.Cons.HEAD_NAME),
-                                                "head",
-                                                typeRefNode(Meta.of(typeVarAName), "A"))),
-                                Optional.empty()),
-                        constructorNode(
-                                Meta.<Name>of(ExampleNodes.Nil.NAME),
-                                "Nil",
-                                Lists.immutable.empty(),
-                                Optional.empty())));
+        var originalNode = ExampleNodes.List.NAMED_NODE;
 
-        var expectedNode = dataNode(
-                ExampleNodes.List.KINDED_META,
-                "List",
-                Lists.immutable.of(
-                        forAllVarNode(typeVarAMeta, "A")),
-                Lists.immutable.of(
-                        constructorNode(
-                                ExampleNodes.Cons.KINDED_META,
-                                "Cons",
-                                Lists.immutable.of(
-                                        constructorParamNode(
-                                                ExampleNodes.Cons.KINDED_HEAD_META,
-                                                "head",
-                                                typeRefNode(typeVarAMeta, "A"))),
-                                Optional.empty()),
-                        constructorNode(
-                                ExampleNodes.Nil.KINDED_META,
-                                "Nil",
-                                Lists.immutable.empty(),
-                                Optional.empty())));
+        var expectedNode = ExampleNodes.List.KINDED_NODE;
 
         testSuccessfulKindcheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void kindcheckFixDataType() {
-        var typeVarFName = (Name) new TypeVarName("F");
-        var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
-
         /*-
          * data Fix[F] { case Unfix(unfix: F[Fix[F]]) }
          */
-        var originalNode = dataNode(
-                Meta.<Name>of(ExampleNodes.Fix.NAME),
-                "Fix",
-                Lists.immutable.of(
-                        forAllVarNode(Meta.of(typeVarFName), "F")),
-                Lists.immutable.of(
-                        constructorNode(
-                                Meta.<Name>of(ExampleNodes.Unfix.NAME),
-                                "Unfix",
-                                Lists.immutable.of(
-                                        constructorParamNode(
-                                                Meta.<Name>of(ExampleNodes.Unfix.UNFIX_NAME),
-                                                "unfix",
-                                                typeApplyNode(
-                                                        ExampleNodes.namelessMeta(),
-                                                        typeRefNode(Meta.of(typeVarFName), "F"),
-                                                        Lists.immutable.of(
-                                                                typeApplyNode(
-                                                                        ExampleNodes.namelessMeta(),
-                                                                        ExampleNodes.Fix.NAMED_TYPE_NODE,
-                                                                        Lists.immutable.of(
-                                                                                typeRefNode(Meta.of(typeVarFName),
-                                                                                        "F"))))))),
-                                Optional.empty())));
+        var originalNode = ExampleNodes.Fix.NAMED_NODE;
 
-        var expectedNode = dataNode(
-                ExampleNodes.Fix.KINDED_META,
-                "Fix",
-                Lists.immutable.of(
-                        forAllVarNode(typeVarFMeta, "F")),
-                Lists.immutable.of(
-                        constructorNode(
-                                ExampleNodes.Unfix.KINDED_META,
-                                "Unfix",
-                                Lists.immutable.of(
-                                        constructorParamNode(
-                                                ExampleNodes.Unfix.KINDED_UNFIX_META,
-                                                "unfix",
-                                                typeApplyNode(
-                                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                                                        typeRefNode(typeVarFMeta, "F"),
-                                                        Lists.immutable.of(
-                                                                typeApplyNode(
-                                                                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                                                                        ExampleNodes.Fix.KINDED_TYPE_NODE,
-                                                                        Lists.immutable.of(typeRefNode(typeVarFMeta, "F"))))))),
-                                Optional.empty())));
+        var expectedNode = ExampleNodes.Fix.KINDED_NODE;
 
         testSuccessfulKindcheck(TypeEnvironment.empty(), originalNode, expectedNode);
     }
