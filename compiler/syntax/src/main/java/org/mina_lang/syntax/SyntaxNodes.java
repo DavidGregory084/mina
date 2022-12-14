@@ -332,12 +332,26 @@ public class SyntaxNodes {
         Range range,
         ExprNode<Void> result
     ) {
+        return new BlockNode<>(Meta.of(range), Lists.immutable.empty(), Optional.of(result));
+    }
+
+    public static BlockNode<Void> blockNode(
+        Range range,
+        Optional<ExprNode<Void>> result
+    ) {
         return new BlockNode<>(Meta.of(range), Lists.immutable.empty(), result);
     }
 
     public static <A> BlockNode<A> blockNode(
         Meta<A> meta,
         ExprNode<A> result
+    ) {
+        return new BlockNode<>(meta, Lists.immutable.empty(), Optional.of(result));
+    }
+
+    public static <A> BlockNode<A> blockNode(
+        Meta<A> meta,
+        Optional<ExprNode<A>> result
     ) {
         return new BlockNode<>(meta, Lists.immutable.empty(), result);
     }
@@ -347,6 +361,14 @@ public class SyntaxNodes {
         ImmutableList<LetNode<Void>> declarations,
         ExprNode<Void> result
     ) {
+        return new BlockNode<>(Meta.of(range), declarations, Optional.of(result));
+    }
+
+    public static BlockNode<Void> blockNode(
+        Range range,
+        ImmutableList<LetNode<Void>> declarations,
+        Optional<ExprNode<Void>> result
+    ) {
         return new BlockNode<>(Meta.of(range), declarations, result);
     }
 
@@ -354,6 +376,14 @@ public class SyntaxNodes {
         Meta<A> meta,
         ImmutableList<LetNode<A>> declarations,
         ExprNode<A> result
+    ) {
+        return new BlockNode<>(meta, declarations, Optional.of(result));
+    }
+
+    public static <A> BlockNode<A> blockNode(
+        Meta<A> meta,
+        ImmutableList<LetNode<A>> declarations,
+        Optional<ExprNode<A>> result
     ) {
         return new BlockNode<>(meta, declarations, result);
     }

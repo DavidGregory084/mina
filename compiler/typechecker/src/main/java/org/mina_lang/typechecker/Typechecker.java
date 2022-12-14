@@ -441,7 +441,7 @@ public class Typechecker {
             } else if (decl instanceof LetNode<Name> let) {
                 var letType = newUnsolvedType();
                 var letMeta = updateMetaWith(let.meta(), letType);
-                putValueDeclaration(letMeta);
+                putValueDeclaration(namespaceScope, letMeta);
             }
         });
 
@@ -482,17 +482,25 @@ public class Typechecker {
         }
     }
 
+    Type createFieldType(
+            DataNode<Attributes> data,
+            ConstructorParamNode<Attributes> constrParam) {
+        var typeFolder = new TypeAnnotationFolder(environment);
+        data.typeParams().forEach(tyParam -> typeFolder.visitTypeVar(tyParam));
+        return typeFolder.visitType(constrParam.typeAnnotation());
+    }
+
     Type createLetFnType(
             ImmutableList<TypeVar> typeParamTypes,
             ImmutableList<ParamNode<Attributes>> valueParams,
-            ExprNode<Attributes> bodyExpr) {
+            Type returnType) {
 
         var valueParamTypes = valueParams.collect(param -> {
             var paramType = environment.lookupValue(param.name()).get();
             return (Type) paramType.meta().sort();
         });
 
-        var functionType = Type.function(valueParamTypes, getType(bodyExpr));
+        var functionType = Type.function(valueParamTypes, returnType);
 
         if (typeParamTypes.isEmpty()) {
             return functionType;
@@ -577,10 +585,14 @@ public class Typechecker {
 
                 putValueDeclaration(constrTypeMeta);
 
-                // TODO: Populate constructor fields for pattern matching
-                // kindedConstr.params().forEach(constrParam -> {
+                kindedConstr.params().forEach(constrParam -> {
+                    var constrName = (ConstructorName) kindedConstr.meta().meta().name();
+                    var fieldType = createFieldType(kindedData, constrParam);
+                    var fieldAttrs = constrParam.meta().meta().withSort(fieldType);
+                    var fieldTypeMeta = constrParam.meta().withMeta(fieldAttrs);
 
-                // });
+                    environment.putField(constrName, constrParam.name(), fieldTypeMeta);
+                });
             });
 
             return kindedData;
@@ -595,11 +607,22 @@ public class Typechecker {
 
                     var expectedType = kindedReturn.map(typeFolder::visitType);
 
+                    var expectedLetFnType = createLetFnType(
+                        tyParamTypes,
+                        inferredParams,
+                        expectedType.orElseGet(() -> newUnsolvedType()));
+
+                    putValueDeclaration(updateMetaWith(letFn.meta(), expectedLetFnType));
+
                     var checkedBody = expectedType
                             .map(expected -> checkExpr(letFn.expr(), expected))
                             .orElseGet(() -> inferExpr(letFn.expr()));
 
-                    var letFnType = createLetFnType(tyParamTypes, inferredParams, checkedBody);
+                    var letFnType = createLetFnType(
+                        tyParamTypes,
+                        inferredParams,
+                        getType(checkedBody));
+
                     var typedMeta = updateMetaWith(letFn.meta(), letFnType);
 
                     return letFnNode(typedMeta, letFn.name(), tyParams, inferredParams, kindedReturn, checkedBody);
@@ -614,6 +637,8 @@ public class Typechecker {
             var letNode = let.type().map(typ -> {
                 var kindedType = kindchecker.kindcheck(typ);
                 var expectedType = kindedType.accept(new TypeAnnotationFolder(environment));
+
+                putValueDeclaration(updateMetaWith(let.meta(), expectedType));
 
                 var checkedExpr = checkExpr(let.expr(), expectedType);
 
@@ -659,9 +684,10 @@ public class Typechecker {
                         .declarations()
                         .collect(let -> (LetNode<Attributes>) inferDeclaration(let));
 
-                var inferredResult = inferExpr(block.result());
+                var inferredResult = block.result().map(this::inferExpr);
+                var inferredType = inferredResult.map(this::getType).orElse(Type.UNIT);
 
-                var updatedMeta = updateMetaWith(block.meta(), getType(inferredResult));
+                var updatedMeta = updateMetaWith(block.meta(), inferredType);
 
                 return blockNode(updatedMeta, inferredDeclarations, inferredResult);
             });
@@ -694,6 +720,36 @@ public class Typechecker {
                 return lambdaNode(updatedMeta, inferredArgs, inferredBody);
             });
         } else if (expr instanceof MatchNode<Name> match) {
+            var scrutinee = inferExpr(match.scrutinee());
+            var scrutineeType = getType(scrutinee);
+
+            var firstCase = match.cases()
+                    .getFirstOptional()
+                    .map(cse -> inferCase(cse, scrutineeType));
+
+            var firstCaseType = firstCase
+                    .map(this::getType);
+
+            var restCases = firstCaseType
+                    .map(inferredType -> {
+                        return match.cases()
+                                .drop(1)
+                                .collect(restCase -> checkCase(restCase, scrutineeType, inferredType));
+                    });
+
+            var cases = firstCase.flatMap(first -> {
+                return restCases.map(rest -> {
+                    return Lists.immutable
+                            .of(first)
+                            .newWithAll(rest);
+                });
+            }).orElseGet(() -> Lists.immutable.empty());
+
+            var matchType = firstCaseType.orElseGet(() -> newUnsolvedType());
+
+            var updatedMeta = updateMetaWith(match.meta(), matchType);
+
+            return matchNode(updatedMeta, scrutinee, cases);
 
         } else if (expr instanceof LiteralNode<Name> literal) {
             return inferLiteral(literal);
@@ -755,6 +811,83 @@ public class Typechecker {
         return null;
     }
 
+    CaseNode<Attributes> inferCase(CaseNode<Name> cse, Type scrutineeType) {
+        return withScope(new CaseScope<>(), () -> {
+            var inferredPattern = checkPattern(cse.pattern(), scrutineeType);
+            var inferredConsequent = inferExpr(cse.consequent());
+            var inferredType = getType(inferredConsequent);
+            var updatedMeta = updateMetaWith(cse.meta(), inferredType);
+            return caseNode(updatedMeta, inferredPattern, inferredConsequent);
+        });
+    }
+
+    PatternNode<Attributes> inferPattern(PatternNode<Name> pattern) {
+        var enclosingCase = environment.enclosingCase().get();
+
+        if (pattern instanceof IdPatternNode<Name> idPat) {
+            var unsolvedType = newUnsolvedType(TypeKind.INSTANCE);
+            var updatedMeta = updateMetaWith(idPat.meta(), unsolvedType);
+            enclosingCase.putValue(idPat.name(), updatedMeta);
+            return idPatternNode(updatedMeta, idPat.name());
+        } else if (pattern instanceof AliasPatternNode<Name> aliasPat) {
+            var inferredPattern = inferPattern(aliasPat.pattern());
+            var inferredType = getType(inferredPattern);
+            var updatedMeta = updateMetaWith(aliasPat.meta(), inferredType);
+            enclosingCase.putValue(aliasPat.alias(), updatedMeta);
+            return aliasPatternNode(updatedMeta, aliasPat.alias(), inferredPattern);
+        } else if (pattern instanceof LiteralPatternNode<Name> litPat) {
+            var inferredLiteral = inferLiteral(litPat.literal());
+            var inferredType = getType(inferredLiteral);
+            var updatedMeta = updateMetaWith(litPat.meta(), inferredType);
+            return literalPatternNode(updatedMeta, inferredLiteral);
+        } else if (pattern instanceof ConstructorPatternNode<Name> constrPat) {
+            var constrMeta = environment.lookupValue(constrPat.id().canonicalName()).get();
+            var constrName = (ConstructorName) constrMeta.meta().name();
+            var constrType = (Type) constrMeta.meta().sort();
+
+            // We need to keep this instantiation to use with our field patterns
+            var instantiator = (constrType instanceof TypeLambda tyLam)
+                    ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
+                    : Optional.<TypeInstantiationTransformer>empty();
+
+            if (constrType instanceof TypeLambda tyLam) {
+                constrType = tyLam.body().accept(instantiator.get());
+            }
+
+            if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
+                constrType = tyApp.typeArguments().getLast();
+            }
+
+            var inferredFields = constrPat.fields()
+                    .collect(field -> inferFieldPattern(constrName, field, instantiator));
+
+            var updatedMeta = updateMetaWith(constrPat.meta(), constrType);
+
+            return constructorPatternNode(updatedMeta, constrPat.id(), inferredFields);
+        }
+
+        return null;
+    }
+
+    FieldPatternNode<Attributes> inferFieldPattern(ConstructorName constrName, FieldPatternNode<Name> fieldPat,
+            Optional<TypeInstantiationTransformer> instantiator) {
+        var enclosingCase = environment.enclosingCase().get();
+
+        var fieldMeta = environment.lookupField(constrName, fieldPat.field()).get();
+        var fieldType = (Type) fieldMeta.meta().sort();
+        var instantiatedFieldType = instantiator.map(inst -> fieldType.accept(inst)).orElse(fieldType);
+
+        var inferredPattern = fieldPat.pattern().map(pattern -> checkPattern(pattern, instantiatedFieldType));
+
+        var updatedMeta = updateMetaWith(fieldPat.meta(), instantiatedFieldType);
+
+        if (fieldPat.pattern().isEmpty()) {
+            enclosingCase.putValue(fieldPat.field(), updatedMeta);
+        }
+
+        return fieldPatternNode(updatedMeta, fieldPat.field(), inferredPattern);
+    }
+
     LiteralNode<Attributes> inferLiteral(LiteralNode<Name> literal) {
         if (literal instanceof BooleanNode<Name> bool) {
             var updatedMeta = updateMetaWith(bool.meta(), Type.BOOLEAN);
@@ -787,6 +920,28 @@ public class Typechecker {
             return withScope(new InstantiateTypeScope<>(), () -> {
                 return checkExpr(expr, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
             });
+        } else if (expr instanceof BlockNode<Name> block) {
+            return withScope(new BlockScope<>(), () -> {
+                var inferredDeclarations = block
+                        .declarations()
+                        .collect(let -> (LetNode<Attributes>) inferDeclaration(let));
+
+                var checkedResult = block.result().map(res -> checkExpr(res, expectedType));
+
+                if (checkedResult.isEmpty() && !checkSubType(Type.UNIT, expectedType)) {
+                    mismatchedType(block.range(), Type.UNIT, expectedType);
+                }
+
+                var updatedMeta = updateMetaWith(block.meta(), expectedType);
+
+                return blockNode(updatedMeta, inferredDeclarations, checkedResult);
+            });
+        } else if (expr instanceof IfNode<Name> ifExpr) {
+            var condition = checkExpr(ifExpr.condition(), Type.BOOLEAN);
+            var consequent = checkExpr(ifExpr.consequent(), expectedType);
+            var alternative = checkExpr(ifExpr.alternative(), expectedType);
+            var updatedMeta = updateMetaWith(ifExpr.meta(), expectedType);
+            return ifNode(updatedMeta, condition, consequent, alternative);
         } else if (expr instanceof LambdaNode<Name> lambda &&
                 expectedType instanceof TypeApply funType &&
                 lambda.params().size() == (funType.typeArguments().size() - 1)) {
@@ -810,8 +965,13 @@ public class Typechecker {
                         Type.function(knownParamTypes, getType(checkedReturn)));
 
                 return lambdaNode(updatedMeta, knownParams, checkedReturn);
-
             });
+        } else if (expr instanceof MatchNode<Name> match) {
+            var scrutinee = inferExpr(match.scrutinee());
+            var scrutineeType = getType(scrutinee);
+            var cases = match.cases().collect(cse -> checkCase(cse, scrutineeType, expectedType));
+            var updatedMeta = updateMetaWith(match.meta(), expectedType);
+            return matchNode(updatedMeta, scrutinee, cases);
         } else if (expr instanceof LiteralNode<Name> literal) {
             return checkLiteral(literal, expectedType);
         } else {
@@ -827,53 +987,114 @@ public class Typechecker {
         }
     }
 
+    CaseNode<Attributes> checkCase(CaseNode<Name> cse, Type scrutineeType, Type expectedType) {
+        return withScope(new CaseScope<>(), () -> {
+            var inferredPattern = checkPattern(cse.pattern(), scrutineeType);
+            var inferredConsequent = checkExpr(cse.consequent(), expectedType);
+            var inferredType = getType(inferredConsequent);
+            var updatedMeta = updateMetaWith(cse.meta(), inferredType);
+            return caseNode(updatedMeta, inferredPattern, inferredConsequent);
+        });
+    }
+
+    PatternNode<Attributes> checkPattern(PatternNode<Name> pattern, Type expectedType) {
+        var enclosingCase = environment.enclosingCase().get();
+
+        if (pattern instanceof IdPatternNode<Name> idPat) {
+            var updatedMeta = updateMetaWith(idPat.meta(), expectedType);
+            enclosingCase.putValue(idPat.name(), updatedMeta);
+            return idPatternNode(updatedMeta, idPat.name());
+        } else if (pattern instanceof AliasPatternNode<Name> aliasPat) {
+            var inferredPattern = checkPattern(aliasPat.pattern(), expectedType);
+            var updatedMeta = updateMetaWith(aliasPat.meta(), expectedType);
+            enclosingCase.putValue(aliasPat.alias(), updatedMeta);
+            return aliasPatternNode(updatedMeta, aliasPat.alias(), inferredPattern);
+        } else if (pattern instanceof LiteralPatternNode<Name> litPat) {
+            var inferredLiteral = checkLiteral(litPat.literal(), expectedType);
+            var updatedMeta = updateMetaWith(litPat.meta(), expectedType);
+            return literalPatternNode(updatedMeta, inferredLiteral);
+        } else if (pattern instanceof ConstructorPatternNode<Name> constrPat) {
+            var constrMeta = environment.lookupValue(constrPat.id().canonicalName()).get();
+            var constrName = (ConstructorName) constrMeta.meta().name();
+            var constrType = (Type) constrMeta.meta().sort();
+
+            // We need to keep this instantiation to use with our field patterns
+            var instantiator = (constrType instanceof TypeLambda tyLam)
+                ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
+                : Optional.<TypeInstantiationTransformer>empty();
+
+            if (constrType instanceof TypeLambda tyLam) {
+                constrType = tyLam.body().accept(instantiator.get());
+            }
+
+            if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
+                constrType = tyApp.typeArguments().getLast();
+            }
+
+            // We do this here to ensure that we solve our newly instantiated type
+            // using the expected type before typechecking fields
+            if (!checkSubType(constrType, expectedType)) {
+                mismatchedType(constrPat.meta().range(), constrType, expectedType);
+            }
+
+            var inferredFields = constrPat.fields()
+                .collect(field -> inferFieldPattern(constrName, field, instantiator));
+
+            var updatedMeta = updateMetaWith(constrPat.meta(), expectedType);
+
+            return constructorPatternNode(updatedMeta, constrPat.id(), inferredFields);
+        }
+
+        return null;
+    }
+
     LiteralNode<Attributes> checkLiteral(LiteralNode<Name> literal, Type expectedType) {
         // TODO: Add an error type to place in Meta when we have a mismatch?
         if (literal instanceof BooleanNode<Name> bool) {
             var actualType = Type.BOOLEAN;
-            var updatedMeta = updateMetaWith(bool.meta(), actualType);
+            var updatedMeta = updateMetaWith(bool.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(bool.range(), actualType, expectedType);
             }
             return boolNode(updatedMeta, bool.value());
         } else if (literal instanceof CharNode<Name> chr) {
             var actualType = Type.CHAR;
-            var updatedMeta = updateMetaWith(chr.meta(), actualType);
+            var updatedMeta = updateMetaWith(chr.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(chr.range(), actualType, expectedType);
             }
             return charNode(updatedMeta, chr.value());
         } else if (literal instanceof StringNode<Name> str) {
             var actualType = Type.STRING;
-            var updatedMeta = updateMetaWith(str.meta(), actualType);
+            var updatedMeta = updateMetaWith(str.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(str.range(), actualType, expectedType);
             }
             return stringNode(updatedMeta, str.value());
         } else if (literal instanceof IntNode<Name> intgr) {
             var actualType = Type.INT;
-            var updatedMeta = updateMetaWith(intgr.meta(), actualType);
+            var updatedMeta = updateMetaWith(intgr.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(intgr.range(), actualType, expectedType);
             }
             return intNode(updatedMeta, intgr.value());
         } else if (literal instanceof LongNode<Name> lng) {
             var actualType = Type.LONG;
-            var updatedMeta = updateMetaWith(lng.meta(), actualType);
+            var updatedMeta = updateMetaWith(lng.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(lng.range(), actualType, expectedType);
             }
             return longNode(updatedMeta, lng.value());
         } else if (literal instanceof FloatNode<Name> flt) {
             var actualType = Type.FLOAT;
-            var updatedMeta = updateMetaWith(flt.meta(), actualType);
+            var updatedMeta = updateMetaWith(flt.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(flt.range(), actualType, expectedType);
             }
             return floatNode(updatedMeta, flt.value());
         } else if (literal instanceof DoubleNode<Name> dbl) {
             var actualType = Type.DOUBLE;
-            var updatedMeta = updateMetaWith(dbl.meta(), actualType);
+            var updatedMeta = updateMetaWith(dbl.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(dbl.range(), actualType, expectedType);
             }

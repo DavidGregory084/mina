@@ -36,7 +36,7 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
 
     // Expressions
     @Override
-    default BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, ExprNode<B> result) {
+    default BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, Optional<ExprNode<B>> result) {
         return blockNode(updateMeta(meta), declarations, result);
     }
 

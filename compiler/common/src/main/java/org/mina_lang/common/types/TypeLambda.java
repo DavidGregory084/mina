@@ -19,7 +19,7 @@ public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) impl
         return visitor.visitTypeLambda(this);
     }
 
-    public Type instantiateAsSubTypeIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
+    public TypeInstantiationTransformer subTypeInstantiationIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
         var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
 
         args().forEach(tyParam -> {
@@ -34,12 +34,14 @@ public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) impl
             }
         });
 
-        var instantiator = new TypeInstantiationTransformer(instantiated.toImmutable());
-
-        return body().accept(instantiator);
+        return new TypeInstantiationTransformer(instantiated.toImmutable());
     }
 
-    public Type instantiateAsSuperTypeIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
+    public Type instantiateAsSubTypeIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
+        return body().accept(subTypeInstantiationIn(environment, varSupply));
+    }
+
+    public TypeInstantiationTransformer superTypeInstantiationIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
         var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
 
         args().forEach(tyParam -> {
@@ -54,8 +56,10 @@ public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) impl
             }
         });
 
-        var instantiator = new TypeInstantiationTransformer(instantiated.toImmutable());
+        return new TypeInstantiationTransformer(instantiated.toImmutable());
+    }
 
-        return body().accept(instantiator);
+    public Type instantiateAsSuperTypeIn(TypeEnvironment environment, UnsolvedVariableSupply varSupply) {
+        return body().accept(superTypeInstantiationIn(environment, varSupply));
     }
 }

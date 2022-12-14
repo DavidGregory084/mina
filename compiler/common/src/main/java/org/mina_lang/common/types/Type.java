@@ -51,6 +51,8 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
         return new TypeApply(new BuiltInType("->", kind), appliedTypes, TypeKind.INSTANCE);
     }
 
+    public static BuiltInType UNIT = new BuiltInType("Unit", TypeKind.INSTANCE);
+
     public static BuiltInType BOOLEAN = new BuiltInType("Boolean", TypeKind.INSTANCE);
 
     public static BuiltInType CHAR = new BuiltInType("Char", TypeKind.INSTANCE);
@@ -68,6 +70,7 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
     public static BuiltInType NAMESPACE = new BuiltInType("Namespace", TypeKind.INSTANCE);
 
     public static ImmutableMap<String, BuiltInType> builtIns = Maps.immutable.<String, BuiltInType>empty()
+            .newWithKeyValue("Unit", Type.UNIT)
             .newWithKeyValue("Boolean", Type.BOOLEAN)
             .newWithKeyValue("Char", Type.CHAR)
             .newWithKeyValue("String", Type.STRING)

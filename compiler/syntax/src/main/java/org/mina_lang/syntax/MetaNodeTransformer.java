@@ -48,7 +48,7 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
 
     default void preVisitBlock(BlockNode<A> block) {}
 
-    BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, ExprNode<B> result);
+    BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, Optional<ExprNode<B>> result);
 
     default void postVisitBlock(BlockNode<B> block) {}
 

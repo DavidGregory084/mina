@@ -48,7 +48,7 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B> {
 
     default void preVisitBlock(BlockNode<A> block) {}
 
-    B visitBlock(Meta<A> meta, ImmutableList<B> declarations, B result);
+    B visitBlock(Meta<A> meta, ImmutableList<B> declarations, Optional<B> result);
 
     default void postVisitBlock(B block) {}
 

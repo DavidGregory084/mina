@@ -70,7 +70,7 @@ expr:
     | literal
     | applicableExpr;
 
-blockExpr: LBRACE letDeclaration* expr RBRACE;
+blockExpr: LBRACE letDeclaration* expr? RBRACE;
 
 ifExpr: IF expr THEN expr ELSE expr;
 

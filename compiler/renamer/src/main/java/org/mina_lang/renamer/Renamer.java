@@ -62,7 +62,7 @@ public class Renamer {
     }
 
     public Void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
-                                         Meta<Name> existing) {
+            Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 existing.range(),
                 "Original definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");
@@ -238,7 +238,8 @@ public class Renamer {
 
             letFn.typeParams().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
-                typeLambdaScope.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta, Renamer.this::duplicateTypeDefinition);
+                typeLambdaScope.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta,
+                        Renamer.this::duplicateTypeDefinition);
             });
 
             // Emulate what happens for let-bound lambdas
@@ -343,7 +344,7 @@ public class Renamer {
 
         @Override
         public BlockNode<Name> visitBlock(Meta<Void> meta, ImmutableList<LetNode<Name>> declarations,
-                ExprNode<Name> result) {
+                Optional<ExprNode<Name>> result) {
             return blockNode(new Meta<>(meta.range(), Nameless.INSTANCE), declarations, result);
         }
 

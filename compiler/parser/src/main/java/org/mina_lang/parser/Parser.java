@@ -386,7 +386,7 @@ public class Parser {
         @Override
         public BlockNode<Void> visitBlockExpr(BlockExprContext ctx) {
             var declarationNodes = visitRepeated(ctx.letDeclaration(), declarationVisitor::visitLetDeclaration);
-            var resultNode = visitNullable(ctx.expr());
+            var resultNode = Optional.ofNullable(visitNullable(ctx.expr()));
             return blockNode(contextRange(ctx), declarationNodes, resultNode);
         }
 
