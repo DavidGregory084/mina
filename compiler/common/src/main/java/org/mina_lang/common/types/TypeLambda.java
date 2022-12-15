@@ -5,7 +5,8 @@ import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.TypeEnvironment;
-import org.mina_lang.common.names.TypeVarName;
+import org.mina_lang.common.names.ExistsVarName;
+import org.mina_lang.common.names.ForAllVarName;
 
 public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) implements PolyType {
 
@@ -28,7 +29,7 @@ public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) impl
                 environment.putUnsolvedType(unsolved);
                 instantiated.put(forall, unsolved);
             } else if (tyParam instanceof ExistsVar exists) {
-                var typeVarName = new TypeVarName(exists.name());
+                var typeVarName = new ExistsVarName(exists.name());
                 var typeVarAttrs = new Attributes(typeVarName, exists.kind());
                 environment.putType(exists.name(), Meta.of(typeVarAttrs));
             }
@@ -46,7 +47,7 @@ public record TypeLambda(ImmutableList<TypeVar> args, Type body, Kind kind) impl
 
         args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
-                var typeVarName = new TypeVarName(forall.name());
+                var typeVarName = new ForAllVarName(forall.name());
                 var typeVarAttrs = new Attributes(typeVarName, forall.kind());
                 environment.putType(forall.name(), Meta.of(typeVarAttrs));
             } else if (tyParam instanceof ExistsVar exists) {

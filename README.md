@@ -23,7 +23,7 @@ The project structure is as follows:
 * `examples` - this contains examples of the Mina language syntax.
 * `gradle/libs.versions.toml` - this is the version catalog declaring dependencies and their versions. See the Gradle documentation about [The version catalog TOML file format](https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format) for more details.
 * `gradle-plugin` - mostly unimplemented; this will contain a Gradle plugin for declaring and building Mina projects.
-* `lang-server` - this contains an LSP-compatible language server implemented using [lsp4j](https://github.com/eclipse/lsp4j). Since only the parsing phase of the Mina compiler is implemented, this server currently only parses source files and highlights syntactic errors.
+* `lang-server` - this contains an LSP-compatible language server implemented using [lsp4j](https://github.com/eclipse/lsp4j). This server currently implements parsing, renaming and type inference for the Mina language and displays diagnostics, as well as providing type and kind hover information. Inter-file dependencies are not currently supported.
 * `proto` - unimplemented, currently nothing more than a copy of the Protobuf definitions from [DavidGregory084/inc](https://github.com/DavidGregory084/inc). This will contain Protobuf definitions for the language syntax and intermediate language. The AST of each namespace will be embedded in its Mina .class file as a custom class file attribute. The optimised intermediate language for definitions will be embedded in Mina .class files for the purposes of inlining. They will serve a similar purpose to Haskell .hi files.
 * `vscode-plugin` - the VS Code plugin which interacts with the language server in `lang-server`.
 
@@ -36,8 +36,7 @@ Prerequisites:
 
 To get started:
 
-* Build the entire project using `./gradlew build --info`. This also builds the VS Code plugin using [gradle-node-plugin](https://github.com/node-gradle/gradle-node-plugin) and publishes the language server to your local Ivy repository.
-* If you're using VS Code, run `./gradlew eclipse` to ensure that Eclipse JDT configuration files are generated. The Language Support for Java extension requires these in order to configure Java compiler options.
+* Build the entire project using `./gradlew build publish --info`. This also builds the VS Code plugin using [gradle-node-plugin](https://github.com/node-gradle/gradle-node-plugin) and publishes the language server to your local Ivy repository.
 * Open [the VS Code extension file](./vscode-plugin/src/extension.ts) in VS Code and hit F5 to launch the Extension Development Host. Try opening the `examples/` folder from this project. You can examine the build server logging in the "Mina Language Server" window of the VS Code Output tab. Try making deliberate syntax errors or declaring overflowing numeric literals.
 
 ## Contributing to this project

@@ -297,7 +297,7 @@ public class RenamerTest {
 
         var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
         var dataName = new DataName(new QualifiedName(namespaceName, "List"));
-        var tyVarName = new TypeVarName("A");
+        var tyVarName = new ForAllVarName("A");
         var consName = new ConstructorName(dataName, new QualifiedName(namespaceName, "Cons"));
         var headName = new FieldName(consName, "head");
         var tailName = new FieldName(consName, "tail");
@@ -552,7 +552,7 @@ public class RenamerTest {
 
         var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
         var letName = new LetName(new QualifiedName(namespaceName, "id"));
-        var typeVarAName = new TypeVarName("A");
+        var typeVarAName = new ForAllVarName("A");
         var paramAName = new LocalName("a", 0);
 
         /*-
@@ -651,8 +651,8 @@ public class RenamerTest {
         var letName = new LetName(new QualifiedName(namespaceName, "const"));
         var paramAName = new LocalName("a", 0);
         var paramBName = new LocalName("b", 1);
-        var typeVarAName = new TypeVarName("A");
-        var typeVarBName = new TypeVarName("B");
+        var typeVarAName = new ForAllVarName("A");
+        var typeVarBName = new ForAllVarName("B");
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -811,8 +811,8 @@ public class RenamerTest {
     // Types
     @Test
     void renameTypeLambda() {
-        var typeVarAName = new TypeVarName("A");
-        var typeVarBName = new TypeVarName("B");
+        var typeVarAName = new ForAllVarName("A");
+        var typeVarBName = new ForAllVarName("B");
 
         /*- [A, B] => A */
         var originalNode = typeLambdaNode(
@@ -834,8 +834,8 @@ public class RenamerTest {
 
     @Test
     void renameTypeLambdaExistsVar() {
-        var typeVarAName = new TypeVarName("?A");
-        var typeVarBName = new TypeVarName("?B");
+        var typeVarAName = new ExistsVarName("?A");
+        var typeVarBName = new ExistsVarName("?B");
 
         /*- [?A, ?B] => ?A */
         var originalNode = typeLambdaNode(
@@ -877,8 +877,8 @@ public class RenamerTest {
 
     @Test
     void renameFunType() {
-        var typeVarAName = new TypeVarName("A");
-        var typeVarBName = new TypeVarName("B");
+        var typeVarAName = new ForAllVarName("A");
+        var typeVarBName = new ForAllVarName("B");
 
         /*- [A, B] => (A, B) -> A */
         var originalNode = typeLambdaNode(
@@ -933,8 +933,8 @@ public class RenamerTest {
 
     @Test
     void renameTypeApply() {
-        var typeVarFName = new TypeVarName("F");
-        var typeVarAName = new TypeVarName("A");
+        var typeVarFName = new ForAllVarName("F");
+        var typeVarAName = new ForAllVarName("A");
 
         /*- [F, A] => F[A] */
         var originalNode = typeLambdaNode(

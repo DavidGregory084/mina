@@ -1,22 +1,22 @@
 package org.mina_lang.typechecker;
 
-import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.BuiltInName;
+import org.mina_lang.common.names.ExistsVarName;
+import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.TypeName;
-import org.mina_lang.common.names.TypeVarName;
+import org.mina_lang.common.scopes.TypeLambdaScope;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.QualifiedIdNode;
+import org.mina_lang.syntax.TypeLambdaNode;
 import org.mina_lang.syntax.TypeNodeFolder;
 
 public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
     protected Environment<Attributes> environment;
-    protected MutableMap<String, TypeVar> tyVars = Maps.mutable.empty();
 
     public TypeAnnotationFolder(Environment<Attributes> environment) {
         this.environment = environment;
@@ -37,20 +37,27 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
         var name = meta.meta().name();
 
         if (name instanceof BuiltInName builtInName) {
-            // Built in types
             return Type.builtIns.get(builtInName.name());
-        } else if (name instanceof TypeVarName) {
-            // Bound type variables
-            return tyVars.get(id.canonicalName());
+        } else if (name instanceof ExistsVarName exists) {
+            var existsMeta = environment.lookupType(exists.name()).get();
+            var existsKind = (Kind) existsMeta.meta().sort();
+            return new ExistsVar(exists.name(), existsKind);
+        } else if (name instanceof ForAllVarName forall) {
+            var forallMeta = environment.lookupType(forall.name()).get();
+            var forallKind = (Kind) forallMeta.meta().sort();
+            return new ForAllVar(forall.name(), forallKind);
         } else if (name instanceof TypeName typeName) {
-            // Data types
             var typeMeta = environment.lookupType(id.canonicalName()).get();
-            return new TypeConstructor(
-                    typeName.name(),
-                    (Kind) typeMeta.meta().sort());
+            var typeKind = (Kind) typeMeta.meta().sort();
+            return new TypeConstructor(typeName.name(), typeKind);
         }
 
         return null;
+    }
+
+    @Override
+    public void preVisitTypeLambda(TypeLambdaNode<Attributes> tyLam) {
+        environment.pushScope(new TypeLambdaScope<>());
     }
 
     @Override
@@ -62,16 +69,19 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
     }
 
     @Override
+    public void postVisitTypeLambda(Type tyLam) {
+        environment.popScope(TypeLambdaScope.class);
+    }
+
+    @Override
     public ForAllVar visitForAllVar(Meta<Attributes> meta, String name) {
-        var forAllVar = new ForAllVar(name, (Kind) meta.meta().sort());
-        tyVars.put(name, forAllVar);
-        return forAllVar;
+        environment.putType(name, meta);
+        return new ForAllVar(name, (Kind) meta.meta().sort());
     }
 
     @Override
     public ExistsVar visitExistsVar(Meta<Attributes> meta, String name) {
-        var existsVar = new ExistsVar(name, (Kind) meta.meta().sort());
-        tyVars.put(name, existsVar);
-        return existsVar;
+        environment.putType(name, meta);
+        return new ExistsVar(name, (Kind) meta.meta().sort());
     }
 }

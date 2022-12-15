@@ -13,7 +13,5 @@ public sealed interface TypeVarNode<A> extends TypeNode<A>permits ExistsVarNode,
         return accept((TypeNodeTransformer<A, B>) transformer);
     }
 
-    public default TypeVarName getName() {
-        return new TypeVarName(name());
-    }
+    public TypeVarName getName();
 }

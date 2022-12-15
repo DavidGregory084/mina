@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.ForAllVarName;
 
 public record ForAllVarNode<A> (Meta<A> meta, String name) implements TypeVarNode<A> {
     @Override
@@ -22,5 +23,10 @@ public record ForAllVarNode<A> (Meta<A> meta, String name) implements TypeVarNod
         var result = visitor.visitForAllVar(meta(), name());
         visitor.postVisitForAllVar(result);
         return result;
+    }
+
+    @Override
+    public ForAllVarName getName() {
+        return new ForAllVarName(name());
     }
 }

@@ -930,19 +930,29 @@ public class Typechecker {
                         .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
                         .collect(pair -> {
                             var param = pair.getOne();
-                            var updatedMeta = updateMetaWith(param.meta(), pair.getTwo());
                             var kindedAnnotation = param.typeAnnotation().map(kindchecker::kindcheck);
+                            var annotatedType = kindedAnnotation
+                                .map(annot -> annot.accept(new TypeAnnotationFolder(environment)));
+                            var updatedMeta = annotatedType
+                                .map(annotType -> updateMetaWith(param.meta(), annotType))
+                                .orElseGet(() -> updateMetaWith(param.meta(), pair.getTwo()));
                             environment.putValue(param.name(), updatedMeta);
                             return paramNode(updatedMeta, param.name(), kindedAnnotation);
                         });
 
-                var knownParamTypes = knownParams.collect(this::getType);
-
                 var checkedReturn = checkExpr(lambda.body(), funType.typeArguments().getLast());
 
-                var updatedMeta = updateMetaWith(
-                        lambda.meta(),
-                        Type.function(knownParamTypes, getType(checkedReturn)));
+                var appliedType = Type.function(
+                        knownParams.collect(this::getType),
+                        getType(checkedReturn));
+
+                // We could make this error more local by checking the expected types of the params
+                // against their annotations above, but I think this gives more context to the error
+                if (!checkSubType(appliedType, expectedType)) {
+                    mismatchedType(lambda.range(), appliedType, expectedType);
+                }
+
+                var updatedMeta = updateMetaWith(lambda.meta(), expectedType);
 
                 return lambdaNode(updatedMeta, knownParams, checkedReturn);
             });
@@ -960,7 +970,7 @@ public class Typechecker {
 
             // TODO: Add an error type to place in Meta when we have a mismatch?
             if (!checkSubType(inferredType, expectedType)) {
-                mismatchedType(inferredExpr.meta().range(), inferredType, expectedType);
+                mismatchedType(inferredExpr.range(), inferredType, expectedType);
             }
 
             return inferredExpr;
@@ -1014,7 +1024,7 @@ public class Typechecker {
             // We do this here to ensure that we solve our newly instantiated type
             // using the expected type before typechecking fields
             if (!checkSubType(constrType, expectedType)) {
-                mismatchedType(constrPat.meta().range(), constrType, expectedType);
+                mismatchedType(constrPat.range(), constrType, expectedType);
             }
 
             var inferredFields = constrPat.fields()

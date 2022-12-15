@@ -259,7 +259,7 @@ public class ExampleNodes {
         public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
                 Meta.of(new Attributes(NAME, KIND)), "List");
 
-        public static Name TYPE_VAR_A_NAME = new TypeVarName("A");
+        public static Name TYPE_VAR_A_NAME = new ForAllVarName("A");
 
         public static Kind TYPE_VAR_A_KIND = TypeKind.INSTANCE;
 
@@ -428,7 +428,7 @@ public class ExampleNodes {
         public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
                 Meta.of(new Attributes(NAME, KIND)), "Fix");
 
-        public static Name TYPE_VAR_F_NAME = new TypeVarName("F");
+        public static Name TYPE_VAR_F_NAME = new ForAllVarName("F");
         public static Kind TYPE_VAR_F_KIND = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         public static TypeVar TYPE_VAR_F_TYPE = new ForAllVar("F", TYPE_VAR_F_KIND);
 

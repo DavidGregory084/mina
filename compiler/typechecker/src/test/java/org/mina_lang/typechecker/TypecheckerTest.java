@@ -471,7 +471,7 @@ public class TypecheckerTest {
     @DisplayName("Annotated polymorphic identity function typechecks successfully")
     void typecheckAnnotatedPolyIdLet() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
-        var tyVarAName = new TypeVarName("A");
+        var tyVarAName = new ForAllVarName("A");
         var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
@@ -521,11 +521,11 @@ public class TypecheckerTest {
     @DisplayName("Annotated polymorphic const function typechecks successfully")
     void typecheckAnnotatedPolyConstLet() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
-        var tyVarAName = new TypeVarName("A");
+        var tyVarAName = new ForAllVarName("A");
         var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
 
         var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
-        var tyVarBName = new TypeVarName("B");
+        var tyVarBName = new ForAllVarName("B");
         var tyVarBMeta = Meta.of(new Attributes(tyVarBName, TypeKind.INSTANCE));
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
@@ -620,7 +620,7 @@ public class TypecheckerTest {
     @DisplayName("Annotated polymorphic identity letfn typechecks successfully")
     void typecheckAnnotatedPolyIdLetFn() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
-        var tyVarAName = new TypeVarName("A");
+        var tyVarAName = new ForAllVarName("A");
         var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
@@ -656,11 +656,11 @@ public class TypecheckerTest {
     @DisplayName("Annotated polymorphic const letfn typechecks successfully")
     void typecheckAnnotatedPolyConstLetFn() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
-        var tyVarAName = new TypeVarName("A");
+        var tyVarAName = new ForAllVarName("A");
         var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
 
         var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
-        var tyVarBName = new TypeVarName("B");
+        var tyVarBName = new ForAllVarName("B");
         var tyVarBMeta = Meta.of(new Attributes(tyVarBName, TypeKind.INSTANCE));
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));

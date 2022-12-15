@@ -1,14 +1,15 @@
 package org.mina_lang.common.names;
 
-public record TypeVarName(String name) implements Named {
+public sealed interface TypeVarName extends Named permits ForAllVarName, ExistsVarName {
+    public String name();
 
     @Override
-    public String localName() {
+    default public String localName() {
         return name();
     }
 
     @Override
-    public String canonicalName() {
+    default public String canonicalName() {
         return name();
     }
 }

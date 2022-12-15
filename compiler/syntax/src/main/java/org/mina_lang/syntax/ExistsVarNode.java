@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.ExistsVarName;
 
 public record ExistsVarNode<A> (Meta<A> meta, String name) implements TypeVarNode<A> {
     @Override
@@ -22,5 +23,10 @@ public record ExistsVarNode<A> (Meta<A> meta, String name) implements TypeVarNod
         var result = visitor.visitExistsVar(meta(), name());
         visitor.postVisitExistsVar(result);
         return result;
+    }
+
+    @Override
+    public ExistsVarName getName() {
+        return new ExistsVarName(name());
     }
 }

@@ -6,7 +6,6 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
@@ -273,8 +272,8 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckTypeLambda() {
-        var typeVarFName = new TypeVarName("F");
-        var typeVarAName = new TypeVarName("A");
+        var typeVarFName = new ForAllVarName("F");
+        var typeVarAName = new ForAllVarName("A");
 
         // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
@@ -316,9 +315,9 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckComplexTypeLambda() {
-        var typeVarFName = new TypeVarName("F");
-        var typeVarGName = new TypeVarName("G");
-        var typeVarAName = new TypeVarName("A");
+        var typeVarFName = new ForAllVarName("F");
+        var typeVarGName = new ForAllVarName("G");
+        var typeVarAName = new ForAllVarName("A");
 
         // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
@@ -372,10 +371,10 @@ public class KindcheckerTest {
 
     @Test
     void kindcheckTypeLambdaWithComplexFunctionType() {
-        var typeVarFName = new TypeVarName("F");
-        var typeVarGName = new TypeVarName("G");
-        var typeVarAName = new TypeVarName("A");
-        var typeVarBName = new TypeVarName("B");
+        var typeVarFName = new ForAllVarName("F");
+        var typeVarGName = new ForAllVarName("G");
+        var typeVarAName = new ForAllVarName("A");
+        var typeVarBName = new ForAllVarName("B");
 
         // * => *
         var typeVarGKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
@@ -494,7 +493,7 @@ public class KindcheckerTest {
 
         // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
-        var typeVarFName = new TypeVarName("F");
+        var typeVarFName = new ForAllVarName("F");
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
         // F => Functor[F]
@@ -526,7 +525,7 @@ public class KindcheckerTest {
 
         // [* => *] => *
         var typeVarFKind = new HigherKind(ExampleNodes.Functor.KIND, TypeKind.INSTANCE);
-        var typeVarFName = new TypeVarName("F");
+        var typeVarFName = new ForAllVarName("F");
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
         var typeLambdaKind = new HigherKind(typeVarFKind, TypeKind.INSTANCE);
@@ -560,7 +559,7 @@ public class KindcheckerTest {
         environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
         environment.putType(ExampleNodes.Functor.NAME.canonicalName(), ExampleNodes.Functor.KINDED_META);
 
-        var typeVarAName = new TypeVarName("A");
+        var typeVarAName = new ForAllVarName("A");
         var typeVarAKind = TypeKind.INSTANCE;
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 

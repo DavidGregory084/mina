@@ -412,7 +412,7 @@ public class Kindchecker {
 
             if (!checkSubKind(inferredKind, expectedKind)) {
                 // TODO: Differentiate between a subkinding error and an occurs check failure
-                mismatchedKind(inferredType.meta().range(), inferredKind, expectedKind);
+                mismatchedKind(inferredType.range(), inferredKind, expectedKind);
             }
 
             return inferredType;
