@@ -19,6 +19,9 @@ dependencies {
     // Language Server Protocol
     implementation(libs.lsp4j)
 
+    // Pretty Printing
+    implementation(libs.prettier4j)
+
     // Common Definitions
     implementation(project(":compiler:common"))
 

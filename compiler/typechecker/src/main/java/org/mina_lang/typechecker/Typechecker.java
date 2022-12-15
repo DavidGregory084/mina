@@ -523,7 +523,7 @@ public class Typechecker {
         } else {
             return withScope(new TypeLambdaScope<>(), () -> {
                 var kindedTyParams = tyParams
-                        .collect(tyParam -> (TypeVarNode<Attributes>) kindchecker.kindcheck(tyParam));
+                        .collect(tyParam -> (TypeVarNode<Attributes>) kindchecker.inferType(tyParam));
                 var tyParamTypes = kindedTyParams
                         .collect(tyParam -> (TypeVar) typeFolder.visitTypeVar(tyParam));
 
@@ -547,27 +547,6 @@ public class Typechecker {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
             var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
-            System.err.println("Types ---------------------------");
-            environment.topScope().types().forEach((nm, meta) -> {
-                if (!nm.contains(".")) {
-                    var kind = (Kind) meta.meta().sort();
-                    var doc = Doc.text(nm)
-                            .append(Doc.text(":"))
-                            .appendSpace(kind.accept(sortPrinter));
-                    System.err.println(doc.render(80));
-                }
-            });
-            System.err.println("\nValues --------------------------");
-            environment.topScope().values().forEach((nm, meta) -> {
-                if (!nm.contains(".")) {
-                    var type = (Type) meta.meta().sort();
-                    var doc = Doc.text(nm)
-                            .append(Doc.text(":"))
-                            .appendSpace(type.accept(sortPrinter));
-                    System.err.println(doc.render(80));
-                }
-            });
-            System.err.println("\n---------------------------------\n\n");
             return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
         });
     }
@@ -608,9 +587,9 @@ public class Typechecker {
                     var expectedType = kindedReturn.map(typeFolder::visitType);
 
                     var expectedLetFnType = createLetFnType(
-                        tyParamTypes,
-                        inferredParams,
-                        expectedType.orElseGet(() -> newUnsolvedType()));
+                            tyParamTypes,
+                            inferredParams,
+                            expectedType.orElseGet(() -> newUnsolvedType()));
 
                     putValueDeclaration(updateMetaWith(letFn.meta(), expectedLetFnType));
 
@@ -619,9 +598,9 @@ public class Typechecker {
                             .orElseGet(() -> inferExpr(letFn.expr()));
 
                     var letFnType = createLetFnType(
-                        tyParamTypes,
-                        inferredParams,
-                        getType(checkedBody));
+                            tyParamTypes,
+                            inferredParams,
+                            getType(checkedBody));
 
                     var typedMeta = updateMetaWith(letFn.meta(), letFnType);
 
@@ -745,7 +724,8 @@ public class Typechecker {
                 });
             }).orElseGet(() -> Lists.immutable.empty());
 
-            var matchType = firstCaseType.orElseGet(() -> newUnsolvedType());
+            var matchType = firstCaseType
+                    .orElseGet(() -> newUnsolvedType(TypeKind.INSTANCE));
 
             var updatedMeta = updateMetaWith(match.meta(), matchType);
 
@@ -1020,8 +1000,8 @@ public class Typechecker {
 
             // We need to keep this instantiation to use with our field patterns
             var instantiator = (constrType instanceof TypeLambda tyLam)
-                ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
-                : Optional.<TypeInstantiationTransformer>empty();
+                    ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
+                    : Optional.<TypeInstantiationTransformer>empty();
 
             if (constrType instanceof TypeLambda tyLam) {
                 constrType = tyLam.body().accept(instantiator.get());
@@ -1038,7 +1018,7 @@ public class Typechecker {
             }
 
             var inferredFields = constrPat.fields()
-                .collect(field -> inferFieldPattern(constrName, field, instantiator));
+                    .collect(field -> inferFieldPattern(constrName, field, instantiator));
 
             var updatedMeta = updateMetaWith(constrPat.meta(), expectedType);
 

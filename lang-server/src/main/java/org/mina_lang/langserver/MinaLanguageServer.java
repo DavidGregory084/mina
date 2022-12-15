@@ -1,6 +1,11 @@
 package org.mina_lang.langserver;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.Optional;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
@@ -12,11 +17,7 @@ import org.mina_lang.BuildInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
@@ -108,6 +109,11 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             textDocumentSyncOptions.setSave(true);
 
             serverCapabilities.setTextDocumentSync(textDocumentSyncOptions);
+
+            var hoverOptions = new HoverOptions();
+            hoverOptions.setWorkDoneProgress(false);
+
+            serverCapabilities.setHoverProvider(hoverOptions);
 
             cancelToken.checkCanceled();
 

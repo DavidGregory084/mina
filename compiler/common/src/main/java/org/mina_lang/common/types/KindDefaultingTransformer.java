@@ -13,6 +13,11 @@ public class KindDefaultingTransformer extends KindSubstitutionTransformer {
     @Override
     public Kind visitUnsolvedKind(UnsolvedKind unsolved) {
         var solution = substitution.find(unsolved);
-        return solution.equals(unsolved) ? TypeKind.INSTANCE : solution.accept(this);
+        if (!solution.equals(unsolved)) {
+            return solution.accept(this);
+        } else {
+            substitution.union(unsolved, TypeKind.INSTANCE);
+            return TypeKind.INSTANCE;
+        }
     }
 }
