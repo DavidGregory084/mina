@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.DisplayName;
@@ -217,6 +218,113 @@ public class TypecheckerTest {
                 expectedLiteralNode);
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Correctly annotated let binding to empty block typechecks successfully")
+    void typecheckAnnotatedEmptyBlockLetBinding() {
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testEmptyBlock"));
+
+        var builtInName = new BuiltInName("Unit");
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testEmptyBlock",
+                typeRefNode(Meta.of(builtInName), "Unit"),
+                blockNode(
+                        ExampleNodes.namelessMeta(),
+                        Optional.empty()));
+
+        var expectedNode = letNode(
+                Meta.of(new Attributes(letName, Type.UNIT)),
+                "testEmptyBlock",
+                typeRefNode(
+                        Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)),
+                        "Unit"),
+                blockNode(
+                        ExampleNodes.namelessMeta(Type.UNIT),
+                        Optional.empty()));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Incorrectly annotated let binding to empty block fails to typecheck")
+    void typecheckIllTypedAnnotatedEmptyBlockLetBinding() {
+        var emptyBlockRange = new Range(0, 1, 0, 1);
+
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testEmptyBlock"));
+
+        var builtInName = new BuiltInName("Int");
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testEmptyBlock",
+                typeRefNode(Meta.of(builtInName), "Int"),
+                blockNode(
+                        new Meta<>(emptyBlockRange, Nameless.INSTANCE),
+                        Optional.empty()));
+
+        var collector = testFailedTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode);
+
+        assertDiagnostic(
+                collector.getDiagnostics(),
+                emptyBlockRange,
+                "Mismatched type! Expected: Int, Actual: Unit");
+    }
+
+    @Test
+    @DisplayName("Correctly annotated let binding to block with result typechecks successfully")
+    void typecheckAnnotatedBlockLetBinding() {
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testBlock"));
+
+        var builtInName = new BuiltInName("Int");
+
+        /*- let  */
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testBlock",
+                typeRefNode(Meta.of(builtInName), "Int"),
+                blockNode(
+                        ExampleNodes.namelessMeta(),
+                        Optional.of(ExampleNodes.Int.namedNode(1))));
+
+        var expectedNode = letNode(
+                Meta.of(new Attributes(letName, Type.INT)),
+                "testBlock",
+                typeRefNode(
+                        Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)),
+                        "Int"),
+                blockNode(
+                        ExampleNodes.namelessMeta(Type.INT),
+                        Optional.of(ExampleNodes.Int.typedNode(1))));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Incorrectly annotated let binding to block with result fails to typecheck")
+    void typecheckIllTypedAnnotatedBlockLetBinding() {
+        var intRange = new Range(0, 1, 0, 1);
+
+        var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "testBlock"));
+
+        var builtInName = new BuiltInName("Unit");
+
+        var originalNode = letNode(
+                Meta.of(letName),
+                "testBlock",
+                typeRefNode(Meta.of(builtInName), "Unit"),
+                blockNode(
+                        ExampleNodes.namelessMeta(),
+                        Optional.of(intNode(new Meta<>(intRange, Nameless.INSTANCE), 1))));
+
+        var collector = testFailedTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode);
+
+        assertDiagnostic(
+                collector.getDiagnostics(),
+                intRange,
+                "Mismatched type! Expected: Unit, Actual: Int");
     }
 
     @Property
@@ -700,6 +808,34 @@ public class TypecheckerTest {
     }
 
     // Expressions
+
+    @Test
+    @DisplayName("Empty block typechecks as Unit")
+    void typecheckEmptyBlock() {
+        var originalNode = blockNode(
+                ExampleNodes.namelessMeta(),
+                Optional.empty());
+
+        var expectedNode = blockNode(
+                ExampleNodes.namelessMeta(Type.UNIT),
+                Optional.empty());
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
+
+    @Test
+    @DisplayName("Block typechecks as its result type")
+    void typecheckBlock() {
+        var originalNode = blockNode(
+                ExampleNodes.namelessMeta(),
+                Optional.of(ExampleNodes.Int.namedNode(1)));
+
+        var expectedNode = blockNode(
+                ExampleNodes.namelessMeta(Type.INT),
+                Optional.of(ExampleNodes.Int.typedNode(1)));
+
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
+    }
 
     @Test
     @DisplayName("If expressions with boolean-typed condition and same consequent and alternative types typecheck successfully")
