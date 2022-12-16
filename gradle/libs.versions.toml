@@ -1,6 +1,7 @@
 [versions]
 antlr = "4.11.1"
 apacheCommonsText = "1.10.0"
+asm = "9.4"
 eclipseCollections = "11.1.0"
 gradleBuildInfo = "0.2.1"
 gradleNode = "3.5.0"
@@ -22,6 +23,9 @@ slf4j = "2.0.6"
 [libraries]
 antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
 apacheCommonsText = { module = "org.apache.commons:commons-text", version.ref = "apacheCommonsText" }
+asm = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
+asmCommons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
+asmUtil = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipseCollections" }
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipseCollections" }
 gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }

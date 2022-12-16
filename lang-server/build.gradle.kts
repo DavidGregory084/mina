@@ -37,6 +37,9 @@ dependencies {
     // Typechecker
     implementation(project(":compiler:typechecker"))
 
+    // JVM Bytecode Generation
+    implementation(project(":compiler:jvm"))
+
     // Logging
     implementation(libs.bundles.slf4j)
     runtimeOnly(libs.logback)

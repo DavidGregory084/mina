@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
+import org.mina_lang.codegen.jvm.CodeGenerator;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.NameEnvironment;
 import org.mina_lang.common.TypeEnvironment;
@@ -63,6 +64,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var parser = new Parser(diagnostics);
                         var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
                         var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
                         if (diagnostics.getDiagnostics().isEmpty()) {
@@ -71,6 +73,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                                 var typed = typechecker.typecheck(renamed);
                                 typed.accept(rangeVisitor);
                                 hoversFuture.complete(rangeVisitor.getRangeNodes());
+                                codegen.generate(typed);
                                 return typed;
                             } else {
                                 renamed.accept(rangeVisitor);
@@ -107,6 +110,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var parser = new Parser(diagnostics);
                         var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
                         var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
                         if (diagnostics.getDiagnostics().isEmpty()) {
@@ -115,6 +119,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                                 var typed = typechecker.typecheck(renamed);
                                 typed.accept(rangeVisitor);
                                 hoversFuture.complete(rangeVisitor.getRangeNodes());
+                                codegen.generate(typed);
                                 return typed;
                             } else {
                                 renamed.accept(rangeVisitor);

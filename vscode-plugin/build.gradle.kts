@@ -15,6 +15,7 @@ tasks.register<NpmTask>("build") {
     dependsOn(":compiler:parser:publish")
     dependsOn(":compiler:renamer:publish")
     dependsOn(":compiler:typechecker:publish")
+    dependsOn(":compiler:jvm:publish")
     dependsOn(":lang-server:publish")
     dependsOn(tasks.npmInstall)
     npmCommand.set(
