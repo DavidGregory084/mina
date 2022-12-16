@@ -43,14 +43,15 @@ public sealed interface Scope<A> permits BuiltInScope, ImportedScope, NamespaceS
         values().put(name, meta);
     }
 
-    default boolean putValueIfAbsent(String name, Meta<A> meta) {
-        return values().putIfAbsent(name, meta) == null;
+    default Meta<A> putValueIfAbsent(String name, Meta<A> meta) {
+        return values().putIfAbsent(name, meta);
     }
 
     default void putValueIfAbsentOrElse(String name, Meta<A> proposed,
             Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
-        if (!putValueIfAbsent(name, proposed)) {
-            lookupValue(name).ifPresent(existing -> orElseFn.value(name, proposed, existing));
+        var existing = putValueIfAbsent(name, proposed);
+        if (existing != null) {
+            orElseFn.value(name, proposed, existing);
         }
     }
 
@@ -74,14 +75,15 @@ public sealed interface Scope<A> permits BuiltInScope, ImportedScope, NamespaceS
         types().put(name, meta);
     }
 
-    default boolean putTypeIfAbsent(String name, Meta<A> meta) {
-        return types().putIfAbsent(name, meta) == null;
+    default Meta<A> putTypeIfAbsent(String name, Meta<A> meta) {
+        return types().putIfAbsent(name, meta);
     }
 
     default void putTypeIfAbsentOrElse(String name, Meta<A> proposed,
             Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
-        if (!putTypeIfAbsent(name, proposed)) {
-            lookupType(name).ifPresent(existing -> orElseFn.value(name, proposed, existing));
+        var existing = putTypeIfAbsent(name, proposed);
+        if (existing != null) {
+            orElseFn.value(name, proposed, existing);
         }
     };
 
@@ -110,16 +112,16 @@ public sealed interface Scope<A> permits BuiltInScope, ImportedScope, NamespaceS
         constrFields.put(name, meta);
     }
 
-    default boolean putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
+    default Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
         var constrFields = constructorFields().getIfAbsentPut(constr, () -> Maps.mutable.empty());
-        var putResult = constrFields.putIfAbsent(name, meta);
-        return putResult == null;
+        return constrFields.putIfAbsent(name, meta);
     }
 
     default void putFieldIfAbsentOrElse(ConstructorName constr, String name, Meta<A> proposed,
             Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
-        if (!putFieldIfAbsent(constr, name, proposed)) {
-            lookupField(constr, name).ifPresent(existing -> orElseFn.value(name, proposed, existing));
+        var existing = putFieldIfAbsent(constr, name, proposed);
+        if (existing != null) {
+            orElseFn.value(name, proposed, existing);
         }
     }
 }

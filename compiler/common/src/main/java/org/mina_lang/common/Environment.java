@@ -86,26 +86,25 @@ public interface Environment<A> {
 
     default void putValue(String name, Meta<A> meta) {
         scopes()
-            .getFirstOptional()
-            .ifPresent(scope -> scope.putValue(name, meta));
+                .getFirstOptional()
+                .ifPresent(scope -> scope.putValue(name, meta));
     }
 
-    default public boolean putValueIfAbsent(String name, Meta<A> meta) {
+    default public Meta<A> putValueIfAbsent(String name, Meta<A> meta) {
         return lookupValue(name)
-                .map(scope -> false) // Duplicate definition
                 .orElseGet(() -> {
                     return scopes()
                             .getFirstOptional()
                             .map(scope -> scope.putValueIfAbsent(name, meta))
-                            .orElse(false);
+                            .orElse(null);
                 });
     }
 
     default public void putValueIfAbsentOrElse(String name, Meta<A> proposed,
             Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
-        if (!putValueIfAbsent(name, proposed)) {
-            scopes().getFirstOptional()
-                    .ifPresent(scope -> scope.putValueIfAbsentOrElse(name, proposed, orElseFn));
+        var existing = putValueIfAbsent(name, proposed);
+        if (existing != null) {
+            orElseFn.value(name, proposed, existing);
         }
     }
 
@@ -128,26 +127,25 @@ public interface Environment<A> {
 
     default void putType(String name, Meta<A> meta) {
         scopes()
-            .getFirstOptional()
-            .ifPresent(scope -> scope.putType(name, meta));
+                .getFirstOptional()
+                .ifPresent(scope -> scope.putType(name, meta));
     }
 
-    default public boolean putTypeIfAbsent(String name, Meta<A> meta) {
+    default public Meta<A> putTypeIfAbsent(String name, Meta<A> meta) {
         return lookupType(name)
-                .map(scope -> false) // Duplicate definition
                 .orElseGet(() -> {
                     return scopes()
                             .getFirstOptional()
                             .map(scope -> scope.putTypeIfAbsent(name, meta))
-                            .orElse(false);
+                            .orElse(null);
                 });
     }
 
     default public void putTypeIfAbsentOrElse(String name, Meta<A> proposed,
             Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
-        if (!putTypeIfAbsent(name, proposed)) {
-            scopes().getFirstOptional()
-                    .ifPresent(scope -> scope.putTypeIfAbsentOrElse(name, proposed, orElseFn));
+        var existing = putTypeIfAbsent(name, proposed);
+        if (existing != null) {
+            orElseFn.value(name, proposed, existing);
         }
     }
 
@@ -170,26 +168,25 @@ public interface Environment<A> {
 
     default void putField(ConstructorName constr, String name, Meta<A> meta) {
         scopes()
-            .getFirstOptional()
-            .ifPresent(scope -> scope.putField(constr, name, meta));
+                .getFirstOptional()
+                .ifPresent(scope -> scope.putField(constr, name, meta));
     }
 
-    default public boolean putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
+    default public Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
         return lookupField(constr, name)
-                .map(scope -> false) // Duplicate definition
                 .orElseGet(() -> {
                     return scopes()
-                    .getFirstOptional()
+                            .getFirstOptional()
                             .map(scope -> scope.putFieldIfAbsent(constr, name, meta))
-                            .orElse(false);
+                            .orElse(null);
                 });
     }
 
     default public void putFieldIfAbsentOrElse(ConstructorName constr, String name, Meta<A> proposed,
             Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
-        if (!putFieldIfAbsent(constr, name, proposed)) {
-            scopes().getFirstOptional()
-                    .ifPresent(scope -> scope.putFieldIfAbsentOrElse(constr, name, proposed, orElseFn));
+        var existing = putFieldIfAbsent(constr, name, proposed);
+        if (existing != null) {
+            orElseFn.value(name, proposed, existing);
         }
     }
 
