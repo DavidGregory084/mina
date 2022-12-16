@@ -932,10 +932,10 @@ public class Typechecker {
                             var param = pair.getOne();
                             var kindedAnnotation = param.typeAnnotation().map(kindchecker::kindcheck);
                             var annotatedType = kindedAnnotation
-                                .map(annot -> annot.accept(new TypeAnnotationFolder(environment)));
+                                    .map(annot -> annot.accept(new TypeAnnotationFolder(environment)));
                             var updatedMeta = annotatedType
-                                .map(annotType -> updateMetaWith(param.meta(), annotType))
-                                .orElseGet(() -> updateMetaWith(param.meta(), pair.getTwo()));
+                                    .map(annotType -> updateMetaWith(param.meta(), annotType))
+                                    .orElseGet(() -> updateMetaWith(param.meta(), pair.getTwo()));
                             environment.putValue(param.name(), updatedMeta);
                             return paramNode(updatedMeta, param.name(), kindedAnnotation);
                         });
@@ -946,8 +946,10 @@ public class Typechecker {
                         knownParams.collect(this::getType),
                         getType(checkedReturn));
 
-                // We could make this error more local by checking the expected types of the params
-                // against their annotations above, but I think this gives more context to the error
+                // We could make this error more local by checking the expected types of the
+                // params
+                // against their annotations above, but I think this gives more context to the
+                // error
                 if (!checkSubType(appliedType, expectedType)) {
                     mismatchedType(lambda.range(), appliedType, expectedType);
                 }
@@ -988,51 +990,58 @@ public class Typechecker {
     }
 
     PatternNode<Attributes> checkPattern(PatternNode<Name> pattern, Type expectedType) {
-        var enclosingCase = environment.enclosingCase().get();
+        if (expectedType instanceof TypeLambda tyLam) {
+            return withScope(new InstantiateTypeScope<>(), () -> {
+                return checkPattern(pattern, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
+            });
+        } else {
+            var enclosingCase = environment.enclosingCase().get();
 
-        if (pattern instanceof IdPatternNode<Name> idPat) {
-            var updatedMeta = updateMetaWith(idPat.meta(), expectedType);
-            enclosingCase.putValue(idPat.name(), updatedMeta);
-            return idPatternNode(updatedMeta, idPat.name());
-        } else if (pattern instanceof AliasPatternNode<Name> aliasPat) {
-            var inferredPattern = checkPattern(aliasPat.pattern(), expectedType);
-            var updatedMeta = updateMetaWith(aliasPat.meta(), expectedType);
-            enclosingCase.putValue(aliasPat.alias(), updatedMeta);
-            return aliasPatternNode(updatedMeta, aliasPat.alias(), inferredPattern);
-        } else if (pattern instanceof LiteralPatternNode<Name> litPat) {
-            var inferredLiteral = checkLiteral(litPat.literal(), expectedType);
-            var updatedMeta = updateMetaWith(litPat.meta(), expectedType);
-            return literalPatternNode(updatedMeta, inferredLiteral);
-        } else if (pattern instanceof ConstructorPatternNode<Name> constrPat) {
-            var constrMeta = environment.lookupValue(constrPat.id().canonicalName()).get();
-            var constrName = (ConstructorName) constrMeta.meta().name();
-            var constrType = (Type) constrMeta.meta().sort();
+            if (pattern instanceof IdPatternNode<Name> idPat) {
+                var updatedMeta = updateMetaWith(idPat.meta(), expectedType);
+                enclosingCase.putValue(idPat.name(), updatedMeta);
+                return idPatternNode(updatedMeta, idPat.name());
+            } else if (pattern instanceof AliasPatternNode<Name> aliasPat) {
+                var inferredPattern = checkPattern(aliasPat.pattern(), expectedType);
+                var updatedMeta = updateMetaWith(aliasPat.meta(), expectedType);
+                enclosingCase.putValue(aliasPat.alias(), updatedMeta);
+                return aliasPatternNode(updatedMeta, aliasPat.alias(), inferredPattern);
+            } else if (pattern instanceof LiteralPatternNode<Name> litPat) {
+                var inferredLiteral = checkLiteral(litPat.literal(), expectedType);
+                var updatedMeta = updateMetaWith(litPat.meta(), expectedType);
+                return literalPatternNode(updatedMeta, inferredLiteral);
+            } else if (pattern instanceof ConstructorPatternNode<Name> constrPat) {
+                var constrMeta = environment.lookupValue(constrPat.id().canonicalName()).get();
+                var constrName = (ConstructorName) constrMeta.meta().name();
+                var constrType = (Type) constrMeta.meta().sort();
 
-            // We need to keep this instantiation to use with our field patterns
-            var instantiator = (constrType instanceof TypeLambda tyLam)
-                    ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
-                    : Optional.<TypeInstantiationTransformer>empty();
+                // We need to keep this instantiation to use with our field patterns
+                var instantiator = (constrType instanceof TypeLambda tyLam)
+                        ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
+                        : Optional.<TypeInstantiationTransformer>empty();
 
-            if (constrType instanceof TypeLambda tyLam) {
-                constrType = tyLam.body().accept(instantiator.get());
+                if (constrType instanceof TypeLambda tyLam) {
+                    constrType = tyLam.body().accept(instantiator.get());
+                }
+
+                if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
+                    constrType = tyApp.typeArguments().getLast();
+                }
+
+                // We do this here to ensure that we solve our newly instantiated type
+                // using the expected type before typechecking fields
+                if (!checkSubType(constrType, expectedType)) {
+                    mismatchedType(constrPat.range(), constrType, expectedType);
+                }
+
+                var inferredFields = constrPat.fields()
+                        .collect(field -> inferFieldPattern(constrName, field, instantiator));
+
+                var updatedMeta = updateMetaWith(constrPat.meta(), expectedType);
+
+                return constructorPatternNode(updatedMeta, constrPat.id(), inferredFields);
             }
 
-            if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
-                constrType = tyApp.typeArguments().getLast();
-            }
-
-            // We do this here to ensure that we solve our newly instantiated type
-            // using the expected type before typechecking fields
-            if (!checkSubType(constrType, expectedType)) {
-                mismatchedType(constrPat.range(), constrType, expectedType);
-            }
-
-            var inferredFields = constrPat.fields()
-                    .collect(field -> inferFieldPattern(constrName, field, instantiator));
-
-            var updatedMeta = updateMetaWith(constrPat.meta(), expectedType);
-
-            return constructorPatternNode(updatedMeta, constrPat.id(), inferredFields);
         }
 
         return null;

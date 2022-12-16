@@ -479,7 +479,7 @@ public class TypecheckerTest {
         var letType = new TypeLambda(
                 Lists.immutable.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
-                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+                TypeKind.INSTANCE);
 
         var letMeta = Meta.of(new Attributes(letName, letType));
 
@@ -503,7 +503,7 @@ public class TypecheckerTest {
                 letMeta,
                 "id",
                 typeLambdaNode(
-                        ExampleNodes.namelessMeta(new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE)),
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         Lists.immutable.of(forAllVarNode(tyVarAMeta, "A")),
                         funTypeNode(
                                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
@@ -533,7 +533,7 @@ public class TypecheckerTest {
         var letType = new TypeLambda(
                 Lists.immutable.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
-                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
+                TypeKind.INSTANCE);
 
         var letMeta = Meta.of(new Attributes(letName, letType));
 
@@ -563,8 +563,7 @@ public class TypecheckerTest {
                 letMeta,
                 "const",
                 typeLambdaNode(
-                        ExampleNodes.namelessMeta(
-                                new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE)),
+                        ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         Lists.immutable.of(
                                 forAllVarNode(tyVarAMeta, "A"),
                                 forAllVarNode(tyVarBMeta, "B")),

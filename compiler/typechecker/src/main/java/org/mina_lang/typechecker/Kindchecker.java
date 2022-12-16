@@ -63,12 +63,16 @@ public class Kindchecker {
     }
 
     public TypeNode<Attributes> kindcheck(TypeNode<Name> node) {
-        var inferredType = inferType(node);
+        var inferredType = checkType(node, TypeKind.INSTANCE);
         // FIXME: Defaulting should be done after kind-checking mutually-dependent
         // groups of definitions in dependency order, not after checking each
         // definition.
         var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
         return inferredType.accept(new TypeNodeSubstitutionTransformer(kindDefaulting));
+    }
+
+    Kind getKind(MetaNode<Attributes> node) {
+        return (Kind) node.meta().meta().sort();
     }
 
     Meta<Attributes> updateMetaWith(Meta<Name> meta, Sort sort) {
@@ -283,24 +287,17 @@ public class Kindchecker {
 
                 var checkedReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
 
-                var inferredKind = new HigherKind(
-                        inferredArgs.collect(arg -> (Kind) arg.meta().meta().sort()),
-                        (Kind) checkedReturn.meta().meta().sort());
-
-                var updatedMeta = updateMetaWith(
-                        tyLam.meta(),
-                        inferredKind.substitute(environment.kindSubstitution()));
+                var updatedMeta = updateMetaWith(tyLam.meta(), TypeKind.INSTANCE);
 
                 return typeLambdaNode(updatedMeta, inferredArgs, checkedReturn);
             });
         } else if (typ instanceof TypeApplyNode<Name> tyApp) {
             var inferredType = inferType(tyApp.type());
 
-            var inferredTypeKind = ((Kind) inferredType.meta().meta().sort())
-                    .substitute(environment.kindSubstitution());
+            var inferredKind = getKind(inferredType);
 
             // Types should be fully applied
-            if (inferredTypeKind instanceof HigherKind hk &&
+            if (inferredKind instanceof HigherKind hk &&
                     hk.argKinds().size() == tyApp.args().size()) {
 
                 var checkedArgs = tyApp.args()
@@ -321,9 +318,9 @@ public class Kindchecker {
                         unsolvedArgs.collect(arg -> (Kind) arg),
                         unsolvedReturn);
 
-                if (inferredTypeKind instanceof UnsolvedKind unsolved) {
+                if (inferredKind instanceof UnsolvedKind unsolved) {
                     instantiateAsSubKind(unsolved, appliedKind);
-                } else if (inferredTypeKind instanceof HigherKind hk) {
+                } else if (inferredKind instanceof HigherKind hk) {
                     instantiateAsSubKind(unsolvedReturn, hk.resultKind());
                 }
 
@@ -331,8 +328,8 @@ public class Kindchecker {
                         .zip(unsolvedArgs)
                         .collect(pair -> checkType(pair.getOne(), pair.getTwo()));
 
-                if (!(inferredTypeKind instanceof UnsolvedKind)) {
-                    mismatchedTypeApplication(tyApp.range(), appliedKind, inferredTypeKind);
+                if (!(inferredKind instanceof UnsolvedKind)) {
+                    mismatchedTypeApplication(tyApp.range(), appliedKind, inferredKind);
                 }
 
                 var updatedMeta = updateMetaWith(tyApp.meta(), unsolvedReturn);
@@ -395,20 +392,15 @@ public class Kindchecker {
                             }
                         });
 
-                var knownArgKinds = knownArgs
-                        .collect(tyArg -> (Kind) tyArg.meta().meta().sort());
+                var inferredReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
 
-                var checkedReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
+                var updatedMeta = updateMetaWith(tyLam.meta(), TypeKind.INSTANCE);
 
-                var updatedMeta = updateMetaWith(
-                        tyLam.meta(),
-                        new HigherKind(knownArgKinds, TypeKind.INSTANCE).substitute(environment.kindSubstitution()));
-
-                return typeLambdaNode(updatedMeta, knownArgs, checkedReturn);
+                return typeLambdaNode(updatedMeta, knownArgs, inferredReturn);
             });
         } else {
             var inferredType = inferType(typ);
-            var inferredKind = (Kind) inferredType.meta().meta().sort();
+            var inferredKind = getKind(inferredType);
 
             if (!checkSubKind(inferredKind, expectedKind)) {
                 // TODO: Differentiate between a subkinding error and an occurs check failure
