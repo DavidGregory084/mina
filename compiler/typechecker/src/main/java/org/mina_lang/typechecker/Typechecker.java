@@ -670,17 +670,6 @@ public class Typechecker {
 
                 return blockNode(updatedMeta, inferredDeclarations, inferredResult);
             });
-        } else if (expr instanceof IfNode<Name> ifExpr) {
-            var condition = checkExpr(ifExpr.condition(), Type.BOOLEAN);
-
-            var consequent = inferExpr(ifExpr.consequent());
-            var consequentType = getType(consequent);
-
-            var alternative = checkExpr(ifExpr.alternative(), consequentType);
-
-            var updatedMeta = updateMetaWith(ifExpr.meta(), consequentType);
-
-            return ifNode(updatedMeta, condition, consequent, alternative);
         } else if (expr instanceof LambdaNode<Name> lambda) {
             return withScope(new LambdaScope<>(), () -> {
                 var typeFolder = new TypeAnnotationFolder(environment);
@@ -698,6 +687,18 @@ public class Typechecker {
 
                 return lambdaNode(updatedMeta, inferredArgs, inferredBody);
             });
+        } else if (expr instanceof IfNode<Name> ifExpr) {
+            var condition = checkExpr(ifExpr.condition(), Type.BOOLEAN);
+
+            var consequent = inferExpr(ifExpr.consequent());
+            var consequentType = getType(consequent);
+
+            var alternative = checkExpr(ifExpr.alternative(), consequentType);
+
+            var updatedMeta = updateMetaWith(ifExpr.meta(), consequentType);
+
+            return ifNode(updatedMeta, condition, consequent, alternative);
+
         } else if (expr instanceof MatchNode<Name> match) {
             var scrutinee = inferExpr(match.scrutinee());
             var scrutineeType = getType(scrutinee);
@@ -922,6 +923,33 @@ public class Typechecker {
 
                 return blockNode(updatedMeta, inferredDeclarations, checkedResult);
             });
+        } else if (expr instanceof LambdaNode<Name> lambda &&
+                expectedType instanceof TypeApply funType &&
+                lambda.params().size() == (funType.typeArguments().size() - 1)) {
+            return withScope(new LambdaScope<>(), () -> {
+                var typeFolder = new TypeAnnotationFolder(environment);
+
+                var knownParams = lambda.params()
+                        .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
+                        .collect(pair -> checkParam(typeFolder, pair.getOne(), pair.getTwo()));
+
+                var checkedReturn = checkExpr(lambda.body(), funType.typeArguments().getLast());
+
+                var appliedType = Type.function(
+                        knownParams.collect(this::getType),
+                        getType(checkedReturn));
+
+                // We could make this error more local by checking the expected types of the
+                // params against their annotations above, but I think this gives more context
+                // to the error
+                if (!checkSubType(appliedType, expectedType)) {
+                    mismatchedType(lambda.range(), appliedType, expectedType);
+                }
+
+                var updatedMeta = updateMetaWith(lambda.meta(), expectedType);
+
+                return lambdaNode(updatedMeta, knownParams, checkedReturn);
+            });
         } else if (expr instanceof IfNode<Name> ifExpr) {
             var condition = checkExpr(ifExpr.condition(), Type.BOOLEAN);
             var consequent = checkExpr(ifExpr.consequent(), expectedType);
@@ -931,42 +959,6 @@ public class Typechecker {
 
             return ifNode(updatedMeta, condition, consequent, alternative);
 
-        } else if (expr instanceof LambdaNode<Name> lambda &&
-                expectedType instanceof TypeApply funType &&
-                lambda.params().size() == (funType.typeArguments().size() - 1)) {
-            return withScope(new LambdaScope<>(), () -> {
-                var knownParams = lambda.params()
-                        .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
-                        .collect(pair -> {
-                            var param = pair.getOne();
-                            var kindedAnnotation = param.typeAnnotation().map(kindchecker::kindcheck);
-                            var annotatedType = kindedAnnotation
-                                    .map(annot -> annot.accept(new TypeAnnotationFolder(environment)));
-                            var updatedMeta = annotatedType
-                                    .map(annotType -> updateMetaWith(param.meta(), annotType))
-                                    .orElseGet(() -> updateMetaWith(param.meta(), pair.getTwo()));
-                            environment.putValue(param.name(), updatedMeta);
-                            return paramNode(updatedMeta, param.name(), kindedAnnotation);
-                        });
-
-                var checkedReturn = checkExpr(lambda.body(), funType.typeArguments().getLast());
-
-                var appliedType = Type.function(
-                        knownParams.collect(this::getType),
-                        getType(checkedReturn));
-
-                // We could make this error more local by checking the expected types of the
-                // params
-                // against their annotations above, but I think this gives more context to the
-                // error
-                if (!checkSubType(appliedType, expectedType)) {
-                    mismatchedType(lambda.range(), appliedType, expectedType);
-                }
-
-                var updatedMeta = updateMetaWith(lambda.meta(), expectedType);
-
-                return lambdaNode(updatedMeta, knownParams, checkedReturn);
-            });
         } else if (expr instanceof MatchNode<Name> match) {
             var scrutinee = inferExpr(match.scrutinee());
             var scrutineeType = getType(scrutinee);
@@ -991,6 +983,22 @@ public class Typechecker {
 
             return inferredExpr;
         }
+    }
+
+    ParamNode<Attributes> checkParam(TypeAnnotationFolder typeFolder, ParamNode<Name> param, Type expectedType) {
+        var kindedAnnotation = param.typeAnnotation()
+                .map(kindchecker::kindcheck);
+
+        var annotatedType = kindedAnnotation
+                .map(annot -> annot.accept(typeFolder));
+
+        var updatedMeta = annotatedType
+                .map(annotType -> updateMetaWith(param.meta(), annotType))
+                .orElseGet(() -> updateMetaWith(param.meta(), expectedType));
+
+        environment.putValue(param.name(), updatedMeta);
+
+        return paramNode(updatedMeta, param.name(), kindedAnnotation);
     }
 
     CaseNode<Attributes> checkCase(CaseNode<Name> cse, Type scrutineeType, Type expectedType) {
