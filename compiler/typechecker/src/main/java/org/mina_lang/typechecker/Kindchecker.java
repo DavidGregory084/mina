@@ -394,6 +394,10 @@ public class Kindchecker {
 
                 var inferredReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
 
+                if (!checkSubKind(TypeKind.INSTANCE, expectedKind)) {
+                    mismatchedKind(tyLam.range(), TypeKind.INSTANCE, expectedKind);
+                }
+
                 var updatedMeta = updateMetaWith(tyLam.meta(), TypeKind.INSTANCE);
 
                 return typeLambdaNode(updatedMeta, knownArgs, inferredReturn);
