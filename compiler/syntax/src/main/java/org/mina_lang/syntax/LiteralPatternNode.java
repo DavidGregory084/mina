@@ -1,7 +1,5 @@
 package org.mina_lang.syntax;
 
-import java.util.Optional;
-
 import org.mina_lang.common.Meta;
 
 public record LiteralPatternNode<A>(Meta<A> meta, LiteralNode<A> literal) implements PatternNode<A> {
@@ -26,7 +24,7 @@ public record LiteralPatternNode<A>(Meta<A> meta, LiteralNode<A> literal) implem
     }
 
     @Override
-    public <B> LiteralPatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> LiteralPatternNode<B> accept(PatternNodeTransformer<A, B> visitor) {
         visitor.preVisitLiteralPattern(this);
 
         var result = visitor.visitLiteralPattern(

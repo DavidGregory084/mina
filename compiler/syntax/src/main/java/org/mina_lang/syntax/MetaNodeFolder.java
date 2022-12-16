@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public interface MetaNodeFolder<A, B> {
+public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B> {
 
     // Namespaces
     default void preVisitNamespace(NamespaceNode<A> namespace) {}
@@ -19,27 +19,6 @@ public interface MetaNodeFolder<A, B> {
     default B visitDeclaration(DeclarationNode<A> decl) {
         return decl.accept(this);
     }
-
-    default void preVisitData(DataNode<A> data) {}
-
-    B visitData(Meta<A> meta, String name, ImmutableList<B> typeParams, ImmutableList<B> constructors);
-
-    default void postVisitData(B data) {}
-
-
-    default void preVisitConstructor(ConstructorNode<A> constr) {}
-
-    B visitConstructor(Meta<A> meta, String name, ImmutableList<B> params, Optional<B> type);
-
-    default void postVisitConstructor(B constr) {}
-
-
-    default void preVisitConstructorParam(ConstructorParamNode<A> constrParam) {}
-
-    B visitConstructorParam(Meta<A> meta, String name, B typeAnnotation);
-
-    default void postVisitConstructorParam(B constrParam) {}
-
 
     default void preVisitLet(LetNode<A> let) {}
 
@@ -62,56 +41,6 @@ public interface MetaNodeFolder<A, B> {
 
     default void postVisitParam(B param) {}
 
-    // Types
-    default B visitType(TypeNode<A> typ) {
-        return typ.accept(this);
-    }
-
-    default void preVisitTypeLambda(TypeLambdaNode<A> tyLam) {}
-
-    B visitTypeLambda(Meta<A> meta, ImmutableList<B> args, B body);
-
-    default void postVisitTypeLambda(B tyLam) {}
-
-
-    default void preVisitFunType(FunTypeNode<A> funTyp) {}
-
-    B visitFunType(Meta<A> meta, ImmutableList<B> argTypes, B returnType);
-
-    default void postVisitFunType(B funTyp) {}
-
-
-    default void preVisitTypeApply(TypeApplyNode<A> tyApp) {}
-
-    B visitTypeApply(Meta<A> meta, B type, ImmutableList<B> args);
-
-    default void postVisitTypeApply(B tyApp) {}
-
-
-    default void preVisitTypeReference(TypeReferenceNode<A> tyRef) {}
-
-    B visitTypeReference(Meta<A> meta, QualifiedIdNode id);
-
-    default void postVisitTypeReference(B tyRef) {}
-
-
-    default B visitTypeVar(TypeVarNode<A> tyVar) {
-        return tyVar.accept(this);
-    }
-
-    default void preVisitForAllVar(ForAllVarNode<A> forAllVar) {}
-
-    B visitForAllVar(Meta<A> meta, String name);
-
-    default void postVisitForAllVar(B forAllVar) {}
-
-
-    default void preVisitExistsVar(ExistsVarNode<A> existsVar) {}
-
-    B visitExistsVar(Meta<A> meta, String name);
-
-    default void postVisitExistsVar(B existsVar) {}
-
     // Expressions
     default B visitExpr(ExprNode<A> expr) {
         return expr.accept(this);
@@ -119,7 +48,7 @@ public interface MetaNodeFolder<A, B> {
 
     default void preVisitBlock(BlockNode<A> block) {}
 
-    B visitBlock(Meta<A> meta, ImmutableList<B> declarations, B result);
+    B visitBlock(Meta<A> meta, ImmutableList<B> declarations, Optional<B> result);
 
     default void postVisitBlock(B block) {}
 

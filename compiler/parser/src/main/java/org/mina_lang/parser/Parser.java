@@ -339,8 +339,8 @@ public class Parser {
             var applicableTypeNode = visitNullable(ctx.applicableType());
 
             if (applicableTypeNode != null) {
-                var args = ctx.typeApplication().typeReference().stream()
-                        .<TypeNode<Void>>map(ref -> visitTypeReference(ref))
+                var args = ctx.typeApplication().type().stream()
+                        .<TypeNode<Void>>map(ref -> visitType(ref))
                         .collect(Collectors2.toImmutableList());
 
                 return typeApplyNode(contextRange(ctx), applicableTypeNode, args);
@@ -386,7 +386,7 @@ public class Parser {
         @Override
         public BlockNode<Void> visitBlockExpr(BlockExprContext ctx) {
             var declarationNodes = visitRepeated(ctx.letDeclaration(), declarationVisitor::visitLetDeclaration);
-            var resultNode = visitNullable(ctx.expr());
+            var resultNode = Optional.ofNullable(visitNullable(ctx.expr()));
             return blockNode(contextRange(ctx), declarationNodes, resultNode);
         }
 

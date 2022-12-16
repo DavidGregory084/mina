@@ -9,6 +9,7 @@ import org.mina_lang.common.diagnostics.DiagnosticCollector;
 public interface LSPDiagnosticCollector extends DiagnosticCollector {
     default List<Diagnostic> getLSPDiagnostics(String uri) {
         return getDiagnostics().stream()
+                .distinct()
                 .map(diagnostic -> {
                     var start = diagnostic.range().start();
                     var end = diagnostic.range().end();

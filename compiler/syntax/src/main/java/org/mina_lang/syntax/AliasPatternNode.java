@@ -25,7 +25,7 @@ public record AliasPatternNode<A> (Meta<A> meta, String alias, PatternNode<A> pa
     }
 
     @Override
-    public <B> PatternNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> PatternNode<B> accept(PatternNodeTransformer<A, B> visitor) {
         visitor.preVisitAliasPattern(this);
 
         var result = visitor.visitAliasPattern(

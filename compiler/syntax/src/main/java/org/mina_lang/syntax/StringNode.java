@@ -17,7 +17,7 @@ public record StringNode<A>(Meta<A> meta, String value) implements LiteralNode<A
     }
 
     @Override
-    public <B> StringNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> StringNode<B> accept(LiteralNodeTransformer<A, B> visitor) {
         visitor.preVisitString(this);
         var result = visitor.visitString(meta(), value());
         visitor.preVisitString(this);

@@ -187,16 +187,16 @@ public class SyntaxNodeVisitorTest {
         var expected = contains(
                 // A
                 new Entry(ForAllVarNode.class, new Range(0, 7, 0, 8)),
-                // : A
-                new Entry(QualifiedIdNode.class, new Range(0, 17, 0, 18)),
-                new Entry(TypeReferenceNode.class, new Range(0, 17, 0, 18)),
                 // A
                 new Entry(QualifiedIdNode.class, new Range(0, 13, 0, 14)),
                 new Entry(TypeReferenceNode.class, new Range(0, 13, 0, 14)),
                 // a: A
                 new Entry(ParamNode.class, new Range(0, 10, 0, 14)),
-                new Entry(QualifiedIdNode.class, new Range(0, 21, 0, 22)),
+                // : A
+                new Entry(QualifiedIdNode.class, new Range(0, 17, 0, 18)),
+                new Entry(TypeReferenceNode.class, new Range(0, 17, 0, 18)),
                 // a
+                new Entry(QualifiedIdNode.class, new Range(0, 21, 0, 22)),
                 new Entry(ReferenceNode.class, new Range(0, 21, 0, 22)),
                 new Entry(LetFnNode.class, new Range(0, 0, 0, 22)));
 

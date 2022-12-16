@@ -1,0 +1,6 @@
+[book]
+authors = ["David Gregory"]
+language = "en"
+multilingual = false
+src = "src"
+title = "The Mina Programming Language"

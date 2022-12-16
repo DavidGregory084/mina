@@ -17,7 +17,7 @@ public record DoubleNode<A> (Meta<A> meta, double value) implements LiteralNode<
     }
 
     @Override
-    public <B> DoubleNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> DoubleNode<B> accept(LiteralNodeTransformer<A, B> visitor) {
         visitor.preVisitDouble(this);
         var result = visitor.visitDouble(meta(), value());
         visitor.postVisitDouble(result);

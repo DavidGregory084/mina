@@ -899,7 +899,6 @@ public class ParserTest {
 
     @Test
     void parseLiteralLongOverflow() {
-        System.out.println(BigDecimal.ONE.add(BigDecimal.valueOf(Long.MAX_VALUE)));
         var errors = testFailedParse(BigDecimal.ONE.add(BigDecimal.valueOf(Long.MAX_VALUE)).toString() + "L",
                 Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));

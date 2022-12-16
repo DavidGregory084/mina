@@ -17,7 +17,7 @@ public record BooleanNode<A> (Meta<A> meta, boolean value) implements LiteralNod
     }
 
     @Override
-    public <B> BooleanNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> BooleanNode<B> accept(LiteralNodeTransformer<A, B> visitor) {
         visitor.preVisitBoolean(this);
         var result = visitor.visitBoolean(meta(), value());
         visitor.postVisitBoolean(result);

@@ -1,5 +1,8 @@
 namespace Mina/Examples/DeclareList {
-    import Mina/Examples/DeclareOption.{ Option, Some, None }
+    data Option[A] {
+        case Some(value: A)
+        case None()
+    }
 
     data List[A] {
         case Cons(head: A, tail: List[A])

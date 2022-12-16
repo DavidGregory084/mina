@@ -1,0 +1,9 @@
+namespace Mina/Examples/DeclareFix {
+    data Fix[F] {
+        case Unfix(unfix: F[Fix[F]])
+    }
+
+    let peel[F](fix: Fix[F]): F[Fix[F]] = match fix with {
+        case Unfix { unfix } -> unfix
+    }
+}

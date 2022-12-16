@@ -17,7 +17,7 @@ public record CharNode<A> (Meta<A> meta, char value) implements LiteralNode<A> {
     }
 
     @Override
-    public <B> CharNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> CharNode<B> accept(LiteralNodeTransformer<A, B> visitor) {
         visitor.preVisitChar(this);
         var result = visitor.visitChar(meta(), value());
         visitor.postVisitChar(result);

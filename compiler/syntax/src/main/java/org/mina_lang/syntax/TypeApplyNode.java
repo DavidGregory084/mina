@@ -3,7 +3,7 @@ package org.mina_lang.syntax;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record TypeApplyNode<A> (Meta<A> meta, TypeNode<A> type, ImmutableList<TypeNode<A>> args)
+public record TypeApplyNode<A>(Meta<A> meta, TypeNode<A> type, ImmutableList<TypeNode<A>> args)
         implements TypeNode<A> {
 
     @Override
@@ -14,14 +14,13 @@ public record TypeApplyNode<A> (Meta<A> meta, TypeNode<A> type, ImmutableList<Ty
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(TypeNodeFolder<A, B> visitor) {
         visitor.preVisitTypeApply(this);
 
         var result = visitor.visitTypeApply(
-            meta(),
-            visitor.visitType(type()),
-            args().collect(visitor::visitType)
-        );
+                meta(),
+                visitor.visitType(type()),
+                args().collect(visitor::visitType));
 
         visitor.postVisitTypeApply(result);
 
@@ -29,14 +28,13 @@ public record TypeApplyNode<A> (Meta<A> meta, TypeNode<A> type, ImmutableList<Ty
     }
 
     @Override
-    public <B> TypeApplyNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> TypeApplyNode<B> accept(TypeNodeTransformer<A, B> visitor) {
         visitor.preVisitTypeApply(this);
 
         var result = visitor.visitTypeApply(
-            meta(),
-            visitor.visitType(type()),
-            args().collect(visitor::visitType)
-        );
+                meta(),
+                visitor.visitType(type()),
+                args().collect(visitor::visitType));
 
         visitor.postVisitTypeApply(result);
 

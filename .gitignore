@@ -9,4 +9,5 @@ build/
 node_modules/
 out/
 .classpath
+.jqwik-database
 .project

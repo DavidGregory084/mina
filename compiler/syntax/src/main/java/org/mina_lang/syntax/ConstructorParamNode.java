@@ -15,6 +15,10 @@ public record ConstructorParamNode<A> (Meta<A> meta, String name, TypeNode<A> ty
 
     @Override
     public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        return accept((DataNodeFolder<A, B>) visitor);
+    }
+
+    public <B> B accept(DataNodeFolder<A, B> visitor) {
         visitor.preVisitConstructorParam(this);
 
         var result = visitor.visitConstructorParam(
@@ -29,6 +33,10 @@ public record ConstructorParamNode<A> (Meta<A> meta, String name, TypeNode<A> ty
 
     @Override
     public <B> ConstructorParamNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+        return accept((DataNodeTransformer<A, B>) visitor);
+    }
+
+    public <B> ConstructorParamNode<B> accept(DataNodeTransformer<A, B> visitor) {
         visitor.preVisitConstructorParam(this);
 
         var result = visitor.visitConstructorParam(

@@ -62,7 +62,7 @@ public class Renamer {
     }
 
     public Void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
-                                         Meta<Name> existing) {
+            Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 existing.range(),
                 "Original definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");
@@ -100,25 +100,21 @@ public class Renamer {
                 var dataName = data.getName(currentNamespace);
                 var dataMeta = new Meta<Name>(data.range(), dataName);
 
-                namespaceScope.populateTypeOrElse(dataName.localName(), dataMeta, this::duplicateTypeDefinition);
-                namespaceScope.populateType(dataName.canonicalName(), dataMeta);
+                namespaceScope.putTypeIfAbsentOrElse(dataName.localName(), dataMeta, this::duplicateTypeDefinition);
+                namespaceScope.putTypeIfAbsent(dataName.canonicalName(), dataMeta);
 
                 data.constructors().forEach(constr -> {
                     var constrName = constr.getName(dataName, currentNamespace);
                     var constrMeta = new Meta<Name>(constr.range(), constrName);
 
-                    namespaceScope.populateValueOrElse(constrName.localName(), constrMeta,
+                    namespaceScope.putValueIfAbsentOrElse(constrName.localName(), constrMeta,
                             this::duplicateValueDefinition);
-                    namespaceScope.populateValue(constrName.canonicalName(), constrMeta);
-
-                    namespaceScope.populateTypeOrElse(constrName.localName(), constrMeta,
-                            this::duplicateTypeDefinition);
-                    namespaceScope.populateType(constrName.canonicalName(), constrMeta);
+                    namespaceScope.putValueIfAbsent(constrName.canonicalName(), constrMeta);
 
                     constr.params().forEach(constrParam -> {
                         var fieldName = new FieldName(constrName, constrParam.name());
                         var fieldMeta = new Meta<Name>(constrParam.range(), fieldName);
-                        namespaceScope.populateFieldOrElse(
+                        namespaceScope.putFieldIfAbsentOrElse(
                                 constrName, constrParam.name(), fieldMeta,
                                 (name, proposed, existing) -> duplicateFieldDefinition(
                                         constrName,
@@ -132,15 +128,15 @@ public class Renamer {
                 var letFnName = letFn.getName(currentNamespace);
                 var letFnMeta = new Meta<Name>(letFn.range(), letFnName);
 
-                namespaceScope.populateValueOrElse(letFnName.localName(), letFnMeta, this::duplicateValueDefinition);
-                namespaceScope.populateValue(letFnName.canonicalName(), letFnMeta);
+                namespaceScope.putValueIfAbsentOrElse(letFnName.localName(), letFnMeta, this::duplicateValueDefinition);
+                namespaceScope.putValueIfAbsent(letFnName.canonicalName(), letFnMeta);
 
             } else if (decl instanceof LetNode<Void> let) {
                 var letName = let.getName(currentNamespace);
                 var letMeta = new Meta<Name>(let.range(), letName);
 
-                namespaceScope.populateValueOrElse(letName.localName(), letMeta, this::duplicateValueDefinition);
-                namespaceScope.populateValue(letName.canonicalName(), letMeta);
+                namespaceScope.putValueIfAbsentOrElse(letName.localName(), letMeta, this::duplicateValueDefinition);
+                namespaceScope.putValueIfAbsent(letName.canonicalName(), letMeta);
             }
         });
 
@@ -169,7 +165,7 @@ public class Renamer {
             environment.pushScope(dataScope);
             data.typeParams().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
-                dataScope.populateTypeOrElse(tyParam.name(), tyParamMeta, Renamer.this::duplicateTypeDefinition);
+                dataScope.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta, Renamer.this::duplicateTypeDefinition);
             });
         }
 
@@ -218,7 +214,7 @@ public class Renamer {
                 var letMeta = new Meta<Name>(let.range(), new LocalName(let.name(), localVarIndex++));
                 // Local let bindings are only valid within the block scope and can shadow outer
                 // declarations
-                blockScope.populateValueOrElse(let.name(), letMeta, Renamer.this::duplicateValueDefinition);
+                blockScope.putValueIfAbsentOrElse(let.name(), letMeta, Renamer.this::duplicateValueDefinition);
             }
         }
 
@@ -242,7 +238,8 @@ public class Renamer {
 
             letFn.typeParams().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
-                typeLambdaScope.populateTypeOrElse(tyParam.name(), tyParamMeta, Renamer.this::duplicateTypeDefinition);
+                typeLambdaScope.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta,
+                        Renamer.this::duplicateTypeDefinition);
             });
 
             // Emulate what happens for let-bound lambdas
@@ -273,7 +270,7 @@ public class Renamer {
             var paramMeta = new Meta<Name>(param.range(), param.getName(localVarIndex++));
             // Only check the current lambda scope because lambda params can shadow outer
             // declarations
-            enclosingLambda.populateValueOrElse(param.name(), paramMeta, Renamer.this::duplicateValueDefinition);
+            enclosingLambda.putValueIfAbsentOrElse(param.name(), paramMeta, Renamer.this::duplicateValueDefinition);
         }
 
         @Override
@@ -289,7 +286,7 @@ public class Renamer {
 
             tyLam.args().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
-                environment.populateTypeOrElse(tyParam.name(), tyParamMeta, Renamer.this::duplicateTypeDefinition);
+                environment.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta, Renamer.this::duplicateTypeDefinition);
             });
         }
 
@@ -347,7 +344,7 @@ public class Renamer {
 
         @Override
         public BlockNode<Name> visitBlock(Meta<Void> meta, ImmutableList<LetNode<Name>> declarations,
-                ExprNode<Name> result) {
+                Optional<ExprNode<Name>> result) {
             return blockNode(new Meta<>(meta.range(), Nameless.INSTANCE), declarations, result);
         }
 
@@ -455,7 +452,7 @@ public class Renamer {
             var aliasMeta = new Meta<Name>(alias.range(), new LocalName(alias.alias(), localVarIndex++));
             // Only check the current case scope because pattern bindings can shadow outer
             // definitions
-            enclosingCase.populateValueOrElse(alias.alias(), aliasMeta, Renamer.this::duplicateValueDefinition);
+            enclosingCase.putValueIfAbsentOrElse(alias.alias(), aliasMeta, Renamer.this::duplicateValueDefinition);
         }
 
         @Override
@@ -508,7 +505,7 @@ public class Renamer {
 
                     // Only check the current case scope because pattern bindings can shadow outer
                     // definitions
-                    enclosingCase.populateValueOrElse(
+                    enclosingCase.putValueIfAbsentOrElse(
                             fieldPat.field(), patMeta,
                             Renamer.this::duplicateValueDefinition);
                 }
@@ -533,7 +530,7 @@ public class Renamer {
             var idPatMeta = new Meta<Name>(idPat.range(), idPatName);
             // Only check the current case scope because pattern bindings can shadow outer
             // definitions
-            enclosingCase.populateValueOrElse(idPat.name(), idPatMeta, Renamer.this::duplicateValueDefinition);
+            enclosingCase.putValueIfAbsentOrElse(idPat.name(), idPatMeta, Renamer.this::duplicateValueDefinition);
         }
 
         @Override

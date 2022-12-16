@@ -1,6 +1,7 @@
 package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.ForAllVarName;
 
 public record ForAllVarNode<A> (Meta<A> meta, String name) implements TypeVarNode<A> {
     @Override
@@ -9,7 +10,7 @@ public record ForAllVarNode<A> (Meta<A> meta, String name) implements TypeVarNod
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(TypeNodeFolder<A, B> visitor) {
         visitor.preVisitForAllVar(this);
         var result = visitor.visitForAllVar(meta(), name());
         visitor.postVisitForAllVar(result);
@@ -17,10 +18,15 @@ public record ForAllVarNode<A> (Meta<A> meta, String name) implements TypeVarNod
     }
 
     @Override
-    public <B> ForAllVarNode<B> accept(MetaNodeTransformer<A, B> visitor) {
+    public <B> ForAllVarNode<B> accept(TypeNodeTransformer<A, B> visitor) {
         visitor.preVisitForAllVar(this);
         var result = visitor.visitForAllVar(meta(), name());
         visitor.postVisitForAllVar(result);
         return result;
+    }
+
+    @Override
+    public ForAllVarName getName() {
+        return new ForAllVarName(name());
     }
 }

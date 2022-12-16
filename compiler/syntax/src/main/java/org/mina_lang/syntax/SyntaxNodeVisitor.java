@@ -150,8 +150,8 @@ public interface SyntaxNodeVisitor {
         pat.accept(this);
     }
 
-    default void visitAliasPattern(AliasPatternNode<?> alias) {
-        alias.accept(this);
+    default void visitAliasPattern(AliasPatternNode<?> aliasPat) {
+        visit(aliasPat);
     }
 
     default void visitConstructorPattern(ConstructorPatternNode<?> constrPat) {
