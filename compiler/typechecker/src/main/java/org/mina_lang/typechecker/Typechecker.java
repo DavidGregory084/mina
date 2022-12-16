@@ -434,12 +434,12 @@ public class Typechecker {
                 });
 
             } else if (decl instanceof LetFnNode<Name> letFn) {
-                var letFnType = newUnsolvedType();
+                var letFnType = newUnsolvedType(TypeKind.INSTANCE);
                 var letFnMeta = updateMetaWith(letFn.meta(), letFnType);
                 putValueDeclaration(namespaceScope, letFnMeta);
 
             } else if (decl instanceof LetNode<Name> let) {
-                var letType = newUnsolvedType();
+                var letType = newUnsolvedType(TypeKind.INSTANCE);
                 var letMeta = updateMetaWith(let.meta(), letType);
                 putValueDeclaration(namespaceScope, letMeta);
             }
@@ -589,7 +589,7 @@ public class Typechecker {
                     var expectedLetFnType = createLetFnType(
                             tyParamTypes,
                             inferredParams,
-                            expectedType.orElseGet(() -> newUnsolvedType()));
+                            expectedType.orElseGet(() -> newUnsolvedType(TypeKind.INSTANCE)));
 
                     putValueDeclaration(updateMetaWith(letFn.meta(), expectedLetFnType));
 
