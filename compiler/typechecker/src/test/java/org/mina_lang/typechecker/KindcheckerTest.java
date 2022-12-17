@@ -15,6 +15,7 @@ import org.mina_lang.common.names.*;
 import org.mina_lang.common.scopes.BuiltInScope;
 import org.mina_lang.common.scopes.ImportedScope;
 import org.mina_lang.common.types.HigherKind;
+import org.mina_lang.common.types.SortSubstitutionTransformer;
 import org.mina_lang.common.types.TypeKind;
 import org.mina_lang.common.types.UnsolvedVariableSupply;
 import org.mina_lang.syntax.DataNode;
@@ -29,7 +30,9 @@ public class KindcheckerTest {
             DataNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+        var sortTransformer = new SortSubstitutionTransformer(
+            environment.typeSubstitution(), environment.kindSubstitution());
+        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
         var kindcheckedNode = kindchecker.kindcheck(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(kindcheckedNode, is(equalTo(expectedNode)));
@@ -41,7 +44,9 @@ public class KindcheckerTest {
             TypeNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+        var sortTransformer = new SortSubstitutionTransformer(
+            environment.typeSubstitution(), environment.kindSubstitution());
+        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
         var kindcheckedNode = kindchecker.kindcheck(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(kindcheckedNode, is(equalTo(expectedNode)));
@@ -52,7 +57,9 @@ public class KindcheckerTest {
             DataNode<Name> originalNode) {
         var diagnostics = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+        var sortTransformer = new SortSubstitutionTransformer(
+            environment.typeSubstitution(), environment.kindSubstitution());
+        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = diagnostics.getErrors();
         assertThat("There should be kind errors", errors, is(not(empty())));
@@ -64,7 +71,9 @@ public class KindcheckerTest {
             TypeNode<Name> originalNode) {
         var diagnostics = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+        var sortTransformer = new SortSubstitutionTransformer(
+            environment.typeSubstitution(), environment.kindSubstitution());
+        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = diagnostics.getErrors();
         assertThat("There should be kind errors", errors, is(not(empty())));

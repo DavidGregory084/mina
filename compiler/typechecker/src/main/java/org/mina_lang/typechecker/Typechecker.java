@@ -3,10 +3,10 @@ package org.mina_lang.typechecker;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
@@ -14,7 +14,10 @@ import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
-import org.mina_lang.common.names.*;
+import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.Name;
+import org.mina_lang.common.names.Named;
+import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.scopes.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
@@ -27,17 +30,23 @@ public class Typechecker {
     private TypeEnvironment environment;
     private UnsolvedVariableSupply varSupply;
     private Kindchecker kindchecker;
+    private TypeAnnotationFolder typeFolder;
     private SortSubstitutionTransformer sortTransformer;
     private SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
 
     public Typechecker(DiagnosticCollector diagnostics, TypeEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
+
         this.varSupply = new UnsolvedVariableSupply();
-        this.kindchecker = new Kindchecker(diagnostics, environment, varSupply);
+
+        this.typeFolder = new TypeAnnotationFolder(environment);
+
         this.sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(),
                 environment.kindSubstitution());
+
+        this.kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
     }
 
     public TypeEnvironment getEnvironment() {
@@ -448,48 +457,6 @@ public class Typechecker {
         return namespaceScope;
     }
 
-    Type createConstructorType(
-            DataNode<Attributes> data,
-            ConstructorNode<Attributes> constr) {
-        var dataName = (DataName) data.meta().meta().name();
-        var dataKind = getKind(data);
-
-        var typeFolder = new TypeAnnotationFolder(environment);
-
-        var typeParamTypes = data.typeParams()
-                .collect(tyParam -> typeFolder.visitTypeVar(tyParam));
-
-        var constrParamTypes = constr.params()
-                .collect(param -> typeFolder.visitType(param.typeAnnotation()));
-
-        var constrReturnType = constr.type()
-                .map(typ -> typeFolder.visitType(typ))
-                .orElseGet(() -> {
-                    var tyCon = new TypeConstructor(dataName.name(), dataKind);
-                    return typeParamTypes.isEmpty() ? tyCon
-                            : new TypeApply(tyCon, typeParamTypes, TypeKind.INSTANCE);
-                });
-
-        var constrFnType = Type.function(constrParamTypes, constrReturnType);
-
-        if (typeParamTypes.isEmpty()) {
-            return constrFnType;
-        } else {
-            return new TypeLambda(
-                    typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
-                    constrFnType,
-                    dataKind);
-        }
-    }
-
-    Type createFieldType(
-            DataNode<Attributes> data,
-            ConstructorParamNode<Attributes> constrParam) {
-        var typeFolder = new TypeAnnotationFolder(environment);
-        data.typeParams().forEach(tyParam -> typeFolder.visitTypeVar(tyParam));
-        return typeFolder.visitType(constrParam.typeAnnotation());
-    }
-
     Type createLetFnType(
             ImmutableList<TypeVar> typeParamTypes,
             ImmutableList<ParamNode<Attributes>> valueParams,
@@ -514,12 +481,11 @@ public class Typechecker {
 
     <A> A withTypeParams(
             Supplier<ImmutableList<TypeVarNode<Name>>> getTyParams,
-            Function3<ImmutableList<TypeVarNode<Attributes>>, ImmutableList<TypeVar>, TypeAnnotationFolder, A> fn) {
-        var typeFolder = new TypeAnnotationFolder(environment);
+            BiFunction<ImmutableList<TypeVarNode<Attributes>>, ImmutableList<TypeVar>, A> fn) {
         var tyParams = getTyParams.get();
 
         if (tyParams.isEmpty()) {
-            return fn.value(Lists.immutable.empty(), Lists.immutable.empty(), typeFolder);
+            return fn.apply(Lists.immutable.empty(), Lists.immutable.empty());
         } else {
             return withScope(new TypeLambdaScope<>(), () -> {
                 var kindedTyParams = tyParams
@@ -527,7 +493,7 @@ public class Typechecker {
                 var tyParamTypes = kindedTyParams
                         .collect(tyParam -> (TypeVar) typeFolder.visitTypeVar(tyParam));
 
-                return fn.value(kindedTyParams, tyParamTypes, typeFolder);
+                return fn.apply(kindedTyParams, tyParamTypes);
             });
         }
     }
@@ -558,29 +524,21 @@ public class Typechecker {
             putTypeDeclaration(kindedData.meta());
 
             kindedData.constructors().forEach(kindedConstr -> {
-                var constrType = createConstructorType(kindedData, kindedConstr);
-                var constrAttrs = kindedConstr.meta().meta().withSort(constrType);
-                var constrTypeMeta = kindedConstr.meta().withMeta(constrAttrs);
-
-                putValueDeclaration(constrTypeMeta);
+                putValueDeclaration(kindedConstr.meta());
 
                 kindedConstr.params().forEach(constrParam -> {
                     var constrName = (ConstructorName) kindedConstr.meta().meta().name();
-                    var fieldType = createFieldType(kindedData, constrParam);
-                    var fieldAttrs = constrParam.meta().meta().withSort(fieldType);
-                    var fieldTypeMeta = constrParam.meta().withMeta(fieldAttrs);
-
-                    environment.putField(constrName, constrParam.name(), fieldTypeMeta);
+                    environment.putField(constrName, constrParam.name(), constrParam.meta());
                 });
             });
 
             return kindedData;
 
         } else if (declaration instanceof LetFnNode<Name> letFn) {
-            var letFnNode = withTypeParams(letFn::typeParams, (tyParams, tyParamTypes, typeFolder) -> {
+            var letFnNode = withTypeParams(letFn::typeParams, (tyParams, tyParamTypes) -> {
                 return withScope(new LambdaScope<>(), () -> {
                     var inferredParams = letFn.valueParams()
-                            .collect(param -> inferParam(typeFolder, param));
+                            .collect(this::inferParam);
                     var kindedReturn = letFn.returnType()
                             .map(kindchecker::kindcheck);
 
@@ -641,7 +599,7 @@ public class Typechecker {
         return null;
     }
 
-    ParamNode<Attributes> inferParam(TypeAnnotationFolder typeFolder, ParamNode<Name> param) {
+    ParamNode<Attributes> inferParam(ParamNode<Name> param) {
         var checkedAnnotation = param.typeAnnotation()
                 .map(tyAnn -> kindchecker.kindcheck(tyAnn));
 
@@ -672,10 +630,7 @@ public class Typechecker {
             });
         } else if (expr instanceof LambdaNode<Name> lambda) {
             return withScope(new LambdaScope<>(), () -> {
-                var typeFolder = new TypeAnnotationFolder(environment);
-
-                var inferredArgs = lambda.params()
-                        .collect(param -> inferParam(typeFolder, param));
+                var inferredArgs = lambda.params().collect(this::inferParam);
 
                 var inferredBody = inferExpr(lambda.body());
 
@@ -927,11 +882,9 @@ public class Typechecker {
                 expectedType instanceof TypeApply funType &&
                 lambda.params().size() == (funType.typeArguments().size() - 1)) {
             return withScope(new LambdaScope<>(), () -> {
-                var typeFolder = new TypeAnnotationFolder(environment);
-
                 var knownParams = lambda.params()
                         .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
-                        .collect(pair -> checkParam(typeFolder, pair.getOne(), pair.getTwo()));
+                        .collect(pair -> checkParam(pair.getOne(), pair.getTwo()));
 
                 var checkedReturn = checkExpr(lambda.body(), funType.typeArguments().getLast());
 
@@ -985,7 +938,7 @@ public class Typechecker {
         }
     }
 
-    ParamNode<Attributes> checkParam(TypeAnnotationFolder typeFolder, ParamNode<Name> param, Type expectedType) {
+    ParamNode<Attributes> checkParam(ParamNode<Name> param, Type expectedType) {
         var kindedAnnotation = param.typeAnnotation()
                 .map(kindchecker::kindcheck);
 

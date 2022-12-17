@@ -2,8 +2,10 @@ package org.mina_lang.typechecker;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
@@ -22,15 +24,20 @@ public class Kindchecker {
     private DiagnosticCollector diagnostics;
     private TypeEnvironment environment;
     private UnsolvedVariableSupply varSupply;
+    private TypeAnnotationFolder typeFolder;
+    private SortSubstitutionTransformer sortTransformer;
     private KindPrinter kindPrinter = new KindPrinter();
 
     public Kindchecker(
             DiagnosticCollector diagnostics,
             TypeEnvironment environment,
-            UnsolvedVariableSupply varSupply) {
+            UnsolvedVariableSupply varSupply,
+            SortSubstitutionTransformer sortTransformer) {
         this.diagnostics = diagnostics;
         this.environment = environment;
         this.varSupply = varSupply;
+        this.sortTransformer = sortTransformer;
+        this.typeFolder = new TypeAnnotationFolder(environment);
     }
 
     <A> A withScope(Scope<Attributes> scope, Supplier<A> fn) {
@@ -59,7 +66,8 @@ public class Kindchecker {
         // groups of definitions in dependency order, not after checking each
         // definition.
         var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
-        return inferredData.accept(new DataNodeSubstitutionTransformer(kindDefaulting));
+        var sortTransformer = new SortSubstitutionTransformer(environment.typeSubstitution(), kindDefaulting);
+        return inferredData.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
     }
 
     public TypeNode<Attributes> kindcheck(TypeNode<Name> node) {
@@ -76,9 +84,39 @@ public class Kindchecker {
     }
 
     Meta<Attributes> updateMetaWith(Meta<Name> meta, Sort sort) {
-        var substituted = ((Kind) sort).substitute(environment.kindSubstitution());
+        var substituted = sort.accept(sortTransformer);
         var attributes = meta.meta().withSort(substituted);
         return meta.withMeta(attributes);
+    }
+
+    Type createConstructorType(
+            DataName dataName,
+            Kind dataKind,
+            ImmutableList<Type> typeParamTypes,
+            ImmutableList<ConstructorParamNode<Attributes>> constrParamNodes,
+            Optional<TypeNode<Attributes>> constrReturnTypeNode) {
+
+        var constrParamTypes = constrParamNodes
+                .collect(param -> typeFolder.visitType(param.typeAnnotation()));
+
+        var constrReturnType = constrReturnTypeNode
+                .map(typ -> typeFolder.visitType(typ))
+                .orElseGet(() -> {
+                    var tyCon = new TypeConstructor(dataName.name(), dataKind);
+                    return typeParamTypes.isEmpty() ? tyCon
+                            : new TypeApply(tyCon, typeParamTypes, TypeKind.INSTANCE);
+                });
+
+        var constrFnType = Type.function(constrParamTypes, constrReturnType);
+
+        if (typeParamTypes.isEmpty()) {
+            return constrFnType;
+        } else {
+            return new TypeLambda(
+                    typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
+                    constrFnType,
+                    dataKind);
+        }
     }
 
     void mismatchedKind(Range range, Kind actualKind, Kind expectedKind) {
@@ -248,16 +286,24 @@ public class Kindchecker {
             var updatedMeta = updateMetaWith(data.meta(), inferredKind);
 
             environment.putType(dataName.localName(), updatedMeta);
+
             environment.putType(dataName.canonicalName(), updatedMeta);
 
+            var dataTypeParams = inferredParams
+                    .collect(tyParam -> tyParam.accept(typeFolder));
+
             var inferredConstrs = data.constructors()
-                    .collect(constr -> inferConstructor(constr, inferredKind));
+                    .collect(constr -> inferConstructor(dataName, inferredKind, dataTypeParams, constr));
 
             return dataNode(updatedMeta, data.name(), inferredParams, inferredConstrs);
         });
     }
 
-    ConstructorNode<Attributes> inferConstructor(ConstructorNode<Name> constr, Kind dataKind) {
+    ConstructorNode<Attributes> inferConstructor(
+            DataName dataName,
+            Kind dataKind,
+            ImmutableList<Type> dataTypeParams,
+            ConstructorNode<Name> constr) {
         var constrName = (ConstructorName) constr.meta().meta();
 
         return withScope(new ConstructorScope<>(constrName), () -> {
@@ -266,7 +312,14 @@ public class Kindchecker {
             var checkedReturn = constr.type()
                     .map(returnType -> checkType(returnType, TypeKind.INSTANCE));
 
-            var updatedMeta = updateMetaWith(constr.meta(), dataKind);
+            var constructorType = createConstructorType(
+                    dataName,
+                    dataKind,
+                    dataTypeParams,
+                    inferredParams,
+                    checkedReturn);
+
+            var updatedMeta = updateMetaWith(constr.meta(), constructorType);
 
             return constructorNode(updatedMeta, constr.name(), inferredParams, checkedReturn);
         });
@@ -274,7 +327,9 @@ public class Kindchecker {
 
     ConstructorParamNode<Attributes> inferConstructorParam(ConstructorParamNode<Name> constrParam) {
         var checkedAnnotation = checkType(constrParam.typeAnnotation(), TypeKind.INSTANCE);
-        var updatedMeta = updateMetaWith(constrParam.meta(), TypeKind.INSTANCE);
+        var paramType = checkedAnnotation.accept(typeFolder);
+
+        var updatedMeta = updateMetaWith(constrParam.meta(), paramType);
 
         return constructorParamNode(updatedMeta, constrParam.name(), checkedAnnotation);
     }

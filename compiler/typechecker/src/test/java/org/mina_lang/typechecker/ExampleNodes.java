@@ -283,8 +283,8 @@ public class ExampleNodes {
                 Lists.immutable.of(
                         forAllVarNode(TYPE_VAR_A_META, "A")),
                 Lists.immutable.of(
-                        Cons.KINDED_NODE,
-                        Nil.KINDED_NODE));
+                        Cons.TYPED_NODE,
+                        Nil.TYPED_NODE));
     }
 
     public static class Cons {
@@ -294,29 +294,33 @@ public class ExampleNodes {
 
         public static Kind KIND = List.KIND;
 
+        public static Type HEAD_TYPE = List.TYPE_VAR_A_TYPE;
+
+        public static Type TAIL_TYPE = new TypeApply(
+                List.TYPE,
+                Lists.immutable.of(List.TYPE_VAR_A_TYPE),
+                TypeKind.INSTANCE);
+
         public static Type TYPE = new TypeLambda(
                 Lists.immutable.of(List.TYPE_VAR_A_TYPE),
                 Type.function(
-                        List.TYPE_VAR_A_TYPE,
-                        new TypeApply(
-                                List.TYPE,
-                                Lists.immutable.of(List.TYPE_VAR_A_TYPE),
-                                TypeKind.INSTANCE),
+                        HEAD_TYPE,
+                        TAIL_TYPE,
                         new TypeApply(
                                 List.TYPE,
                                 Lists.immutable.of(List.TYPE_VAR_A_TYPE),
                                 TypeKind.INSTANCE)),
                 KIND);
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
 
         public static FieldName HEAD_NAME = new FieldName(NAME, "head");
 
-        public static Meta<Attributes> KINDED_HEAD_META = Meta.of(new Attributes(HEAD_NAME, TypeKind.INSTANCE));
+        public static Meta<Attributes> TYPED_HEAD_META = Meta.of(new Attributes(HEAD_NAME, HEAD_TYPE));
 
         public static FieldName TAIL_NAME = new FieldName(NAME, "tail");
 
-        public static Meta<Attributes> KINDED_TAIL_META = Meta.of(new Attributes(TAIL_NAME, TypeKind.INSTANCE));
+        public static Meta<Attributes> TYPED_TAIL_META = Meta.of(new Attributes(TAIL_NAME, TAIL_TYPE));
 
         public static ConstructorNode<Name> NAMED_NODE = constructorNode(
                 Meta.<Name>of(NAME),
@@ -335,16 +339,16 @@ public class ExampleNodes {
                                         Lists.immutable.of(typeRefNode(Meta.of(List.TYPE_VAR_A_NAME), "A"))))),
                 Optional.empty());
 
-        public static ConstructorNode<Attributes> KINDED_NODE = constructorNode(
-                KINDED_META,
+        public static ConstructorNode<Attributes> TYPED_NODE = constructorNode(
+                TYPED_META,
                 "Cons",
                 Lists.immutable.of(
                         constructorParamNode(
-                                KINDED_HEAD_META,
+                                TYPED_HEAD_META,
                                 "head",
                                 typeRefNode(List.TYPE_VAR_A_META, "A")),
                         constructorParamNode(
-                                KINDED_TAIL_META,
+                                TYPED_TAIL_META,
                                 "tail",
                                 typeApplyNode(
                                         namelessMeta(TypeKind.INSTANCE),
@@ -368,7 +372,7 @@ public class ExampleNodes {
                                 Lists.immutable.of(List.TYPE_VAR_A_TYPE), TypeKind.INSTANCE)),
                 KIND);
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
 
         public static ConstructorNode<Name> NAMED_NODE = constructorNode(
                 Meta.<Name>of(NAME),
@@ -376,8 +380,8 @@ public class ExampleNodes {
                 Lists.immutable.empty(),
                 Optional.empty());
 
-        public static ConstructorNode<Attributes> KINDED_NODE = constructorNode(
-                KINDED_META,
+        public static ConstructorNode<Attributes> TYPED_NODE = constructorNode(
+                TYPED_META,
                 "Nil",
                 Lists.immutable.empty(),
                 Optional.empty());
@@ -457,28 +461,30 @@ public class ExampleNodes {
 
         public static Kind KIND = Fix.KIND;
 
+        public static Type UNFIX_TYPE = new TypeApply(
+                Fix.TYPE_VAR_F_TYPE,
+                Lists.immutable.of(
+                        new TypeApply(
+                                Fix.TYPE,
+                                Lists.immutable.of(Fix.TYPE_VAR_F_TYPE),
+                                TypeKind.INSTANCE)),
+                TypeKind.INSTANCE);
+
         public static Type TYPE = new TypeLambda(
                 Lists.immutable.of(Fix.TYPE_VAR_F_TYPE),
                 Type.function(
-                        new TypeApply(
-                                Fix.TYPE_VAR_F_TYPE,
-                                Lists.immutable.of(
-                                        new TypeApply(
-                                                Fix.TYPE,
-                                                Lists.immutable.of(Fix.TYPE_VAR_F_TYPE),
-                                                TypeKind.INSTANCE)),
-                                TypeKind.INSTANCE),
+                        UNFIX_TYPE,
                         new TypeApply(
                                 Fix.TYPE,
                                 Lists.immutable.of(Fix.TYPE_VAR_F_TYPE),
                                 TypeKind.INSTANCE)),
                 Fix.KIND);
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
 
         public static FieldName UNFIX_NAME = new FieldName(NAME, "unfix");
 
-        public static Meta<Attributes> KINDED_UNFIX_META = Meta.of(new Attributes(UNFIX_NAME, TypeKind.INSTANCE));
+        public static Meta<Attributes> TYPED_UNFIX_META = Meta.of(new Attributes(UNFIX_NAME, UNFIX_TYPE));
 
         public static ConstructorNode<Name> NAMED_NODE = constructorNode(
                 Meta.<Name>of(NAME),
@@ -499,11 +505,11 @@ public class ExampleNodes {
                 Optional.empty());
 
         public static ConstructorNode<Attributes> KINDED_NODE = constructorNode(
-                Unfix.KINDED_META,
+                Unfix.TYPED_META,
                 "Unfix",
                 Lists.immutable.of(
                         constructorParamNode(
-                                ExampleNodes.Unfix.KINDED_UNFIX_META,
+                                ExampleNodes.Unfix.TYPED_UNFIX_META,
                                 "unfix",
                                 typeApplyNode(
                                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
