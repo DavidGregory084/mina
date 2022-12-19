@@ -15,6 +15,7 @@ import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.scopes.*;
+import org.mina_lang.common.scopes.typing.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
@@ -40,14 +41,14 @@ public class Kindchecker {
         this.typeFolder = new TypeAnnotationFolder(environment);
     }
 
-    <A> A withScope(Scope<Attributes> scope, Supplier<A> fn) {
+    <A> A withScope(TypingScope scope, Supplier<A> fn) {
         environment.pushScope(scope);
         var result = fn.get();
         environment.popScope(scope.getClass());
         return result;
     }
 
-    void withScope(Scope<Attributes> scope, Runnable fn) {
+    void withScope(TypingScope scope, Runnable fn) {
         environment.pushScope(scope);
         fn.run();
         environment.popScope(scope.getClass());
@@ -156,7 +157,7 @@ public class Kindchecker {
     }
 
     void instantiateAsSubKind(UnsolvedKind unsolved, Kind superKind) {
-        withScope(new InstantiateKindScope<>(), () -> {
+        withScope(new InstantiateKindScope(), () -> {
             if (superKind instanceof UnsolvedKind otherUnsolved) {
                 // Complete and Easy's InstLReach rule adapted to kinds
                 environment.solveKind(otherUnsolved, unsolved);
@@ -191,7 +192,7 @@ public class Kindchecker {
     }
 
     void instantiateAsSuperKind(UnsolvedKind unsolved, Kind subKind) {
-        withScope(new InstantiateKindScope<>(), () -> {
+        withScope(new InstantiateKindScope(), () -> {
             if (subKind instanceof UnsolvedKind otherUnsolved) {
                 // Complete and Easy's InstRReach rule adapted to kinds
                 environment.solveKind(otherUnsolved, unsolved);
@@ -226,7 +227,7 @@ public class Kindchecker {
     }
 
     boolean checkSubKind(Kind subKind, Kind superKind) {
-        return withScope(new CheckSubkindScope<>(), () -> {
+        return withScope(new CheckSubkindScope(), () -> {
             var solvedSubKind = subKind.substitute(environment.kindSubstitution());
             var solvedSuperKind = superKind.substitute(environment.kindSubstitution());
 
@@ -274,7 +275,7 @@ public class Kindchecker {
     DataNode<Attributes> inferData(DataNode<Name> data) {
         var dataName = (DataName) data.meta().meta();
 
-        return withScope(new DataScope<>(dataName), () -> {
+        return withScope(new DataTypingScope(dataName), () -> {
             var inferredParams = data.typeParams()
                     .collect(tyParam -> (TypeVarNode<Attributes>) inferType(tyParam));
 
@@ -306,7 +307,7 @@ public class Kindchecker {
             ConstructorNode<Name> constr) {
         var constrName = (ConstructorName) constr.meta().meta();
 
-        return withScope(new ConstructorScope<>(constrName), () -> {
+        return withScope(new ConstructorTypingScope(constrName), () -> {
             var inferredParams = constr.params()
                     .collect(param -> inferConstructorParam(param));
             var checkedReturn = constr.type()
@@ -336,7 +337,7 @@ public class Kindchecker {
 
     TypeNode<Attributes> inferType(TypeNode<Name> typ) {
         if (typ instanceof TypeLambdaNode<Name> tyLam) {
-            return withScope(new TypeLambdaScope<>(), () -> {
+            return withScope(new TypeLambdaTypingScope(), () -> {
                 var inferredArgs = tyLam.args()
                         .collect(tyArg -> (TypeVarNode<Attributes>) inferType(tyArg));
 
@@ -433,7 +434,7 @@ public class Kindchecker {
         if (typ instanceof TypeLambdaNode<Name> tyLam &&
                 expectedKind instanceof HigherKind hk &&
                 tyLam.args().size() == hk.argKinds().size()) {
-            return withScope(new TypeLambdaScope<>(), () -> {
+            return withScope(new TypeLambdaTypingScope(), () -> {
                 var knownArgs = tyLam.args()
                         .zip(hk.argKinds())
                         .collect(pair -> {

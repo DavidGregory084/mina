@@ -1,4 +1,4 @@
-package org.mina_lang.common.scopes;
+package org.mina_lang.common.scopes.naming;
 
 import java.util.Optional;
 
@@ -6,20 +6,22 @@ import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.set.MutableSet;
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.Name;
+import org.mina_lang.common.scopes.NamingScope;
 import org.mina_lang.common.types.UnsolvedKind;
 import org.mina_lang.common.types.UnsolvedType;
-import org.mina_lang.common.Meta;
 
-public record ConstructorPatternScope<A>(
+public record ConstructorPatternNamingScope(
         Optional<ConstructorName> constr,
-        MutableMap<String, Meta<A>> values,
-        MutableMap<String, Meta<A>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<A>>> constructorFields,
+        MutableMap<String, Meta<Name>> values,
+        MutableMap<String, Meta<Name>> types,
+        MutableMap<ConstructorName, MutableMap<String, Meta<Name>>> fields,
         MutableSet<UnsolvedKind> unsolvedKinds,
-        MutableSet<UnsolvedType> unsolvedTypes) implements Scope<A> {
+        MutableSet<UnsolvedType> unsolvedTypes) implements NamingScope {
 
-    public ConstructorPatternScope(Optional<ConstructorName> constr) {
+    public ConstructorPatternNamingScope(Optional<ConstructorName> constr) {
         this(
                 constr,
                 Maps.mutable.empty(),
@@ -29,7 +31,7 @@ public record ConstructorPatternScope<A>(
                 Sets.mutable.empty());
     }
 
-    public ConstructorPatternScope(ConstructorName constr) {
+    public ConstructorPatternNamingScope(ConstructorName constr) {
         this(
                 Optional.ofNullable(constr),
                 Maps.mutable.empty(),

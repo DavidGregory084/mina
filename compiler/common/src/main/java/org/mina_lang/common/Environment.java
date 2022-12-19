@@ -6,7 +6,7 @@ import java.util.function.BiConsumer;
 import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.names.ConstructorName;
-import org.mina_lang.common.scopes.*;
+import org.mina_lang.common.scopes.Scope;
 
 /**
  * Represents a name or type environment as a stack of scopes,
@@ -17,54 +17,12 @@ import org.mina_lang.common.scopes.*;
  * <a href="https://rustc-dev-guide.rust-lang.org/name-resolution.html">Guide To
  * Rustc Development</a>.
  */
-public interface Environment<A> {
+public interface Environment<A, B extends Scope<A>> {
 
-    MutableStack<Scope<A>> scopes();
+    MutableStack<B> scopes();
 
-    default public Scope<A> topScope() {
+    default public B topScope() {
         return scopes().peek();
-    }
-
-    default public Optional<NamespaceScope<A>> enclosingNamespace() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof NamespaceScope)
-                .map(scope -> (NamespaceScope<A>) scope);
-    }
-
-    default public Optional<DataScope<A>> enclosingData() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof DataScope)
-                .map(scope -> (DataScope<A>) scope);
-    }
-
-    default public Optional<ConstructorScope<A>> enclosingConstructor() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof ConstructorScope)
-                .map(scope -> (ConstructorScope<A>) scope);
-    }
-
-    default public Optional<LambdaScope<A>> enclosingLambda() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof LambdaScope)
-                .map(scope -> (LambdaScope<A>) scope);
-    }
-
-    default public Optional<CaseScope<A>> enclosingCase() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof CaseScope)
-                .map(scope -> (CaseScope<A>) scope);
-    }
-
-    default public Optional<ConstructorPatternScope<A>> enclosingConstructorPattern() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof ConstructorPatternScope)
-                .map(scope -> (ConstructorPatternScope<A>) scope);
-    }
-
-    default public Optional<BlockScope<A>> enclosingBlock() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof BlockScope)
-                .map(scope -> (BlockScope<A>) scope);
     }
 
     default public Optional<Meta<A>> lookupValue(String name) {
@@ -73,8 +31,8 @@ public interface Environment<A> {
                 .flatMap(scope -> scope.lookupValue(name));
     };
 
-    default public <B> Optional<Meta<A>> lookupValueOrElse(String name, Meta<B> meta,
-            BiConsumer<String, Meta<B>> orElseFn) {
+    default public <C> Optional<Meta<A>> lookupValueOrElse(String name, Meta<C> meta,
+            BiConsumer<String, Meta<C>> orElseFn) {
         var valueMeta = lookupValue(name);
 
         if (valueMeta.isEmpty()) {
@@ -114,8 +72,8 @@ public interface Environment<A> {
                 .flatMap(scope -> scope.lookupType(name));
     };
 
-    default public <B> Optional<Meta<A>> lookupTypeOrElse(String name, Meta<B> meta,
-            BiConsumer<String, Meta<B>> orElseFn) {
+    default public <C> Optional<Meta<A>> lookupTypeOrElse(String name, Meta<C> meta,
+            BiConsumer<String, Meta<C>> orElseFn) {
         var typeMeta = lookupType(name);
 
         if (typeMeta.isEmpty()) {
@@ -155,8 +113,8 @@ public interface Environment<A> {
                 .flatMap(scope -> scope.lookupField(constr, name));
     };
 
-    default public <B> Optional<Meta<A>> lookupFieldOrElse(ConstructorName constr, String name, Meta<B> meta,
-            BiConsumer<String, Meta<B>> orElseFn) {
+    default public <C> Optional<Meta<A>> lookupFieldOrElse(ConstructorName constr, String name, Meta<C> meta,
+            BiConsumer<String, Meta<C>> orElseFn) {
         var fieldMeta = lookupField(constr, name);
 
         if (fieldMeta.isEmpty()) {
@@ -190,7 +148,7 @@ public interface Environment<A> {
         }
     }
 
-    default public void pushScope(Scope<A> scope) {
+    default public void pushScope(B scope) {
         scopes().push(scope);
     }
 

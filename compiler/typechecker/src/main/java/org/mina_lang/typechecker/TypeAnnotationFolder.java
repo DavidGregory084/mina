@@ -2,13 +2,13 @@ package org.mina_lang.typechecker;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
-import org.mina_lang.common.Environment;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.names.BuiltInName;
 import org.mina_lang.common.names.ExistsVarName;
 import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.TypeName;
-import org.mina_lang.common.scopes.TypeLambdaScope;
+import org.mina_lang.common.scopes.typing.TypeLambdaTypingScope;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.QualifiedIdNode;
 import org.mina_lang.syntax.TypeLambdaNode;
@@ -16,9 +16,9 @@ import org.mina_lang.syntax.TypeNodeFolder;
 
 public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
-    protected Environment<Attributes> environment;
+    protected TypeEnvironment environment;
 
-    public TypeAnnotationFolder(Environment<Attributes> environment) {
+    public TypeAnnotationFolder(TypeEnvironment environment) {
         this.environment = environment;
     }
 
@@ -57,7 +57,7 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
     @Override
     public void preVisitTypeLambda(TypeLambdaNode<Attributes> tyLam) {
-        environment.pushScope(new TypeLambdaScope<>());
+        environment.pushScope(new TypeLambdaTypingScope());
     }
 
     @Override
@@ -70,7 +70,7 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
     @Override
     public void postVisitTypeLambda(Type tyLam) {
-        environment.popScope(TypeLambdaScope.class);
+        environment.popScope(TypeLambdaTypingScope.class);
     }
 
     @Override

@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.BuiltInScope;
-import org.mina_lang.common.scopes.ImportedScope;
+import org.mina_lang.common.scopes.typing.BuiltInTypingScope;
+import org.mina_lang.common.scopes.typing.ImportedTypesScope;
 import org.mina_lang.common.types.HigherKind;
 import org.mina_lang.common.types.SortSubstitutionTransformer;
 import org.mina_lang.common.types.TypeKind;
@@ -91,7 +91,7 @@ public class KindcheckerTest {
     @Test
     void kindcheckListTypeApply() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
         environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
 
@@ -114,7 +114,7 @@ public class KindcheckerTest {
         var applyRange = new Range(0, 1, 0, 1);
 
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
         environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
 
@@ -137,7 +137,7 @@ public class KindcheckerTest {
     @Test
     void kindcheckEitherTypeApply() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.Either.NAME.localName(), ExampleNodes.Either.KINDED_META);
         environment.putType(ExampleNodes.Either.NAME.canonicalName(), ExampleNodes.Either.KINDED_META);
 
@@ -164,7 +164,7 @@ public class KindcheckerTest {
         var applyRange = new Range(0, 1, 0, 1);
 
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.Either.NAME.localName(), ExampleNodes.Either.KINDED_META);
         environment.putType(ExampleNodes.Either.NAME.canonicalName(), ExampleNodes.Either.KINDED_META);
 
@@ -226,7 +226,7 @@ public class KindcheckerTest {
         var funArgRange = new Range(0, 1, 0, 1);
 
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.Either.NAME.localName(), ExampleNodes.Either.KINDED_META);
         environment.putType(ExampleNodes.Either.NAME.canonicalName(), ExampleNodes.Either.KINDED_META);
 
@@ -255,7 +255,7 @@ public class KindcheckerTest {
         var funReturnRange = new Range(0, 1, 0, 1);
 
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
         environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
 
@@ -288,9 +288,6 @@ public class KindcheckerTest {
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         // *
         var typeVarAKind = TypeKind.INSTANCE;
-
-        // [* => *, *] => *
-        var typeLambdaKind = new HigherKind(typeVarFKind, typeVarAKind, TypeKind.INSTANCE);
 
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
@@ -459,7 +456,7 @@ public class KindcheckerTest {
     @Test
     void kindcheckHigherTyCon() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.List.NAME.localName(), ExampleNodes.List.KINDED_META);
         environment.putType(ExampleNodes.List.NAME.canonicalName(), ExampleNodes.List.KINDED_META);
         environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
@@ -482,7 +479,7 @@ public class KindcheckerTest {
     @Test
     void kindcheckEtaExpandHigherTyCon() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
         environment.putType(ExampleNodes.Functor.NAME.canonicalName(), ExampleNodes.Functor.KINDED_META);
 
@@ -514,7 +511,7 @@ public class KindcheckerTest {
     @Test
     void kindcheckHigherTyConTypeLambda() {
         var environment = TypeEnvironment.withBuiltInTypes();
-        environment.pushScope(new ImportedScope<>());
+        environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
         environment.putType(ExampleNodes.Functor.NAME.canonicalName(), ExampleNodes.Functor.KINDED_META);
 
@@ -588,6 +585,6 @@ public class KindcheckerTest {
 
     @Provide
     Arbitrary<Map.Entry<String, Meta<Attributes>>> builtIns() {
-        return Arbitraries.of(BuiltInScope.withBuiltInTypes().types().entrySet());
+        return Arbitraries.of(BuiltInTypingScope.empty().types().entrySet());
     }
 }

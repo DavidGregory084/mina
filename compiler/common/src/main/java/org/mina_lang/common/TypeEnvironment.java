@@ -1,16 +1,54 @@
 package org.mina_lang.common;
 
+import java.util.Optional;
+
 import org.eclipse.collections.api.factory.Stacks;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.names.Named;
-import org.mina_lang.common.scopes.BuiltInScope;
-import org.mina_lang.common.scopes.Scope;
+import org.mina_lang.common.scopes.TypingScope;
+import org.mina_lang.common.scopes.typing.*;
 import org.mina_lang.common.types.*;
 
 public record TypeEnvironment(
-        MutableStack<Scope<Attributes>> scopes,
+        MutableStack<TypingScope> scopes,
         UnionFind<MonoType> typeSubstitution,
-        UnionFind<Kind> kindSubstitution) implements Environment<Attributes> {
+        UnionFind<Kind> kindSubstitution) implements Environment<Attributes, TypingScope> {
+
+    public Optional<NamespaceTypingScope> enclosingNamespace() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof NamespaceTypingScope)
+                .map(scope -> (NamespaceTypingScope) scope);
+    }
+
+    public Optional<DataTypingScope> enclosingData() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof DataTypingScope)
+                .map(scope -> (DataTypingScope) scope);
+    }
+
+    public Optional<ConstructorTypingScope> enclosingConstructor() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof ConstructorTypingScope)
+                .map(scope -> (ConstructorTypingScope) scope);
+    }
+
+    public Optional<LambdaTypingScope> enclosingLambda() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof LambdaTypingScope)
+                .map(scope -> (LambdaTypingScope) scope);
+    }
+
+    public Optional<CaseTypingScope> enclosingCase() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof CaseTypingScope)
+                .map(scope -> (CaseTypingScope) scope);
+    }
+
+    public Optional<BlockTypingScope> enclosingBlock() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof BlockTypingScope)
+                .map(scope -> (BlockTypingScope) scope);
+    }
 
     public void putUnsolvedKind(UnsolvedKind unsolved) {
         kindSubstitution().add(unsolved);
@@ -56,7 +94,7 @@ public record TypeEnvironment(
         }
     }
 
-    public static Kind pickKindConstant(MutableStack<Scope<Attributes>> scopes, Kind left, Kind right) {
+    public static Kind pickKindConstant(MutableStack<TypingScope> scopes, Kind left, Kind right) {
         if (left instanceof UnsolvedKind unsolvedLeft) {
             if (right instanceof UnsolvedKind unsolvedRight) {
                 var leftDepth = -1;
@@ -78,7 +116,7 @@ public record TypeEnvironment(
         }
     };
 
-    public static MonoType pickTypeConstant(MutableStack<Scope<Attributes>> scopes, MonoType left, MonoType right) {
+    public static MonoType pickTypeConstant(MutableStack<TypingScope> scopes, MonoType left, MonoType right) {
         if (left instanceof UnsolvedType unsolvedLeft) {
             if (right instanceof UnsolvedType unsolvedRight) {
                 var leftDepth = -1;
@@ -101,15 +139,15 @@ public record TypeEnvironment(
     };
 
     public static TypeEnvironment empty() {
-        var scopes = Stacks.mutable.<Scope<Attributes>>empty();
+        var scopes = Stacks.mutable.<TypingScope>empty();
         return new TypeEnvironment(
                 scopes,
                 UnionFind.<MonoType>of((l, r) -> pickTypeConstant(scopes, l, r)),
                 UnionFind.<Kind>of((l, r) -> pickKindConstant(scopes, l, r)));
     }
 
-    public static TypeEnvironment of(Scope<Attributes> scope) {
-        var scopes = Stacks.mutable.<Scope<Attributes>>empty();
+    public static TypeEnvironment of(TypingScope scope) {
+        var scopes = Stacks.mutable.<TypingScope>empty();
         scopes.push(scope);
         return new TypeEnvironment(
                 scopes,
@@ -118,6 +156,6 @@ public record TypeEnvironment(
     }
 
     public static TypeEnvironment withBuiltInTypes() {
-        return TypeEnvironment.of(BuiltInScope.withBuiltInTypes());
+        return TypeEnvironment.of(BuiltInTypingScope.empty());
     }
 }

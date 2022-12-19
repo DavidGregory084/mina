@@ -10,17 +10,19 @@ import java.util.Optional;
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.*;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.NameEnvironment;
+import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.ImportedScope;
+import org.mina_lang.common.scopes.naming.ImportedNamesScope;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
 
 public class RenamerTest {
 
     void testSuccessfulRename(
-            Environment<Name> environment,
+            NameEnvironment environment,
             NamespaceNode<Void> originalNode,
             NamespaceNode<Name> expectedNode) {
         var diagnostics = new ErrorCollector();
@@ -31,7 +33,7 @@ public class RenamerTest {
     }
 
     <A extends Name> void testSuccessfulRename(
-            Environment<Name> environment,
+            NameEnvironment environment,
             MetaNode<Void> originalNode,
             MetaNode<A> expectedNode) {
         var diagnostics = new ErrorCollector();
@@ -42,7 +44,7 @@ public class RenamerTest {
     }
 
     ErrorCollector testFailedRename(
-            Environment<Name> environment,
+            NameEnvironment environment,
             MetaNode<Void> originalNode) {
         var diagnostics = new ErrorCollector();
         var renamer = new Renamer(diagnostics, environment);
@@ -1635,7 +1637,7 @@ public class RenamerTest {
                                                 refNode(noneMeta, "None"),
                                                 Lists.immutable.empty())))));
 
-        var imports = new ImportedScope<Name>();
+        var imports = new ImportedNamesScope();
 
         imports.putValueIfAbsent("Cons", consMeta);
         imports.putValueIfAbsent("Nil", nilMeta);
@@ -1733,7 +1735,7 @@ public class RenamerTest {
                                                 refNode(noneMeta, "None"),
                                                 Lists.immutable.empty())))));
 
-        var imports = new ImportedScope<Name>();
+        var imports = new ImportedNamesScope();
 
         imports.putValueIfAbsent("Cons", consMeta);
         imports.putValueIfAbsent("Nil", nilMeta);
@@ -1831,7 +1833,7 @@ public class RenamerTest {
                                                 refNode(noneMeta, "None"),
                                                 Lists.immutable.empty())))));
 
-        var imports = new ImportedScope<Name>();
+        var imports = new ImportedNamesScope();
 
         imports.putValueIfAbsent("Cons", consMeta);
         imports.putValueIfAbsent("Nil", nilMeta);
@@ -1920,7 +1922,7 @@ public class RenamerTest {
         var noneMeta = Meta.<Name>of(new ConstructorName(optionMeta.meta(), new QualifiedName(namespaceName, "None")));
         var headMeta = Meta.<Name>of(new FieldName((ConstructorName) consMeta.meta(), "head"));
 
-        var imports = new ImportedScope<Name>();
+        var imports = new ImportedNamesScope();
 
         imports.putValueIfAbsent("Cons", consMeta);
         imports.putValueIfAbsent("Nil", nilMeta);

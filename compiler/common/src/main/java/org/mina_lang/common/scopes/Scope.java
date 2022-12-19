@@ -6,22 +6,15 @@ import java.util.function.BiConsumer;
 import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.api.set.MutableSet;
-import org.mina_lang.common.names.ConstructorName;
-import org.mina_lang.common.types.UnsolvedKind;
-import org.mina_lang.common.types.UnsolvedType;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.ConstructorName;
 
-public sealed interface Scope<A> permits BuiltInScope, ImportedScope, NamespaceScope, DataScope, ConstructorScope, BlockScope, LambdaScope, CaseScope, ConstructorPatternScope, TypeLambdaScope, CheckSubkindScope, InstantiateKindScope, CheckSubtypeScope, InstantiateTypeScope {
+public sealed interface Scope<A> permits NamingScope, TypingScope, CodegenScope {
     MutableMap<String, Meta<A>> values();
 
     MutableMap<String, Meta<A>> types();
 
-    MutableMap<ConstructorName, MutableMap<String, Meta<A>>> constructorFields();
-
-    MutableSet<UnsolvedKind> unsolvedKinds();
-
-    MutableSet<UnsolvedType> unsolvedTypes();
+    MutableMap<ConstructorName, MutableMap<String, Meta<A>>> fields();
 
     default boolean hasValue(String name) {
         return values().containsKey(name);
@@ -88,13 +81,13 @@ public sealed interface Scope<A> permits BuiltInScope, ImportedScope, NamespaceS
     };
 
     default boolean hasField(ConstructorName constr, String field) {
-        return Optional.ofNullable(constructorFields().get(constr))
+        return Optional.ofNullable(fields().get(constr))
                 .map(fields -> fields.containsKey(field))
                 .orElse(false);
     }
 
     default Optional<Meta<A>> lookupField(ConstructorName constr, String name) {
-        return Optional.ofNullable(constructorFields().get(constr))
+        return Optional.ofNullable(fields().get(constr))
                 .map(fields -> fields.get(name));
     };
 
@@ -108,12 +101,12 @@ public sealed interface Scope<A> permits BuiltInScope, ImportedScope, NamespaceS
     };
 
     default void putField(ConstructorName constr, String name, Meta<A> meta) {
-        var constrFields = constructorFields().getIfAbsentPut(constr, () -> Maps.mutable.empty());
+        var constrFields = fields().getIfAbsentPut(constr, () -> Maps.mutable.empty());
         constrFields.put(name, meta);
     }
 
     default Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
-        var constrFields = constructorFields().getIfAbsentPut(constr, () -> Maps.mutable.empty());
+        var constrFields = fields().getIfAbsentPut(constr, () -> Maps.mutable.empty());
         return constrFields.putIfAbsent(name, meta);
     }
 

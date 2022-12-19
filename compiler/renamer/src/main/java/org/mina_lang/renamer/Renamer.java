@@ -6,26 +6,27 @@ import java.util.Optional;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.*;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.NameEnvironment;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.*;
+import org.mina_lang.common.scopes.naming.*;
 import org.mina_lang.syntax.*;
 
 public class Renamer {
 
     private DiagnosticCollector diagnostics;
-    private Environment<Name> environment;
+    private NameEnvironment environment;
 
     private int localVarIndex = 0;
 
-    public Renamer(DiagnosticCollector diagnostics, Environment<Name> globalEnv) {
+    public Renamer(DiagnosticCollector diagnostics, NameEnvironment environment) {
         this.diagnostics = diagnostics;
-        this.environment = globalEnv;
+        this.environment = environment;
     }
 
-    public Environment<Name> getEnvironment() {
+    public NameEnvironment getEnvironment() {
         return environment;
     }
 
@@ -91,9 +92,9 @@ public class Renamer {
                 "Reference to unknown field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");
     }
 
-    public NamespaceScope<Name> populateTopLevel(NamespaceNode<Void> namespace) {
+    public NamespaceNamingScope populateTopLevel(NamespaceNode<Void> namespace) {
         var currentNamespace = namespace.getName();
-        var namespaceScope = new NamespaceScope<Name>(currentNamespace);
+        var namespaceScope = new NamespaceNamingScope(currentNamespace);
 
         namespace.declarations().forEach(decl -> {
             if (decl instanceof DataNode<Void> data) {
@@ -161,7 +162,7 @@ public class Renamer {
         @Override
         public void preVisitData(DataNode<Void> data) {
             var enclosingNamespace = environment.enclosingNamespace().get();
-            var dataScope = new DataScope<Name>(data.getName(enclosingNamespace.namespace()));
+            var dataScope = new DataNamingScope(data.getName(enclosingNamespace.namespace()));
             environment.pushScope(dataScope);
             data.typeParams().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
@@ -177,7 +178,7 @@ public class Renamer {
 
         @Override
         public void postVisitData(DataNode<Name> data) {
-            environment.popScope(DataScope.class);
+            environment.popScope(DataNamingScope.class);
         }
 
         @Override
@@ -185,7 +186,7 @@ public class Renamer {
             var enclosingData = environment.enclosingData().get();
             var enclosingNamespace = environment.enclosingNamespace().get();
             var constrName = constr.getName(enclosingData.data(), enclosingNamespace.namespace());
-            var constrScope = new ConstructorScope<Name>(constrName);
+            var constrScope = new ConstructorNamingScope(constrName);
             environment.pushScope(constrScope);
         }
 
@@ -197,7 +198,7 @@ public class Renamer {
 
         @Override
         public void postVisitConstructor(ConstructorNode<Name> constr) {
-            environment.popScope(ConstructorScope.class);
+            environment.popScope(ConstructorNamingScope.class);
         }
 
         @Override
@@ -210,7 +211,7 @@ public class Renamer {
 
         @Override
         public void preVisitLet(LetNode<Void> let) {
-            if (environment.topScope() instanceof BlockScope<Name> blockScope) {
+            if (environment.topScope() instanceof BlockNamingScope blockScope) {
                 var letMeta = new Meta<Name>(let.range(), new LocalName(let.name(), localVarIndex++));
                 // Local let bindings are only valid within the block scope and can shadow outer
                 // declarations
@@ -226,7 +227,7 @@ public class Renamer {
 
         @Override
         public void postVisitLet(LetNode<Name> let) {
-            if (environment.topScope() instanceof NamespaceScope) {
+            if (environment.topScope() instanceof NamespaceNamingScope) {
                 // Reset local variable counter for each new top-level let binding
                 localVarIndex = 0;
             }
@@ -234,7 +235,7 @@ public class Renamer {
 
         @Override
         public void preVisitLetFn(LetFnNode<Void> letFn) {
-            var typeLambdaScope = new TypeLambdaScope<Name>();
+            var typeLambdaScope = new TypeLambdaNamingScope();
 
             letFn.typeParams().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
@@ -247,7 +248,7 @@ public class Renamer {
             // Type params
             environment.pushScope(typeLambdaScope);
             // Value params
-            environment.pushScope(new LambdaScope<>());
+            environment.pushScope(new LambdaNamingScope());
         }
 
         @Override
@@ -259,9 +260,9 @@ public class Renamer {
         @Override
         public void postVisitLetFn(LetFnNode<Name> letFn) {
             // Value params
-            environment.popScope(LambdaScope.class);
+            environment.popScope(LambdaNamingScope.class);
             // Type params
-            environment.popScope(TypeLambdaScope.class);
+            environment.popScope(TypeLambdaNamingScope.class);
         }
 
         @Override
@@ -280,7 +281,7 @@ public class Renamer {
 
         @Override
         public void preVisitTypeLambda(TypeLambdaNode<Void> tyLam) {
-            var typeLambdaScope = new TypeLambdaScope<Name>();
+            var typeLambdaScope = new TypeLambdaNamingScope();
 
             environment.pushScope(typeLambdaScope);
 
@@ -298,7 +299,7 @@ public class Renamer {
 
         @Override
         public void postVisitTypeLambda(TypeLambdaNode<Name> tyLam) {
-            environment.popScope(TypeLambdaScope.class);
+            environment.popScope(TypeLambdaNamingScope.class);
         }
 
         @Override
@@ -339,7 +340,7 @@ public class Renamer {
 
         @Override
         public void preVisitBlock(BlockNode<Void> block) {
-            environment.pushScope(new BlockScope<>());
+            environment.pushScope(new BlockNamingScope());
         }
 
         @Override
@@ -350,7 +351,7 @@ public class Renamer {
 
         @Override
         public void postVisitBlock(BlockNode<Name> block) {
-            environment.popScope(BlockScope.class);
+            environment.popScope(BlockNamingScope.class);
         }
 
         @Override
@@ -361,7 +362,7 @@ public class Renamer {
 
         @Override
         public void preVisitLambda(LambdaNode<Void> lambda) {
-            environment.pushScope(new LambdaScope<>());
+            environment.pushScope(new LambdaNamingScope());
         }
 
         @Override
@@ -372,7 +373,7 @@ public class Renamer {
 
         @Override
         public void postVisitLambda(LambdaNode<Name> lambda) {
-            environment.popScope(LambdaScope.class);
+            environment.popScope(LambdaNamingScope.class);
         }
 
         @Override
@@ -433,7 +434,7 @@ public class Renamer {
 
         @Override
         public void preVisitCase(CaseNode<Void> cse) {
-            environment.pushScope(new CaseScope<>());
+            environment.pushScope(new CaseNamingScope());
         }
 
         @Override
@@ -443,7 +444,7 @@ public class Renamer {
 
         @Override
         public void postVisitCase(CaseNode<Name> cse) {
-            environment.popScope(CaseScope.class);
+            environment.popScope(CaseNamingScope.class);
         }
 
         @Override
@@ -471,7 +472,7 @@ public class Renamer {
                     .filter(meta -> meta.meta() instanceof ConstructorName)
                     .map(meta -> (ConstructorName) meta.meta());
 
-            environment.pushScope(new ConstructorPatternScope<>(constrName));
+            environment.pushScope(new ConstructorPatternNamingScope(constrName));
         }
 
         @Override
@@ -486,7 +487,7 @@ public class Renamer {
 
         @Override
         public void postVisitConstructorPattern(ConstructorPatternNode<Name> constrPat) {
-            environment.popScope(ConstructorPatternScope.class);
+            environment.popScope(ConstructorPatternNamingScope.class);
         }
 
         @Override
@@ -494,7 +495,7 @@ public class Renamer {
             var enclosingCase = environment.enclosingCase().get();
             var enclosingConstructorPattern = environment.enclosingConstructorPattern();
 
-            enclosingConstructorPattern.flatMap(ConstructorPatternScope::constr).ifPresent(constr -> {
+            enclosingConstructorPattern.flatMap(ConstructorPatternNamingScope::constr).ifPresent(constr -> {
                 if (environment.lookupField(constr, fieldPat.field()).isEmpty()) {
                     unknownConstructorField(constr, fieldPat.field(), fieldPat.meta());
                 }

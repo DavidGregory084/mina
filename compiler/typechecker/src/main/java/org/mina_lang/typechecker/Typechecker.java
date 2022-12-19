@@ -19,6 +19,7 @@ import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.scopes.*;
+import org.mina_lang.common.scopes.typing.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
@@ -53,14 +54,14 @@ public class Typechecker {
         return environment;
     }
 
-    <A> A withScope(Scope<Attributes> scope, Supplier<A> fn) {
+    <A> A withScope(TypingScope scope, Supplier<A> fn) {
         environment.pushScope(scope);
         var result = fn.get();
         environment.popScope(scope.getClass());
         return result;
     }
 
-    void withScope(Scope<Attributes> scope, Runnable fn) {
+    void withScope(TypingScope scope, Runnable fn) {
         environment.pushScope(scope);
         fn.run();
         environment.popScope(scope.getClass());
@@ -179,7 +180,7 @@ public class Typechecker {
     }
 
     void instantiateAsSubType(UnsolvedType unsolved, Type superType) {
-        withScope(new InstantiateTypeScope<>(), () -> {
+        withScope(new InstantiateTypeScope(), () -> {
             if (superType instanceof UnsolvedType otherUnsolved) {
                 // Complete and Easy's InstLReach rule
                 environment.solveType(otherUnsolved, unsolved);
@@ -253,7 +254,7 @@ public class Typechecker {
     }
 
     void instantiateAsSuperType(UnsolvedType unsolved, Type subType) {
-        withScope(new InstantiateTypeScope<>(), () -> {
+        withScope(new InstantiateTypeScope(), () -> {
             if (subType instanceof UnsolvedType otherUnsolved) {
                 // Complete and Easy's InstRReach rule
                 environment.solveType(otherUnsolved, unsolved);
@@ -327,7 +328,7 @@ public class Typechecker {
     }
 
     boolean checkSubType(Type subType, Type superType) {
-        return withScope(new CheckSubtypeScope<>(), () -> {
+        return withScope(new CheckSubtypeScope(), () -> {
             var solvedSubType = subType.substitute(
                     environment.typeSubstitution(),
                     environment.kindSubstitution());
@@ -416,9 +417,9 @@ public class Typechecker {
         });
     }
 
-    NamespaceScope<Attributes> populateTopLevel(NamespaceNode<Name> namespace) {
+    NamespaceTypingScope populateTopLevel(NamespaceNode<Name> namespace) {
         var currentNamespace = (NamespaceName) namespace.meta().meta();
-        var namespaceScope = new NamespaceScope<Attributes>(currentNamespace);
+        var namespaceScope = new NamespaceTypingScope(currentNamespace);
 
         namespace.declarations().forEach(decl -> {
             if (decl instanceof LetFnNode<Name> letFn) {
@@ -487,7 +488,7 @@ public class Typechecker {
         if (tyParams.isEmpty()) {
             return fn.apply(Lists.immutable.empty(), Lists.immutable.empty());
         } else {
-            return withScope(new TypeLambdaScope<>(), () -> {
+            return withScope(new TypeLambdaTypingScope(), () -> {
                 var kindedTyParams = tyParams
                         .collect(tyParam -> (TypeVarNode<Attributes>) kindchecker.inferType(tyParam));
                 var tyParamTypes = kindedTyParams
@@ -500,7 +501,7 @@ public class Typechecker {
 
     <A> A withPolyInstantiation(Type inferredType, Function<Type, A> fn) {
         if (inferredType instanceof TypeLambda tyLam) {
-            return withScope(new InstantiateTypeScope<>(), () -> {
+            return withScope(new InstantiateTypeScope(), () -> {
                 // Keep instantiating binders until we have something else
                 return withPolyInstantiation(tyLam.instantiateAsSubTypeIn(environment, varSupply), fn);
             });
@@ -536,7 +537,7 @@ public class Typechecker {
 
         } else if (declaration instanceof LetFnNode<Name> letFn) {
             var letFnNode = withTypeParams(letFn::typeParams, (tyParams, tyParamTypes) -> {
-                return withScope(new LambdaScope<>(), () -> {
+                return withScope(new LambdaTypingScope(), () -> {
                     var inferredParams = letFn.valueParams()
                             .collect(this::inferParam);
                     var kindedReturn = letFn.returnType()
@@ -616,7 +617,7 @@ public class Typechecker {
 
     ExprNode<Attributes> inferExpr(ExprNode<Name> expr) {
         if (expr instanceof BlockNode<Name> block) {
-            return withScope(new BlockScope<>(), () -> {
+            return withScope(new BlockTypingScope(), () -> {
                 var inferredDeclarations = block
                         .declarations()
                         .collect(let -> (LetNode<Attributes>) inferDeclaration(let));
@@ -629,7 +630,7 @@ public class Typechecker {
                 return blockNode(updatedMeta, inferredDeclarations, inferredResult);
             });
         } else if (expr instanceof LambdaNode<Name> lambda) {
-            return withScope(new LambdaScope<>(), () -> {
+            return withScope(new LambdaTypingScope(), () -> {
                 var inferredArgs = lambda.params().collect(this::inferParam);
 
                 var inferredBody = inferExpr(lambda.body());
@@ -748,7 +749,7 @@ public class Typechecker {
     }
 
     CaseNode<Attributes> inferCase(CaseNode<Name> cse, Type scrutineeType) {
-        return withScope(new CaseScope<>(), () -> {
+        return withScope(new CaseTypingScope(), () -> {
             var inferredPattern = checkPattern(cse.pattern(), scrutineeType);
             var inferredConsequent = inferExpr(cse.consequent());
             var inferredType = getType(inferredConsequent);
@@ -859,11 +860,11 @@ public class Typechecker {
 
     ExprNode<Attributes> checkExpr(ExprNode<Name> expr, Type expectedType) {
         if (expectedType instanceof TypeLambda tyLam) {
-            return withScope(new InstantiateTypeScope<>(), () -> {
+            return withScope(new InstantiateTypeScope(), () -> {
                 return checkExpr(expr, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
             });
         } else if (expr instanceof BlockNode<Name> block) {
-            return withScope(new BlockScope<>(), () -> {
+            return withScope(new BlockTypingScope(), () -> {
                 var inferredDeclarations = block
                         .declarations()
                         .collect(let -> (LetNode<Attributes>) inferDeclaration(let));
@@ -881,7 +882,7 @@ public class Typechecker {
         } else if (expr instanceof LambdaNode<Name> lambda &&
                 expectedType instanceof TypeApply funType &&
                 lambda.params().size() == (funType.typeArguments().size() - 1)) {
-            return withScope(new LambdaScope<>(), () -> {
+            return withScope(new LambdaTypingScope(), () -> {
                 var knownParams = lambda.params()
                         .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
                         .collect(pair -> checkParam(pair.getOne(), pair.getTwo()));
@@ -955,7 +956,7 @@ public class Typechecker {
     }
 
     CaseNode<Attributes> checkCase(CaseNode<Name> cse, Type scrutineeType, Type expectedType) {
-        return withScope(new CaseScope<>(), () -> {
+        return withScope(new CaseTypingScope(), () -> {
             var inferredPattern = checkPattern(cse.pattern(), scrutineeType);
             var inferredConsequent = checkExpr(cse.consequent(), expectedType);
             var inferredType = getType(inferredConsequent);
@@ -966,7 +967,7 @@ public class Typechecker {
 
     PatternNode<Attributes> checkPattern(PatternNode<Name> pattern, Type expectedType) {
         if (expectedType instanceof TypeLambda tyLam) {
-            return withScope(new InstantiateTypeScope<>(), () -> {
+            return withScope(new InstantiateTypeScope(), () -> {
                 return checkPattern(pattern, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
             });
         } else {
