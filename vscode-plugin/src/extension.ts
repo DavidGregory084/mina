@@ -103,6 +103,7 @@ export async function activate(context: ExtensionContext) {
       transport: TransportKind.pipe,
       command: javaExecutable,
       args: [
+        `-DSTORAGE_FOLDER=${context.globalStorageUri.fsPath}`,
         `-DLOG_FOLDER=${context.logUri.fsPath}`,
         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
         ...gcOptions,

@@ -1,105 +1,81 @@
 package org.mina_lang.codegen.jvm;
 
-import java.io.PrintWriter;
-import java.util.Optional;
+import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.map.ImmutableMap;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.Supplier;
+
+import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
+import org.mina_lang.codegen.jvm.scopes.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.TypeEnvironment;
-import org.mina_lang.common.names.DataName;
-import org.mina_lang.common.names.Name;
-import org.mina_lang.common.names.Named;
-import org.mina_lang.common.names.QualifiedName;
-import org.mina_lang.common.scopes.Scope;
-import org.mina_lang.common.types.*;
+import org.mina_lang.common.Scope;
+import org.mina_lang.common.names.*;
+import org.mina_lang.common.types.Sort;
+import org.mina_lang.common.types.TypeApply;
+import org.mina_lang.common.types.TypeVar;
 import org.mina_lang.syntax.*;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
-import static org.objectweb.asm.Opcodes.*;
-
 public class CodeGenerator {
-    ClassWriter namespaceWriter;
-    GeneratorAdapter namespaceInitWriter;
+    CodegenEnvironment environment = CodegenEnvironment.empty();
 
-    ClassWriter dataWriter;
+    MutableMap<Named, byte[]> classes = Maps.mutable.empty();
 
-    ClassWriter constructorWriter;
-    GeneratorAdapter constructorInitWriter;
+    public void generate(Path destination, NamespaceNode<Attributes> namespace) {
+        generateNamespace(namespace);
 
-    TypeEnvironment environment = TypeEnvironment.withBuiltInTypes();
-    TypeAnnotationFolder typeFolder = new TypeAnnotationFolder(environment);
-
-    MutableList<byte[]> classes = Lists.mutable.empty();
-
-    DataNode<Attributes> currentData;
-    ConstructorNode<Attributes> currentConstructor;
-
-    public void generate(NamespaceNode<Attributes> namespace) {
-        namespace.accept(new CodeGenerationFolder());
-
-        for (byte[] classData : classes) {
+        classes.forEachKeyValue((name, classData) -> {
             var reader = new ClassReader(classData);
             var writer = new PrintWriter(System.err);
             var visitor = new TraceClassVisitor(writer);
             reader.accept(visitor, 0);
-        }
-    }
 
-    public GeneratorAdapter constructor(
-            ClassWriter classWriter,
-            String signature,
-            Type... argTypes) {
-        return new GeneratorAdapter(
-                ACC_PUBLIC,
-                new Method("<init>", Type.VOID_TYPE, argTypes),
-                signature,
-                null,
-                classWriter);
-    }
+            if (name instanceof NamespaceName nsName) {
+                var path = Paths.namespacePath(destination, nsName);
+                try {
+                    if (!Files.exists(path.getParent())) {
+                        Files.createDirectories(path.getParent());
+                    }
+                    Files.write(path, classData);
+                } catch (IOException e) {
+                    System.err.printf("Exception while writing class data to %s - %s", path, e);
+                }
+            } else if (name instanceof DataName dataName) {
+                var path = Paths.dataPath(destination, dataName);
+                try {
+                    if (!Files.exists(path.getParent())) {
+                        Files.createDirectories(path.getParent());
+                    }
+                    Files.write(path, classData);
+                } catch (IOException e) {
+                    System.err.printf("Exception while writing class data to %s - %s", path, e);
+                }
+            } else if (name instanceof ConstructorName constrName) {
+                var path = Paths.constructorPath(destination, constrName);
+                try {
+                    if (!Files.exists(path.getParent())) {
+                        Files.createDirectories(path.getParent());
+                    }
+                    Files.write(path, classData);
+                } catch (IOException e) {
+                    System.err.printf("Exception while writing class data to %s - %s", path, e);
+                }
+            }
 
-    public GeneratorAdapter staticInitializer(ClassWriter classWriter) {
-        return new GeneratorAdapter(
-                ACC_STATIC,
-                new Method("<clinit>", Type.getMethodDescriptor(Type.VOID_TYPE)),
-                null,
-                null,
-                classWriter);
-    }
-
-    String getDescriptor(QualifiedName name) {
-        return "L" + getInternalName(name) + ";";
-    }
-
-    String getDescriptor(Named name) {
-        return "L" + getInternalName(name) + ";";
-    }
-
-    String getDescriptor(MetaNode<Attributes> node) {
-        var name = (Named) node.meta().meta().name();
-        return getDescriptor(name);
-    }
-
-    String getInternalName(QualifiedName name) {
-        return name.canonicalName().replaceAll("\\.", "/");
-    }
-
-    String getInternalName(Named name) {
-        return name.canonicalName().replaceAll("\\.", "/");
-    }
-
-    String getInternalName(MetaNode<Attributes> node) {
-        var name = (Named) node.meta().meta().name();
-        return getInternalName(name);
+            var verifier = new ClassReader(classData);
+            var verifyWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+            var verifyAdapter = new CheckClassAdapter(verifyWriter, true);
+            verifier.accept(verifyAdapter, 0);
+        });
     }
 
     Meta<Attributes> updateMetaWith(Meta<Attributes> meta, Sort sort) {
@@ -135,368 +111,493 @@ public class CodeGenerator {
         return;
     }
 
-    org.mina_lang.common.types.Type createConstructorType(
-            DataNode<Attributes> data,
-            ConstructorNode<Attributes> constr) {
-        var dataName = (DataName) data.meta().meta().name();
-        var dataKind = getKind(data);
+    <A> A withScope(CodegenScope scope, Supplier<A> fn) {
+        environment.pushScope(scope);
+        var result = fn.get();
+        environment.popScope(scope.getClass());
+        return result;
+    }
 
-        var typeFolder = new TypeAnnotationFolder(environment);
+    void withScope(CodegenScope scope, Runnable fn) {
+        environment.pushScope(scope);
+        fn.run();
+        environment.popScope(scope.getClass());
+        return;
+    }
 
-        var typeParamTypes = data.typeParams()
-                .collect(tyParam -> typeFolder.visitTypeVar(tyParam));
+    public void populateTopLevel(NamespaceNode<Attributes> namespace) {
+        namespace.declarations().forEach(decl -> {
+            if (decl instanceof LetNode<Attributes> let) {
+                putValueDeclaration(let.meta());
+            } else if (decl instanceof LetFnNode<Attributes> letFn) {
+                putValueDeclaration(letFn.meta());
+            } else if (decl instanceof DataNode<Attributes> data) {
+                putTypeDeclaration(data.meta());
 
-        var constrParamTypes = constr.params()
-                .collect(param -> typeFolder.visitType(param.typeAnnotation()));
+                data.constructors().forEach(constr -> {
+                    putValueDeclaration(constr.meta());
 
-        var constrReturnType = constr.type()
-                .map(typ -> typeFolder.visitType(typ))
-                .orElseGet(() -> {
-                    var tyCon = new TypeConstructor(dataName.name(), dataKind);
-                    return typeParamTypes.isEmpty() ? tyCon
-                            : new TypeApply(tyCon, typeParamTypes, TypeKind.INSTANCE);
+                    constr.params().forEach(constrParam -> {
+                        environment.putField(
+                                (ConstructorName) constr.meta().meta().name(),
+                                constrParam.name(),
+                                constrParam.meta());
+                    });
+                });
+            }
+        });
+    }
+
+    public void generateNamespace(NamespaceNode<Attributes> namespace) {
+        var namespaceScope = NamespaceGenScope.open(namespace);
+
+        withScope(namespaceScope, () -> {
+            populateTopLevel(namespace);
+
+            namespace.declarations()
+                    .forEach(this::generateDeclaration);
+
+            classes.put(
+                    Names.getName(namespace),
+                    namespaceScope.finaliseNamespace());
+        });
+    }
+
+    public void generateDeclaration(DeclarationNode<Attributes> declaration) {
+        if (declaration instanceof DataNode<Attributes> data) {
+            generateData(data);
+        } else if (declaration instanceof LetFnNode<Attributes> letFn) {
+            generateTopLevelLetFn(letFn);
+        } else if (declaration instanceof LetNode<Attributes> let) {
+            generateTopLevelLet(let);
+        }
+    }
+
+    public void generateData(DataNode<Attributes> data) {
+        var dataScope = DataGenScope.open(data);
+        withScope(dataScope, () -> {
+            data.constructors()
+                    .forEach(this::generateConstructor);
+            classes.put(
+                    Names.getName(data),
+                    dataScope.finaliseData());
+        });
+    }
+
+    public void generateConstructor(ConstructorNode<Attributes> constr) {
+        var dataScope = environment.enclosingData().get();
+        var constrScope = ConstructorGenScope.open(constr, dataScope.data());
+        withScope(constrScope, () -> {
+            dataScope.classWriter()
+                    .visitPermittedSubclass(constrScope.constrType().getInternalName());
+
+            constr.params()
+                    .forEachWithIndex(this::generateConstructorParam);
+
+            classes.put(
+                    Names.getName(constr),
+                    constrScope.finaliseConstructor());
+        });
+    }
+
+    public void generateConstructorParam(ConstructorParamNode<Attributes> param, int paramIndex) {
+        var constructor = environment.enclosingConstructor().get();
+        var classWriter = constructor.classWriter();
+        var initWriter = constructor.initWriter();
+
+        var paramType = Types.asmType(param);
+
+        classWriter
+                .visitRecordComponent(param.name(), paramType.getDescriptor(), null)
+                .visitEnd();
+
+        Asm.emitConstructorField(
+                classWriter,
+                initWriter,
+                paramIndex,
+                param.name(),
+                paramType,
+                null);
+
+        Asm.emitFieldGetter(
+                classWriter,
+                constructor.constrType(),
+                param.name(),
+                paramType,
+                null);
+    }
+
+    public void generateTopLevelLetFn(LetFnNode<Attributes> letFn) {
+        var namespace = environment.enclosingNamespace().get();
+        var namespaceWriter = namespace.classWriter();
+        var letScope = TopLevelLetGenScope.open(letFn, namespaceWriter);
+        withScope(letScope, () -> {
+            generateExpr(letFn.expr());
+            letScope.finaliseLet();
+        });
+    }
+
+    public void generateTopLevelLet(LetNode<Attributes> let) {
+        var namespace = environment.enclosingNamespace().get();
+        var namespaceWriter = namespace.classWriter();
+        var initWriter = namespace.initWriter();
+
+        if (let.expr() instanceof LambdaNode<Attributes> lambda) {
+            var letScope = TopLevelLetGenScope.open(let, lambda, namespaceWriter);
+            withScope(letScope, () -> {
+                generateExpr(lambda.body());
+                letScope.finaliseLet();
+            });
+        } else if (org.mina_lang.common.types.Type.isFunction(Types.getUnderlyingType(let))) {
+            // This happens when binding eta-reduced functions.
+            // In order to satisfy our binary constraint that top-level functions
+            // are static methods, we write a new static method and invoke the returned
+            // function object before returning from the method.
+            var letScope = TopLevelLetGenScope.open(let, namespaceWriter);
+
+            withScope(letScope, () -> {
+                generateExpr(let.expr());
+
+                letScope.methodParams().forEachWithIndex((param, index) -> {
+                    letScope.methodWriter().loadArg(index);
                 });
 
-        var constrFnType = org.mina_lang.common.types.Type.function(constrParamTypes, constrReturnType);
+                letScope.methodWriter().invokeInterface(
+                        Types.asmType(let),
+                        Types.erasedMethod("apply", letScope.methodParams().size()));
 
-        if (typeParamTypes.isEmpty()) {
-            return constrFnType;
+                var funType = (TypeApply) Types.getUnderlyingType(let);
+
+                var returnType = funType.typeArguments().getLast();
+
+                if (returnType.isPrimitive()) {
+                    letScope.methodWriter().unbox(Types.boxedAsmType(returnType));
+                } else {
+                    letScope.methodWriter().checkCast(Types.boxedAsmType(returnType));
+                }
+
+                letScope.finaliseLet();
+            });
+        } else if (let.expr() instanceof LiteralNode<Attributes> lit) {
+            Asm.staticField(namespaceWriter, let.name(), Types.asmType(lit), lit.boxedValue());
         } else {
-            return new TypeLambda(
-                    typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
-                    constrFnType,
-                    dataKind);
+            Asm.staticField(namespaceWriter, let.name(), Types.asmType(let), null);
+            generateExpr(let.expr());
+            initWriter.putStatic(namespace.namespaceType(), let.name(), Types.asmType(let));
         }
     }
 
-    Kind getKind(MetaNode<Attributes> node) {
-        return (Kind) node.meta().meta().sort();
-    }
+    public void generateExpr(ExprNode<Attributes> expr) {
+        var namespace = environment.enclosingNamespace().get();
+        var method = environment.enclosingJavaMethod().get();
+        var namespaceWriter = namespace.classWriter();
 
-    org.mina_lang.common.types.Type getType(MetaNode<Attributes> node) {
-        return (org.mina_lang.common.types.Type) node.meta().meta().sort();
-    }
+        if (expr instanceof BlockNode<Attributes> block) {
+            var blockScope = BlockGenScope.open(method, block);
+            withScope(blockScope, () -> {
+                block.declarations().forEach(decl -> {
+                    var localVar = method.localVars().get(Names.getName(decl));
+                    generateExpr(decl.expr());
+                    method.methodWriter().storeLocal(localVar.index());
+                });
 
-    Type asmType(org.mina_lang.common.types.Type minaType) {
-        if (minaType.equals(org.mina_lang.common.types.Type.BOOLEAN)) {
-            return Type.BOOLEAN_TYPE;
-        } else if (minaType.equals(org.mina_lang.common.types.Type.CHAR)) {
-            return Type.CHAR_TYPE;
-        } else if (minaType.equals(org.mina_lang.common.types.Type.STRING)) {
-            return Type.getType(String.class);
-        } else if (minaType.equals(org.mina_lang.common.types.Type.INT)) {
-            return Type.INT_TYPE;
-        } else if (minaType.equals(org.mina_lang.common.types.Type.LONG)) {
-            return Type.LONG_TYPE;
-        } else if (minaType.equals(org.mina_lang.common.types.Type.FLOAT)) {
-            return Type.FLOAT_TYPE;
-        } else if (minaType.equals(org.mina_lang.common.types.Type.DOUBLE)) {
-            return Type.DOUBLE_TYPE;
-        } else if (minaType.equals(org.mina_lang.common.types.Type.UNIT)) {
-            return Type.VOID_TYPE;
-        } else if (org.mina_lang.common.types.Type.isFunction(minaType)) {
-            // TODO: Create function classes
-        } else if (minaType instanceof org.mina_lang.common.types.TypeVar tyVar) {
-            return Type.getType(Object.class);
-        } else if (minaType instanceof org.mina_lang.common.types.TypeApply tyApp) {
-            return asmType(tyApp.type());
-        } else if (minaType instanceof org.mina_lang.common.types.TypeConstructor tyCon) {
-            return Type.getType(getDescriptor(tyCon.name()));
-        } else if (minaType instanceof org.mina_lang.common.types.TypeLambda tyLam) {
-            return asmType(tyLam.body());
-        }
+                block.result().ifPresentOrElse(result -> {
+                    generateExpr(result);
+                }, () -> {
+                    method.methodWriter().getStatic(
+                            Types.asmType(org.mina_lang.common.types.Type.UNIT),
+                            "INSTANCE",
+                            Types.asmType(org.mina_lang.common.types.Type.UNIT));
+                });
 
-        return null;
-    }
+                blockScope.finaliseBlock();
+            });
+        } else if (expr instanceof LambdaNode<Attributes> lambda) {
+            var enclosingLifter = environment.enclosingLambdaLifter().get();
+            var lambdaScope = LambdaGenScope.open(enclosingLifter, lambda, namespaceWriter);
 
-    Type asmType(MetaNode<Attributes> node) {
-        var minaType = getType(node);
-        return asmType(minaType);
-    }
-
-    class CodeGenerationFolder implements MetaNodeFolder<Attributes, Void> {
-        @Override
-        public void preVisitNamespace(NamespaceNode<Attributes> namespace) {
-            namespaceWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-            namespaceInitWriter = staticInitializer(namespaceWriter);
-
-            namespaceWriter.visit(
-                    V17,
-                    ACC_PUBLIC + ACC_FINAL + ACC_SUPER,
-                    getInternalName(namespace) + "/Namespace",
-                    null,
-                    Type.getInternalName(Object.class),
-                    null);
-        }
-
-        @Override
-        public Void visitNamespace(Meta<Attributes> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-                ImmutableList<Void> declarations) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public void postVisitNamespace(Void namespace) {
-            namespaceInitWriter.visitEnd();
-            namespaceWriter.visitEnd();
-            classes.add(namespaceWriter.toByteArray());
-        }
-
-        // Data declarations
-        @Override
-        public void preVisitData(DataNode<Attributes> data) {
-            currentData = data;
-
-            dataWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-
-            putTypeDeclaration(data.meta());
-
-            data.typeParams().forEach(tyParam -> {
-                typeFolder.visitType(tyParam);
+            withScope(lambdaScope, () -> {
+                generateExpr(lambda.body());
+                lambdaScope.finaliseLambda();
             });
 
-            dataWriter.visit(
-                    V17,
-                    ACC_PUBLIC + ACC_INTERFACE + ACC_ABSTRACT,
-                    getInternalName(data),
-                    null,
-                    Type.getInternalName(Object.class),
-                    null);
+            var funType = (TypeApply) Types.getUnderlyingType(lambda);
+
+            var lambdaHandle = new Handle(
+                    H_INVOKESTATIC,
+                    Names.getInternalName(namespace.namespace()),
+                    lambdaScope.methodWriter().getName(),
+                    Type.getMethodDescriptor(
+                            lambdaScope.methodWriter().getReturnType(),
+                            lambdaScope.methodWriter().getArgumentTypes()),
+                    false);
+
+            var freeVarTypes = lambdaScope
+                    .freeVariables()
+                    .collect(Types::asmType)
+                    .toArray(new Type[lambdaScope.freeVariables().size()]);
+
+            // Stack the free variables of the lambda so they can be captured by the
+            // invokedynamic instruction
+            lambdaScope.freeVariables().forEach(freeVar -> {
+                generateExpr(freeVar);
+            });
+
+            method.methodWriter().invokeDynamic(
+                    "apply",
+                    // Lambda callsite descriptor
+                    Type.getMethodDescriptor(Types.asmType(lambda), freeVarTypes),
+                    // Bootstrap method handle
+                    Asm.METAFACTORY_HANDLE,
+                    // Bootstrap method arguments
+                    Types.erasedMethodType(funType), // samMethodType
+                    lambdaHandle, // implMethodType
+                    Types.boxedMethodType(funType) // instantiatedMethodType
+            );
+
+        } else if (expr instanceof IfNode<Attributes> ifExpr) {
+            var elseLabel = new Label();
+            var endLabel = new Label();
+            generateExpr(ifExpr.condition());
+            method.methodWriter().ifZCmp(GeneratorAdapter.EQ, elseLabel);
+            generateExpr(ifExpr.consequent());
+            method.methodWriter().goTo(endLabel);
+            method.methodWriter().visitLabel(elseLabel);
+            generateExpr(ifExpr.alternative());
+            method.methodWriter().visitLabel(endLabel);
+        } else if (expr instanceof MatchNode<Attributes> match) {
+            var matchScope = MatchGenScope.open(method);
+            var scrutineeLocal = method.methodWriter()
+                    .newLocal(Types.asmType(match.scrutinee()));
+            withScope(matchScope, () -> {
+                generateExpr(match.scrutinee());
+                method.methodWriter().storeLocal(scrutineeLocal);
+                match.cases().forEachWithIndex((cse, index) -> generateCase(cse, index, scrutineeLocal));
+                matchScope.finaliseMatch();
+            });
+        } else if (expr instanceof ApplyNode<Attributes> apply) {
+            var appliedName = apply.expr().meta().meta().name();
+            var applyType = Types.getType(apply);
+
+            var funType = (TypeApply) Types.getUnderlyingType(apply.expr());
+            var funReturnType = Types.asmType(funType.typeArguments().getLast());
+            var funArgTypes = funType.typeArguments()
+                    .take(funType.typeArguments().size() - 1)
+                    .collect(Types::asmType)
+                    .toArray(new Type[funType.typeArguments().size() - 1]);
+
+            if (appliedName instanceof LetName letName) {
+                var namespaceName = letName.name().ns();
+                var declarationName = letName.name().name();
+                var ownerType = Types.getNamespaceAsmType(namespaceName);
+
+                apply.args()
+                        .zip(funType.typeArguments())
+                        .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
+
+                method.methodWriter().invokeStatic(ownerType, new Method(declarationName, funReturnType, funArgTypes));
+
+                if (!funType.typeArguments().getLast().isPrimitive() && applyType.isPrimitive()) {
+                    method.methodWriter().unbox(Types.asmType(applyType));
+                } else if (funType.typeArguments().getLast().isPrimitive() && !applyType.isPrimitive()) {
+                    method.methodWriter().box(funReturnType);
+                } else if (funType.typeArguments().getLast() instanceof TypeVar) {
+                    method.methodWriter().checkCast(Types.asmType(applyType));
+                }
+
+            } else if (appliedName instanceof ConstructorName constrName) {
+                var constrType = Types.getConstructorAsmType(constrName);
+
+                method.methodWriter().newInstance(constrType);
+                method.methodWriter().dup();
+
+                apply.args()
+                        .zip(funType.typeArguments())
+                        .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
+
+                method.methodWriter().invokeConstructor(constrType, new Method("<init>", Type.VOID_TYPE, funArgTypes));
+
+            } else if (appliedName.equals(Nameless.INSTANCE) || appliedName instanceof LocalName) {
+                generateExpr(apply.expr());
+
+                apply.args()
+                        .zip(funType.typeArguments())
+                        .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
+
+                method.methodWriter().invokeInterface(
+                        Types.asmType(funType),
+                        Types.erasedMethod("apply", funArgTypes.length));
+
+                if (!funType.typeArguments().getLast().isPrimitive() && applyType.isPrimitive()) {
+                    method.methodWriter().unbox(Types.asmType(applyType));
+                } else if (funType.typeArguments().getLast().isPrimitive() && !applyType.isPrimitive()) {
+                    method.methodWriter().box(funReturnType);
+                } else if (funType.typeArguments().getLast() instanceof TypeVar) {
+                    method.methodWriter().checkCast(Types.asmType(applyType));
+                }
+            }
+
+        } else if (expr instanceof LiteralNode<Attributes> lit) {
+            generateLiteral(lit);
+        } else if (expr instanceof ReferenceNode<Attributes> ref) {
+            var name = Names.getName(ref);
+            var type = Types.getUnderlyingType(ref);
+
+            if (name instanceof LetName let && org.mina_lang.common.types.Type.isFunction(type)) {
+                var funType = (TypeApply) type;
+                var letHandle = Asm.staticMethodHandle(let, type);
+                method.methodWriter().invokeDynamic(
+                        // Interface method name
+                        "apply",
+                        // Lambda callsite descriptor
+                        Type.getMethodDescriptor(Types.asmType(ref)),
+                        // Bootstrap method handle
+                        Asm.METAFACTORY_HANDLE,
+                        // Bootstrap method arguments
+                        Types.erasedMethodType(funType), // samMethodType
+                        letHandle, // implMethodType
+                        Types.boxedMethodType(funType) // instantiatedMethodType
+                );
+            } else if (name instanceof ConstructorName constr) {
+                var funType = (TypeApply) type;
+                var constrHandle = Asm.constructorMethodHandle(constr, type);
+                method.methodWriter().invokeDynamic(
+                        // Interface method name
+                        "apply",
+                        // Lambda callsite descriptor
+                        Type.getMethodDescriptor(Types.asmType(ref)),
+                        // Bootstrap method handle
+                        Asm.METAFACTORY_HANDLE,
+                        // Bootstrap method arguments
+                        Types.erasedMethodType(funType), // samMethodType
+                        constrHandle, // implMethodType
+                        Types.boxedMethodType(funType) // instantiatedMethodType
+                );
+            } else if (name instanceof LetName let) {
+                method.methodWriter().getStatic(
+                        Types.getNamespaceAsmType(let.name().ns()),
+                        let.name().name(),
+                        Types.asmType(ref));
+            } else if (name instanceof LocalName local) {
+                if (method.localVars().containsKey(local)) {
+                    var localVar = method.localVars().get(local);
+                    method.methodWriter().loadLocal(localVar.index());
+                } else {
+                    var localVar = method.methodParams().get(local);
+                    method.methodWriter().loadArg(localVar.index());
+                }
+            }
         }
+    }
 
-        @Override
-        public Void visitData(Meta<Attributes> meta, String name, ImmutableList<Void> typeParams,
-                ImmutableList<Void> constructors) {
-            return null;
+    public void generateArgExpr(ExprNode<Attributes> argExpr, org.mina_lang.common.types.Type funArgType) {
+        var method = environment.enclosingJavaMethod().get();
+
+        var appliedArgType = Types.getType(argExpr);
+
+        var appliedAsmType = Types.asmType(appliedArgType);
+        var funArgAsmType = Types.asmType(funArgType);
+
+        generateExpr(argExpr);
+
+        if (!funArgType.isPrimitive() && appliedArgType.isPrimitive()) {
+            method.methodWriter().box(appliedAsmType);
+        } else if (funArgType.isPrimitive() && !appliedArgType.isPrimitive()) {
+            method.methodWriter().unbox(funArgAsmType);
         }
+    }
 
-        @Override
-        public void postVisitData(Void data) {
-            dataWriter.visitEnd();
-            classes.add(dataWriter.toByteArray());
+    public void generateLiteral(LiteralNode<Attributes> literal) {
+        var method = environment.enclosingJavaMethod().get();
+
+        if (literal instanceof BooleanNode<Attributes> bool) {
+            method.methodWriter().push(bool.value());
+        } else if (literal instanceof CharNode<Attributes> chr) {
+            method.methodWriter().push(chr.value());
+        } else if (literal instanceof StringNode<Attributes> str) {
+            method.methodWriter().push(str.value());
+        } else if (literal instanceof IntNode<Attributes> intgr) {
+            method.methodWriter().push(intgr.value());
+        } else if (literal instanceof LongNode<Attributes> lng) {
+            method.methodWriter().push(lng.value());
+        } else if (literal instanceof FloatNode<Attributes> flt) {
+            method.methodWriter().push(flt.value());
+        } else if (literal instanceof DoubleNode<Attributes> dbl) {
+            method.methodWriter().push(dbl.value());
         }
+    }
 
-        @Override
-        public void preVisitConstructor(ConstructorNode<Attributes> constructor) {
-            currentConstructor = constructor;
-            constructorWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+    public void generateCase(CaseNode<Attributes> caseNode, int caseIndex, int scrutineeLocal) {
+        var method = environment.enclosingJavaMethod().get();
+        var match = environment.enclosingMatch().get();
+        var caseScope = CaseGenScope.open(method, match);
 
-            dataWriter.visitPermittedSubclass(getInternalName(constructor));
+        withScope(caseScope, () -> {
+            generatePattern(caseNode.pattern(), scrutineeLocal);
+            generateExpr(caseNode.consequent());
+            caseScope.finaliseCase();
+        });
+    }
 
-            putValueDeclaration(updateMetaWith(constructor.meta(), createConstructorType(currentData, constructor)));
+    public void generatePattern(PatternNode<Attributes> pattern, int scrutineeLocal) {
+        var method = environment.enclosingJavaMethod().get();
+        var caseScope = environment.enclosingCase().get();
 
-            constructorWriter.visit(
-                    V17,
-                    ACC_PUBLIC + ACC_FINAL + ACC_SUPER,
-                    getInternalName(constructor),
-                    null,
-                    Type.getInternalName(Record.class),
-                    null);
+        method.methodWriter().loadLocal(scrutineeLocal);
 
-            var fieldTypes = new Type[constructor.params().size()];
+        if (pattern instanceof IdPatternNode<Attributes> idPat) {
+            var idPatVar = method.putLocalVar(idPat);
+            method.methodWriter().storeLocal(idPatVar);
 
-            constructorInitWriter = constructor(
-                    constructorWriter,
-                    null,
-                    constructor.params()
-                            .collect(ConstructorParamNode::typeAnnotation)
-                            .collect(typeFolder::visitType)
-                            .collect(CodeGenerator.this::asmType)
-                            .toArray(fieldTypes));
-        }
+        } else if (pattern instanceof AliasPatternNode<Attributes> aliasPat) {
+            generatePattern(aliasPat.pattern(), scrutineeLocal);
 
-        @Override
-        public Void visitConstructor(Meta<Attributes> meta, String name, ImmutableList<Void> params,
-                Optional<Void> type) {
-            return null;
-        }
+            var aliasPatVar = method.putLocalVar(aliasPat);
+            method.methodWriter().storeLocal(aliasPatVar);
 
-        @Override
-        public void postVisitConstructor(Void constructor) {
-            constructorInitWriter.visitEnd();
-            constructorWriter.visitEnd();
-            classes.add(constructorWriter.toByteArray());
-        }
+        } else if (pattern instanceof LiteralPatternNode<Attributes> litPat) {
+            generateLiteral(litPat.literal());
 
-        @Override
-        public void preVisitConstructorParam(ConstructorParamNode<Attributes> constrParam) {
-            var paramType = typeFolder.visitType(constrParam.typeAnnotation());
-            constructorWriter
-                    .visitRecordComponent(constrParam.name(), asmType(paramType).getDescriptor(), null)
-                    .visitEnd();
-        }
+            if (litPat.literal() instanceof StringNode<Attributes> strPat) {
+                var stringType = Type.getType(String.class);
+                var objectType = Type.getType(Object.class);
+                var equalsDescriptor = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, objectType);
+                var equalsMethod = new Method("equals", equalsDescriptor);
 
-        @Override
-        public Void visitConstructorParam(Meta<Attributes> meta, String name, Void typeAnnotation) {
-            // TODO Auto-generated method stub
-            return null;
-        }
+                method.methodWriter().invokeVirtual(stringType, equalsMethod);
+                method.methodWriter().ifZCmp(GeneratorAdapter.EQ, caseScope.endLabel());
+            } else {
+                method.methodWriter().ifCmp(Types.asmType(litPat), GeneratorAdapter.NE, caseScope.endLabel());
+            }
+        } else if (pattern instanceof ConstructorPatternNode<Attributes> constrPat) {
+            var constrMeta = environment.lookupValue(constrPat.id().canonicalName()).get();
+            var constrName = (ConstructorName) constrMeta.meta().name();
+            var constrType = Types.getConstructorAsmType(constrName);
 
-        @Override
-        public Void visitLet(Meta<Attributes> meta, String name, Optional<Void> type, Void expr) {
-            // TODO Auto-generated method stub
-            return null;
-        }
+            method.methodWriter().instanceOf(constrType);
+            method.methodWriter().ifZCmp(GeneratorAdapter.EQ, caseScope.endLabel());
 
-        @Override
-        public Void visitLetFn(Meta<Attributes> meta, String name, ImmutableList<Void> typeParams,
-                ImmutableList<Void> valueParams, Optional<Void> returnType, Void expr) {
-            // TODO Auto-generated method stub
-            return null;
-        }
+            constrPat.fields().forEach(fieldPat -> {
+                var fieldType = Types.asmType(fieldPat);
+                var getterDescriptor = Type.getMethodDescriptor(fieldType);
+                var getterMethod = new Method(fieldPat.field(), getterDescriptor);
 
-        @Override
-        public Void visitParam(Meta<Attributes> param, String name, Optional<Void> typeAnnotation) {
-            // TODO Auto-generated method stub
-            return null;
-        }
+                fieldPat.pattern().ifPresentOrElse(nestedPattern -> {
+                    var nestedPatLocal = method.methodWriter().newLocal(fieldType);
 
-        @Override
-        public Void visitBlock(Meta<Attributes> meta, ImmutableList<Void> declarations, Optional<Void> result) {
-            // TODO Auto-generated method stub
-            return null;
-        }
+                    method.methodWriter().loadLocal(scrutineeLocal);
+                    method.methodWriter().invokeVirtual(constrType, getterMethod);
+                    method.methodWriter().storeLocal(nestedPatLocal);
 
-        @Override
-        public Void visitIf(Meta<Attributes> meta, Void condition, Void consequent, Void alternative) {
-            // TODO Auto-generated method stub
-            return null;
-        }
+                    generatePattern(nestedPattern, nestedPatLocal);
+                }, () -> {
+                    var fieldPatLocal = method.putLocalVar(fieldPat);
 
-        @Override
-        public Void visitLambda(Meta<Attributes> meta, ImmutableList<Void> params, Void body) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitMatch(Meta<Attributes> meta, Void scrutinee, ImmutableList<Void> cases) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitApply(Meta<Attributes> meta, Void expr, ImmutableList<Void> args) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitReference(Meta<Attributes> meta, QualifiedIdNode id) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitCase(Meta<Attributes> meta, Void pattern, Void consequent) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitAliasPattern(Meta<Attributes> meta, String alias, Void pattern) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitConstructorPattern(Meta<Attributes> meta, QualifiedIdNode id, ImmutableList<Void> fields) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitFieldPattern(Meta<Attributes> meta, String field, Optional<Void> pattern) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitIdPattern(Meta<Attributes> meta, String name) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitLiteralPattern(Meta<Attributes> meta, Void literal) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        // Literals
-        @Override
-        public Void visitBoolean(Meta<Attributes> meta, boolean value) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitChar(Meta<Attributes> meta, char value) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitString(Meta<Attributes> meta, String value) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitInt(Meta<Attributes> meta, int value) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitLong(Meta<Attributes> meta, long value) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitFloat(Meta<Attributes> meta, float value) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Void visitDouble(Meta<Attributes> meta, double value) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        // Types are part of our visitor contract, but we don't need to emit any code
-        // for them
-        @Override
-        public Void visitTypeLambda(Meta<Attributes> meta, ImmutableList<Void> args, Void body) {
-            return null;
-        }
-
-        @Override
-        public Void visitFunType(Meta<Attributes> meta, ImmutableList<Void> argTypes, Void returnType) {
-            return null;
-        }
-
-        @Override
-        public Void visitTypeApply(Meta<Attributes> meta, Void type, ImmutableList<Void> args) {
-            return null;
-        }
-
-        @Override
-        public Void visitTypeReference(Meta<Attributes> meta, QualifiedIdNode id) {
-            return null;
-        }
-
-        @Override
-        public Void visitForAllVar(Meta<Attributes> meta, String name) {
-            return null;
-        }
-
-        @Override
-        public Void visitExistsVar(Meta<Attributes> meta, String name) {
-            return null;
+                    method.methodWriter().loadLocal(scrutineeLocal);
+                    method.methodWriter().invokeVirtual(constrType, getterMethod);
+                    method.methodWriter().storeLocal(fieldPatLocal);
+                });
+            });
         }
 
     }

@@ -4,11 +4,17 @@ import java.util.Arrays;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 sealed public interface Type extends Sort permits PolyType, MonoType {
     public Kind kind();
+
+    default public boolean isPrimitive() {
+        return false;
+    }
 
     @Override
     default <A> A accept(SortFolder<A> visitor) {
@@ -68,6 +74,14 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
     public static BuiltInType DOUBLE = new BuiltInType("Double", TypeKind.INSTANCE);
 
     public static BuiltInType NAMESPACE = new BuiltInType("Namespace", TypeKind.INSTANCE);
+
+    public static ImmutableSet<BuiltInType> primitives = Sets.immutable.<BuiltInType>empty()
+            .newWith(Type.BOOLEAN)
+            .newWith(Type.CHAR)
+            .newWith(Type.INT)
+            .newWith(Type.LONG)
+            .newWith(Type.FLOAT)
+            .newWith(Type.DOUBLE);
 
     public static ImmutableMap<String, BuiltInType> builtIns = Maps.immutable.<String, BuiltInType>empty()
             .newWithKeyValue("Unit", Type.UNIT)

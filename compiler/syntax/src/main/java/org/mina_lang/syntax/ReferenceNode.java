@@ -13,7 +13,7 @@ public record ReferenceNode<A> (Meta<A> meta, QualifiedIdNode id) implements Exp
     public <B> B accept(MetaNodeFolder<A, B> visitor) {
         visitor.preVisitReference(this);
         var result = visitor.visitReference(meta(), id());
-        visitor.postVisitReference(result);
+        visitor.postVisitReference(this);
         return result;
     }
 

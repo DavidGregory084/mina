@@ -12,14 +12,14 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.typing.BuiltInTypingScope;
-import org.mina_lang.common.scopes.typing.ImportedTypesScope;
 import org.mina_lang.common.types.HigherKind;
 import org.mina_lang.common.types.SortSubstitutionTransformer;
 import org.mina_lang.common.types.TypeKind;
 import org.mina_lang.common.types.UnsolvedVariableSupply;
 import org.mina_lang.syntax.DataNode;
 import org.mina_lang.syntax.TypeNode;
+import org.mina_lang.typechecker.scopes.BuiltInTypingScope;
+import org.mina_lang.typechecker.scopes.ImportedTypesScope;
 
 import net.jqwik.api.*;
 

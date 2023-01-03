@@ -7,11 +7,10 @@ import java.util.Optional;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.NameEnvironment;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.naming.*;
+import org.mina_lang.renamer.scopes.*;
 import org.mina_lang.syntax.*;
 
 public class Renamer {

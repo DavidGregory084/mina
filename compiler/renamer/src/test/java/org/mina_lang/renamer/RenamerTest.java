@@ -11,11 +11,10 @@ import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.NameEnvironment;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.naming.ImportedNamesScope;
+import org.mina_lang.renamer.scopes.ImportedNamesScope;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
 

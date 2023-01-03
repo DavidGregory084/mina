@@ -20,7 +20,7 @@ public record ApplyNode<A> (Meta<A> meta, ExprNode<A> expr, ImmutableList<ExprNo
                 visitor.visitExpr(expr()),
                 args().collect(visitor::visitExpr));
 
-        visitor.postVisitApply(result);
+        visitor.postVisitApply(this);
 
         return result;
     }

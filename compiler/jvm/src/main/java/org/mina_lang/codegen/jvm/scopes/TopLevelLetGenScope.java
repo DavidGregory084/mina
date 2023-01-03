@@ -1,0 +1,168 @@
+package org.mina_lang.codegen.jvm.scopes;
+
+import static org.objectweb.asm.Opcodes.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.api.tuple.Pair;
+import org.eclipse.collections.impl.tuple.Tuples;
+import org.mina_lang.codegen.jvm.Asm;
+import org.mina_lang.codegen.jvm.LocalVar;
+import org.mina_lang.codegen.jvm.Names;
+import org.mina_lang.codegen.jvm.Types;
+import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.LocalName;
+import org.mina_lang.common.names.Named;
+import org.mina_lang.common.types.TypeApply;
+import org.mina_lang.syntax.LambdaNode;
+import org.mina_lang.syntax.LetFnNode;
+import org.mina_lang.syntax.LetNode;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.commons.GeneratorAdapter;
+
+public record TopLevelLetGenScope(
+        GeneratorAdapter methodWriter,
+        Label startLabel,
+        Label endLabel,
+        MutableMap<String, Meta<Attributes>> values,
+        MutableMap<String, Meta<Attributes>> types,
+        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
+        ImmutableMap<Named, LocalVar> methodParams,
+        MutableMap<Named, LocalVar> localVars,
+        AtomicInteger nextLambdaId) implements LambdaLiftingScope {
+
+    public TopLevelLetGenScope(
+            GeneratorAdapter methodWriter,
+            Label startLabel,
+            Label endLabel,
+            ImmutableMap<Named, LocalVar> methodParams) {
+        this(
+                methodWriter,
+                startLabel,
+                endLabel,
+                Maps.mutable.empty(),
+                Maps.mutable.empty(),
+                Maps.mutable.empty(),
+                methodParams,
+                Maps.mutable.empty(),
+                new AtomicInteger(0));
+    }
+
+    public static TopLevelLetGenScope open(
+            LetFnNode<Attributes> letFn,
+            ClassWriter namespaceWriter) {
+        var methodWriter = Asm.methodWriter(
+                letFn.name(),
+                letFn.expr(),
+                letFn.valueParams().collect(Types::asmType),
+                null,
+                namespaceWriter);
+
+        var startLabel = new Label();
+        var endLabel = new Label();
+
+        methodWriter.visitLabel(startLabel);
+
+        var methodParams = letFn.valueParams().collectWithIndex((param, index) -> {
+            var paramName= Names.getName(param);
+            var paramType = Types.asmType(param);
+            return Tuples.pair(
+                    paramName,
+                    new LocalVar(
+                            ACC_FINAL,
+                            index,
+                            param.name(),
+                            paramType.getDescriptor(),
+                            null,
+                            startLabel,
+                            endLabel));
+        }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        return new TopLevelLetGenScope(methodWriter, startLabel, endLabel, methodParams);
+    }
+
+    public static TopLevelLetGenScope open(
+            LetNode<Attributes> let,
+            LambdaNode<Attributes> lambda,
+            ClassWriter namespaceWriter) {
+        var methodWriter = Asm.methodWriter(
+                let.name(),
+                lambda.body(),
+                lambda.params().collect(Types::asmType),
+                null,
+                namespaceWriter);
+
+        var startLabel = new Label();
+        var endLabel = new Label();
+
+        methodWriter.visitLabel(startLabel);
+
+        var methodParams = lambda.params().collectWithIndex((param, index) -> {
+            var paramName = Names.getName(param);
+            var paramType = Types.asmType(param);
+            return Tuples.pair(
+                    paramName,
+                    new LocalVar(
+                            ACC_FINAL,
+                            index,
+                            param.name(),
+                            paramType.getDescriptor(),
+                            null,
+                            startLabel,
+                            endLabel));
+        }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        return new TopLevelLetGenScope(methodWriter, startLabel, endLabel, methodParams);
+    }
+
+    public static TopLevelLetGenScope open(
+            LetNode<Attributes> let,
+            ClassWriter namespaceWriter) {
+        var funType = (TypeApply) Types.getUnderlyingType(let);
+
+        var argTypes = funType.typeArguments()
+                .take(funType.typeArguments().size() - 1)
+                .collect(Types::boxedAsmType);
+
+        var returnType = Types.boxedAsmType(funType.typeArguments().getLast());
+
+        var methodWriter = Asm.methodWriter(
+                ACC_PUBLIC + ACC_STATIC,
+                let.name(),
+                returnType,
+                argTypes,
+                null,
+                namespaceWriter);
+
+        var startLabel = new Label();
+        var endLabel = new Label();
+
+        methodWriter.visitLabel(startLabel);
+
+        var methodParams = argTypes.collectWithIndex((paramType, index) -> {
+            return Tuples.pair(
+                    (Named) new LocalName("arg" + index, 0),
+                    new LocalVar(
+                            // These params are created to adapt an eta-reduced function
+                            ACC_FINAL + ACC_SYNTHETIC,
+                            index,
+                            "arg" + index,
+                            paramType.getDescriptor(),
+                            null,
+                            startLabel,
+                            endLabel));
+        }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        return new TopLevelLetGenScope(methodWriter, startLabel, endLabel, methodParams);
+    }
+
+    public void finaliseLet() {
+        finaliseMethod();
+    }
+}

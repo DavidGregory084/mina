@@ -9,10 +9,10 @@ public record DoubleNode<A> (Meta<A> meta, double value) implements LiteralNode<
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(LiteralNodeFolder<A, B> visitor) {
         visitor.preVisitDouble(this);
         var result = visitor.visitDouble(meta(), value());
-        visitor.postVisitDouble(result);
+        visitor.postVisitDouble(this);
         return result;
     }
 
@@ -22,5 +22,10 @@ public record DoubleNode<A> (Meta<A> meta, double value) implements LiteralNode<
         var result = visitor.visitDouble(meta(), value());
         visitor.postVisitDouble(result);
         return result;
+    }
+
+    @Override
+    public Double boxedValue() {
+        return value();
     }
 }

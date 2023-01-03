@@ -2,8 +2,8 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
-import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
 
@@ -27,7 +27,7 @@ public record LetNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> type,
                 type().map(visitor::visitType),
                 visitor.visitExpr(expr()));
 
-        visitor.postVisitLet(result);
+        visitor.postVisitLet(this);
 
         return result;
     }

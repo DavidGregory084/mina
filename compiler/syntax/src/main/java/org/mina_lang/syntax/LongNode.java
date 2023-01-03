@@ -9,10 +9,10 @@ public record LongNode<A>(Meta<A> meta, long value) implements LiteralNode<A> {
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(LiteralNodeFolder<A, B> visitor) {
         visitor.preVisitLong(this);
         var result = visitor.visitLong(meta(), value());
-        visitor.postVisitLong(result);
+        visitor.postVisitLong(this);
         return result;
     }
 
@@ -22,5 +22,10 @@ public record LongNode<A>(Meta<A> meta, long value) implements LiteralNode<A> {
         var result = visitor.visitLong(meta(), value());
         visitor.postVisitLong(result);
         return result;
+    }
+
+    @Override
+    public Long boxedValue() {
+        return value();
     }
 }

@@ -3,7 +3,7 @@ package org.mina_lang.syntax;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record ConstructorPatternNode<A> (Meta<A> meta, QualifiedIdNode id,
+public record ConstructorPatternNode<A>(Meta<A> meta, QualifiedIdNode id,
         ImmutableList<FieldPatternNode<A>> fields) implements PatternNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -13,7 +13,7 @@ public record ConstructorPatternNode<A> (Meta<A> meta, QualifiedIdNode id,
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(PatternNodeFolder<A, B> visitor) {
         visitor.preVisitConstructorPattern(this);
 
         var result = visitor.visitConstructorPattern(
@@ -21,7 +21,7 @@ public record ConstructorPatternNode<A> (Meta<A> meta, QualifiedIdNode id,
                 id(),
                 fields().collect(field -> field.accept(visitor)));
 
-        visitor.postVisitConstructorPattern(result);
+        visitor.postVisitConstructorPattern(this);
 
         return result;
     }

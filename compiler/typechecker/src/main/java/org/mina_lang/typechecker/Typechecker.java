@@ -8,20 +8,17 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
-import org.mina_lang.common.TypeEnvironment;
+import org.mina_lang.common.Scope;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
-import org.mina_lang.common.names.ConstructorName;
-import org.mina_lang.common.names.Name;
-import org.mina_lang.common.names.Named;
-import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.common.scopes.*;
-import org.mina_lang.common.scopes.typing.*;
+import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
+import org.mina_lang.typechecker.scopes.*;
 
 import com.opencastsoftware.prettier4j.Doc;
 
@@ -179,6 +176,50 @@ public class Typechecker {
         diagnostics.reportError(range, message);
     }
 
+    TypeInstantiationTransformer subTypeInstantiation(TypeLambda tyLam) {
+        var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
+
+        tyLam.args().forEach(tyParam -> {
+            if (tyParam instanceof ForAllVar forall) {
+                var unsolved = varSupply.newUnsolvedType(forall.kind());
+                environment.putUnsolvedType(unsolved);
+                instantiated.put(forall, unsolved);
+            } else if (tyParam instanceof ExistsVar exists) {
+                var typeVarName = new ExistsVarName(exists.name());
+                var typeVarAttrs = new Attributes(typeVarName, exists.kind());
+                environment.putType(exists.name(), Meta.of(typeVarAttrs));
+            }
+        });
+
+        return new TypeInstantiationTransformer(instantiated.toImmutable());
+    }
+
+    Type instantiateAsSubType(TypeLambda tyLam) {
+        return tyLam.body().accept(subTypeInstantiation(tyLam));
+    }
+
+    TypeInstantiationTransformer superTypeInstantiation(TypeLambda tyLam) {
+        var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
+
+        tyLam.args().forEach(tyParam -> {
+            if (tyParam instanceof ForAllVar forall) {
+                var typeVarName = new ForAllVarName(forall.name());
+                var typeVarAttrs = new Attributes(typeVarName, forall.kind());
+                environment.putType(forall.name(), Meta.of(typeVarAttrs));
+            } else if (tyParam instanceof ExistsVar exists) {
+                var unsolved = varSupply.newUnsolvedType(exists.kind());
+                environment.putUnsolvedType(unsolved);
+                instantiated.put(exists, unsolved);
+            }
+        });
+
+        return new TypeInstantiationTransformer(instantiated.toImmutable());
+    }
+
+    Type instantiateAsSuperType(TypeLambda tyLam) {
+        return tyLam.body().accept(superTypeInstantiation(tyLam));
+    }
+
     void instantiateAsSubType(UnsolvedType unsolved, Type superType) {
         withScope(new InstantiateTypeScope(), () -> {
             if (superType instanceof UnsolvedType otherUnsolved) {
@@ -248,7 +289,7 @@ public class Typechecker {
                         });
             } else if (superType instanceof TypeLambda tyLam) {
                 // Complete and Easy's InstLAllR rule
-                instantiateAsSubType(unsolved, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
+                instantiateAsSubType(unsolved, tyLam.body().accept(superTypeInstantiation(tyLam)));
             }
         });
     }
@@ -322,7 +363,7 @@ public class Typechecker {
                         });
             } else if (subType instanceof TypeLambda tyLam) {
                 // Complete and Easy's InstRAllL rule
-                instantiateAsSuperType(unsolved, tyLam.instantiateAsSubTypeIn(environment, varSupply));
+                instantiateAsSuperType(unsolved, tyLam.body().accept(subTypeInstantiation(tyLam)));
             }
         });
     }
@@ -405,11 +446,11 @@ public class Typechecker {
                 return tyConSubTyped && tyArgsSubTyped;
             } else if (solvedSuperType instanceof TypeLambda tyLam) {
                 // Complete and Easy's <:ForallR rule
-                return checkSubType(solvedSubType, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
+                return checkSubType(solvedSubType, instantiateAsSuperType(tyLam));
 
             } else if (solvedSubType instanceof TypeLambda tyLam) {
                 // Complete and Easy's <:ForallL rule
-                return checkSubType(tyLam.instantiateAsSubTypeIn(environment, varSupply), solvedSuperType);
+                return checkSubType(instantiateAsSubType(tyLam), solvedSuperType);
 
             } else {
                 return false;
@@ -503,7 +544,7 @@ public class Typechecker {
         if (inferredType instanceof TypeLambda tyLam) {
             return withScope(new InstantiateTypeScope(), () -> {
                 // Keep instantiating binders until we have something else
-                return withPolyInstantiation(tyLam.instantiateAsSubTypeIn(environment, varSupply), fn);
+                return withPolyInstantiation(instantiateAsSubType(tyLam), fn);
             });
         } else {
             return fn.apply(inferredType);
@@ -790,7 +831,7 @@ public class Typechecker {
 
             // We need to keep this instantiation to use with our field patterns
             var instantiator = (constrType instanceof TypeLambda tyLam)
-                    ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
+                    ? Optional.of(subTypeInstantiation(tyLam))
                     : Optional.<TypeInstantiationTransformer>empty();
 
             if (constrType instanceof TypeLambda tyLam) {
@@ -861,7 +902,7 @@ public class Typechecker {
     ExprNode<Attributes> checkExpr(ExprNode<Name> expr, Type expectedType) {
         if (expectedType instanceof TypeLambda tyLam) {
             return withScope(new InstantiateTypeScope(), () -> {
-                return checkExpr(expr, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
+                return checkExpr(expr, instantiateAsSuperType(tyLam));
             });
         } else if (expr instanceof BlockNode<Name> block) {
             return withScope(new BlockTypingScope(), () -> {
@@ -968,7 +1009,7 @@ public class Typechecker {
     PatternNode<Attributes> checkPattern(PatternNode<Name> pattern, Type expectedType) {
         if (expectedType instanceof TypeLambda tyLam) {
             return withScope(new InstantiateTypeScope(), () -> {
-                return checkPattern(pattern, tyLam.instantiateAsSuperTypeIn(environment, varSupply));
+                return checkPattern(pattern, instantiateAsSuperType(tyLam));
             });
         } else {
             var enclosingCase = environment.enclosingCase().get();
@@ -999,7 +1040,7 @@ public class Typechecker {
 
                 // We need to keep this instantiation to use with our field patterns
                 var instantiator = (constrType instanceof TypeLambda tyLam)
-                        ? Optional.of(tyLam.subTypeInstantiationIn(environment, varSupply))
+                        ? Optional.of(subTypeInstantiation(tyLam))
                         : Optional.<TypeInstantiationTransformer>empty();
 
                 if (constrType instanceof TypeLambda tyLam) {

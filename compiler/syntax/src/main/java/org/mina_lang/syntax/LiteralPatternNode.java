@@ -11,14 +11,14 @@ public record LiteralPatternNode<A>(Meta<A> meta, LiteralNode<A> literal) implem
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(PatternNodeFolder<A, B> visitor) {
         visitor.preVisitLiteralPattern(this);
 
         var result = visitor.visitLiteralPattern(
             meta(),
             visitor.visitLiteral(literal()));
 
-        visitor.postVisitLiteralPattern(result);
+        visitor.postVisitLiteralPattern(this);
 
         return result;
     }

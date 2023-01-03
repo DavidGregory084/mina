@@ -21,7 +21,7 @@ public record MatchNode<A> (Meta<A> meta, ExprNode<A> scrutinee, ImmutableList<C
                 visitor.visitExpr(scrutinee()),
                 cases().collect(cse -> cse.accept(visitor)));
 
-        visitor.postVisitMatch(result);
+        visitor.postVisitMatch(this);
 
         return result;
     }

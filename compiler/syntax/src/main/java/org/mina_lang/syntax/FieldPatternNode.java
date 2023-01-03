@@ -14,6 +14,10 @@ public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternN
 
     @Override
     public <B> B accept(MetaNodeFolder<A, B> visitor) {
+        return accept((PatternNodeFolder<A, B>) visitor);
+    }
+
+    public <B> B accept(PatternNodeFolder<A, B> visitor) {
         visitor.preVisitFieldPattern(this);
 
         var result = visitor.visitFieldPattern(
@@ -21,7 +25,7 @@ public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternN
                 field(),
                 pattern().map(visitor::visitPattern));
 
-        visitor.postVisitFieldPattern(result);
+        visitor.postVisitFieldPattern(this);
 
         return result;
     }

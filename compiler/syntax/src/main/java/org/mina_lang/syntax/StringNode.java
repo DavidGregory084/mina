@@ -9,7 +9,7 @@ public record StringNode<A>(Meta<A> meta, String value) implements LiteralNode<A
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(LiteralNodeFolder<A, B> visitor) {
         visitor.preVisitString(this);
         var result = visitor.visitString(meta(), value());
         visitor.preVisitString(this);
@@ -22,5 +22,10 @@ public record StringNode<A>(Meta<A> meta, String value) implements LiteralNode<A
         var result = visitor.visitString(meta(), value());
         visitor.preVisitString(this);
         return result;
+    }
+
+    @Override
+    public String boxedValue() {
+        return value();
     }
 }

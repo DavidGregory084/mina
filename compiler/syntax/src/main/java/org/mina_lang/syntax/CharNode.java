@@ -9,10 +9,10 @@ public record CharNode<A> (Meta<A> meta, char value) implements LiteralNode<A> {
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(LiteralNodeFolder<A, B> visitor) {
         visitor.preVisitChar(this);
         var result = visitor.visitChar(meta(), value());
-        visitor.postVisitChar(result);
+        visitor.postVisitChar(this);
         return result;
     }
 
@@ -22,5 +22,10 @@ public record CharNode<A> (Meta<A> meta, char value) implements LiteralNode<A> {
         var result = visitor.visitChar(meta(), value());
         visitor.postVisitChar(result);
         return result;
+    }
+
+    @Override
+    public Character boxedValue() {
+        return value();
     }
 }

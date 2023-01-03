@@ -9,10 +9,10 @@ public record BooleanNode<A> (Meta<A> meta, boolean value) implements LiteralNod
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(LiteralNodeFolder<A, B> visitor) {
         visitor.preVisitBoolean(this);
         var result = visitor.visitBoolean(meta(), value());
-        visitor.postVisitBoolean(result);
+        visitor.postVisitBoolean(this);
         return result;
     }
 
@@ -22,5 +22,10 @@ public record BooleanNode<A> (Meta<A> meta, boolean value) implements LiteralNod
         var result = visitor.visitBoolean(meta(), value());
         visitor.postVisitBoolean(result);
         return result;
+    }
+
+    @Override
+    public Boolean boxedValue() {
+        return value();
     }
 }

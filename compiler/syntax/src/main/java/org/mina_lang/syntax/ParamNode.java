@@ -22,7 +22,7 @@ public record ParamNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> typ
                 name(),
                 typeAnnotation().map(visitor::visitType));
 
-        visitor.postVisitParam(result);
+        visitor.postVisitParam(this);
 
         return result;
     }

@@ -9,10 +9,10 @@ public record FloatNode<A> (Meta<A> meta, float value) implements LiteralNode<A>
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(LiteralNodeFolder<A, B> visitor) {
         visitor.preVisitFloat(this);
         var result = visitor.visitFloat(meta(), value());
-        visitor.postVisitFloat(result);
+        visitor.postVisitFloat(this);
         return result;
     }
 
@@ -22,5 +22,10 @@ public record FloatNode<A> (Meta<A> meta, float value) implements LiteralNode<A>
         var result = visitor.visitFloat(meta(), value());
         visitor.postVisitFloat(result);
         return result;
+    }
+
+    @Override
+    public Float boxedValue() {
+        return value();
     }
 }

@@ -19,7 +19,7 @@ public record CaseNode<A> (Meta<A> meta, PatternNode<A> pattern, ExprNode<A> con
                 visitor.visitPattern(pattern()),
                 visitor.visitExpr(consequent()));
 
-        visitor.postVisitCase(result);
+        visitor.postVisitCase(this);
 
         return result;
     }

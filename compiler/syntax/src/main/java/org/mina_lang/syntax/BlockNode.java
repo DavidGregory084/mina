@@ -23,7 +23,7 @@ public record BlockNode<A> (Meta<A> meta, ImmutableList<LetNode<A>> declarations
                 declarations().collect(let -> let.accept(visitor)),
                 result().map(visitor::visitExpr));
 
-        visitor.postVisitBlock(result);
+        visitor.postVisitBlock(this);
 
         return result;
     }

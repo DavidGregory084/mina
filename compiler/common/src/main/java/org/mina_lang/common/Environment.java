@@ -6,7 +6,6 @@ import java.util.function.BiConsumer;
 import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.names.ConstructorName;
-import org.mina_lang.common.scopes.Scope;
 
 /**
  * Represents a name or type environment as a stack of scopes,

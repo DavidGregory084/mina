@@ -11,7 +11,7 @@ public record AliasPatternNode<A> (Meta<A> meta, String alias, PatternNode<A> pa
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(PatternNodeFolder<A, B> visitor) {
         visitor.preVisitAliasPattern(this);
 
         var result = visitor.visitAliasPattern(
@@ -19,7 +19,7 @@ public record AliasPatternNode<A> (Meta<A> meta, String alias, PatternNode<A> pa
                 alias(),
                 visitor.visitPattern(pattern()));
 
-        visitor.postVisitAliasPattern(result);
+        visitor.postVisitAliasPattern(this);
 
         return result;
     }
@@ -37,4 +37,5 @@ public record AliasPatternNode<A> (Meta<A> meta, String alias, PatternNode<A> pa
 
         return result;
     }
+
 }
