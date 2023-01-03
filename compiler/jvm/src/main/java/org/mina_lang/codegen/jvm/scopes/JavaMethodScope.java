@@ -30,7 +30,7 @@ public interface JavaMethodScope extends VarBindingScope {
         var varMinaType = Types.getType(localVar);
         var varType = Types.asmType(localVar);
         var varIndex = methodWriter().newLocal(varType);
-        var varSignature = varMinaType.isPrimitive() ? null : JavaSignature.forType(varMinaType);
+        var varSignature = JavaSignature.forType(varMinaType);
 
         localVars().put(
                 varName,

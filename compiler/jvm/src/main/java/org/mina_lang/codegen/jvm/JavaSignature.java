@@ -160,9 +160,13 @@ public class JavaSignature {
     }
 
     public static String forType(org.mina_lang.common.types.Type type) {
-        var visitor = new SignatureWriter();
-        writeType(visitor, type);
-        return visitor.toString();
+        if (type.isPrimitive()) {
+            return null;
+        } else {
+            var visitor = new SignatureWriter();
+            writeType(visitor, type);
+            return visitor.toString();
+        }
     }
 
     public static void writeType(

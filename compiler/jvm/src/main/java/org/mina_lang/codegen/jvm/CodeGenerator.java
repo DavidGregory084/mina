@@ -212,7 +212,7 @@ public class CodeGenerator {
 
         var paramMinaType = Types.getType(param);
         var paramType = Types.asmType(paramMinaType);
-        var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
+        var paramSignature = JavaSignature.forType(paramMinaType);
 
         classWriter
                 .visitRecordComponent(param.name(), paramType.getDescriptor(), paramSignature)
@@ -291,7 +291,7 @@ public class CodeGenerator {
             Asm.emitStaticField(namespaceWriter, let.name(), Types.asmType(lit), null, lit.boxedValue());
         } else {
             var fieldType = Types.getType(let);
-            var fieldSignature = fieldType.isPrimitive() ? null : JavaSignature.forType(fieldType);
+            var fieldSignature = JavaSignature.forType(fieldType);
             Asm.emitStaticField(namespaceWriter, let.name(), Types.asmType(let), fieldSignature, null);
             generateExpr(let.expr());
             initWriter.putStatic(namespace.namespaceType(), let.name(), Types.asmType(let));

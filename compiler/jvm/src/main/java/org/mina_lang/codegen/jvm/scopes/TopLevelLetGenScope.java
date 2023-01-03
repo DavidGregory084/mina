@@ -70,7 +70,7 @@ public record TopLevelLetGenScope(
             var paramName = Names.getName(param);
             var paramMinaType = Types.getType(param);
             var paramType = Types.asmType(paramMinaType);
-            var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
+            var paramSignature = JavaSignature.forType(paramMinaType);
             return Tuples.pair(
                     paramName,
                     new LocalVar(
@@ -90,6 +90,7 @@ public record TopLevelLetGenScope(
             LetNode<Attributes> let,
             LambdaNode<Attributes> lambda,
             ClassWriter namespaceWriter) {
+        // Top-level lambdas become static methods
         var methodWriter = Asm.methodWriter(
                 let.name(),
                 lambda.body(),
@@ -106,7 +107,7 @@ public record TopLevelLetGenScope(
             var paramName = Names.getName(param);
             var paramMinaType = Types.getType(param);
             var paramType = Types.asmType(paramMinaType);
-            var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
+            var paramSignature = JavaSignature.forType(paramMinaType);
             return Tuples.pair(
                     paramName,
                     new LocalVar(
@@ -132,6 +133,7 @@ public record TopLevelLetGenScope(
 
         var returnType = Types.boxedAsmType(funType.typeArguments().getLast());
 
+        // Top-level eta-reduced functions are adapted into static methods
         var methodWriter = Asm.methodWriter(
                 ACC_PUBLIC + ACC_STATIC,
                 let.name(),
@@ -147,11 +149,11 @@ public record TopLevelLetGenScope(
 
         var methodParams = argMinaTypes.collectWithIndex((paramMinaType, index) -> {
             var paramType = Types.asmType(paramMinaType);
-            var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
+            var paramSignature = JavaSignature.forType(paramMinaType);
             return Tuples.pair(
                     (Named) new LocalName("arg" + index, 0),
                     new LocalVar(
-                            // These params are created to adapt an eta-reduced function
+                            // These params are created to adapt the eta-reduced function
                             ACC_FINAL + ACC_SYNTHETIC,
                             index,
                             "arg" + index,

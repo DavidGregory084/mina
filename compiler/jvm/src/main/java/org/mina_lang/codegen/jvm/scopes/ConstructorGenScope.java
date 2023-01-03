@@ -112,7 +112,7 @@ public record ConstructorGenScope(
                     var paramName = Names.getName(param);
                     var paramMinaType = Types.getType(param);
                     var paramType = Types.asmType(param);
-                    var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
+                    var paramSignature = JavaSignature.forType(paramMinaType);
                     return Tuples.pair(
                             paramName,
                             new LocalVar(

@@ -52,6 +52,7 @@ public record LambdaGenScope(
 
         var freeVariables = lambda.accept(new FreeVariablesFolder());
 
+        // Any free variables captured in the lambda must be converted into parameters
         var allParams = Lists.immutable.<MetaNode<Attributes>>empty()
                 .newWithAll(freeVariables)
                 .newWithAll(lambda.params());
@@ -62,6 +63,7 @@ public record LambdaGenScope(
 
         var liftedMethodId = enclosingLifter.nextLambdaId().getAndIncrement();
 
+        // Write out a new static method to implement the lambda
         var methodWriter = Asm.methodWriter(
                 ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC,
                 "lambda$" + liftedMethodName + "$" + liftedMethodId,
@@ -78,6 +80,7 @@ public record LambdaGenScope(
         var methodParams = allParams.collectWithIndex((param, index) -> {
             var paramName= Names.getName(param);
             var paramType = Types.asmType(param);
+            // Free variables prepended to the parameter list are marked synthetic
             var syntheticParam = index >= freeVariables.size() ? ACC_SYNTHETIC : 0;
             return Tuples.pair(
                     paramName,
