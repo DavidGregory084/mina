@@ -427,6 +427,10 @@ public class CodeGenerator {
                         .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
 
                 method.methodWriter().invokeConstructor(constrType, new Method("<init>", Type.VOID_TYPE, funArgTypes));
+                // Not exactly necessary - this is here to upcast constructors into their parent data type.
+                // It was added to avoid a case in the ASM verifier which requires the generated classes
+                // to be loaded into the VM during verification (common supertype checks).
+                method.methodWriter().checkCast(Types.getDataAsmType(constrName.enclosing()));
 
             } else if (appliedName.equals(Nameless.INSTANCE) || appliedName instanceof LocalName) {
                 generateExpr(apply.expr());
