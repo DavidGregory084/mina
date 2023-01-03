@@ -11,6 +11,7 @@ import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.mina_lang.codegen.jvm.CodeGenerator;
 import org.mina_lang.common.Attributes;
+import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.types.KindPrinter;
 import org.mina_lang.common.types.SortPrinter;
@@ -162,7 +163,9 @@ public class MinaTextDocumentService implements TextDocumentService {
         if (node.meta().meta() instanceof Attributes attrs) {
             String nameString;
 
-            if (attrs.name() instanceof Named name) {
+            if (attrs.name() instanceof LocalName name) {
+                nameString = name.canonicalName() + "@" + name.index() + ": ";
+            } else if (attrs.name() instanceof Named name) {
                 nameString = name.canonicalName() + ": ";
             } else {
                 nameString = "";

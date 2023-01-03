@@ -34,6 +34,7 @@ public record MatchGenScope(
     }
 
     public void finaliseMatch() {
+        // TODO: Throw java.lang.MatchException once it leaves preview
         enclosingMethod
             .methodWriter()
             .throwException(Type.getType(RuntimeException.class), "Match error");

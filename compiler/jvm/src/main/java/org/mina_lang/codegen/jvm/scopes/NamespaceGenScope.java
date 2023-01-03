@@ -74,7 +74,7 @@ public record NamespaceGenScope(
                 ACC_PUBLIC + ACC_FINAL + ACC_SUPER,
                 namespaceType.getInternalName(),
                 null,
-                Type.getInternalName(Object.class),
+                Types.OBJECT_TYPE.getInternalName(),
                 null);
 
         // Start and end labels for variable debug info of the static initializer

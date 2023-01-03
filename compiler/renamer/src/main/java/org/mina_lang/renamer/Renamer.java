@@ -225,14 +225,6 @@ public class Renamer {
         }
 
         @Override
-        public void postVisitLet(LetNode<Name> let) {
-            if (environment.topScope() instanceof NamespaceNamingScope) {
-                // Reset local variable counter for each new top-level let binding
-                localVarIndex = 0;
-            }
-        }
-
-        @Override
         public void preVisitLetFn(LetFnNode<Void> letFn) {
             var typeLambdaScope = new TypeLambdaNamingScope();
 

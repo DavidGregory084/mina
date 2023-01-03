@@ -34,11 +34,6 @@ public class CodeGenerator {
         generateNamespace(namespace);
 
         classes.forEachKeyValue((name, classData) -> {
-            var reader = new ClassReader(classData);
-            var writer = new PrintWriter(System.err);
-            var visitor = new TraceClassVisitor(writer);
-            reader.accept(visitor, 0);
-
             if (name instanceof NamespaceName nsName) {
                 var path = Paths.namespacePath(destination, nsName);
                 try {
@@ -47,7 +42,7 @@ public class CodeGenerator {
                     }
                     Files.write(path, classData);
                 } catch (IOException e) {
-                    System.err.printf("Exception while writing class data to %s - %s", path, e);
+                    System.err.printf("Exception while writing class data to %s - %s%n", path, e);
                 }
             } else if (name instanceof DataName dataName) {
                 var path = Paths.dataPath(destination, dataName);
@@ -57,7 +52,7 @@ public class CodeGenerator {
                     }
                     Files.write(path, classData);
                 } catch (IOException e) {
-                    System.err.printf("Exception while writing class data to %s - %s", path, e);
+                    System.err.printf("Exception while writing class data to %s - %s%n", path, e);
                 }
             } else if (name instanceof ConstructorName constrName) {
                 var path = Paths.constructorPath(destination, constrName);
@@ -67,14 +62,24 @@ public class CodeGenerator {
                     }
                     Files.write(path, classData);
                 } catch (IOException e) {
-                    System.err.printf("Exception while writing class data to %s - %s", path, e);
+                    System.err.printf("Exception while writing class data to %s - %s%n", path, e);
                 }
             }
 
-            var verifier = new ClassReader(classData);
-            var verifyWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-            var verifyAdapter = new CheckClassAdapter(verifyWriter, true);
-            verifier.accept(verifyAdapter, 0);
+            try {
+                var reader = new ClassReader(classData);
+                var writer = new PrintWriter(System.err);
+                var visitor = new TraceClassVisitor(writer);
+                reader.accept(visitor, 0);
+
+                var verifier = new ClassReader(classData);
+                var verifyWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+                var verifyAdapter = new CheckClassAdapter(verifyWriter, true);
+                verifier.accept(verifyAdapter, 0);
+            } catch (Exception e) {
+                System.err.printf("Exception while verifying class data - %s%n", e);
+                e.printStackTrace(System.err);
+            }
         });
     }
 
@@ -205,26 +210,30 @@ public class CodeGenerator {
         var classWriter = constructor.classWriter();
         var initWriter = constructor.initWriter();
 
-        var paramType = Types.asmType(param);
+        var paramMinaType = Types.getType(param);
+        var paramType = Types.asmType(paramMinaType);
+        var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
 
         classWriter
-                .visitRecordComponent(param.name(), paramType.getDescriptor(), null)
+                .visitRecordComponent(param.name(), paramType.getDescriptor(), paramSignature)
                 .visitEnd();
 
         Asm.emitConstructorField(
                 classWriter,
                 initWriter,
+                constructor.constrType(),
                 paramIndex,
                 param.name(),
                 paramType,
-                null);
+                paramSignature);
 
         Asm.emitFieldGetter(
                 classWriter,
                 constructor.constrType(),
                 param.name(),
                 paramType,
-                null);
+                JavaSignature.forConstructorInstance(constructor.constr()),
+                JavaSignature.forFieldGetter(paramMinaType));
     }
 
     public void generateTopLevelLetFn(LetFnNode<Attributes> letFn) {
@@ -279,9 +288,11 @@ public class CodeGenerator {
                 letScope.finaliseLet();
             });
         } else if (let.expr() instanceof LiteralNode<Attributes> lit) {
-            Asm.staticField(namespaceWriter, let.name(), Types.asmType(lit), lit.boxedValue());
+            Asm.emitStaticField(namespaceWriter, let.name(), Types.asmType(lit), null, lit.boxedValue());
         } else {
-            Asm.staticField(namespaceWriter, let.name(), Types.asmType(let), null);
+            var fieldType = Types.getType(let);
+            var fieldSignature = fieldType.isPrimitive() ? null : JavaSignature.forType(fieldType);
+            Asm.emitStaticField(namespaceWriter, let.name(), Types.asmType(let), fieldSignature, null);
             generateExpr(let.expr());
             initWriter.putStatic(namespace.namespaceType(), let.name(), Types.asmType(let));
         }
@@ -559,12 +570,10 @@ public class CodeGenerator {
             generateLiteral(litPat.literal());
 
             if (litPat.literal() instanceof StringNode<Attributes> strPat) {
-                var stringType = Type.getType(String.class);
-                var objectType = Type.getType(Object.class);
-                var equalsDescriptor = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, objectType);
+                var equalsDescriptor = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Types.OBJECT_TYPE);
                 var equalsMethod = new Method("equals", equalsDescriptor);
 
-                method.methodWriter().invokeVirtual(stringType, equalsMethod);
+                method.methodWriter().invokeVirtual(Types.STRING_TYPE, equalsMethod);
                 method.methodWriter().ifZCmp(GeneratorAdapter.EQ, caseScope.endLabel());
             } else {
                 method.methodWriter().ifCmp(Types.asmType(litPat), GeneratorAdapter.NE, caseScope.endLabel());
@@ -586,6 +595,7 @@ public class CodeGenerator {
                     var nestedPatLocal = method.methodWriter().newLocal(fieldType);
 
                     method.methodWriter().loadLocal(scrutineeLocal);
+                    method.methodWriter().checkCast(constrType);
                     method.methodWriter().invokeVirtual(constrType, getterMethod);
                     method.methodWriter().storeLocal(nestedPatLocal);
 
@@ -594,6 +604,7 @@ public class CodeGenerator {
                     var fieldPatLocal = method.putLocalVar(fieldPat);
 
                     method.methodWriter().loadLocal(scrutineeLocal);
+                    method.methodWriter().checkCast(constrType);
                     method.methodWriter().invokeVirtual(constrType, getterMethod);
                     method.methodWriter().storeLocal(fieldPatLocal);
                 });

@@ -43,7 +43,7 @@ public record DataGenScope(
                 ACC_PUBLIC + ACC_INTERFACE + ACC_ABSTRACT,
                 dataType.getInternalName(),
                 JavaSignature.forData(data),
-                Type.getInternalName(Object.class),
+                Types.OBJECT_TYPE.getInternalName(),
                 null);
 
         return new DataGenScope(data, dataType, classWriter);

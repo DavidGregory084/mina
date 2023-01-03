@@ -2,7 +2,6 @@ package org.mina_lang.codegen.jvm;
 
 import java.util.Arrays;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
@@ -18,7 +17,16 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 public class Types {
-    private static Type OBJECT_TYPE = Type.getType(Object.class);
+    public static Type OBJECT_TYPE = Type.getType(Object.class);
+    public static Type STRING_TYPE = Type.getType(String.class);
+    public static Type RECORD_TYPE = Type.getType(Record.class);
+    public static Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
+    public static Type BOXED_CHAR_TYPE = Type.getType(Character.class);
+    public static Type BOXED_INT_TYPE = Type.getType(Integer.class);
+    public static Type BOXED_LONG_TYPE = Type.getType(Long.class);
+    public static Type BOXED_FLOAT_TYPE = Type.getType(Float.class);
+    public static Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
+    public static Type UNIT_TYPE = Type.getObjectType("org/mina_lang/runtime/Unit");
 
     public static Kind getKind(MetaNode<Attributes> node) {
         return (Kind) node.meta().meta().sort();
@@ -70,7 +78,7 @@ public class Types {
         } else if (minaType.equals(org.mina_lang.common.types.Type.CHAR)) {
             return Type.CHAR_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.STRING)) {
-            return Type.getType(String.class);
+            return Types.STRING_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.INT)) {
             return Type.INT_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.LONG)) {
@@ -85,7 +93,7 @@ public class Types {
                 minaType instanceof org.mina_lang.common.types.TypeApply tyApp) {
             return Type.getObjectType("org/mina_lang/runtime/Function" + (tyApp.typeArguments().size() - 1));
         } else if (minaType instanceof org.mina_lang.common.types.TypeVar tyVar) {
-            return Type.getType(Object.class);
+            return Types.OBJECT_TYPE;
         } else if (minaType instanceof org.mina_lang.common.types.TypeApply tyApp) {
             return asmType(tyApp.type());
         } else if (minaType instanceof org.mina_lang.common.types.TypeConstructor tyCon) {
@@ -93,7 +101,7 @@ public class Types {
         } else if (minaType instanceof org.mina_lang.common.types.TypeLambda tyLam) {
             return asmType(tyLam.body());
         } else if (minaType instanceof org.mina_lang.common.types.UnsolvedType unsolved) {
-            return Type.getType(Object.class);
+            return Types.OBJECT_TYPE;
         }
 
         return null;
@@ -106,26 +114,26 @@ public class Types {
 
     public static Type boxedAsmType(org.mina_lang.common.types.Type minaType) {
         if (minaType.equals(org.mina_lang.common.types.Type.BOOLEAN)) {
-            return Type.getType(Boolean.class);
+            return Types.BOXED_BOOLEAN_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.CHAR)) {
-            return Type.getType(Character.class);
+            return Types.BOXED_CHAR_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.STRING)) {
-            return Type.getType(String.class);
+            return Types.STRING_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.INT)) {
-            return Type.getType(Integer.class);
+            return Types.BOXED_INT_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.LONG)) {
-            return Type.getType(Long.class);
+            return Types.BOXED_LONG_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.FLOAT)) {
-            return Type.getType(Float.class);
+            return Types.BOXED_FLOAT_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.DOUBLE)) {
-            return Type.getType(Double.class);
+            return Types.BOXED_DOUBLE_TYPE;
         } else if (minaType.equals(org.mina_lang.common.types.Type.UNIT)) {
             return Type.getObjectType("org/mina_lang/runtime/Unit");
         } else if (org.mina_lang.common.types.Type.isFunction(minaType) &&
                 minaType instanceof org.mina_lang.common.types.TypeApply tyApp) {
             return Type.getObjectType("org/mina_lang/runtime/Function" + (tyApp.typeArguments().size() - 1));
         } else if (minaType instanceof org.mina_lang.common.types.TypeVar tyVar) {
-            return Type.getType(Object.class);
+            return Types.OBJECT_TYPE;
         } else if (minaType instanceof org.mina_lang.common.types.TypeApply tyApp) {
             return boxedAsmType(tyApp.type());
         } else if (minaType instanceof org.mina_lang.common.types.TypeConstructor tyCon) {
@@ -133,7 +141,7 @@ public class Types {
         } else if (minaType instanceof org.mina_lang.common.types.TypeLambda tyLam) {
             return boxedAsmType(tyLam.body());
         } else if (minaType instanceof org.mina_lang.common.types.UnsolvedType unsolved) {
-            return Type.getType(Object.class);
+            return Types.OBJECT_TYPE;
         }
 
         return null;

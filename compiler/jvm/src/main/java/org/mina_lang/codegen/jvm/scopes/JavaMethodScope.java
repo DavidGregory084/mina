@@ -4,6 +4,7 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 
 import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.map.MutableMap;
+import org.mina_lang.codegen.jvm.JavaSignature;
 import org.mina_lang.codegen.jvm.LocalVar;
 import org.mina_lang.codegen.jvm.Names;
 import org.mina_lang.codegen.jvm.Types;
@@ -26,8 +27,10 @@ public interface JavaMethodScope extends VarBindingScope {
 
     default public int putLocalVar(MetaNode<Attributes> localVar, Label startLabel, Label endLabel) {
         var varName = Names.getName(localVar);
+        var varMinaType = Types.getType(localVar);
         var varType = Types.asmType(localVar);
         var varIndex = methodWriter().newLocal(varType);
+        var varSignature = varMinaType.isPrimitive() ? null : JavaSignature.forType(varMinaType);
 
         localVars().put(
                 varName,
@@ -36,7 +39,7 @@ public interface JavaMethodScope extends VarBindingScope {
                         varIndex,
                         varName.localName(),
                         varType.getDescriptor(),
-                        null,
+                        varSignature,
                         startLabel,
                         endLabel));
 

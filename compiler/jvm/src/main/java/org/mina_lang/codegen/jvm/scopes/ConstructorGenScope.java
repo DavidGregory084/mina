@@ -64,7 +64,7 @@ public record ConstructorGenScope(
         initWriter.visitLocalVariable(
                 "this",
                 constrType.getDescriptor(),
-                null,
+                JavaSignature.forConstructorInstance(constr),
                 startLabel,
                 endLabel,
                 0);
@@ -81,7 +81,7 @@ public record ConstructorGenScope(
 
         var initWriter = Asm.constructor(
                 classWriter,
-                null,
+                JavaSignature.forJavaConstructor(constructor),
                 constructor.params());
 
         var constrType = Types.getConstructorAsmType(constructor);
@@ -92,7 +92,7 @@ public record ConstructorGenScope(
                 ACC_PUBLIC + ACC_FINAL + ACC_SUPER + ACC_RECORD,
                 constrType.getInternalName(),
                 JavaSignature.forConstructor(data, constructor),
-                Type.getInternalName(Record.class),
+                Types.RECORD_TYPE.getInternalName(),
                 new String[] { Types.getDataAsmType(data).getInternalName() });
 
         // Start and end labels for variable debug info of the Java constructor
@@ -104,13 +104,15 @@ public record ConstructorGenScope(
         // Invoke superclass constructor
         initWriter.loadThis();
         initWriter.invokeConstructor(
-                Type.getType(Record.class),
+                Types.RECORD_TYPE,
                 new Method("<init>", Type.getMethodDescriptor(Type.VOID_TYPE)));
 
         var methodParams = constructor.params()
                 .collectWithIndex((param, index) -> {
                     var paramName = Names.getName(param);
+                    var paramMinaType = Types.getType(param);
                     var paramType = Types.asmType(param);
+                    var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
                     return Tuples.pair(
                             paramName,
                             new LocalVar(
@@ -118,7 +120,7 @@ public record ConstructorGenScope(
                                     index + 1, // first param is `this`
                                     param.name(),
                                     paramType.getDescriptor(),
-                                    null,
+                                    paramSignature,
                                     startLabel,
                                     endLabel));
                 }).toImmutableMap(Pair::getOne, Pair::getTwo);

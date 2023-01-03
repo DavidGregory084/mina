@@ -1,0 +1,10 @@
+namespace Mina/Examples/LetEtaReduced {
+    data Option[A] {
+        case Some(value: A)
+        case None()
+    }
+
+    let some = Some
+
+    let someOne = some(1)
+}

@@ -9,7 +9,6 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.types.TypeApply;
-import org.mina_lang.common.types.TypeLambda;
 import org.mina_lang.syntax.ConstructorParamNode;
 import org.mina_lang.syntax.ExprNode;
 import org.objectweb.asm.ClassWriter;
@@ -129,19 +128,21 @@ public class Asm {
                 classWriter);
     }
 
-    public static void staticField(
+    public static void emitStaticField(
             ClassWriter classWriter,
             String fieldName,
             Type fieldType,
+            String signature,
             Object initialValue) {
         classWriter.visitField(
                 ACC_PUBLIC + ACC_STATIC + ACC_FINAL,
-                fieldName, fieldType.getDescriptor(), null, initialValue);
+                fieldName, fieldType.getDescriptor(), signature, initialValue);
     }
 
     public static void emitConstructorField(
             ClassWriter classWriter,
             GeneratorAdapter initWriter,
+            Type constrType,
             int fieldIndex,
             String fieldName,
             Type fieldType,
@@ -156,10 +157,9 @@ public class Asm {
         initWriter.loadThis();
         initWriter.loadArg(fieldIndex);
         initWriter.putField(
-                fieldType,
+                constrType,
                 fieldName,
                 fieldType);
-
     }
 
     public static void emitFieldGetter(
@@ -167,11 +167,12 @@ public class Asm {
             Type constrType,
             String fieldName,
             Type fieldType,
-            String signature) {
+            String thisSignature,
+            String getterSignature) {
         var getterVisitor = new GeneratorAdapter(
                 ACC_PUBLIC,
                 new Method(fieldName, Type.getMethodDescriptor(fieldType)),
-                signature,
+                getterSignature,
                 null,
                 classWriter);
 
@@ -189,7 +190,7 @@ public class Asm {
         getterVisitor.visitLocalVariable(
                 "this",
                 constrType.getDescriptor(),
-                signature,
+                thisSignature,
                 getterStartLabel,
                 getterEndLabel,
                 0);
@@ -215,11 +216,7 @@ public class Asm {
 
     public static Handle constructorMethodHandle(ConstructorName constrName,
             org.mina_lang.common.types.Type constrType) {
-        while (constrType instanceof TypeLambda tyLam) {
-            constrType = tyLam.body();
-        }
-
-        var funType = (TypeApply) constrType;
+        var funType = (TypeApply) Types.getUnderlyingType(constrType);
         var funArgTypes = funType.typeArguments()
                 .take(funType.typeArguments().size() - 1)
                 .collect(Types::asmType)

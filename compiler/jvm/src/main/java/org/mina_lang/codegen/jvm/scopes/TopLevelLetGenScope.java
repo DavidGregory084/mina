@@ -9,10 +9,7 @@ import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.tuple.Tuples;
-import org.mina_lang.codegen.jvm.Asm;
-import org.mina_lang.codegen.jvm.LocalVar;
-import org.mina_lang.codegen.jvm.Names;
-import org.mina_lang.codegen.jvm.Types;
+import org.mina_lang.codegen.jvm.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
@@ -61,7 +58,7 @@ public record TopLevelLetGenScope(
                 letFn.name(),
                 letFn.expr(),
                 letFn.valueParams().collect(Types::asmType),
-                null,
+                JavaSignature.forMethod(letFn),
                 namespaceWriter);
 
         var startLabel = new Label();
@@ -70,8 +67,10 @@ public record TopLevelLetGenScope(
         methodWriter.visitLabel(startLabel);
 
         var methodParams = letFn.valueParams().collectWithIndex((param, index) -> {
-            var paramName= Names.getName(param);
-            var paramType = Types.asmType(param);
+            var paramName = Names.getName(param);
+            var paramMinaType = Types.getType(param);
+            var paramType = Types.asmType(paramMinaType);
+            var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
             return Tuples.pair(
                     paramName,
                     new LocalVar(
@@ -79,7 +78,7 @@ public record TopLevelLetGenScope(
                             index,
                             param.name(),
                             paramType.getDescriptor(),
-                            null,
+                            paramSignature,
                             startLabel,
                             endLabel));
         }).toImmutableMap(Pair::getOne, Pair::getTwo);
@@ -95,7 +94,7 @@ public record TopLevelLetGenScope(
                 let.name(),
                 lambda.body(),
                 lambda.params().collect(Types::asmType),
-                null,
+                JavaSignature.forMethod(let),
                 namespaceWriter);
 
         var startLabel = new Label();
@@ -105,7 +104,9 @@ public record TopLevelLetGenScope(
 
         var methodParams = lambda.params().collectWithIndex((param, index) -> {
             var paramName = Names.getName(param);
-            var paramType = Types.asmType(param);
+            var paramMinaType = Types.getType(param);
+            var paramType = Types.asmType(paramMinaType);
+            var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
             return Tuples.pair(
                     paramName,
                     new LocalVar(
@@ -113,7 +114,7 @@ public record TopLevelLetGenScope(
                             index,
                             param.name(),
                             paramType.getDescriptor(),
-                            null,
+                            paramSignature,
                             startLabel,
                             endLabel));
         }).toImmutableMap(Pair::getOne, Pair::getTwo);
@@ -126,9 +127,8 @@ public record TopLevelLetGenScope(
             ClassWriter namespaceWriter) {
         var funType = (TypeApply) Types.getUnderlyingType(let);
 
-        var argTypes = funType.typeArguments()
-                .take(funType.typeArguments().size() - 1)
-                .collect(Types::boxedAsmType);
+        var argMinaTypes = funType.typeArguments()
+                .take(funType.typeArguments().size() - 1);
 
         var returnType = Types.boxedAsmType(funType.typeArguments().getLast());
 
@@ -136,8 +136,8 @@ public record TopLevelLetGenScope(
                 ACC_PUBLIC + ACC_STATIC,
                 let.name(),
                 returnType,
-                argTypes,
-                null,
+                argMinaTypes.collect(Types::boxedAsmType),
+                JavaSignature.forMethod(let),
                 namespaceWriter);
 
         var startLabel = new Label();
@@ -145,7 +145,9 @@ public record TopLevelLetGenScope(
 
         methodWriter.visitLabel(startLabel);
 
-        var methodParams = argTypes.collectWithIndex((paramType, index) -> {
+        var methodParams = argMinaTypes.collectWithIndex((paramMinaType, index) -> {
+            var paramType = Types.asmType(paramMinaType);
+            var paramSignature = paramMinaType.isPrimitive() ? null : JavaSignature.forType(paramMinaType);
             return Tuples.pair(
                     (Named) new LocalName("arg" + index, 0),
                     new LocalVar(
@@ -154,7 +156,7 @@ public record TopLevelLetGenScope(
                             index,
                             "arg" + index,
                             paramType.getDescriptor(),
-                            null,
+                            paramSignature,
                             startLabel,
                             endLabel));
         }).toImmutableMap(Pair::getOne, Pair::getTwo);
