@@ -17,7 +17,6 @@ import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.Sort;
 import org.mina_lang.common.types.TypeApply;
-import org.mina_lang.common.types.TypeVar;
 import org.mina_lang.syntax.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -277,13 +276,7 @@ public class CodeGenerator {
 
                 var funType = (TypeApply) Types.getUnderlyingType(let);
 
-                var returnType = funType.typeArguments().getLast();
-
-                if (returnType.isPrimitive()) {
-                    letScope.methodWriter().unbox(Types.boxedAsmType(returnType));
-                } else {
-                    letScope.methodWriter().checkCast(Types.boxedAsmType(returnType));
-                }
+                Asm.unboxReturnValue(letScope.methodWriter(), funType.typeArguments().getLast());
 
                 letScope.finaliseLet();
             });
@@ -412,13 +405,7 @@ public class CodeGenerator {
 
                 method.methodWriter().invokeStatic(ownerType, new Method(declarationName, funReturnType, funArgTypes));
 
-                if (!funType.typeArguments().getLast().isPrimitive() && applyType.isPrimitive()) {
-                    method.methodWriter().unbox(Types.asmType(applyType));
-                } else if (funType.typeArguments().getLast().isPrimitive() && !applyType.isPrimitive()) {
-                    method.methodWriter().box(funReturnType);
-                } else if (funType.typeArguments().getLast() instanceof TypeVar) {
-                    method.methodWriter().checkCast(Types.asmType(applyType));
-                }
+                Asm.boxUnboxReturnValue(method.methodWriter(), funType.typeArguments().getLast(), applyType);
 
             } else if (appliedName instanceof ConstructorName constrName) {
                 var constrType = Types.getConstructorAsmType(constrName);
@@ -449,13 +436,7 @@ public class CodeGenerator {
                         Types.asmType(funType),
                         Types.erasedMethod("apply", funArgTypes.length));
 
-                if (!funType.typeArguments().getLast().isPrimitive() && applyType.isPrimitive()) {
-                    method.methodWriter().unbox(Types.asmType(applyType));
-                } else if (funType.typeArguments().getLast().isPrimitive() && !applyType.isPrimitive()) {
-                    method.methodWriter().box(funReturnType);
-                } else if (funType.typeArguments().getLast() instanceof TypeVar) {
-                    method.methodWriter().checkCast(Types.asmType(applyType));
-                }
+                Asm.boxUnboxReturnValue(method.methodWriter(), funType.typeArguments().getLast(), applyType);
             }
 
         } else if (expr instanceof LiteralNode<Attributes> lit) {
@@ -512,19 +493,9 @@ public class CodeGenerator {
 
     public void generateArgExpr(ExprNode<Attributes> argExpr, org.mina_lang.common.types.Type funArgType) {
         var method = environment.enclosingJavaMethod().get();
-
         var appliedArgType = Types.getType(argExpr);
-
-        var appliedAsmType = Types.asmType(appliedArgType);
-        var funArgAsmType = Types.asmType(funArgType);
-
         generateExpr(argExpr);
-
-        if (!funArgType.isPrimitive() && appliedArgType.isPrimitive()) {
-            method.methodWriter().box(appliedAsmType);
-        } else if (funArgType.isPrimitive() && !appliedArgType.isPrimitive()) {
-            method.methodWriter().unbox(funArgAsmType);
-        }
+        Asm.boxUnboxArgExpr(method.methodWriter(), funArgType, appliedArgType);
     }
 
     public void generateLiteral(LiteralNode<Attributes> literal) {
@@ -607,20 +578,14 @@ public class CodeGenerator {
                 var getterMethod = new Method(fieldPat.field(), getterDescriptor);
 
                 var nestedPatLocal = fieldPat.pattern()
-                    .map(nestedPat -> method.methodWriter().newLocal(patType))
-                    .orElseGet(() -> caseScope.putLocalVar(fieldPat));
+                        .map(nestedPat -> method.methodWriter().newLocal(patType))
+                        .orElseGet(() -> caseScope.putLocalVar(fieldPat));
 
                 method.methodWriter().loadLocal(scrutineeLocal);
                 method.methodWriter().checkCast(constrType);
                 method.methodWriter().invokeVirtual(constrType, getterMethod);
 
-                if (fieldMinaType.isPrimitive() && !patMinaType.isPrimitive()) {
-                    method.methodWriter().box(fieldType);
-                } else if (!fieldMinaType.isPrimitive() && patMinaType.isPrimitive()) {
-                    method.methodWriter().unbox(patType);
-                } else if (fieldMinaType instanceof TypeVar tyVar) {
-                    method.methodWriter().checkCast(patType);
-                }
+                Asm.boxUnboxReturnValue(method.methodWriter(), fieldMinaType, patMinaType);
 
                 method.methodWriter().storeLocal(nestedPatLocal);
 

@@ -9,6 +9,7 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.types.TypeApply;
+import org.mina_lang.common.types.TypeVar;
 import org.mina_lang.syntax.ConstructorParamNode;
 import org.mina_lang.syntax.ExprNode;
 import org.objectweb.asm.ClassWriter;
@@ -230,4 +231,38 @@ public class Asm {
                 false);
     }
 
+    public static void boxUnboxArgExpr(
+        GeneratorAdapter methodWriter,
+        org.mina_lang.common.types.Type interfaceType,
+        org.mina_lang.common.types.Type implType
+    ) {
+        if (!interfaceType.isPrimitive() && implType.isPrimitive()) {
+            methodWriter.box(Types.asmType(implType));
+        } else if (interfaceType.isPrimitive() && !implType.isPrimitive()) {
+            methodWriter.unbox(Types.asmType(interfaceType));
+        }
+    }
+
+    public static void unboxReturnValue(
+            GeneratorAdapter methodWriter,
+            org.mina_lang.common.types.Type implType) {
+        if (implType.isPrimitive()) {
+            methodWriter.unbox(Types.asmType(implType));
+        } else {
+            methodWriter.checkCast(Types.asmType(implType));
+        }
+    }
+
+    public static void boxUnboxReturnValue(
+            GeneratorAdapter methodWriter,
+            org.mina_lang.common.types.Type interfaceType,
+            org.mina_lang.common.types.Type implType) {
+        if (interfaceType.isPrimitive() && !implType.isPrimitive()) {
+            methodWriter.box(Types.asmType(interfaceType));
+        } else if (!interfaceType.isPrimitive() && implType.isPrimitive()) {
+            methodWriter.unbox(Types.asmType(implType));
+        } else if (interfaceType instanceof TypeVar tyVar) {
+            methodWriter.checkCast(Types.asmType(implType));
+        }
+    }
 }
