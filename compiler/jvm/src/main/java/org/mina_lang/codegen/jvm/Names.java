@@ -64,8 +64,4 @@ public class Names {
     public static ConstructorName getName(ConstructorNode<Attributes> node) {
         return (ConstructorName) node.meta().meta().name();
     }
-
-    public static LetName getName(LetNode<Attributes> node) {
-        return (LetName) node.meta().meta().name();
-    }
 }

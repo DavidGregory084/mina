@@ -14,6 +14,7 @@ import org.mina_lang.codegen.jvm.Types;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.syntax.LetNode;
 import org.objectweb.asm.ClassWriter;
@@ -75,9 +76,12 @@ public record StaticInitScope(
     }
 
     public void finaliseInit() {
-        var letName = Names.getName(let);
+        var letName = (LetName) Names.getName(let);
         var namespaceType = Types.getNamespaceAsmType(letName.name().ns());
-        var initMethod = new Method(methodWriter().getName(), methodWriter().getReturnType(), methodWriter().getArgumentTypes());
+        var initMethod = new Method(
+                methodWriter().getName(),
+                methodWriter().getReturnType(),
+                methodWriter().getArgumentTypes());
         methodWriter().putStatic(namespaceType, let.name(), Types.asmType(let));
         finaliseMethod();
         initWriter().invokeStatic(namespaceType, initMethod);
