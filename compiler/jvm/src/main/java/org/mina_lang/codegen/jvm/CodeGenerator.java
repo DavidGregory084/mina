@@ -310,7 +310,8 @@ public class CodeGenerator {
             var blockScope = BlockGenScope.open(method, block);
             withScope(blockScope, () -> {
                 block.declarations().forEach(decl -> {
-                    var localVar = method.localVars().get(Names.getName(decl));
+                    var declName = Names.getName(decl);
+                    var localVar = blockScope.localVars().get(declName);
                     generateExpr(decl.expr());
                     method.methodWriter().storeLocal(localVar.index());
                 });
@@ -499,13 +500,12 @@ public class CodeGenerator {
                         let.name().name(),
                         Types.asmType(ref));
             } else if (name instanceof LocalName local) {
-                if (method.localVars().containsKey(local)) {
-                    var localVar = method.localVars().get(local);
+                environment.lookupLocalVar(local).ifPresentOrElse(localVar -> {
                     method.methodWriter().loadLocal(localVar.index());
-                } else {
+                }, () -> {
                     var localVar = method.methodParams().get(local);
                     method.methodWriter().loadArg(localVar.index());
-                }
+                });
             }
         }
     }
@@ -566,14 +566,14 @@ public class CodeGenerator {
         method.methodWriter().loadLocal(scrutineeLocal);
 
         if (pattern instanceof IdPatternNode<Attributes> idPat) {
-            var idPatVar = method.putLocalVar(idPat);
+            var idPatVar = caseScope.putLocalVar(idPat);
             method.methodWriter().storeLocal(idPatVar);
 
         } else if (pattern instanceof AliasPatternNode<Attributes> aliasPat) {
-            var aliasPatVar = method.putLocalVar(aliasPat);
+            var aliasPatVar = caseScope.putLocalVar(aliasPat);
             method.methodWriter().storeLocal(aliasPatVar);
 
-            generatePattern(aliasPat.pattern(), scrutineeLocal);
+            generatePattern(aliasPat.pattern(), aliasPatVar);
 
         } else if (pattern instanceof LiteralPatternNode<Attributes> litPat) {
             generateLiteral(litPat.literal());
@@ -608,7 +608,7 @@ public class CodeGenerator {
 
                 var nestedPatLocal = fieldPat.pattern()
                     .map(nestedPat -> method.methodWriter().newLocal(patType))
-                    .orElseGet(() -> method.putLocalVar(fieldPat));
+                    .orElseGet(() -> caseScope.putLocalVar(fieldPat));
 
                 method.methodWriter().loadLocal(scrutineeLocal);
                 method.methodWriter().checkCast(constrType);

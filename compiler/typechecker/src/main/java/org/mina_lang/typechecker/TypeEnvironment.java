@@ -100,6 +100,7 @@ public record TypeEnvironment(
             if (right instanceof UnsolvedKind unsolvedRight) {
                 var leftDepth = -1;
                 var rightDepth = -1;
+                // TODO: use MutableStack#indexWhere once it's implemented
                 for (var i = 0; i < scopes.size(); i++) {
                     if (scopes.peekAt(i).unsolvedKinds().contains(unsolvedLeft)) {
                         leftDepth = i;
@@ -122,6 +123,7 @@ public record TypeEnvironment(
             if (right instanceof UnsolvedType unsolvedRight) {
                 var leftDepth = -1;
                 var rightDepth = -1;
+                // TODO: use MutableStack#indexWhere once it's implemented
                 for (var i = 0; i < scopes.size(); i++) {
                     if (scopes.peekAt(i).unsolvedTypes().contains(unsolvedLeft)) {
                         leftDepth = i;

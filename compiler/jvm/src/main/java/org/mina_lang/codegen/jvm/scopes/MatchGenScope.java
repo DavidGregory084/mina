@@ -14,7 +14,7 @@ public record MatchGenScope(
         Label endLabel,
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields) implements VarBindingScope {
+        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields) implements CodegenScope {
 
     public MatchGenScope(JavaMethodScope enclosingMethod, Label startLabel, Label endLabel) {
         this(

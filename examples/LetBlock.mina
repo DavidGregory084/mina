@@ -7,4 +7,15 @@ namespace Mina/Examples/LetBlock {
     let unitBlock = {
         let inner = 2
     }
+
+    let doublyNested = {
+        let first = {
+            let inner = 1
+            2
+        }
+
+        let second = {
+            let inner = 2
+        }
+    }
 }

@@ -71,9 +71,9 @@ public record ConstructorGenScope(
     }
 
     @Override
-    public void visitLocalVars() {
+    public void visitMethodParams() {
         visitThisVar();
-        JavaMethodScope.super.visitLocalVars();
+        JavaMethodScope.super.visitMethodParams();
     }
 
     public static ConstructorGenScope open(ConstructorNode<Attributes> constructor, DataNode<Attributes> data) {

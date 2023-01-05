@@ -2,10 +2,13 @@ package org.mina_lang.codegen.jvm.scopes;
 
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
+import org.mina_lang.codegen.jvm.LocalVar;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.Named;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.commons.GeneratorAdapter;
 
 public record CaseGenScope(
         JavaMethodScope enclosingMethod,
@@ -14,7 +17,8 @@ public record CaseGenScope(
         Label endLabel,
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields) implements VarBindingScope {
+        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
+        MutableMap<Named, LocalVar> localVars) implements VarBindingScope {
     public CaseGenScope(
         JavaMethodScope enclosingMethod,
         MatchGenScope enclosingMatch,
@@ -27,7 +31,13 @@ public record CaseGenScope(
                 endLabel,
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),
+                Maps.mutable.empty(),
                 Maps.mutable.empty());
+    }
+
+    @Override
+    public GeneratorAdapter methodWriter() {
+        return enclosingMethod.methodWriter();
     }
 
     public static CaseGenScope open(
@@ -46,5 +56,6 @@ public record CaseGenScope(
         enclosingMethod
                 .methodWriter()
                 .visitLabel(endLabel);
+        visitLocalVars();
     }
 }

@@ -7,6 +7,7 @@ import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.codegen.jvm.scopes.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
+import org.mina_lang.common.names.Named;
 import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Label;
 
@@ -94,15 +95,22 @@ public record CodegenEnvironment(MutableStack<CodegenScope> scopes) implements E
         return new CodegenEnvironment(scopes);
     }
 
+    public Optional<LocalVar> lookupLocalVar(Named varName) {
+        return scopes()
+                .select(scope -> scope instanceof VarBindingScope varBinder && varBinder.hasLocalVar(varName))
+                .getFirstOptional()
+                .flatMap(varBinder -> ((VarBindingScope) varBinder).lookupLocalVar(varName));
+    }
+
     public int putLocalVar(MetaNode<Attributes> localVar, Label startLabel, Label endLabel) {
-        return enclosingJavaMethod()
-            .map(javaMethod -> javaMethod.putLocalVar(localVar, startLabel, endLabel))
-            .get();
+        return enclosingVarBinding()
+                .map(varBinder -> varBinder.putLocalVar(localVar, startLabel, endLabel))
+                .get();
     }
 
     public int putLocalVar(MetaNode<Attributes> localVar) {
-        return enclosingJavaMethod()
-            .map(javaMethod -> javaMethod.putLocalVar(localVar))
-            .get();
+        return enclosingVarBinding()
+                .map(varBinder -> varBinder.putLocalVar(localVar))
+                .get();
     }
 }
