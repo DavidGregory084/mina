@@ -75,8 +75,6 @@ public record LambdaGenScope(
         var startLabel = new Label();
         var endLabel = new Label();
 
-        methodWriter.visitLabel(startLabel);
-
         var methodParams = allParams.collectWithIndex((param, index) -> {
             var paramName= Names.getName(param);
             var paramType = Types.asmType(param);
@@ -93,6 +91,15 @@ public record LambdaGenScope(
                             startLabel,
                             endLabel));
         }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        methodParams
+                .toSortedListBy(LocalVar::index)
+                .forEach(param -> {
+                    methodWriter.visitParameter(param.name(), param.access());
+                });
+
+        methodWriter.visitCode();
+        methodWriter.visitLabel(startLabel);
 
         return new LambdaGenScope(
                 methodWriter,

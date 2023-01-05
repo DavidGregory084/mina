@@ -99,14 +99,6 @@ public record ConstructorGenScope(
         var startLabel = new Label();
         var endLabel = new Label();
 
-        initWriter.visitLabel(startLabel);
-
-        // Invoke superclass constructor
-        initWriter.loadThis();
-        initWriter.invokeConstructor(
-                Types.RECORD_TYPE,
-                new Method("<init>", Type.getMethodDescriptor(Type.VOID_TYPE)));
-
         var methodParams = constructor.params()
                 .collectWithIndex((param, index) -> {
                     var paramName = Names.getName(param);
@@ -124,6 +116,21 @@ public record ConstructorGenScope(
                                     startLabel,
                                     endLabel));
                 }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        methodParams
+                .toSortedListBy(LocalVar::index)
+                .forEach(param -> {
+                    initWriter.visitParameter(param.name(), param.access());
+                });
+
+        initWriter.visitCode();
+        initWriter.visitLabel(startLabel);
+
+        // Invoke superclass constructor
+        initWriter.loadThis();
+        initWriter.invokeConstructor(
+                Types.RECORD_TYPE,
+                new Method("<init>", Type.getMethodDescriptor(Type.VOID_TYPE)));
 
         return new ConstructorGenScope(
                 constructor,

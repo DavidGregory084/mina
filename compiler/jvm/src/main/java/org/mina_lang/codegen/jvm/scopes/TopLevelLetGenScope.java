@@ -64,8 +64,6 @@ public record TopLevelLetGenScope(
         var startLabel = new Label();
         var endLabel = new Label();
 
-        methodWriter.visitLabel(startLabel);
-
         var methodParams = letFn.valueParams().collectWithIndex((param, index) -> {
             var paramName = Names.getName(param);
             var paramMinaType = Types.getType(param);
@@ -82,6 +80,15 @@ public record TopLevelLetGenScope(
                             startLabel,
                             endLabel));
         }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        methodParams
+                .toSortedListBy(LocalVar::index)
+                .forEach(param -> {
+                    methodWriter.visitParameter(param.name(), param.access());
+                });
+
+        methodWriter.visitCode();
+        methodWriter.visitLabel(startLabel);
 
         return new TopLevelLetGenScope(methodWriter, startLabel, endLabel, methodParams);
     }
@@ -101,8 +108,6 @@ public record TopLevelLetGenScope(
         var startLabel = new Label();
         var endLabel = new Label();
 
-        methodWriter.visitLabel(startLabel);
-
         var methodParams = lambda.params().collectWithIndex((param, index) -> {
             var paramName = Names.getName(param);
             var paramMinaType = Types.getType(param);
@@ -119,6 +124,15 @@ public record TopLevelLetGenScope(
                             startLabel,
                             endLabel));
         }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        methodParams
+                .toSortedListBy(LocalVar::index)
+                .forEach(param -> {
+                    methodWriter.visitParameter(param.name(), param.access());
+                });
+
+        methodWriter.visitCode();
+        methodWriter.visitLabel(startLabel);
 
         return new TopLevelLetGenScope(methodWriter, startLabel, endLabel, methodParams);
     }
@@ -145,8 +159,6 @@ public record TopLevelLetGenScope(
         var startLabel = new Label();
         var endLabel = new Label();
 
-        methodWriter.visitLabel(startLabel);
-
         var methodParams = argMinaTypes.collectWithIndex((paramMinaType, index) -> {
             var paramType = Types.asmType(paramMinaType);
             var paramSignature = JavaSignature.forType(paramMinaType);
@@ -162,6 +174,15 @@ public record TopLevelLetGenScope(
                             startLabel,
                             endLabel));
         }).toImmutableMap(Pair::getOne, Pair::getTwo);
+
+        methodParams
+                .toSortedListBy(LocalVar::index)
+                .forEach(param -> {
+                    methodWriter.visitParameter(param.name(), param.access());
+                });
+
+        methodWriter.visitCode();
+        methodWriter.visitLabel(startLabel);
 
         return new TopLevelLetGenScope(methodWriter, startLabel, endLabel, methodParams);
     }

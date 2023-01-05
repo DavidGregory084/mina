@@ -46,14 +46,6 @@ public interface JavaMethodScope extends VarBindingScope {
         return varIndex;
     }
 
-    default public void visitMethodParams() {
-        methodParams()
-                .toSortedListBy(LocalVar::index)
-                .forEach(param -> {
-                    methodWriter().visitParameter(param.name(), ACC_FINAL);
-                });
-    }
-
     default public void visitLocalVars() {
         methodParams()
                 .toSortedListBy(LocalVar::index)
@@ -80,8 +72,7 @@ public interface JavaMethodScope extends VarBindingScope {
     default void finaliseMethod() {
         methodWriter().returnValue();
         methodWriter().visitLabel(endLabel());
-        visitMethodParams();
         visitLocalVars();
-        methodWriter().visitEnd();
+        methodWriter().endMethod();
     }
 }

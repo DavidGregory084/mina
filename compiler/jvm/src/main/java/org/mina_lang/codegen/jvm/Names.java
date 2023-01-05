@@ -2,10 +2,7 @@ package org.mina_lang.codegen.jvm;
 
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.*;
-import org.mina_lang.syntax.ConstructorNode;
-import org.mina_lang.syntax.DataNode;
-import org.mina_lang.syntax.MetaNode;
-import org.mina_lang.syntax.NamespaceNode;
+import org.mina_lang.syntax.*;
 
 public class Names {
     public static String getDescriptor(NamespaceName name) {
@@ -66,5 +63,9 @@ public class Names {
 
     public static ConstructorName getName(ConstructorNode<Attributes> node) {
         return (ConstructorName) node.meta().meta().name();
+    }
+
+    public static LetName getName(LetNode<Attributes> node) {
+        return (LetName) node.meta().meta().name();
     }
 }

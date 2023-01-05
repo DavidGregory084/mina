@@ -81,6 +81,7 @@ public record NamespaceGenScope(
         var startLabel = new Label();
         var endLabel = new Label();
 
+        initWriter.visitCode();
         initWriter.visitLabel(startLabel);
 
         return new NamespaceGenScope(
