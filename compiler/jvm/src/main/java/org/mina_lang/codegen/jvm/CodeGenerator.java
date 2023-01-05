@@ -6,7 +6,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
@@ -115,16 +116,16 @@ public class CodeGenerator {
         return;
     }
 
-    <A> A withScope(CodegenScope scope, Supplier<A> fn) {
+    <A extends CodegenScope, B> B withScope(A scope, Function<A, B> fn) {
         environment.pushScope(scope);
-        var result = fn.get();
+        var result = fn.apply(scope);
         environment.popScope(scope.getClass());
         return result;
     }
 
-    void withScope(CodegenScope scope, Runnable fn) {
+    <A extends CodegenScope> void withScope(A scope, Consumer<A> fn) {
         environment.pushScope(scope);
-        fn.run();
+        fn.accept(scope);
         environment.popScope(scope.getClass());
         return;
     }
@@ -153,9 +154,7 @@ public class CodeGenerator {
     }
 
     public void generateNamespace(NamespaceNode<Attributes> namespace) {
-        var namespaceScope = NamespaceGenScope.open(namespace);
-
-        withScope(namespaceScope, () -> {
+        withScope(NamespaceGenScope.open(namespace), namespaceScope -> {
             populateTopLevel(namespace);
 
             namespace.declarations()
@@ -178,8 +177,7 @@ public class CodeGenerator {
     }
 
     public void generateData(DataNode<Attributes> data) {
-        var dataScope = DataGenScope.open(data);
-        withScope(dataScope, () -> {
+        withScope(DataGenScope.open(data), dataScope -> {
             data.constructors()
                     .forEach(this::generateConstructor);
             classes.put(
@@ -190,8 +188,8 @@ public class CodeGenerator {
 
     public void generateConstructor(ConstructorNode<Attributes> constr) {
         var dataScope = environment.enclosingData().get();
-        var constrScope = ConstructorGenScope.open(constr, dataScope.data());
-        withScope(constrScope, () -> {
+
+        withScope(ConstructorGenScope.open(constr, dataScope.data()), constrScope -> {
             dataScope.classWriter()
                     .visitPermittedSubclass(constrScope.constrType().getInternalName());
 
@@ -238,8 +236,7 @@ public class CodeGenerator {
     public void generateTopLevelLetFn(LetFnNode<Attributes> letFn) {
         var namespace = environment.enclosingNamespace().get();
         var namespaceWriter = namespace.classWriter();
-        var letScope = TopLevelLetGenScope.open(letFn, namespaceWriter);
-        withScope(letScope, () -> {
+        withScope(TopLevelLetGenScope.open(letFn, namespaceWriter), letScope -> {
             generateExpr(letFn.expr());
             letScope.finaliseLet();
         });
@@ -251,8 +248,7 @@ public class CodeGenerator {
         var initWriter = namespace.initWriter();
 
         if (let.expr() instanceof LambdaNode<Attributes> lambda) {
-            var letScope = TopLevelLetGenScope.open(let, lambda, namespaceWriter);
-            withScope(letScope, () -> {
+            withScope(TopLevelLetGenScope.open(let, lambda, namespaceWriter), letScope -> {
                 generateExpr(lambda.body());
                 letScope.finaliseLet();
             });
@@ -261,9 +257,8 @@ public class CodeGenerator {
             // In order to satisfy our binary constraint that top-level functions
             // are static methods, we write a new static method and invoke the returned
             // function object before returning from the method.
-            var letScope = TopLevelLetGenScope.open(let, namespaceWriter);
 
-            withScope(letScope, () -> {
+            withScope(TopLevelLetGenScope.open(let, namespaceWriter), letScope -> {
                 generateExpr(let.expr());
 
                 letScope.methodParams().forEachWithIndex((param, index) -> {
@@ -286,8 +281,7 @@ public class CodeGenerator {
             var fieldType = Types.getType(let);
             var fieldSignature = JavaSignature.forType(fieldType);
             Asm.emitStaticField(namespaceWriter, let.name(), Types.asmType(let), fieldSignature, null);
-            var initScope = StaticInitScope.open(let, initWriter, namespaceWriter);
-            withScope(initScope, () -> {
+            withScope(StaticInitScope.open(let, initWriter, namespaceWriter), initScope -> {
                 generateExpr(let.expr());
                 initScope.finaliseInit();
             });
@@ -300,8 +294,7 @@ public class CodeGenerator {
         var namespaceWriter = namespace.classWriter();
 
         if (expr instanceof BlockNode<Attributes> block) {
-            var blockScope = BlockGenScope.open(method, block);
-            withScope(blockScope, () -> {
+            withScope(BlockGenScope.open(method, block), blockScope -> {
                 block.declarations().forEach(decl -> {
                     var declName = Names.getName(decl);
                     var localVar = blockScope.localVars().get(declName);
@@ -322,9 +315,10 @@ public class CodeGenerator {
             });
         } else if (expr instanceof LambdaNode<Attributes> lambda) {
             var enclosingLifter = environment.enclosingLambdaLifter().get();
+
             var lambdaScope = LambdaGenScope.open(enclosingLifter, lambda, namespaceWriter);
 
-            withScope(lambdaScope, () -> {
+            withScope(lambdaScope, scope -> {
                 generateExpr(lambda.body());
                 lambdaScope.finaliseLambda();
             });
@@ -374,10 +368,9 @@ public class CodeGenerator {
             generateExpr(ifExpr.alternative());
             method.methodWriter().visitLabel(endLabel);
         } else if (expr instanceof MatchNode<Attributes> match) {
-            var matchScope = MatchGenScope.open(method);
             var scrutineeLocal = method.methodWriter()
                     .newLocal(Types.asmType(match.scrutinee()));
-            withScope(matchScope, () -> {
+            withScope(MatchGenScope.open(method), matchScope -> {
                 generateExpr(match.scrutinee());
                 method.methodWriter().storeLocal(scrutineeLocal);
                 match.cases().forEachWithIndex((cse, index) -> generateCase(cse, index, scrutineeLocal));
@@ -521,9 +514,7 @@ public class CodeGenerator {
     public void generateCase(CaseNode<Attributes> caseNode, int caseIndex, int scrutineeLocal) {
         var method = environment.enclosingJavaMethod().get();
         var match = environment.enclosingMatch().get();
-        var caseScope = CaseGenScope.open(method, match);
-
-        withScope(caseScope, () -> {
+        withScope(CaseGenScope.open(method, match), caseScope -> {
             generatePattern(caseNode.pattern(), scrutineeLocal);
             generateExpr(caseNode.consequent());
             caseScope.finaliseCase();
