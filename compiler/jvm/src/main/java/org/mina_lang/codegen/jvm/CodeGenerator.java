@@ -570,10 +570,10 @@ public class CodeGenerator {
             method.methodWriter().storeLocal(idPatVar);
 
         } else if (pattern instanceof AliasPatternNode<Attributes> aliasPat) {
-            generatePattern(aliasPat.pattern(), scrutineeLocal);
-
             var aliasPatVar = method.putLocalVar(aliasPat);
             method.methodWriter().storeLocal(aliasPatVar);
+
+            generatePattern(aliasPat.pattern(), scrutineeLocal);
 
         } else if (pattern instanceof LiteralPatternNode<Attributes> litPat) {
             generateLiteral(litPat.literal());
@@ -596,26 +596,36 @@ public class CodeGenerator {
             method.methodWriter().ifZCmp(GeneratorAdapter.EQ, caseScope.endLabel());
 
             constrPat.fields().forEach(fieldPat -> {
-                var fieldType = Types.asmType(fieldPat);
+                var fieldMeta = environment.lookupField(constrName, fieldPat.field()).get();
+                var fieldMinaType = (org.mina_lang.common.types.Type) fieldMeta.meta().sort();
+                var fieldType = Types.asmType(fieldMinaType);
+
+                var patMinaType = Types.getType(fieldPat);
+                var patType = Types.asmType(patMinaType);
+
                 var getterDescriptor = Type.getMethodDescriptor(fieldType);
                 var getterMethod = new Method(fieldPat.field(), getterDescriptor);
 
-                fieldPat.pattern().ifPresentOrElse(nestedPattern -> {
-                    var nestedPatLocal = method.methodWriter().newLocal(fieldType);
+                var nestedPatLocal = fieldPat.pattern()
+                    .map(nestedPat -> method.methodWriter().newLocal(patType))
+                    .orElseGet(() -> method.putLocalVar(fieldPat));
 
-                    method.methodWriter().loadLocal(scrutineeLocal);
-                    method.methodWriter().checkCast(constrType);
-                    method.methodWriter().invokeVirtual(constrType, getterMethod);
-                    method.methodWriter().storeLocal(nestedPatLocal);
+                method.methodWriter().loadLocal(scrutineeLocal);
+                method.methodWriter().checkCast(constrType);
+                method.methodWriter().invokeVirtual(constrType, getterMethod);
 
+                if (fieldMinaType.isPrimitive() && !patMinaType.isPrimitive()) {
+                    method.methodWriter().box(fieldType);
+                } else if (!fieldMinaType.isPrimitive() && patMinaType.isPrimitive()) {
+                    method.methodWriter().unbox(patType);
+                } else if (fieldMinaType instanceof TypeVar tyVar) {
+                    method.methodWriter().checkCast(patType);
+                }
+
+                method.methodWriter().storeLocal(nestedPatLocal);
+
+                fieldPat.pattern().ifPresent(nestedPattern -> {
                     generatePattern(nestedPattern, nestedPatLocal);
-                }, () -> {
-                    var fieldPatLocal = method.putLocalVar(fieldPat);
-
-                    method.methodWriter().loadLocal(scrutineeLocal);
-                    method.methodWriter().checkCast(constrType);
-                    method.methodWriter().invokeVirtual(constrType, getterMethod);
-                    method.methodWriter().storeLocal(fieldPatLocal);
                 });
             });
         }
