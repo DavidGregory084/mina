@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.codegen.jvm.scopes.*;
@@ -195,6 +196,36 @@ public class CodeGenerator {
 
             constr.params()
                     .forEachWithIndex(this::generateConstructorParam);
+
+            Asm.emitObjectBootstrapMethod(
+                "equals",
+                Type.BOOLEAN_TYPE,
+                Lists.immutable.of(Types.OBJECT_TYPE),
+                constrScope.classWriter(),
+                constrScope.constrType(),
+                JavaSignature.forConstructorInstance(constr),
+                null,
+                constr.params());
+
+            Asm.emitObjectBootstrapMethod(
+                "hashCode",
+                Type.INT_TYPE,
+                Lists.immutable.empty(),
+                constrScope.classWriter(),
+                constrScope.constrType(),
+                JavaSignature.forConstructorInstance(constr),
+                null,
+                constr.params());
+
+            Asm.emitObjectBootstrapMethod(
+                "toString",
+                Types.STRING_TYPE,
+                Lists.immutable.empty(),
+                constrScope.classWriter(),
+                constrScope.constrType(),
+                JavaSignature.forConstructorInstance(constr),
+                null,
+                constr.params());
 
             classes.put(
                     Names.getName(constr),

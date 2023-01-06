@@ -3,7 +3,9 @@ package org.mina_lang.codegen.jvm;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.lang.invoke.*;
+import java.lang.runtime.ObjectMethods;
 
+import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;
@@ -39,6 +41,27 @@ public class Asm {
             Type.getInternalName(LambdaMetafactory.class),
             "metafactory",
             METAFACTORY_DESCRIPTOR,
+            false);
+
+    private static String OBJECTMETHODS_DESCRIPTOR = MethodType
+            .methodType(
+                    // Return type
+                    Object.class,
+                    // Stacked by the VM
+                    MethodHandles.Lookup.class, // caller
+                    // Static arguments
+                    String.class, // methodName
+                    TypeDescriptor.class, // type
+                    Class.class, // recordClass
+                    String.class, // names
+                    MethodHandle[].class // getters
+            ).toMethodDescriptorString();
+
+    public static Handle OBJECTMETHODS_HANDLE = new Handle(
+            H_INVOKESTATIC,
+            Type.getInternalName(ObjectMethods.class),
+            "bootstrap",
+            OBJECTMETHODS_DESCRIPTOR,
             false);
 
     public static GeneratorAdapter constructor(
@@ -196,7 +219,88 @@ public class Asm {
                 getterEndLabel,
                 0);
 
-        getterVisitor.visitEnd();
+        getterVisitor.endMethod();
+    }
+
+    public static void emitObjectBootstrapMethod(
+            String methodName,
+            Type returnType,
+            ImmutableList<Type> argTypes,
+            ClassWriter classWriter,
+            Type constrType,
+            String thisSignature,
+            String methodSignature,
+            ImmutableList<ConstructorParamNode<Attributes>> constrParams) {
+
+        var methodDescriptor = Type.getMethodDescriptor(
+                returnType,
+                argTypes.toArray(new Type[argTypes.size()]));
+
+        var methodVisitor = new GeneratorAdapter(
+                ACC_PUBLIC,
+                new Method(methodName, methodDescriptor),
+                methodSignature,
+                null,
+                classWriter);
+
+        var startLabel = new Label();
+        var endLabel = new Label();
+
+        methodVisitor.visitLabel(startLabel);
+
+        methodVisitor.loadThis();
+
+        if (methodName.equals("equals")) {
+            methodVisitor.loadArg(0);
+        }
+
+        var callsiteDescriptor = Type.getMethodDescriptor(
+                returnType,
+                Lists.immutable.of(constrType)
+                        .newWithAll(argTypes)
+                        .toArray(new Type[argTypes.size() + 1]));
+
+        methodVisitor.invokeDynamic(
+                methodName, // methodName
+                callsiteDescriptor, // type
+                OBJECTMETHODS_HANDLE, // bootstrapMethodHandle
+                Lists.immutable.<Object>of(
+                        constrType.getInternalName(), // recordClass
+                        constrParams.collect(ConstructorParamNode::name).makeString(";")) // names
+                        .newWithAll(
+                                constrParams.collect(param -> {
+                                    return new Handle(
+                                            H_GETFIELD,
+                                            constrType.getInternalName(),
+                                            param.name(),
+                                            Types.asmType(param).getDescriptor(),
+                                            false); // getters
+                                }))
+                        .toArray());
+
+        methodVisitor.returnValue();
+
+        methodVisitor.visitLabel(endLabel);
+
+        methodVisitor.visitLocalVariable(
+                "this",
+                constrType.getDescriptor(),
+                thisSignature,
+                startLabel,
+                endLabel,
+                0);
+
+        if (methodName.equals("equals")) {
+            methodVisitor.visitLocalVariable(
+                    "other",
+                    Types.OBJECT_TYPE.getDescriptor(),
+                    thisSignature,
+                    startLabel,
+                    endLabel,
+                    1);
+        }
+
+        methodVisitor.endMethod();
     }
 
     public static Handle staticMethodHandle(LetName letName, org.mina_lang.common.types.Type letType) {
@@ -232,10 +336,9 @@ public class Asm {
     }
 
     public static void boxUnboxArgExpr(
-        GeneratorAdapter methodWriter,
-        org.mina_lang.common.types.Type interfaceType,
-        org.mina_lang.common.types.Type implType
-    ) {
+            GeneratorAdapter methodWriter,
+            org.mina_lang.common.types.Type interfaceType,
+            org.mina_lang.common.types.Type implType) {
         if (!interfaceType.isPrimitive() && implType.isPrimitive()) {
             methodWriter.box(Types.asmType(implType));
         } else if (interfaceType.isPrimitive() && !implType.isPrimitive()) {
