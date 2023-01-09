@@ -562,15 +562,38 @@ public class Typechecker {
     DeclarationNode<Attributes> inferDeclaration(DeclarationNode<Name> declaration) {
         if (declaration instanceof DataNode<Name> data) {
             var kindedData = kindchecker.kindcheck(data);
+            var dataName = (DataName) kindedData.meta().meta().name();
 
             putTypeDeclaration(kindedData.meta());
 
             kindedData.constructors().forEach(kindedConstr -> {
+                var constrName = (ConstructorName) kindedConstr.meta().meta().name();
+
                 putValueDeclaration(kindedConstr.meta());
 
                 kindedConstr.params().forEach(constrParam -> {
-                    var constrName = (ConstructorName) kindedConstr.meta().meta().name();
                     environment.putField(constrName, constrParam.name(), constrParam.meta());
+                });
+
+                kindedConstr.type().ifPresent(constrTypeNode -> {
+                    withScope(new ConstructorTypingScope(constrName), () -> {
+                        var typeParamTypes = kindedData.typeParams()
+                                .collect(tyParam -> tyParam.accept(typeFolder));
+                        var constrType = constrTypeNode.accept(typeFolder);
+
+                        var dataTyCon = new TypeConstructor(dataName.name(), getKind(kindedData));
+
+                        var dataType = typeParamTypes.isEmpty() ? dataTyCon
+                                : instantiateAsSubType(new TypeLambda(
+                                        typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
+                                        new TypeApply(dataTyCon, typeParamTypes, TypeKind.INSTANCE),
+                                        TypeKind.INSTANCE));
+
+                        // Constructor return type should be a valid instantiation of the data type
+                        if (!checkSubType(dataType, constrType)) {
+                            mismatchedType(constrTypeNode.range(), constrType, dataType);
+                        }
+                    });
                 });
             });
 
