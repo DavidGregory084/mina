@@ -7,6 +7,11 @@ public record PropositionType(Type type, Proposition property) implements PolyTy
     }
 
     @Override
+    public void accept(TypeVisitor visitor) {
+        visitor.visitPropositionType(this);
+    }
+
+    @Override
     public <A> A accept(TypeFolder<A> visitor) {
         return visitor.visitPropositionType(this);
     }

@@ -21,4 +21,10 @@ public record IfGenScope(
                 Maps.mutable.empty(),
                 Maps.mutable.empty());
     }
+
+    public static IfGenScope open() {
+        var elseLabel = new Label();
+        var endLabel = new Label();
+        return new IfGenScope(elseLabel, endLabel);
+    }
 }

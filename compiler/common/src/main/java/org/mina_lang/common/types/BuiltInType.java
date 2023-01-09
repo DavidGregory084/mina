@@ -7,6 +7,11 @@ public record BuiltInType(String name, Kind kind) implements MonoType {
     }
 
     @Override
+    public void accept(TypeVisitor visitor) {
+        visitor.visitBuiltInType(this);
+    }
+
+    @Override
     public <A> A accept(TypeFolder<A> visitor) {
         return visitor.visitBuiltInType(this);
     }

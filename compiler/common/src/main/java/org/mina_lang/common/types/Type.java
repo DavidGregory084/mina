@@ -21,6 +21,8 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
         return visitor.visitType(this);
     }
 
+    public void accept(TypeVisitor visitor);
+
     public <A> A accept(TypeFolder<A> visitor);
 
     public Type accept(TypeTransformer visitor);

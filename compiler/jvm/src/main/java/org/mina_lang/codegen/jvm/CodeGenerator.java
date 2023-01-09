@@ -198,34 +198,34 @@ public class CodeGenerator {
                     .forEachWithIndex(this::generateConstructorParam);
 
             Asm.emitObjectBootstrapMethod(
-                "equals",
-                Type.BOOLEAN_TYPE,
-                Lists.immutable.of(Types.OBJECT_TYPE),
-                constrScope.classWriter(),
-                constrScope.constrType(),
-                JavaSignature.forConstructorInstance(constr),
-                null,
-                constr.params());
+                    "equals",
+                    Type.BOOLEAN_TYPE,
+                    Lists.immutable.of(Types.OBJECT_TYPE),
+                    constrScope.classWriter(),
+                    constrScope.constrType(),
+                    JavaSignature.forConstructorInstance(constr),
+                    null,
+                    constr.params());
 
             Asm.emitObjectBootstrapMethod(
-                "hashCode",
-                Type.INT_TYPE,
-                Lists.immutable.empty(),
-                constrScope.classWriter(),
-                constrScope.constrType(),
-                JavaSignature.forConstructorInstance(constr),
-                null,
-                constr.params());
+                    "hashCode",
+                    Type.INT_TYPE,
+                    Lists.immutable.empty(),
+                    constrScope.classWriter(),
+                    constrScope.constrType(),
+                    JavaSignature.forConstructorInstance(constr),
+                    null,
+                    constr.params());
 
             Asm.emitObjectBootstrapMethod(
-                "toString",
-                Types.STRING_TYPE,
-                Lists.immutable.empty(),
-                constrScope.classWriter(),
-                constrScope.constrType(),
-                JavaSignature.forConstructorInstance(constr),
-                null,
-                constr.params());
+                    "toString",
+                    Types.STRING_TYPE,
+                    Lists.immutable.empty(),
+                    constrScope.classWriter(),
+                    constrScope.constrType(),
+                    JavaSignature.forConstructorInstance(constr),
+                    null,
+                    constr.params());
 
             classes.put(
                     Names.getName(constr),
@@ -389,19 +389,19 @@ public class CodeGenerator {
             );
 
         } else if (expr instanceof IfNode<Attributes> ifExpr) {
-            var elseLabel = new Label();
-            var endLabel = new Label();
-            generateExpr(ifExpr.condition());
-            method.methodWriter().ifZCmp(GeneratorAdapter.EQ, elseLabel);
-            generateExpr(ifExpr.consequent());
-            method.methodWriter().goTo(endLabel);
-            method.methodWriter().visitLabel(elseLabel);
-            generateExpr(ifExpr.alternative());
-            method.methodWriter().visitLabel(endLabel);
+            withScope(IfGenScope.open(), ifScope -> {
+                generateExpr(ifExpr.condition());
+                method.methodWriter().ifZCmp(GeneratorAdapter.EQ, ifScope.elseLabel());
+                generateExpr(ifExpr.consequent());
+                method.methodWriter().goTo(ifScope.endLabel());
+                method.methodWriter().visitLabel(ifScope.elseLabel());
+                generateExpr(ifExpr.alternative());
+                method.methodWriter().visitLabel(ifScope.endLabel());
+            });
         } else if (expr instanceof MatchNode<Attributes> match) {
-            var scrutineeLocal = method.methodWriter()
-                    .newLocal(Types.asmType(match.scrutinee()));
             withScope(MatchGenScope.open(method), matchScope -> {
+                var scrutineeLocal = method.methodWriter()
+                        .newLocal(Types.asmType(match.scrutinee()));
                 generateExpr(match.scrutinee());
                 method.methodWriter().storeLocal(scrutineeLocal);
                 match.cases().forEachWithIndex((cse, index) -> generateCase(cse, index, scrutineeLocal));

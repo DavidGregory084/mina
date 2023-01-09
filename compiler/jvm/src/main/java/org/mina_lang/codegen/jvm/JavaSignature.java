@@ -1,10 +1,9 @@
 package org.mina_lang.codegen.jvm;
 
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.MutableSet;
 import org.mina_lang.common.Attributes;
-import org.mina_lang.common.types.TypeApply;
-import org.mina_lang.common.types.TypeLambda;
-import org.mina_lang.common.types.TypeVar;
-import org.mina_lang.common.types.UnsolvedType;
+import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureVisitor;
@@ -61,7 +60,7 @@ public class JavaSignature {
             var returnType = (TypeApply) funType.typeArguments().getLast();
             returnType.typeArguments().forEach(returnTyArg -> {
                 var argVisitor = interfaceVisitor.visitTypeArgument(SignatureVisitor.INSTANCEOF);
-                writeBoxedType(argVisitor, returnTyArg);
+                returnTyArg.accept(new BoxedTypeSignatureVisitor(argVisitor));
             });
         }
 
@@ -92,7 +91,7 @@ public class JavaSignature {
                 .take(funType.typeArguments().size() - 1)
                 .forEach(paramType -> {
                     var paramVisitor = visitor.visitParameterType();
-                    writeType(paramVisitor, paramType);
+                    paramType.accept(new TypeSignatureVisitor(paramVisitor));
                 });
 
         var returnTypeVisitor = visitor.visitReturnType();
@@ -112,9 +111,11 @@ public class JavaSignature {
             var funType = (TypeApply) Types.getUnderlyingType(constr);
             var returnType = (TypeApply) funType.typeArguments().getLast();
             returnType.typeArguments().forEach(returnTyArg -> {
-                if (returnTyArg instanceof TypeVar tyVar) {
+                if (returnTyArg instanceof ForAllVar forall) {
                     var argVisitor = visitor.visitTypeArgument(SignatureVisitor.INSTANCEOF);
-                    argVisitor.visitTypeVariable(tyVar.name());
+                    argVisitor.visitTypeVariable(forall.name());
+                } else if (returnTyArg instanceof ExistsVar exists) {
+                    visitor.visitTypeArgument();
                 }
             });
         }
@@ -127,7 +128,7 @@ public class JavaSignature {
     public static String forFieldGetter(org.mina_lang.common.types.Type type) {
         var visitor = new SignatureWriter();
         var returnTypeVisitor = visitor.visitReturnType();
-        writeType(returnTypeVisitor, type);
+        type.accept(new TypeSignatureVisitor(returnTypeVisitor));
         return visitor.toString();
     }
 
@@ -150,11 +151,11 @@ public class JavaSignature {
                 .take(funType.typeArguments().size() - 1)
                 .forEach(paramType -> {
                     var paramVisitor = visitor.visitParameterType();
-                    writeType(paramVisitor, paramType);
+                    paramType.accept(new TypeSignatureVisitor(paramVisitor));
                 });
 
         var returnTypeVisitor = visitor.visitReturnType();
-        writeType(returnTypeVisitor, funType.typeArguments().getLast());
+        funType.typeArguments().getLast().accept(new TypeSignatureVisitor(returnTypeVisitor));
 
         return visitor.toString();
     }
@@ -164,92 +165,147 @@ public class JavaSignature {
             return null;
         } else {
             var visitor = new SignatureWriter();
-            writeType(visitor, type);
+            type.accept(new TypeSignatureVisitor(visitor));
             return visitor.toString();
         }
     }
 
-    public static void writeType(
-            SignatureVisitor visitor,
-            org.mina_lang.common.types.Type type) {
-        if (type.equals(org.mina_lang.common.types.Type.BOOLEAN)) {
-            visitor.visitBaseType(Type.BOOLEAN_TYPE.getDescriptor().charAt(0));
-        } else if (type.equals(org.mina_lang.common.types.Type.CHAR)) {
-            visitor.visitBaseType(Type.CHAR_TYPE.getDescriptor().charAt(0));
-        } else if (type.equals(org.mina_lang.common.types.Type.STRING)) {
-            visitor.visitClassType(Types.STRING_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else if (type.equals(org.mina_lang.common.types.Type.INT)) {
-            visitor.visitBaseType(Type.INT_TYPE.getDescriptor().charAt(0));
-        } else if (type.equals(org.mina_lang.common.types.Type.LONG)) {
-            visitor.visitBaseType(Type.LONG_TYPE.getDescriptor().charAt(0));
-        } else if (type.equals(org.mina_lang.common.types.Type.FLOAT)) {
-            visitor.visitBaseType(Type.FLOAT_TYPE.getDescriptor().charAt(0));
-        } else if (type.equals(org.mina_lang.common.types.Type.DOUBLE)) {
-            visitor.visitBaseType(Type.DOUBLE_TYPE.getDescriptor().charAt(0));
-        } else if (type.equals(org.mina_lang.common.types.Type.UNIT)) {
-            visitor.visitClassType(Types.UNIT_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else if (type instanceof org.mina_lang.common.types.TypeApply tyApp
-                && tyApp.type() instanceof TypeVar tyVar) {
-            writeType(visitor, tyVar);
-        } else if (type instanceof org.mina_lang.common.types.TypeApply tyApp
-                && tyApp.type() instanceof UnsolvedType unsolved) {
-            writeType(visitor, unsolved);
-        } else if (type instanceof org.mina_lang.common.types.TypeApply tyApp &&
-                org.mina_lang.common.types.Type.isFunction(type)) {
-            visitor.visitClassType(Types.asmType(tyApp).getInternalName());
+    public static class TypeSignatureVisitor implements TypeVisitor {
+        protected MutableSet<TypeVar> boundVars = Sets.mutable.empty();
+        protected SignatureVisitor visitor;
 
-            tyApp.typeArguments().forEach(tyArg -> {
-                var argVisitor = visitor.visitTypeArgument(SignatureVisitor.INSTANCEOF);
-                writeBoxedType(argVisitor, tyArg);
-            });
+        public TypeSignatureVisitor(SignatureVisitor visitor) {
+            this.visitor = visitor;
+        }
 
-            visitor.visitEnd();
-        } else if (type instanceof org.mina_lang.common.types.TypeApply tyApp) {
-            visitor.visitClassType(Types.asmType(tyApp.type()).getInternalName());
+        @Override
+        public void visitTypeLambda(TypeLambda tyLam) {
+            boundVars.addAllIterable(tyLam.args());
+            tyLam.body().accept(this);
+            boundVars.removeAllIterable(tyLam.args());
+        }
 
-            tyApp.typeArguments().forEach(tyArg -> {
-                var argVisitor = visitor.visitTypeArgument(SignatureVisitor.INSTANCEOF);
-                writeBoxedType(argVisitor, tyArg);
-            });
+        @Override
+        public void visitPropositionType(PropositionType propType) {
+            propType.type().accept(this);
+        }
 
+        @Override
+        public void visitImplicationType(ImplicationType implType) {
+            implType.impliedType().accept(this);
+        }
+
+        @Override
+        public void visitTypeConstructor(TypeConstructor tyCon) {
+            var asmType = Types.asmType(tyCon);
+            visitor.visitClassType(asmType.getInternalName());
             visitor.visitEnd();
-        } else if (type instanceof org.mina_lang.common.types.TypeVar tyVar) {
-            visitor.visitTypeVariable(tyVar.name());
-        } else if (type instanceof org.mina_lang.common.types.TypeConstructor tyCon) {
-            visitor.visitClassType(Types.asmType(tyCon).getInternalName());
-            visitor.visitEnd();
-        } else if (type instanceof org.mina_lang.common.types.TypeLambda tyLam) {
-            writeType(visitor, tyLam.body());
-        } else if (type instanceof org.mina_lang.common.types.UnsolvedType unsolved) {
+        }
+
+        @Override
+        public void visitBuiltInType(BuiltInType builtIn) {
+            if (builtIn.equals(org.mina_lang.common.types.Type.BOOLEAN)) {
+                visitor.visitBaseType(Type.BOOLEAN_TYPE.getDescriptor().charAt(0));
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.CHAR)) {
+                visitor.visitBaseType(Type.CHAR_TYPE.getDescriptor().charAt(0));
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.STRING)) {
+                visitor.visitClassType(Types.STRING_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.INT)) {
+                visitor.visitBaseType(Type.INT_TYPE.getDescriptor().charAt(0));
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.LONG)) {
+                visitor.visitBaseType(Type.LONG_TYPE.getDescriptor().charAt(0));
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.FLOAT)) {
+                visitor.visitBaseType(Type.FLOAT_TYPE.getDescriptor().charAt(0));
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.DOUBLE)) {
+                visitor.visitBaseType(Type.DOUBLE_TYPE.getDescriptor().charAt(0));
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.UNIT)) {
+                visitor.visitClassType(Types.UNIT_TYPE.getInternalName());
+                visitor.visitEnd();
+            }
+        }
+
+        @Override
+        public void visitTypeApply(TypeApply tyApp) {
+            if (tyApp.type() instanceof TypeVar tyVar) {
+                // Higher-kinded type variables can't be represented in Java signatures
+                tyVar.accept(this);
+            } else {
+                if (org.mina_lang.common.types.Type.isFunction(tyApp)) {
+                    visitor.visitClassType(Types.asmType(tyApp).getInternalName());
+                } else {
+                    visitor.visitClassType(Types.asmType(tyApp.type()).getInternalName());
+                }
+
+                tyApp.typeArguments().forEach(tyArg -> {
+                    if (tyArg instanceof ExistsVar) {
+                        // We use unbounded wildcard to represent existentials
+                        visitor.visitTypeArgument();
+                    } else if (boundVars.contains(tyArg)) {
+                        // Higher-rank types can't be represented in Java signatures;
+                        // we use unbounded wildcard to represent these too
+                        visitor.visitTypeArgument();
+                    } else {
+                        var argVisitor = visitor.visitTypeArgument(SignatureVisitor.INSTANCEOF);
+                        tyArg.accept(new BoxedTypeSignatureVisitor(argVisitor));
+                    }
+
+                });
+
+                visitor.visitEnd();
+            }
+        }
+
+        @Override
+        public void visitForAllVar(ForAllVar forall) {
+            visitor.visitTypeVariable(forall.name());
+        }
+
+        @Override
+        public void visitExistsVar(ExistsVar exists) {
+            visitor.visitTypeVariable(exists.name());
+        }
+
+        @Override
+        public void visitUnsolvedType(UnsolvedType unsolved) {
             visitor.visitTypeVariable(unsolved.name());
         }
+
     }
 
-    public static void writeBoxedType(
-            SignatureVisitor visitor,
-            org.mina_lang.common.types.Type type) {
-        if (type.equals(org.mina_lang.common.types.Type.BOOLEAN)) {
-            visitor.visitClassType(Types.BOXED_BOOLEAN_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else if (type.equals(org.mina_lang.common.types.Type.CHAR)) {
-            visitor.visitClassType(Types.BOXED_CHAR_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else if (type.equals(org.mina_lang.common.types.Type.INT)) {
-            visitor.visitClassType(Types.BOXED_INT_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else if (type.equals(org.mina_lang.common.types.Type.LONG)) {
-            visitor.visitClassType(Types.BOXED_LONG_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else if (type.equals(org.mina_lang.common.types.Type.FLOAT)) {
-            visitor.visitClassType(Types.BOXED_FLOAT_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else if (type.equals(org.mina_lang.common.types.Type.DOUBLE)) {
-            visitor.visitClassType(Types.BOXED_DOUBLE_TYPE.getInternalName());
-            visitor.visitEnd();
-        } else {
-            writeType(visitor, type);
+    public static class BoxedTypeSignatureVisitor extends TypeSignatureVisitor {
+
+        public BoxedTypeSignatureVisitor(SignatureVisitor visitor) {
+            super(visitor);
+        }
+
+        @Override
+        public void visitBuiltInType(BuiltInType builtIn) {
+            if (builtIn.equals(org.mina_lang.common.types.Type.BOOLEAN)) {
+                visitor.visitClassType(Types.BOXED_BOOLEAN_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.CHAR)) {
+                visitor.visitClassType(Types.BOXED_CHAR_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.STRING)) {
+                visitor.visitClassType(Types.STRING_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.INT)) {
+                visitor.visitClassType(Types.BOXED_INT_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.LONG)) {
+                visitor.visitClassType(Types.BOXED_LONG_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.FLOAT)) {
+                visitor.visitClassType(Types.BOXED_FLOAT_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.DOUBLE)) {
+                visitor.visitClassType(Types.BOXED_DOUBLE_TYPE.getInternalName());
+                visitor.visitEnd();
+            } else if (builtIn.equals(org.mina_lang.common.types.Type.UNIT)) {
+                visitor.visitClassType(Types.UNIT_TYPE.getInternalName());
+                visitor.visitEnd();
+            }
         }
     }
 }
