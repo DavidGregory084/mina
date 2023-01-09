@@ -26,6 +26,8 @@ jobs:
         with:
           owner: rust-lang
           name: mdBook
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build site content
         run: mdbook build
