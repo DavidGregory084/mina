@@ -7,11 +7,10 @@ import java.util.Optional;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.NameEnvironment;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.scopes.naming.*;
+import org.mina_lang.renamer.scopes.*;
 import org.mina_lang.syntax.*;
 
 public class Renamer {
@@ -223,14 +222,6 @@ public class Renamer {
         public LetNode<Name> visitLet(Meta<Void> meta, String name, Optional<TypeNode<Name>> type,
                 ExprNode<Name> expr) {
             return letNode(environment.lookupValue(name).get(), name, type, expr);
-        }
-
-        @Override
-        public void postVisitLet(LetNode<Name> let) {
-            if (environment.topScope() instanceof NamespaceNamingScope) {
-                // Reset local variable counter for each new top-level let binding
-                localVarIndex = 0;
-            }
         }
 
         @Override

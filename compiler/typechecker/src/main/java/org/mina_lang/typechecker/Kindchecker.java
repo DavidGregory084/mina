@@ -9,15 +9,13 @@ import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
-import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.Name;
-import org.mina_lang.common.scopes.*;
-import org.mina_lang.common.scopes.typing.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
+import org.mina_lang.typechecker.scopes.*;
 
 import com.opencastsoftware.prettier4j.Doc;
 

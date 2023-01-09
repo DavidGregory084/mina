@@ -25,7 +25,7 @@ public record NamespaceNode<A> (Meta<A> meta, NamespaceIdNode id, ImmutableList<
                 imports(),
                 declarations().collect(visitor::visitDeclaration));
 
-        visitor.postVisitNamespace(result);
+        visitor.postVisitNamespace(this);
 
         return result;
     }

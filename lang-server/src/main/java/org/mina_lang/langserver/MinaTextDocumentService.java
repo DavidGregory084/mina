@@ -1,5 +1,7 @@
 package org.mina_lang.langserver;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -7,17 +9,19 @@ import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
+import org.mina_lang.codegen.jvm.CodeGenerator;
 import org.mina_lang.common.Attributes;
-import org.mina_lang.common.NameEnvironment;
-import org.mina_lang.common.TypeEnvironment;
+import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.types.KindPrinter;
 import org.mina_lang.common.types.SortPrinter;
 import org.mina_lang.common.types.TypePrinter;
 import org.mina_lang.parser.Parser;
+import org.mina_lang.renamer.NameEnvironment;
 import org.mina_lang.renamer.Renamer;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
+import org.mina_lang.typechecker.TypeEnvironment;
 import org.mina_lang.typechecker.Typechecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +34,7 @@ public class MinaTextDocumentService implements TextDocumentService {
     private MinaSyntaxTrees syntaxTrees = new MinaSyntaxTrees();
     private MinaHoverRanges hoverRanges = new MinaHoverRanges();
     private SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
+    private Path storagePath = Paths.get(System.getProperty("STORAGE_FOLDER", "./classes"));
 
     public MinaTextDocumentService(MinaLanguageServer server) {
         this.server = server;
@@ -63,6 +68,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var parser = new Parser(diagnostics);
                         var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
                         var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
                         if (diagnostics.getDiagnostics().isEmpty()) {
@@ -71,6 +77,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                                 var typed = typechecker.typecheck(renamed);
                                 typed.accept(rangeVisitor);
                                 hoversFuture.complete(rangeVisitor.getRangeNodes());
+                                codegen.generate(storagePath, typed);
                                 return typed;
                             } else {
                                 renamed.accept(rangeVisitor);
@@ -107,6 +114,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var parser = new Parser(diagnostics);
                         var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
                         var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
                         if (diagnostics.getDiagnostics().isEmpty()) {
@@ -115,6 +123,7 @@ public class MinaTextDocumentService implements TextDocumentService {
                                 var typed = typechecker.typecheck(renamed);
                                 typed.accept(rangeVisitor);
                                 hoversFuture.complete(rangeVisitor.getRangeNodes());
+                                codegen.generate(storagePath, typed);
                                 return typed;
                             } else {
                                 renamed.accept(rangeVisitor);
@@ -154,7 +163,9 @@ public class MinaTextDocumentService implements TextDocumentService {
         if (node.meta().meta() instanceof Attributes attrs) {
             String nameString;
 
-            if (attrs.name() instanceof Named name) {
+            if (attrs.name() instanceof LocalName name) {
+                nameString = name.canonicalName() + "@" + name.index() + ": ";
+            } else if (attrs.name() instanceof Named name) {
                 nameString = name.canonicalName() + ": ";
             } else {
                 nameString = "";

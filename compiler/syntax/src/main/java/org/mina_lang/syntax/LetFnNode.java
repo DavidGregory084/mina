@@ -32,7 +32,7 @@ public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode
                 returnType().map(visitor::visitType),
                 visitor.visitExpr(expr()));
 
-        visitor.postVisitLetFn(result);
+        visitor.postVisitLetFn(this);
 
         return result;
     }

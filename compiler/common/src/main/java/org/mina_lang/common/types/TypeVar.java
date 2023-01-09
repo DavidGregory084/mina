@@ -2,6 +2,8 @@ package org.mina_lang.common.types;
 
 public sealed interface TypeVar extends MonoType permits ExistsVar, ForAllVar {
 
+    String name();
+
     @Override
     default <A> A accept(TypeFolder<A> visitor) {
         return this.accept(visitor);

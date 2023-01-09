@@ -3,4 +3,14 @@ namespace Mina/Examples/DeclareOption {
         case Some(value: A)
         case None()
     }
+
+    let getOrElse[A](option: Option[A], default: () -> A): A = match option with {
+        case None {} -> default()
+        case Some { value } -> value
+    }
+
+    let orElse[A](left: Option[A], right: Option[A]): Option[A] = match left with {
+        case None {} -> right
+        case otherwise -> left
+    }
 }

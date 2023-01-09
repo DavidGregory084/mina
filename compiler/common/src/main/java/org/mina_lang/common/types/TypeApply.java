@@ -5,6 +5,11 @@ import org.eclipse.collections.api.list.ImmutableList;
 public record TypeApply(Type type, ImmutableList<Type> typeArguments, Kind kind) implements MonoType {
 
     @Override
+    public void accept(TypeVisitor visitor) {
+        visitor.visitTypeApply(this);
+    }
+
+    @Override
     public <A> A accept(TypeFolder<A> visitor) {
         return visitor.visitTypeApply(this);
     }

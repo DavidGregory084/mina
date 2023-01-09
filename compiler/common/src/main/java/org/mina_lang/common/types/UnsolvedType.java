@@ -9,6 +9,11 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
     }
 
     @Override
+    public void accept(TypeVisitor visitor) {
+        visitor.visitUnsolvedType(this);
+    }
+
+    @Override
     public <A> A accept(TypeFolder<A> visitor) {
         return visitor.visitUnsolvedType(this);
     }

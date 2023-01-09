@@ -19,5 +19,8 @@ include("compiler:jvm")
 // Language server
 include("lang-server")
 
+// Runtime library
+include("runtime")
+
 // VS Code plugin
 include("vscode-plugin")

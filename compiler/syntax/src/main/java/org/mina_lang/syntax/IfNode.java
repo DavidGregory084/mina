@@ -22,7 +22,7 @@ public record IfNode<A> (Meta<A> meta, ExprNode<A> condition, ExprNode<A> conseq
                 visitor.visitExpr(consequent()),
                 visitor.visitExpr(alternative()));
 
-        visitor.postVisitIf(result);
+        visitor.postVisitIf(this);
 
         return result;
     }

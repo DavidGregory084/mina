@@ -9,10 +9,10 @@ public record IntNode<A>(Meta<A> meta, int value) implements LiteralNode<A> {
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(LiteralNodeFolder<A, B> visitor) {
         visitor.preVisitInt(this);
         var result = visitor.visitInt(meta(), value());
-        visitor.postVisitInt(result);
+        visitor.postVisitInt(this);
         return result;
     }
 
@@ -22,5 +22,10 @@ public record IntNode<A>(Meta<A> meta, int value) implements LiteralNode<A> {
         var result = visitor.visitInt(meta(), value());
         visitor.postVisitInt(result);
         return result;
+    }
+
+    @Override
+    public Integer boxedValue() {
+        return value();
     }
 }

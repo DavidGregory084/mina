@@ -3,16 +3,15 @@ package org.mina_lang.typechecker;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.TypeEnvironment;
 import org.mina_lang.common.names.BuiltInName;
 import org.mina_lang.common.names.ExistsVarName;
 import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.TypeName;
-import org.mina_lang.common.scopes.typing.TypeLambdaTypingScope;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.QualifiedIdNode;
 import org.mina_lang.syntax.TypeLambdaNode;
 import org.mina_lang.syntax.TypeNodeFolder;
+import org.mina_lang.typechecker.scopes.TypeLambdaTypingScope;
 
 public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 

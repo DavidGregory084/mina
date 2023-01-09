@@ -9,12 +9,12 @@ public record IdPatternNode<A> (Meta<A> meta, String name) implements PatternNod
     }
 
     @Override
-    public <B> B accept(MetaNodeFolder<A, B> visitor) {
+    public <B> B accept(PatternNodeFolder<A, B> visitor) {
         visitor.preVisitIdPattern(this);
 
         var result = visitor.visitIdPattern(meta(), name());
 
-        visitor.postVisitIdPattern(result);
+        visitor.postVisitIdPattern(this);
 
         return result;
     }

@@ -22,7 +22,7 @@ public record LambdaNode<A> (Meta<A> meta, ImmutableList<ParamNode<A>> params, E
                 params().collect(param -> param.accept(visitor)),
                 visitor.visitExpr(body()));
 
-        visitor.postVisitLambda(result);
+        visitor.postVisitLambda(this);
 
         return result;
     }
