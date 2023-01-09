@@ -12,18 +12,18 @@ The project structure is as follows:
 * `compiler` - this subfolder contains subprojects that implement the compiler phases.
     * `compiler/common` - this contains shared data structures that are used by all compiler phases. Many of these definitions exactly mirror those from the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/). Mina is designed to integrate with LSP, but we don't want to depend on the Java LSP4J library throughout the compiler.
     * `compiler/syntax` - this contains the definition of the abstract syntax tree and utilities for working with trees.
-    * `compiler/parser` - this contains the ANTLR grammar of the language and the parsing phase for namespace definitions.
+    * `compiler/parser` - this contains the ANTLR grammar of the language and the batch-mode parsing phase for namespace definitions.
     * `compiler/renamer` - this contains the name resolution phase, which is responsible for resolving imports and attributing syntax trees with fully qualified names.
     * `compiler/typechecker` - this contains the phase responsible for kind-checking data types and type-checking let bindings.
     * Missing phase folders:
         * `compiler/simplifier` - this will contain a phase for lowering the user-facing syntax trees into the intermediate language.
         * `compiler/optimiser` - this will contain a phase for optimising the intermediate language.
     * `compiler/intermediate` - unimplemented; this will contain the intermediate language for the compiler optimisation phases.
-    * `compiler/jvm` - unimplemented; this will contain the JVM bytecode generation phase for the compiler.
+    * `compiler/jvm` - this contains the JVM bytecode generation phase for the compiler, currently only implemented for unoptimised syntax trees.
 * `examples` - this contains examples of the Mina language syntax.
 * `gradle/libs.versions.toml` - this is the version catalog declaring dependencies and their versions. See the Gradle documentation about [The version catalog TOML file format](https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format) for more details.
 * `gradle-plugin` - mostly unimplemented; this will contain a Gradle plugin for declaring and building Mina projects.
-* `lang-server` - this contains an LSP-compatible language server implemented using [lsp4j](https://github.com/eclipse/lsp4j). This server currently implements parsing, renaming and type inference for the Mina language and displays diagnostics, as well as providing type and kind hover information. Inter-file dependencies are not currently supported.
+* `lang-server` - this contains an LSP-compatible language server implemented using [lsp4j](https://github.com/eclipse/lsp4j). This server currently implements parsing, renaming, type inference and code generation for the Mina language and displays diagnostics, as well as providing type and kind hover information. Inter-file dependencies are not currently supported.
 * `proto` - unimplemented, currently nothing more than a copy of the Protobuf definitions from [DavidGregory084/inc](https://github.com/DavidGregory084/inc). This will contain Protobuf definitions for the language syntax and intermediate language. The AST of each namespace will be embedded in its Mina .class file as a custom class file attribute. The optimised intermediate language for definitions will be embedded in Mina .class files for the purposes of inlining. They will serve a similar purpose to Haskell .hi files.
 * `vscode-plugin` - the VS Code plugin which interacts with the language server in `lang-server`.
 
