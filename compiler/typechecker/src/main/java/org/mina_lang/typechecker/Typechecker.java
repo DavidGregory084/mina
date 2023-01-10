@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
@@ -86,6 +87,11 @@ public class Typechecker {
     public NamespaceNode<Attributes> typecheck(NamespaceNode<Name> namespace) {
         var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
         return inferNamespace(namespace).accept(metaTransformer);
+    }
+
+    public ImmutableList<DeclarationNode<Attributes>> typecheck(ImmutableList<DeclarationNode<Name>> node) {
+        var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
+        return inferDeclarationGroup(node).collect(decl -> decl.accept(metaTransformer));
     }
 
     public DeclarationNode<Attributes> typecheck(DeclarationNode<Name> node) {
@@ -171,6 +177,29 @@ public class Typechecker {
                 Doc.text("Mismatched application!")
                         .appendLineOrSpace(Doc.text("Expected:").appendSpace(expected))
                         .appendLineOr(Doc.text(", "), Doc.text("Actual:").appendSpace(actual)))
+                .render(80);
+
+        diagnostics.reportError(range, message);
+    }
+
+    void noUniqueType(Range range, DeclarationName name, Type inferredType,
+            ImmutableSortedSet<UnsolvedType> unsolvedVars) {
+        var inferred = inferredType
+                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortPrinter);
+
+        var unsolvedVarDocs = unsolvedVars
+                .collect(UnsolvedType::name)
+                .collect(Doc::text);
+
+        var message = Doc.group(
+                Doc.text("Couldn't infer a unique type for " + name.localName() + "!")
+                        .appendLineOrSpace(Doc.text("Found:").appendSpace(inferred))
+                        .appendLineOr(", ", Doc.text("where").appendSpace(
+                                Doc.intersperse(Doc.text(", "), unsolvedVarDocs.stream()))
+                                .appendSpace(
+                                        unsolvedVars.size() > 1 ? Doc.text("are unsolved variables.")
+                                                : Doc.text("is an unsolved variable."))))
                 .render(80);
 
         diagnostics.reportError(range, message);
@@ -462,41 +491,64 @@ public class Typechecker {
         var currentNamespace = (NamespaceName) namespace.meta().meta();
         var namespaceScope = new NamespaceTypingScope(currentNamespace);
 
-        namespace.declarations().forEach(decl -> {
-            if (decl instanceof LetFnNode<Name> letFn) {
-                var letFnType = newUnsolvedType(TypeKind.INSTANCE);
-                var letFnMeta = updateMetaWith(letFn.meta(), letFnType);
-                putValueDeclaration(namespaceScope, letFnMeta);
+        namespace.declarationGroups().forEach(decls -> {
+            decls.forEach(decl -> {
+                if (decl instanceof LetFnNode<Name> letFn) {
+                    var letFnType = newUnsolvedType(TypeKind.INSTANCE);
+                    var letFnMeta = updateMetaWith(letFn.meta(), letFnType);
+                    putValueDeclaration(namespaceScope, letFnMeta);
 
-            } else if (decl instanceof LetNode<Name> let) {
-                var letType = newUnsolvedType(TypeKind.INSTANCE);
-                var letMeta = updateMetaWith(let.meta(), letType);
-                putValueDeclaration(namespaceScope, letMeta);
+                } else if (decl instanceof LetNode<Name> let) {
+                    var letType = newUnsolvedType(TypeKind.INSTANCE);
+                    var letMeta = updateMetaWith(let.meta(), letType);
+                    putValueDeclaration(namespaceScope, letMeta);
 
-            } else if (decl instanceof DataNode<Name> data) {
-                var dataKind = newUnsolvedKind();
-                var dataMeta = updateMetaWith(data.meta(), dataKind);
+                } else if (decl instanceof DataNode<Name> data) {
+                    var dataKind = newUnsolvedKind();
+                    var dataMeta = updateMetaWith(data.meta(), dataKind);
 
-                putTypeDeclaration(namespaceScope, dataMeta);
+                    putTypeDeclaration(namespaceScope, dataMeta);
 
-                data.constructors().forEach(constr -> {
-                    var constrName = (ConstructorName) constr.meta().meta();
-                    var constrType = newUnsolvedType(dataKind);
-                    var constrMeta = updateMetaWith(constr.meta(), constrType);
+                    data.constructors().forEach(constr -> {
+                        var constrName = (ConstructorName) constr.meta().meta();
+                        var constrType = newUnsolvedType(dataKind);
+                        var constrMeta = updateMetaWith(constr.meta(), constrType);
 
-                    putValueDeclaration(namespaceScope, constrMeta);
+                        putValueDeclaration(namespaceScope, constrMeta);
 
-                    constr.params().forEach(constrParam -> {
-                        var fieldType = newUnsolvedType(TypeKind.INSTANCE);
-                        var fieldMeta = updateMetaWith(constrParam.meta(), fieldType);
+                        constr.params().forEach(constrParam -> {
+                            var fieldType = newUnsolvedType(TypeKind.INSTANCE);
+                            var fieldMeta = updateMetaWith(constrParam.meta(), fieldType);
 
-                        namespaceScope.putField(constrName, constrParam.name(), fieldMeta);
+                            namespaceScope.putField(constrName, constrParam.name(), fieldMeta);
+                        });
                     });
-                });
-            }
+                }
+            });
         });
 
         return namespaceScope;
+    }
+
+    void updateTopLevel(DeclarationNode<Attributes> decl) {
+        if (decl instanceof LetNode<Attributes> let) {
+            putValueDeclaration(let.meta());
+        } else if (decl instanceof LetFnNode<Attributes> letFn) {
+            putValueDeclaration(letFn.meta());
+        } else if (decl instanceof DataNode<Attributes> data) {
+            putTypeDeclaration(data.meta());
+
+            data.constructors().forEach(constr -> {
+                putValueDeclaration(constr.meta());
+
+                constr.params().forEach(constrParam -> {
+                    environment.putField(
+                            (ConstructorName) constr.meta().meta().name(),
+                            constrParam.name(),
+                            constrParam.meta());
+                });
+            });
+        }
     }
 
     Type createLetFnType(
@@ -554,9 +606,50 @@ public class Typechecker {
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
-            var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
-            return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
+            var inferredDecls = namespace.declarationGroups().collect(this::inferDeclarationGroup);
+            return new NamespaceNode<>(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
         });
+    }
+
+    ImmutableList<DeclarationNode<Attributes>> inferDeclarationGroup(
+            ImmutableList<DeclarationNode<Name>> declarationGroup) {
+        var inferredGroup = declarationGroup
+                .collect(this::inferDeclaration)
+                .collect(this::defaultKinds)
+                .collect(this::checkPrincipalTypes);
+
+        inferredGroup.forEach(this::updateTopLevel);
+
+        return inferredGroup;
+    }
+
+    DeclarationNode<Attributes> defaultKinds(DeclarationNode<Attributes> declaration) {
+        if (declaration instanceof DataNode<Attributes> data) {
+            var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
+            var sortTransformer = new SortSubstitutionTransformer(environment.typeSubstitution(), kindDefaulting);
+            return data.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
+        } else {
+            return declaration;
+        }
+    }
+
+    DeclarationNode<Attributes> checkPrincipalTypes(DeclarationNode<Attributes> declaration) {
+        if (declaration instanceof DataNode) {
+            return declaration;
+        } else {
+            var inferredType = getType(declaration);
+            var unsolvedVars = inferredType.accept(new FreeUnsolvedVariablesFolder(environment));
+
+            if (!unsolvedVars.isEmpty()) {
+                noUniqueType(
+                    declaration.range(),
+                    (DeclarationName) declaration.meta().meta().name(),
+                    inferredType,
+                    unsolvedVars);
+            }
+
+            return declaration;
+        }
     }
 
     DeclarationNode<Attributes> inferDeclaration(DeclarationNode<Name> declaration) {

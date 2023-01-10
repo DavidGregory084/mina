@@ -37,6 +37,17 @@ public class TypecheckerTest {
 
     void testSuccessfulTypecheck(
             TypeEnvironment environment,
+            DataNode<Name> originalNode,
+            DataNode<Attributes> expectedNode) {
+        var diagnostics = new ErrorCollector();
+        var typechecker = new Typechecker(diagnostics, environment);
+        var typecheckedNodes = typechecker.typecheck(Lists.immutable.of(originalNode));
+        assertThat(diagnostics.getDiagnostics(), is(empty()));
+        assertThat(typecheckedNodes.getFirst(), is(equalTo(expectedNode)));
+    }
+
+    void testSuccessfulTypecheck(
+            TypeEnvironment environment,
             DeclarationNode<Name> originalNode,
             DeclarationNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();

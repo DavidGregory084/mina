@@ -14,7 +14,7 @@ public class SyntaxNodes {
             NamespaceIdNode id,
             ImmutableList<ImportNode> imports,
             ImmutableList<DeclarationNode<Void>> declarations) {
-        return new NamespaceNode<>(Meta.of(range), id, imports, declarations);
+        return new NamespaceNode<>(Meta.of(range), id, imports, Lists.immutable.of(declarations));
     }
 
     public static <A> NamespaceNode<A> namespaceNode(
@@ -22,7 +22,7 @@ public class SyntaxNodes {
             NamespaceIdNode id,
             ImmutableList<ImportNode> imports,
             ImmutableList<DeclarationNode<A>> declarations) {
-        return new NamespaceNode<>(meta, id, imports, declarations);
+        return new NamespaceNode<>(meta, id, imports, Lists.immutable.of(declarations));
     }
 
     public static ImportNode importNode(

@@ -11,7 +11,7 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
     default void preVisitNamespace(NamespaceNode<A> namespace) {}
 
     NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-            ImmutableList<DeclarationNode<B>> declarations);
+            ImmutableList<ImmutableList<DeclarationNode<B>>> declarationGroups);
 
     default void postVisitNamespace(NamespaceNode<B> namespace) {}
 

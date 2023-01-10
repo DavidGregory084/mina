@@ -11,12 +11,17 @@ public record DataNamingScope(
         DataName data,
         MutableMap<String, Meta<Name>> values,
         MutableMap<String, Meta<Name>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Name>>> fields) implements NamingScope {
+        MutableMap<ConstructorName, MutableMap<String, Meta<Name>>> fields) implements DeclarationNamingScope {
     public DataNamingScope(DataName data) {
         this(
                 data,
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),
                 Maps.mutable.empty());
+    }
+
+    @Override
+    public DataName declarationName() {
+        return data;
     }
 }

@@ -60,20 +60,11 @@ public class Kindchecker {
     }
 
     public DataNode<Attributes> kindcheck(DataNode<Name> node) {
-        var inferredData = inferData(node);
-        // FIXME: Defaulting should be done after kind-checking mutually-dependent
-        // groups of definitions in dependency order, not after checking each
-        // definition.
-        var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
-        var sortTransformer = new SortSubstitutionTransformer(environment.typeSubstitution(), kindDefaulting);
-        return inferredData.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
+        return inferData(node);
     }
 
     public TypeNode<Attributes> kindcheck(TypeNode<Name> node) {
         var inferredType = checkType(node, TypeKind.INSTANCE);
-        // FIXME: Defaulting should be done after kind-checking mutually-dependent
-        // groups of definitions in dependency order, not after checking each
-        // definition.
         var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
         return inferredType.accept(new TypeNodeSubstitutionTransformer(kindDefaulting));
     }

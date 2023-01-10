@@ -12,8 +12,8 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
     // Namespaces
     @Override
     default NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-            ImmutableList<DeclarationNode<B>> declarations) {
-        return namespaceNode(updateMeta(meta), id, imports, declarations);
+            ImmutableList<ImmutableList<DeclarationNode<B>>> declarationGroups) {
+        return new NamespaceNode<>(updateMeta(meta), id, imports, declarationGroups);
     }
 
 

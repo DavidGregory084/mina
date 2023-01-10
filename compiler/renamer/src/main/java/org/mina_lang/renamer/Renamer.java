@@ -6,6 +6,11 @@ import java.util.Optional;
 
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.impl.collector.Collectors2;
+import org.jgrapht.Graph;
+import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
@@ -17,6 +22,12 @@ public class Renamer {
 
     private DiagnosticCollector diagnostics;
     private NameEnvironment environment;
+
+    private Graph<DeclarationName, DefaultEdge> declarationGraph = GraphTypeBuilder
+            .<DeclarationName, DefaultEdge>directed()
+            .allowingSelfLoops(true)
+            .edgeClass(DefaultEdge.class)
+            .buildGraph();
 
     private int localVarIndex = 0;
 
@@ -95,49 +106,51 @@ public class Renamer {
         var currentNamespace = namespace.getName();
         var namespaceScope = new NamespaceNamingScope(currentNamespace);
 
-        namespace.declarations().forEach(decl -> {
-            if (decl instanceof DataNode<Void> data) {
-                var dataName = data.getName(currentNamespace);
-                var dataMeta = new Meta<Name>(data.range(), dataName);
+        namespace.declarationGroups().forEach(decls -> {
+            decls.forEach(decl -> {
+                if (decl instanceof LetFnNode<Void> letFn) {
+                    var letFnName = letFn.getName(currentNamespace);
+                    var letFnMeta = new Meta<Name>(letFn.range(), letFnName);
 
-                namespaceScope.putTypeIfAbsentOrElse(dataName.localName(), dataMeta, this::duplicateTypeDefinition);
-                namespaceScope.putTypeIfAbsent(dataName.canonicalName(), dataMeta);
-
-                data.constructors().forEach(constr -> {
-                    var constrName = constr.getName(dataName, currentNamespace);
-                    var constrMeta = new Meta<Name>(constr.range(), constrName);
-
-                    namespaceScope.putValueIfAbsentOrElse(constrName.localName(), constrMeta,
+                    namespaceScope.putValueIfAbsentOrElse(letFnName.localName(), letFnMeta,
                             this::duplicateValueDefinition);
-                    namespaceScope.putValueIfAbsent(constrName.canonicalName(), constrMeta);
+                    namespaceScope.putValueIfAbsent(letFnName.canonicalName(), letFnMeta);
 
-                    constr.params().forEach(constrParam -> {
-                        var fieldName = new FieldName(constrName, constrParam.name());
-                        var fieldMeta = new Meta<Name>(constrParam.range(), fieldName);
-                        namespaceScope.putFieldIfAbsentOrElse(
-                                constrName, constrParam.name(), fieldMeta,
-                                (name, proposed, existing) -> duplicateFieldDefinition(
-                                        constrName,
-                                        name,
-                                        proposed,
-                                        existing));
+                } else if (decl instanceof LetNode<Void> let) {
+                    var letName = let.getName(currentNamespace);
+                    var letMeta = new Meta<Name>(let.range(), letName);
+
+                    namespaceScope.putValueIfAbsentOrElse(letName.localName(), letMeta, this::duplicateValueDefinition);
+                    namespaceScope.putValueIfAbsent(letName.canonicalName(), letMeta);
+                } else if (decl instanceof DataNode<Void> data) {
+                    var dataName = data.getName(currentNamespace);
+                    var dataMeta = new Meta<Name>(data.range(), dataName);
+
+                    namespaceScope.putTypeIfAbsentOrElse(dataName.localName(), dataMeta, this::duplicateTypeDefinition);
+                    namespaceScope.putTypeIfAbsent(dataName.canonicalName(), dataMeta);
+
+                    data.constructors().forEach(constr -> {
+                        var constrName = constr.getName(dataName, currentNamespace);
+                        var constrMeta = new Meta<Name>(constr.range(), constrName);
+
+                        namespaceScope.putValueIfAbsentOrElse(constrName.localName(), constrMeta,
+                                this::duplicateValueDefinition);
+                        namespaceScope.putValueIfAbsent(constrName.canonicalName(), constrMeta);
+
+                        constr.params().forEach(constrParam -> {
+                            var fieldName = new FieldName(constrName, constrParam.name());
+                            var fieldMeta = new Meta<Name>(constrParam.range(), fieldName);
+                            namespaceScope.putFieldIfAbsentOrElse(
+                                    constrName, constrParam.name(), fieldMeta,
+                                    (name, proposed, existing) -> duplicateFieldDefinition(
+                                            constrName,
+                                            name,
+                                            proposed,
+                                            existing));
+                        });
                     });
-                });
-
-            } else if (decl instanceof LetFnNode<Void> letFn) {
-                var letFnName = letFn.getName(currentNamespace);
-                var letFnMeta = new Meta<Name>(letFn.range(), letFnName);
-
-                namespaceScope.putValueIfAbsentOrElse(letFnName.localName(), letFnMeta, this::duplicateValueDefinition);
-                namespaceScope.putValueIfAbsent(letFnName.canonicalName(), letFnMeta);
-
-            } else if (decl instanceof LetNode<Void> let) {
-                var letName = let.getName(currentNamespace);
-                var letMeta = new Meta<Name>(let.range(), letName);
-
-                namespaceScope.putValueIfAbsentOrElse(letName.localName(), letMeta, this::duplicateValueDefinition);
-                namespaceScope.putValueIfAbsent(letName.canonicalName(), letMeta);
-            }
+                }
+            });
         });
 
         return namespaceScope;
@@ -152,16 +165,49 @@ public class Renamer {
         }
 
         @Override
-        public NamespaceNode<Name> visitNamespace(Meta<Void> meta, NamespaceIdNode id,
-                ImmutableList<ImportNode> imports, ImmutableList<DeclarationNode<Name>> declarations) {
+        public NamespaceNode<Name> visitNamespace(
+                Meta<Void> meta,
+                NamespaceIdNode id,
+                ImmutableList<ImportNode> imports,
+                ImmutableList<ImmutableList<DeclarationNode<Name>>> declarationGroups) {
+
             var namespaceMeta = new Meta<Name>(meta.range(), environment.enclosingNamespace().get().namespace());
-            return namespaceNode(namespaceMeta, id, imports, declarations);
+
+            var connectedComponents = new KosarajuStrongConnectivityInspector<>(declarationGraph)
+                .stronglyConnectedSets();
+
+            if (connectedComponents.isEmpty()) {
+                return new NamespaceNode<>(namespaceMeta, id, imports, declarationGroups);
+            } else {
+                var sortedDeclarations = Lists.mutable
+                        .<ImmutableList<DeclarationNode<Name>>>empty();
+
+                var unsortedDeclarations = declarationGroups.getFirst()
+                        .<DeclarationName, DeclarationNode<Name>>toImmutableMap(
+                                decl -> (DeclarationName) decl.meta().meta(),
+                                decl -> decl);
+
+                connectedComponents.forEach(connectedSet -> {
+                    var declarationGroup = connectedSet.stream()
+                            .filter(unsortedDeclarations::containsKey)
+                            .map(unsortedDeclarations::get)
+                            .collect(Collectors2.toImmutableList());
+
+                    if (!declarationGroup.isEmpty()) {
+                        sortedDeclarations.add(declarationGroup);
+                    }
+                });
+
+                return new NamespaceNode<>(namespaceMeta, id, imports, sortedDeclarations.toImmutable());
+            }
+
         }
 
         @Override
         public void preVisitData(DataNode<Void> data) {
             var enclosingNamespace = environment.enclosingNamespace().get();
-            var dataScope = new DataNamingScope(data.getName(enclosingNamespace.namespace()));
+            var dataName = data.getName(enclosingNamespace.namespace());
+            var dataScope = new DataNamingScope(dataName);
             environment.pushScope(dataScope);
             data.typeParams().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
@@ -186,6 +232,9 @@ public class Renamer {
             var enclosingNamespace = environment.enclosingNamespace().get();
             var constrName = constr.getName(enclosingData.data(), enclosingNamespace.namespace());
             var constrScope = new ConstructorNamingScope(constrName);
+            declarationGraph.addVertex(constrName);
+            declarationGraph.addVertex(enclosingData.data());
+            declarationGraph.addEdge(constrName, enclosingData.data());
             environment.pushScope(constrScope);
         }
 
@@ -215,6 +264,9 @@ public class Renamer {
                 // Local let bindings are only valid within the block scope and can shadow outer
                 // declarations
                 blockScope.putValueIfAbsentOrElse(let.name(), letMeta, Renamer.this::duplicateValueDefinition);
+            } else {
+                var letMeta = environment.lookupValue(let.name()).get();
+                environment.pushScope(new LetNamingScope((LetName) letMeta.meta()));
             }
         }
 
@@ -225,19 +277,25 @@ public class Renamer {
         }
 
         @Override
+        public void postVisitLet(LetNode<Name> let) {
+            if (!(environment.topScope() instanceof BlockNamingScope)) {
+                environment.popScope(LetNamingScope.class);
+            }
+        }
+
+        @Override
         public void preVisitLetFn(LetFnNode<Void> letFn) {
-            var typeLambdaScope = new TypeLambdaNamingScope();
+            var letMeta = environment.lookupValue(letFn.name()).get();
+            var letScope = new LetNamingScope((LetName) letMeta.meta());
 
             letFn.typeParams().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
-                typeLambdaScope.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta,
+                letScope.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta,
                         Renamer.this::duplicateTypeDefinition);
             });
 
-            // Emulate what happens for let-bound lambdas
-            //
             // Type params
-            environment.pushScope(typeLambdaScope);
+            environment.pushScope(letScope);
             // Value params
             environment.pushScope(new LambdaNamingScope());
         }
@@ -253,7 +311,7 @@ public class Renamer {
             // Value params
             environment.popScope(LambdaNamingScope.class);
             // Type params
-            environment.popScope(TypeLambdaNamingScope.class);
+            environment.popScope(LetNamingScope.class);
         }
 
         @Override
@@ -313,6 +371,17 @@ public class Renamer {
                     .orElseGet(() -> {
                         return new Meta<>(meta.range(), Nameless.INSTANCE);
                     });
+
+            environment.enclosingNamespace().ifPresent(namespace -> {
+                environment.enclosingDeclaration().ifPresent(declaration -> {
+                    if (lookupMeta.meta() instanceof DeclarationName declName &&
+                            namespace.namespace().equals(declName.name().ns())) {
+                        declarationGraph.addVertex(declName);
+                        declarationGraph.addVertex(declaration.declarationName());
+                        declarationGraph.addEdge(declName, declaration.declarationName());
+                    }
+                });
+            });
 
             return typeRefNode(lookupMeta, id);
         }
@@ -384,6 +453,17 @@ public class Renamer {
                     .lookupValueOrElse(id.canonicalName(), meta, Renamer.this::undefinedValue)
                     .map(refMeta -> refMeta.withRange(meta.range()))
                     .orElseGet(() -> new Meta<>(meta.range(), Nameless.INSTANCE));
+
+            environment.enclosingNamespace().ifPresent(namespace -> {
+                environment.enclosingDeclaration().ifPresent(declaration -> {
+                    if (lookupMeta.meta() instanceof DeclarationName declName &&
+                            namespace.namespace().equals(declName.name().ns())) {
+                        declarationGraph.addVertex(declName);
+                        declarationGraph.addVertex(declaration.declarationName());
+                        declarationGraph.addEdge(declName, declaration.declarationName());
+                    }
+                });
+            });
 
             return refNode(lookupMeta, id);
         }
@@ -472,6 +552,17 @@ public class Renamer {
             var lookupMeta = environment.lookupValue(id.canonicalName())
                     .map(constrMeta -> constrMeta.withRange(meta.range()))
                     .orElseGet(() -> new Meta<>(meta.range(), Nameless.INSTANCE));
+
+            environment.enclosingNamespace().ifPresent(namespace -> {
+                environment.enclosingDeclaration().ifPresent(declaration -> {
+                    if (lookupMeta.meta() instanceof DeclarationName declName &&
+                            namespace.namespace().equals(declName.name().ns())) {
+                        declarationGraph.addVertex(declName);
+                        declarationGraph.addVertex(declaration.declarationName());
+                        declarationGraph.addEdge(declName, declaration.declarationName());
+                    }
+                });
+            });
 
             return constructorPatternNode(lookupMeta, id, fields);
         }

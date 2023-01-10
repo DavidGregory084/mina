@@ -611,10 +611,10 @@ public class RenamerTest {
                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1)),
                         letNode(Range.EMPTY, "foo", refNode(Range.EMPTY, "bar"))));
 
-        var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
+        var expectedNode = new NamespaceNode<>(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
                 Lists.immutable.of(
-                        letNode(Meta.of(barName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1)),
-                        letNode(Meta.of(fooName), "foo", refNode(Meta.of(barName), "bar"))));
+                        Lists.immutable.of(letNode(Meta.of(barName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
+                        Lists.immutable.of(letNode(Meta.of(fooName), "foo", refNode(Meta.of(barName), "bar")))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
@@ -1199,16 +1199,16 @@ public class RenamerTest {
                                         letNode(Range.EMPTY, "baz", refNode(Range.EMPTY, "bar"))),
                                 refNode(Range.EMPTY, "baz")))));
 
-        var expectedNode = namespaceNode(
+        var expectedNode = new NamespaceNode<>(
                 Meta.of(namespaceName), idNode,
                 Lists.immutable.empty(),
                 Lists.immutable.of(
-                        letNode(Meta.of(outerBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1)),
-                        letNode(Meta.of(outerFooName), "foo", blockNode(
+                        Lists.immutable.of(letNode(Meta.of(outerBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
+                        Lists.immutable.of(letNode(Meta.of(outerFooName), "foo", blockNode(
                                 Meta.of(Nameless.INSTANCE),
                                 Lists.immutable.of(
                                         letNode(Meta.of(localBazName), "baz", refNode(Meta.of(outerBarName), "bar"))),
-                                refNode(Meta.of(localBazName), "baz")))));
+                                refNode(Meta.of(localBazName), "baz"))))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }

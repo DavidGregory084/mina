@@ -1,0 +1,22 @@
+namespace Mina/Examples/DeclareTree {
+    data Tree[A] {
+        case Node(root: A, subtrees: Forest[A])
+        case Empty()
+    }
+
+    data Forest[A] {
+        case Cons(head: Tree[A], tail: Forest[A])
+        case Nil()
+    }
+
+    // These definitions are obviously wrong, but we have no arithmetic operators yet!
+    let treeSize[A](tree: Tree[A]) = match tree with {
+        case Empty {} -> 0
+        case Node { subtrees } -> forestSize(subtrees)
+    }
+
+    let forestSize[A](forest: Forest[A]) = match forest with {
+        case Nil {} -> 0
+        case Cons { head, tail } -> treeSize(head)
+    }
+}

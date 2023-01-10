@@ -5,13 +5,13 @@ import org.mina_lang.common.*;
 import org.mina_lang.common.names.NamespaceName;
 
 public record NamespaceNode<A> (Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-        ImmutableList<DeclarationNode<A>> declarations) implements MetaNode<A> {
+        ImmutableList<ImmutableList<DeclarationNode<A>>> declarationGroups) implements MetaNode<A> {
 
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         id.accept(visitor);
         imports.forEach(imp -> imp.accept(visitor));
-        declarations.forEach(decl -> decl.accept(visitor));
+        declarationGroups.forEach(group -> group.forEach(visitor::visitDeclaration));
         visitor.visitNamespace(this);
     }
 
@@ -23,7 +23,7 @@ public record NamespaceNode<A> (Meta<A> meta, NamespaceIdNode id, ImmutableList<
                 meta(),
                 id(),
                 imports(),
-                declarations().collect(visitor::visitDeclaration));
+                declarationGroups().collect(group -> group.collect(visitor::visitDeclaration)));
 
         visitor.postVisitNamespace(this);
 
@@ -38,7 +38,7 @@ public record NamespaceNode<A> (Meta<A> meta, NamespaceIdNode id, ImmutableList<
                 meta(),
                 id(),
                 imports(),
-                declarations().collect(visitor::visitDeclaration));
+                declarationGroups().collect(group -> group.collect(visitor::visitDeclaration)));
 
         visitor.postVisitNamespace(result);
 

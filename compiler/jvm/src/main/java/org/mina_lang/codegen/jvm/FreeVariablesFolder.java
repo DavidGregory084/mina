@@ -74,7 +74,7 @@ public class FreeVariablesFolder implements MetaNodeFolder<Attributes, Immutable
 
     @Override
     public ImmutableList<ReferenceNode<Attributes>> visitNamespace(Meta<Attributes> meta, NamespaceIdNode id,
-            ImmutableList<ImportNode> imports, ImmutableList<ImmutableList<ReferenceNode<Attributes>>> declarations) {
+            ImmutableList<ImportNode> imports, ImmutableList<ImmutableList<ImmutableList<ReferenceNode<Attributes>>>> declarationGroups) {
         return Lists.immutable.empty();
     }
 
