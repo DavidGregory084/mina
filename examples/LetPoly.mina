@@ -1,23 +1,23 @@
 namespace Mina/Examples/LetPoly {
-    let id: A => A -> A = x -> x
-
-    let idFn[A](a: A): A = a
-
-    let const: [A, B] => (A, B) -> A = (a, b) -> a
-
     let curriedConst: [A, B] => A -> B -> A = a -> b -> a
-
-    let curriedNestedConst: [A, B, C] => A -> B -> C -> A = a -> b -> c -> a
-
-    let constFn[A, B](a: A, b: B): A = a
 
     let one = id(1)
 
     let two =  idFn(1)
 
-    let a = const(const("a", 1.0), id(2))
+    let id: A => A -> A = x -> x
+
+    let idFn[A](a: A): A = a
+
+    let curriedNestedConst: [A, B, C] => A -> B -> C -> A = a -> b -> c -> a
+
+    let a = const(const("a", 1.0), two)
+
+    let const: [A, B] => (A, B) -> A = (a, b) -> a
 
     let i = constFn('i', 2)
 
-    let idViaConst = a -> constFn(a, {})
+    let constFn[A, B](a: A, b: B): A = a
+
+    let idViaConst: A => A -> A = a -> constFn(a, {})
 }

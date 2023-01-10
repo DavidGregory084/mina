@@ -174,7 +174,7 @@ public class Renamer {
             var namespaceMeta = new Meta<Name>(meta.range(), environment.enclosingNamespace().get().namespace());
 
             var connectedComponents = new KosarajuStrongConnectivityInspector<>(declarationGraph)
-                .stronglyConnectedSets();
+                    .stronglyConnectedSets();
 
             if (connectedComponents.isEmpty()) {
                 return new NamespaceNode<>(namespaceMeta, id, imports, declarationGroups);
@@ -197,6 +197,15 @@ public class Renamer {
                         sortedDeclarations.add(declarationGroup);
                     }
                 });
+
+                var disconnectedComponents = unsortedDeclarations
+                        .reject(unsortedDecl -> sortedDeclarations
+                                .anySatisfy(declGroup -> declGroup.contains(unsortedDecl)))
+                        .toImmutableList();
+
+                if (!disconnectedComponents.isEmpty()) {
+                    sortedDeclarations.add(disconnectedComponents);
+                }
 
                 return new NamespaceNode<>(namespaceMeta, id, imports, sortedDeclarations.toImmutable());
             }
