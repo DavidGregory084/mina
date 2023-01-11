@@ -10,10 +10,10 @@ public class FreeUnsolvedVariablesFolder implements TypeFolder<ImmutableSortedSe
 
     private static Comparator<UnsolvedType> COMPARATOR = Comparator.comparing(UnsolvedType::id);
 
-    private TypeEnvironment environment;
+    private TypeSubstitutionTransformer typeTransformer;
 
-    public FreeUnsolvedVariablesFolder(TypeEnvironment environment) {
-        this.environment = environment;
+    public FreeUnsolvedVariablesFolder(TypeSubstitutionTransformer typeTransformer) {
+        this.typeTransformer = typeTransformer;
     }
 
     @Override
@@ -59,7 +59,7 @@ public class FreeUnsolvedVariablesFolder implements TypeFolder<ImmutableSortedSe
 
     @Override
     public ImmutableSortedSet<UnsolvedType> visitUnsolvedType(UnsolvedType unsolved) {
-        var substituted = unsolved.substitute(environment.typeSubstitution(), environment.kindSubstitution());
+        var substituted = unsolved.accept(typeTransformer);
 
         if (substituted.equals(unsolved)) {
             return SortedSets.immutable.of(COMPARATOR, unsolved);

@@ -2,76 +2,85 @@ package org.mina_lang.common.types;
 
 public class SortSubstitutionTransformer implements SortFolder<Sort> {
 
-    public TypeSubstitutionTransformer typeSubst;
-    public KindSubstitutionTransformer kindSubst;
+    private TypeSubstitutionTransformer typeTransformer;
+
+    private KindSubstitutionTransformer kindTransformer;
 
     public SortSubstitutionTransformer(UnionFind<MonoType> typeSubstitution, KindSubstitutionTransformer kindTransformer) {
-        this.kindSubst = kindTransformer;
-        this.typeSubst = new TypeSubstitutionTransformer(typeSubstitution, kindSubst);
+        this.kindTransformer = kindTransformer;
+        this.typeTransformer = new TypeSubstitutionTransformer(typeSubstitution, kindTransformer);
     }
 
     public SortSubstitutionTransformer(UnionFind<MonoType> typeSubstitution, UnionFind<Kind> kindSubstitution) {
-        this.kindSubst = new KindSubstitutionTransformer(kindSubstitution);
-        this.typeSubst = new TypeSubstitutionTransformer(typeSubstitution, kindSubst);
+        this.kindTransformer = new KindSubstitutionTransformer(kindSubstitution);
+        this.typeTransformer = new TypeSubstitutionTransformer(typeSubstitution, kindTransformer);
+    }
+
+    public TypeSubstitutionTransformer getTypeTransformer() {
+        return typeTransformer;
+    }
+
+    public KindSubstitutionTransformer getKindTransformer() {
+        return kindTransformer;
     }
 
     @Override
     public Sort visitTypeKind(TypeKind typ) {
-        return typ.accept(kindSubst);
+        return typ.accept(kindTransformer);
     }
 
     @Override
     public Sort visitUnsolvedKind(UnsolvedKind unsolved) {
-        return unsolved.accept(kindSubst);
+        return unsolved.accept(kindTransformer);
     }
 
     @Override
     public Sort visitHigherKind(HigherKind higher) {
-        return higher.accept(kindSubst);
+        return higher.accept(kindTransformer);
     }
 
     @Override
     public Sort visitTypeLambda(TypeLambda tyLam) {
-        return tyLam.accept(typeSubst);
+        return tyLam.accept(typeTransformer);
     }
 
     @Override
     public Sort visitPropositionType(PropositionType propType) {
-        return propType.accept(typeSubst);
+        return propType.accept(typeTransformer);
     }
 
     @Override
     public Sort visitImplicationType(ImplicationType implType) {
-        return implType.accept(typeSubst);
+        return implType.accept(typeTransformer);
     }
 
     @Override
     public Sort visitTypeConstructor(TypeConstructor tyCon) {
-        return tyCon.accept(typeSubst);
+        return tyCon.accept(typeTransformer);
     }
 
     @Override
     public Sort visitBuiltInType(BuiltInType primTy) {
-        return primTy.accept(typeSubst);
+        return primTy.accept(typeTransformer);
     }
 
     @Override
     public Sort visitTypeApply(TypeApply tyApp) {
-        return tyApp.accept(typeSubst);
+        return tyApp.accept(typeTransformer);
     }
 
     @Override
     public Sort visitForAllVar(ForAllVar forall) {
-        return forall.accept(typeSubst);
+        return forall.accept(typeTransformer);
     }
 
     @Override
     public Sort visitExistsVar(ExistsVar exists) {
-        return exists.accept(typeSubst);
+        return exists.accept(typeTransformer);
     }
 
     @Override
     public Sort visitUnsolvedType(UnsolvedType unsolved) {
-        return unsolved.accept(typeSubst);
+        return unsolved.accept(typeTransformer);
     }
 }

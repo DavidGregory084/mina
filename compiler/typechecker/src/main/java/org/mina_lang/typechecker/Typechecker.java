@@ -148,11 +148,11 @@ public class Typechecker {
 
     void mismatchedType(Range range, Type actualType, Type expectedType) {
         var expected = expectedType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var actual = actualType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var message = Doc.group(
@@ -166,11 +166,11 @@ public class Typechecker {
 
     void mismatchedApplication(Range range, Type actualType, Type expectedType) {
         var expected = expectedType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var actual = actualType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var message = Doc.group(
@@ -185,7 +185,7 @@ public class Typechecker {
     void noUniqueType(Range range, DeclarationName name, Type inferredType,
             ImmutableSortedSet<UnsolvedType> unsolvedVars) {
         var inferred = inferredType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var unsolvedVarDocs = unsolvedVars
@@ -210,12 +210,12 @@ public class Typechecker {
 
         tyLam.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
-                var unsolved = varSupply.newUnsolvedType(forall.kind());
-                environment.putUnsolvedType(unsolved);
-                instantiated.put(forall, unsolved);
+                var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
+                instantiated.put(forall, newUnsolvedType(typeVarKind));
             } else if (tyParam instanceof ExistsVar exists) {
                 var typeVarName = new ExistsVarName(exists.name());
-                var typeVarAttrs = new Attributes(typeVarName, exists.kind());
+                var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
+                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
                 environment.putType(exists.name(), Meta.of(typeVarAttrs));
             }
         });
@@ -233,12 +233,12 @@ public class Typechecker {
         tyLam.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
                 var typeVarName = new ForAllVarName(forall.name());
-                var typeVarAttrs = new Attributes(typeVarName, forall.kind());
+                var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
+                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
                 environment.putType(forall.name(), Meta.of(typeVarAttrs));
             } else if (tyParam instanceof ExistsVar exists) {
-                var unsolved = varSupply.newUnsolvedType(exists.kind());
-                environment.putUnsolvedType(unsolved);
-                instantiated.put(exists, unsolved);
+                var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
+                instantiated.put(exists, newUnsolvedType(typeVarKind));
             }
         });
 
@@ -284,15 +284,13 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSuperType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
 
                 instantiateAsSubType(
                         funTypeReturn,
                         funTypeSup.typeArguments().getLast()
-                                .substitute(environment.typeSubstitution(), environment.kindSubstitution()));
+                                .accept(sortTransformer.getTypeTransformer()));
 
             } else if (superType instanceof TypeApply tyAppSup) {
                 // Complete and Easy's InstLArr rule extended to other type constructors
@@ -312,9 +310,7 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSubType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
             } else if (superType instanceof TypeLambda tyLam) {
                 // Complete and Easy's InstLAllR rule
@@ -358,15 +354,13 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSubType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
 
                 instantiateAsSuperType(
                         funTypeReturn,
                         funTypeSub.typeArguments().getLast()
-                                .substitute(environment.typeSubstitution(), environment.kindSubstitution()));
+                                .accept(sortTransformer.getTypeTransformer()));
 
             } else if (subType instanceof TypeApply tyAppSub) {
                 // Complete and Easy's InstRArr rule extended to other type constructors
@@ -386,9 +380,7 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSuperType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
             } else if (subType instanceof TypeLambda tyLam) {
                 // Complete and Easy's InstRAllL rule
@@ -399,13 +391,8 @@ public class Typechecker {
 
     boolean checkSubType(Type subType, Type superType) {
         return withScope(new CheckSubtypeScope(), () -> {
-            var solvedSubType = subType.substitute(
-                    environment.typeSubstitution(),
-                    environment.kindSubstitution());
-
-            var solvedSuperType = superType.substitute(
-                    environment.typeSubstitution(),
-                    environment.kindSubstitution());
+            var solvedSubType = subType.accept(sortTransformer.getTypeTransformer());
+            var solvedSuperType = superType.accept(sortTransformer.getTypeTransformer());
 
             if (solvedSubType instanceof ForAllVar subTy &&
                     solvedSuperType instanceof ForAllVar supTy &&
@@ -638,7 +625,8 @@ public class Typechecker {
             return declaration;
         } else {
             var inferredType = getType(declaration);
-            var unsolvedVars = inferredType.accept(new FreeUnsolvedVariablesFolder(environment));
+            var unsolvedFolder = new FreeUnsolvedVariablesFolder(sortTransformer.getTypeTransformer());
+            var unsolvedVars = inferredType.accept(unsolvedFolder);
 
             if (!unsolvedVars.isEmpty()) {
                 noUniqueType(

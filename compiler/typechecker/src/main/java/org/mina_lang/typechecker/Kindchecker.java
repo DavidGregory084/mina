@@ -111,11 +111,11 @@ public class Kindchecker {
 
     void mismatchedKind(Range range, Kind actualKind, Kind expectedKind) {
         var expected = expectedKind
-                .substitute(environment.kindSubstitution())
+                .accept(sortTransformer.getKindTransformer())
                 .accept(kindPrinter);
 
         var actual = actualKind
-                .substitute(environment.kindSubstitution())
+                .accept(sortTransformer.getKindTransformer())
                 .accept(kindPrinter);
 
         var message = Doc.group(
@@ -129,11 +129,11 @@ public class Kindchecker {
 
     void mismatchedTypeApplication(Range range, Kind actualKind, Kind expectedKind) {
         var expected = expectedKind
-                .substitute(environment.kindSubstitution())
+                .accept(sortTransformer.getKindTransformer())
                 .accept(kindPrinter);
 
         var actual = actualKind
-                .substitute(environment.kindSubstitution())
+                .accept(sortTransformer.getKindTransformer())
                 .accept(kindPrinter);
 
         var message = Doc.group(
@@ -175,7 +175,7 @@ public class Kindchecker {
 
                 instantiateAsSubKind(
                         newHkResult,
-                        higherSup.resultKind().substitute(environment.kindSubstitution()));
+                        higherSup.resultKind().accept(sortTransformer.getKindTransformer()));
             }
         });
     }
@@ -210,15 +210,15 @@ public class Kindchecker {
 
                 instantiateAsSuperKind(
                         newHkResult,
-                        higherSub.resultKind().substitute(environment.kindSubstitution()));
+                        higherSub.resultKind().accept(sortTransformer.getKindTransformer()));
             }
         });
     }
 
     boolean checkSubKind(Kind subKind, Kind superKind) {
         return withScope(new CheckSubkindScope(), () -> {
-            var solvedSubKind = subKind.substitute(environment.kindSubstitution());
-            var solvedSuperKind = superKind.substitute(environment.kindSubstitution());
+            var solvedSubKind = subKind.accept(sortTransformer.getKindTransformer());
+            var solvedSuperKind = superKind.accept(sortTransformer.getKindTransformer());
 
             if (solvedSubKind == TypeKind.INSTANCE && solvedSuperKind == TypeKind.INSTANCE) {
                 // Complete and Easy's <:Var rule adapted to kinds
