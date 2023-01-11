@@ -652,12 +652,8 @@ public class Parser {
 
         @Override
         public NamespaceIdNode visitNamespaceId(NamespaceIdContext ctx) {
-            var pkg = ctx.pkg.stream()
-                    .map(Token::getText)
-                    .collect(Collectors2.toImmutableList());
-
+            var pkg = Lists.immutable.ofAll(ctx.pkg).collect(Token::getText);
             var ns = Optional.ofNullable(ctx.ns).map(Token::getText).orElse(null);
-
             return nsIdNode(contextRange(ctx), pkg, ns);
         }
     }

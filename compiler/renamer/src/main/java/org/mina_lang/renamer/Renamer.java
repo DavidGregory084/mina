@@ -2,6 +2,7 @@ package org.mina_lang.renamer;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
+import java.util.Comparator;
 import java.util.Optional;
 
 import org.eclipse.collections.api.factory.Lists;
@@ -12,6 +13,7 @@ import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.Position;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.names.*;
@@ -156,6 +158,23 @@ public class Renamer {
         return namespaceScope;
     }
 
+    void updateDeclarationGraph(DeclarationName source, DeclarationName target) {
+        declarationGraph.addVertex(source);
+        declarationGraph.addVertex(target);
+        declarationGraph.addEdge(source, target);
+    }
+
+    void updateDeclarationGraph(Meta<Name> refMeta) {
+        environment.enclosingNamespace().ifPresent(namespace -> {
+            environment.enclosingDeclaration().ifPresent(declaration -> {
+                if (refMeta.meta() instanceof DeclarationName declName &&
+                        namespace.namespace().equals(declName.name().ns())) {
+                    updateDeclarationGraph(declName, declaration.declarationName());
+                }
+            });
+        });
+    }
+
     class RenamingTransformer implements MetaNodeTransformer<Void, Name> {
 
         @Override
@@ -191,6 +210,7 @@ public class Renamer {
                     var declarationGroup = connectedSet.stream()
                             .filter(unsortedDeclarations::containsKey)
                             .map(unsortedDeclarations::get)
+                            .sorted(Comparator.comparing(decl -> decl.range().start()))
                             .collect(Collectors2.toImmutableList());
 
                     if (!declarationGroup.isEmpty()) {
@@ -241,9 +261,7 @@ public class Renamer {
             var enclosingNamespace = environment.enclosingNamespace().get();
             var constrName = constr.getName(enclosingData.data(), enclosingNamespace.namespace());
             var constrScope = new ConstructorNamingScope(constrName);
-            declarationGraph.addVertex(constrName);
-            declarationGraph.addVertex(enclosingData.data());
-            declarationGraph.addEdge(constrName, enclosingData.data());
+            updateDeclarationGraph(constrName, enclosingData.data());
             environment.pushScope(constrScope);
         }
 
@@ -381,16 +399,7 @@ public class Renamer {
                         return new Meta<>(meta.range(), Nameless.INSTANCE);
                     });
 
-            environment.enclosingNamespace().ifPresent(namespace -> {
-                environment.enclosingDeclaration().ifPresent(declaration -> {
-                    if (lookupMeta.meta() instanceof DeclarationName declName &&
-                            namespace.namespace().equals(declName.name().ns())) {
-                        declarationGraph.addVertex(declName);
-                        declarationGraph.addVertex(declaration.declarationName());
-                        declarationGraph.addEdge(declName, declaration.declarationName());
-                    }
-                });
-            });
+            updateDeclarationGraph(lookupMeta);
 
             return typeRefNode(lookupMeta, id);
         }
@@ -463,16 +472,7 @@ public class Renamer {
                     .map(refMeta -> refMeta.withRange(meta.range()))
                     .orElseGet(() -> new Meta<>(meta.range(), Nameless.INSTANCE));
 
-            environment.enclosingNamespace().ifPresent(namespace -> {
-                environment.enclosingDeclaration().ifPresent(declaration -> {
-                    if (lookupMeta.meta() instanceof DeclarationName declName &&
-                            namespace.namespace().equals(declName.name().ns())) {
-                        declarationGraph.addVertex(declName);
-                        declarationGraph.addVertex(declaration.declarationName());
-                        declarationGraph.addEdge(declName, declaration.declarationName());
-                    }
-                });
-            });
+            updateDeclarationGraph(lookupMeta);
 
             return refNode(lookupMeta, id);
         }
@@ -562,16 +562,7 @@ public class Renamer {
                     .map(constrMeta -> constrMeta.withRange(meta.range()))
                     .orElseGet(() -> new Meta<>(meta.range(), Nameless.INSTANCE));
 
-            environment.enclosingNamespace().ifPresent(namespace -> {
-                environment.enclosingDeclaration().ifPresent(declaration -> {
-                    if (lookupMeta.meta() instanceof DeclarationName declName &&
-                            namespace.namespace().equals(declName.name().ns())) {
-                        declarationGraph.addVertex(declName);
-                        declarationGraph.addVertex(declaration.declarationName());
-                        declarationGraph.addEdge(declName, declaration.declarationName());
-                    }
-                });
-            });
+            updateDeclarationGraph(lookupMeta);
 
             return constructorPatternNode(lookupMeta, id, fields);
         }

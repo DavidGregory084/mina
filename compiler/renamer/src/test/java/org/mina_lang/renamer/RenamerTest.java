@@ -212,6 +212,113 @@ public class RenamerTest {
     }
 
     @Test
+    void renameDataMutualRecursion() {
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+
+        var dataCName = new DataName(new QualifiedName(namespaceName, "C"));
+        var dataBName = new DataName(new QualifiedName(namespaceName, "B"));
+        var dataAName = new DataName(new QualifiedName(namespaceName, "A"));
+
+        var mkCName = new ConstructorName(dataCName, new QualifiedName(namespaceName, "MkC"));
+        var mkBName = new ConstructorName(dataBName, new QualifiedName(namespaceName, "MkB"));
+        var mkAName = new ConstructorName(dataAName, new QualifiedName(namespaceName, "MkA"));
+
+        var mkCFieldName = new FieldName(mkCName, "b");
+        var mkBFieldName = new FieldName(mkBName, "a");
+        var mkAFieldName = new FieldName(mkAName, "b");
+
+        var dataCRange = new Range(1, 2, 3, 2);
+        var dataBRange = new Range(4, 2, 6, 2);
+        var dataARange = new Range(7, 2, 9, 2);
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   data C {
+         *     case MkC(b: B)
+         *   }
+         *   data B {
+         *     case MkB(a: A)
+         *   }
+         *   data A {
+         *     case MkA(b: B)
+         *   }
+         * }
+         */
+        var originalNode = new NamespaceNode<>(Meta.of(Range.EMPTY), idNode, Lists.immutable.empty(),
+                Lists.immutable.of(
+                        Lists.immutable.of(
+                                dataNode(dataCRange, "C",
+                                        Lists.immutable.empty(),
+                                        Lists.immutable.of(
+                                                constructorNode(
+                                                        Range.EMPTY, "MkC",
+                                                        Lists.immutable.of(
+                                                                constructorParamNode(Range.EMPTY, "b",
+                                                                        typeRefNode(Range.EMPTY, "B"))),
+                                                        Optional.empty()))),
+                                dataNode(dataBRange, "B",
+                                        Lists.immutable.empty(),
+                                        Lists.immutable.of(
+                                                constructorNode(
+                                                        Range.EMPTY, "MkB",
+                                                        Lists.immutable.of(
+                                                                constructorParamNode(Range.EMPTY, "a",
+                                                                        typeRefNode(Range.EMPTY, "A"))),
+                                                        Optional.empty()))),
+                                dataNode(dataARange, "A",
+                                        Lists.immutable.empty(),
+                                        Lists.immutable.of(
+                                                constructorNode(
+                                                        Range.EMPTY, "MkA",
+                                                        Lists.immutable.of(
+                                                                constructorParamNode(Range.EMPTY, "b",
+                                                                        typeRefNode(Range.EMPTY, "B"))),
+                                                        Optional.empty()))))));
+
+        var expectedNode = new NamespaceNode<>(
+                Meta.of(namespaceName), idNode,
+                Lists.immutable.empty(),
+                Lists.immutable.of(
+                        // `A` and `B` end up in the same declaration group,
+                        // sorted in their original declaration ordering
+                        Lists.immutable.of(
+                                dataNode(new Meta<>(dataBRange, dataBName), "B",
+                                        Lists.immutable.empty(),
+                                        Lists.immutable.of(
+                                                constructorNode(
+                                                        Meta.of(mkBName), "MkB",
+                                                        Lists.immutable.of(
+                                                                constructorParamNode(Meta.of(mkBFieldName), "a",
+                                                                        typeRefNode(Meta.of(dataAName), "A"))),
+                                                        Optional.empty()))),
+                                dataNode(new Meta<>(dataARange, dataAName), "A",
+                                        Lists.immutable.empty(),
+                                        Lists.immutable.of(
+                                                constructorNode(
+                                                        Meta.of(mkAName), "MkA",
+                                                        Lists.immutable.of(
+                                                                constructorParamNode(Meta.of(mkAFieldName), "b",
+                                                                        typeRefNode(Meta.of(dataBName), "B"))),
+                                                        Optional.empty())))),
+                        // `C` is in a later group as it depends on `B`
+                        Lists.immutable.of(
+                                dataNode(
+                                        new Meta<>(dataCRange, dataCName), "C",
+                                        Lists.immutable.empty(),
+                                        Lists.immutable.of(
+                                                constructorNode(
+                                                        Meta.of(mkCName), "MkC",
+                                                        Lists.immutable.of(
+                                                                constructorParamNode(Meta.of(mkCFieldName), "b",
+                                                                        typeRefNode(Meta.of(dataBName), "B"))),
+                                                        Optional.empty()))))));
+
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
+    }
+
+    @Test
     void renameSimpleDataDuplicateConstructor() {
         var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
 
@@ -809,6 +916,65 @@ public class RenamerTest {
                 duplicateParamRange, originalParamRange, "a");
     }
 
+    @Test
+    void renameLetMutualRecursion() {
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+
+        var letAName = new LetName(new QualifiedName(namespaceName, "a"));
+        var letBName = new LetName(new QualifiedName(namespaceName, "b"));
+        var letCName = new LetName(new QualifiedName(namespaceName, "c"));
+
+        var letCRange = new Range(1, 2, 1, 10);
+        var letARange = new Range(2, 2, 2, 16);
+        var letBRange = new Range(3, 2, 3, 16);
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   let c = b
+         *   let a = () -> b
+         *   let b = () -> a
+         * }
+         */
+        var originalNode = new NamespaceNode<>(Meta.of(Range.EMPTY), idNode, Lists.immutable.empty(),
+                Lists.immutable.of(
+                        Lists.immutable.of(
+                                letNode(letCRange, "c",
+                                        refNode(Range.EMPTY, "b")),
+                                letNode(letARange, "a",
+                                        lambdaNode(Range.EMPTY, Lists.immutable.empty(), refNode(Range.EMPTY, "b"))),
+                                letNode(letBRange, "b",
+                                        lambdaNode(Range.EMPTY, Lists.immutable.empty(), refNode(Range.EMPTY, "a"))))));
+
+        var expectedNode = new NamespaceNode<>(
+                Meta.of(namespaceName), idNode,
+                Lists.immutable.empty(),
+                Lists.immutable.of(
+                        // `a` and `b` end up in the same declaration group,
+                        // sorted in their original declaration ordering
+                        Lists.immutable.of(
+                                letNode(
+                                        new Meta<>(letARange, letAName), "a",
+                                        lambdaNode(
+                                                Meta.of(Nameless.INSTANCE),
+                                                Lists.immutable.empty(),
+                                                refNode(Meta.of(letBName), "b"))),
+                                letNode(
+                                        new Meta<>(letBRange, letBName), "b",
+                                        lambdaNode(
+                                                Meta.of(Nameless.INSTANCE),
+                                                Lists.immutable.empty(),
+                                                refNode(Meta.of(letAName), "a")))),
+                        // `c` is in a later group as it depends on `b`
+                        Lists.immutable.of(
+                                letNode(
+                                        new Meta<>(letCRange, letCName), "c",
+                                        refNode(Meta.of(letBName), "b")))));
+
+        testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
+    }
+
     // Types
     @Test
     void renameTypeLambda() {
@@ -1203,7 +1369,8 @@ public class RenamerTest {
                 Meta.of(namespaceName), idNode,
                 Lists.immutable.empty(),
                 Lists.immutable.of(
-                        Lists.immutable.of(letNode(Meta.of(outerBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
+                        Lists.immutable
+                                .of(letNode(Meta.of(outerBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
                         Lists.immutable.of(letNode(Meta.of(outerFooName), "foo", blockNode(
                                 Meta.of(Nameless.INSTANCE),
                                 Lists.immutable.of(
