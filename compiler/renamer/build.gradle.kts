@@ -12,4 +12,7 @@ dependencies {
 
     // Syntax Tree Definitions
     implementation(project(":compiler:syntax"))
+
+    // Graph data structures
+    implementation(libs.jgrapht)
 }

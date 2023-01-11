@@ -4,15 +4,4 @@ public sealed interface MonoType extends Type permits TypeConstructor, BuiltInTy
 
     @Override
     MonoType accept(TypeTransformer visitor);
-
-    @Override
-    default public MonoType substitute(
-            UnionFind<MonoType> typeSubstitution,
-            UnionFind<Kind> kindSubstitution) {
-        return accept(new TypeSubstitutionTransformer(typeSubstitution, kindSubstitution));
-    }
-
-    default public MonoType defaultKinds() {
-        return accept(new TypeSubstitutionTransformer(new KindDefaultingTransformer()));
-    }
 }

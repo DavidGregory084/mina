@@ -4,24 +4,26 @@ import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.DeclarationName;
+import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.names.Name;
 
-public record ConstructorNamingScope(
-        ConstructorName constr,
+public record LetNamingScope(
+        LetName let,
         MutableMap<String, Meta<Name>> values,
         MutableMap<String, Meta<Name>> types,
         MutableMap<ConstructorName, MutableMap<String, Meta<Name>>> fields) implements DeclarationNamingScope {
 
-    public ConstructorNamingScope(ConstructorName constr) {
+    public LetNamingScope(LetName let) {
         this(
-                constr,
+                let,
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),
                 Maps.mutable.empty());
     }
 
     @Override
-    public ConstructorName declarationName() {
-        return constr;
+    public DeclarationName declarationName() {
+        return let;
     }
 }

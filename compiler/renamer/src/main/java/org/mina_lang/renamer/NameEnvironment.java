@@ -16,6 +16,12 @@ public record NameEnvironment(MutableStack<NamingScope> scopes) implements Envir
                 .map(scope -> (NamespaceNamingScope) scope);
     }
 
+    public Optional<DeclarationNamingScope> enclosingDeclaration() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof DeclarationNamingScope)
+                .map(scope -> (DeclarationNamingScope) scope);
+    }
+
     public Optional<DataNamingScope> enclosingData() {
         return scopes()
                 .detectOptional(scope -> scope instanceof DataNamingScope)
@@ -26,6 +32,12 @@ public record NameEnvironment(MutableStack<NamingScope> scopes) implements Envir
         return scopes()
                 .detectOptional(scope -> scope instanceof ConstructorNamingScope)
                 .map(scope -> (ConstructorNamingScope) scope);
+    }
+
+    public Optional<LetNamingScope> enclosingLet() {
+        return scopes()
+                .detectOptional(scope -> scope instanceof LetNamingScope)
+                .map(scope -> (LetNamingScope) scope);
     }
 
     public Optional<LambdaNamingScope> enclosingLambda() {

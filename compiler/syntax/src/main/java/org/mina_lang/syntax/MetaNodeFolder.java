@@ -11,7 +11,7 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeF
     default void preVisitNamespace(NamespaceNode<A> namespace) {}
 
     B visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-            ImmutableList<B> declarations);
+            ImmutableList<ImmutableList<B>> declarationGroups);
 
     default void postVisitNamespace(NamespaceNode<A> namespace) {}
 

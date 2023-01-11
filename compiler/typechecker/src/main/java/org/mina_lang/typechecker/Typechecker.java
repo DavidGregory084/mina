@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
@@ -88,6 +89,11 @@ public class Typechecker {
         return inferNamespace(namespace).accept(metaTransformer);
     }
 
+    public ImmutableList<DeclarationNode<Attributes>> typecheck(ImmutableList<DeclarationNode<Name>> node) {
+        var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
+        return inferDeclarationGroup(node).collect(decl -> decl.accept(metaTransformer));
+    }
+
     public DeclarationNode<Attributes> typecheck(DeclarationNode<Name> node) {
         var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
         return inferDeclaration(node).accept(metaTransformer);
@@ -142,11 +148,11 @@ public class Typechecker {
 
     void mismatchedType(Range range, Type actualType, Type expectedType) {
         var expected = expectedType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var actual = actualType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var message = Doc.group(
@@ -160,11 +166,11 @@ public class Typechecker {
 
     void mismatchedApplication(Range range, Type actualType, Type expectedType) {
         var expected = expectedType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var actual = actualType
-                .substitute(environment.typeSubstitution(), environment.kindSubstitution())
+                .accept(sortTransformer.getTypeTransformer())
                 .accept(sortPrinter);
 
         var message = Doc.group(
@@ -176,17 +182,40 @@ public class Typechecker {
         diagnostics.reportError(range, message);
     }
 
+    void noUniqueType(Range range, DeclarationName name, Type inferredType,
+            ImmutableSortedSet<UnsolvedType> unsolvedVars) {
+        var inferred = inferredType
+                .accept(sortTransformer.getTypeTransformer())
+                .accept(sortPrinter);
+
+        var unsolvedVarDocs = unsolvedVars
+                .collect(UnsolvedType::name)
+                .collect(Doc::text);
+
+        var message = Doc.group(
+                Doc.text("Couldn't infer a unique type for " + name.localName() + "!")
+                        .appendLineOrSpace(Doc.text("Found:").appendSpace(inferred))
+                        .appendLineOr(", ", Doc.text("where").appendSpace(
+                                Doc.intersperse(Doc.text(", "), unsolvedVarDocs.stream()))
+                                .appendSpace(
+                                        unsolvedVars.size() > 1 ? Doc.text("are unsolved variables.")
+                                                : Doc.text("is an unsolved variable."))))
+                .render(80);
+
+        diagnostics.reportError(range, message);
+    }
+
     TypeInstantiationTransformer subTypeInstantiation(TypeLambda tyLam) {
         var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
 
         tyLam.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
-                var unsolved = varSupply.newUnsolvedType(forall.kind());
-                environment.putUnsolvedType(unsolved);
-                instantiated.put(forall, unsolved);
+                var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
+                instantiated.put(forall, newUnsolvedType(typeVarKind));
             } else if (tyParam instanceof ExistsVar exists) {
                 var typeVarName = new ExistsVarName(exists.name());
-                var typeVarAttrs = new Attributes(typeVarName, exists.kind());
+                var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
+                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
                 environment.putType(exists.name(), Meta.of(typeVarAttrs));
             }
         });
@@ -204,12 +233,12 @@ public class Typechecker {
         tyLam.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
                 var typeVarName = new ForAllVarName(forall.name());
-                var typeVarAttrs = new Attributes(typeVarName, forall.kind());
+                var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
+                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
                 environment.putType(forall.name(), Meta.of(typeVarAttrs));
             } else if (tyParam instanceof ExistsVar exists) {
-                var unsolved = varSupply.newUnsolvedType(exists.kind());
-                environment.putUnsolvedType(unsolved);
-                instantiated.put(exists, unsolved);
+                var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
+                instantiated.put(exists, newUnsolvedType(typeVarKind));
             }
         });
 
@@ -255,15 +284,13 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSuperType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
 
                 instantiateAsSubType(
                         funTypeReturn,
                         funTypeSup.typeArguments().getLast()
-                                .substitute(environment.typeSubstitution(), environment.kindSubstitution()));
+                                .accept(sortTransformer.getTypeTransformer()));
 
             } else if (superType instanceof TypeApply tyAppSup) {
                 // Complete and Easy's InstLArr rule extended to other type constructors
@@ -283,9 +310,7 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSubType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
             } else if (superType instanceof TypeLambda tyLam) {
                 // Complete and Easy's InstLAllR rule
@@ -329,15 +354,13 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSubType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
 
                 instantiateAsSuperType(
                         funTypeReturn,
                         funTypeSub.typeArguments().getLast()
-                                .substitute(environment.typeSubstitution(), environment.kindSubstitution()));
+                                .accept(sortTransformer.getTypeTransformer()));
 
             } else if (subType instanceof TypeApply tyAppSub) {
                 // Complete and Easy's InstRArr rule extended to other type constructors
@@ -357,9 +380,7 @@ public class Typechecker {
                         .forEach(pair -> {
                             instantiateAsSuperType(
                                     pair.getOne(),
-                                    pair.getTwo().substitute(
-                                            environment.typeSubstitution(),
-                                            environment.kindSubstitution()));
+                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
             } else if (subType instanceof TypeLambda tyLam) {
                 // Complete and Easy's InstRAllL rule
@@ -370,13 +391,8 @@ public class Typechecker {
 
     boolean checkSubType(Type subType, Type superType) {
         return withScope(new CheckSubtypeScope(), () -> {
-            var solvedSubType = subType.substitute(
-                    environment.typeSubstitution(),
-                    environment.kindSubstitution());
-
-            var solvedSuperType = superType.substitute(
-                    environment.typeSubstitution(),
-                    environment.kindSubstitution());
+            var solvedSubType = subType.accept(sortTransformer.getTypeTransformer());
+            var solvedSuperType = superType.accept(sortTransformer.getTypeTransformer());
 
             if (solvedSubType instanceof ForAllVar subTy &&
                     solvedSuperType instanceof ForAllVar supTy &&
@@ -462,41 +478,64 @@ public class Typechecker {
         var currentNamespace = (NamespaceName) namespace.meta().meta();
         var namespaceScope = new NamespaceTypingScope(currentNamespace);
 
-        namespace.declarations().forEach(decl -> {
-            if (decl instanceof LetFnNode<Name> letFn) {
-                var letFnType = newUnsolvedType(TypeKind.INSTANCE);
-                var letFnMeta = updateMetaWith(letFn.meta(), letFnType);
-                putValueDeclaration(namespaceScope, letFnMeta);
+        namespace.declarationGroups().forEach(decls -> {
+            decls.forEach(decl -> {
+                if (decl instanceof LetFnNode<Name> letFn) {
+                    var letFnType = newUnsolvedType(TypeKind.INSTANCE);
+                    var letFnMeta = updateMetaWith(letFn.meta(), letFnType);
+                    putValueDeclaration(namespaceScope, letFnMeta);
 
-            } else if (decl instanceof LetNode<Name> let) {
-                var letType = newUnsolvedType(TypeKind.INSTANCE);
-                var letMeta = updateMetaWith(let.meta(), letType);
-                putValueDeclaration(namespaceScope, letMeta);
+                } else if (decl instanceof LetNode<Name> let) {
+                    var letType = newUnsolvedType(TypeKind.INSTANCE);
+                    var letMeta = updateMetaWith(let.meta(), letType);
+                    putValueDeclaration(namespaceScope, letMeta);
 
-            } else if (decl instanceof DataNode<Name> data) {
-                var dataKind = newUnsolvedKind();
-                var dataMeta = updateMetaWith(data.meta(), dataKind);
+                } else if (decl instanceof DataNode<Name> data) {
+                    var dataKind = newUnsolvedKind();
+                    var dataMeta = updateMetaWith(data.meta(), dataKind);
 
-                putTypeDeclaration(namespaceScope, dataMeta);
+                    putTypeDeclaration(namespaceScope, dataMeta);
 
-                data.constructors().forEach(constr -> {
-                    var constrName = (ConstructorName) constr.meta().meta();
-                    var constrType = newUnsolvedType(dataKind);
-                    var constrMeta = updateMetaWith(constr.meta(), constrType);
+                    data.constructors().forEach(constr -> {
+                        var constrName = (ConstructorName) constr.meta().meta();
+                        var constrType = newUnsolvedType(dataKind);
+                        var constrMeta = updateMetaWith(constr.meta(), constrType);
 
-                    putValueDeclaration(namespaceScope, constrMeta);
+                        putValueDeclaration(namespaceScope, constrMeta);
 
-                    constr.params().forEach(constrParam -> {
-                        var fieldType = newUnsolvedType(TypeKind.INSTANCE);
-                        var fieldMeta = updateMetaWith(constrParam.meta(), fieldType);
+                        constr.params().forEach(constrParam -> {
+                            var fieldType = newUnsolvedType(TypeKind.INSTANCE);
+                            var fieldMeta = updateMetaWith(constrParam.meta(), fieldType);
 
-                        namespaceScope.putField(constrName, constrParam.name(), fieldMeta);
+                            namespaceScope.putField(constrName, constrParam.name(), fieldMeta);
+                        });
                     });
-                });
-            }
+                }
+            });
         });
 
         return namespaceScope;
+    }
+
+    void updateTopLevel(DeclarationNode<Attributes> decl) {
+        if (decl instanceof LetNode<Attributes> let) {
+            putValueDeclaration(let.meta());
+        } else if (decl instanceof LetFnNode<Attributes> letFn) {
+            putValueDeclaration(letFn.meta());
+        } else if (decl instanceof DataNode<Attributes> data) {
+            putTypeDeclaration(data.meta());
+
+            data.constructors().forEach(constr -> {
+                putValueDeclaration(constr.meta());
+
+                constr.params().forEach(constrParam -> {
+                    environment.putField(
+                            (ConstructorName) constr.meta().meta().name(),
+                            constrParam.name(),
+                            constrParam.meta());
+                });
+            });
+        }
     }
 
     Type createLetFnType(
@@ -554,9 +593,51 @@ public class Typechecker {
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
-            var inferredDecls = namespace.declarations().collect(this::inferDeclaration);
-            return namespaceNode(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
+            var inferredDecls = namespace.declarationGroups().collect(this::inferDeclarationGroup);
+            return new NamespaceNode<>(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
         });
+    }
+
+    ImmutableList<DeclarationNode<Attributes>> inferDeclarationGroup(
+            ImmutableList<DeclarationNode<Name>> declarationGroup) {
+        var inferredGroup = declarationGroup
+                .collect(this::inferDeclaration)
+                .collect(this::defaultKinds)
+                .collect(this::checkPrincipalTypes);
+
+        inferredGroup.forEach(this::updateTopLevel);
+
+        return inferredGroup;
+    }
+
+    DeclarationNode<Attributes> defaultKinds(DeclarationNode<Attributes> declaration) {
+        if (declaration instanceof DataNode<Attributes> data) {
+            var kindDefaulting = new KindDefaultingTransformer(environment.kindSubstitution());
+            var sortTransformer = new SortSubstitutionTransformer(environment.typeSubstitution(), kindDefaulting);
+            return data.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
+        } else {
+            return declaration;
+        }
+    }
+
+    DeclarationNode<Attributes> checkPrincipalTypes(DeclarationNode<Attributes> declaration) {
+        if (declaration instanceof DataNode) {
+            return declaration;
+        } else {
+            var inferredType = getType(declaration);
+            var unsolvedFolder = new FreeUnsolvedVariablesFolder(sortTransformer.getTypeTransformer());
+            var unsolvedVars = inferredType.accept(unsolvedFolder);
+
+            if (!unsolvedVars.isEmpty()) {
+                noUniqueType(
+                    declaration.range(),
+                    (DeclarationName) declaration.meta().meta().name(),
+                    inferredType,
+                    unsolvedVars);
+            }
+
+            return declaration;
+        }
     }
 
     DeclarationNode<Attributes> inferDeclaration(DeclarationNode<Name> declaration) {

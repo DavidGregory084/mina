@@ -132,25 +132,28 @@ public class CodeGenerator {
     }
 
     public void populateTopLevel(NamespaceNode<Attributes> namespace) {
-        namespace.declarations().forEach(decl -> {
-            if (decl instanceof LetNode<Attributes> let) {
-                putValueDeclaration(let.meta());
-            } else if (decl instanceof LetFnNode<Attributes> letFn) {
-                putValueDeclaration(letFn.meta());
-            } else if (decl instanceof DataNode<Attributes> data) {
-                putTypeDeclaration(data.meta());
+        namespace.declarationGroups().forEach(decls -> {
+            decls.forEach(decl -> {
+                if (decl instanceof LetNode<Attributes> let) {
+                    putValueDeclaration(let.meta());
+                } else if (decl instanceof LetFnNode<Attributes> letFn) {
+                    putValueDeclaration(letFn.meta());
+                } else if (decl instanceof DataNode<Attributes> data) {
+                    putTypeDeclaration(data.meta());
 
-                data.constructors().forEach(constr -> {
-                    putValueDeclaration(constr.meta());
+                    data.constructors().forEach(constr -> {
+                        putValueDeclaration(constr.meta());
 
-                    constr.params().forEach(constrParam -> {
-                        environment.putField(
-                                (ConstructorName) constr.meta().meta().name(),
-                                constrParam.name(),
-                                constrParam.meta());
+                        constr.params().forEach(constrParam -> {
+                            environment.putField(
+                                    (ConstructorName) constr.meta().meta().name(),
+                                    constrParam.name(),
+                                    constrParam.meta());
+                        });
                     });
-                });
-            }
+                }
+
+            });
         });
     }
 
@@ -158,8 +161,8 @@ public class CodeGenerator {
         withScope(NamespaceGenScope.open(namespace), namespaceScope -> {
             populateTopLevel(namespace);
 
-            namespace.declarations()
-                    .forEach(this::generateDeclaration);
+            namespace.declarationGroups()
+                    .forEach(decls -> decls.forEach(this::generateDeclaration));
 
             classes.put(
                     Names.getName(namespace),

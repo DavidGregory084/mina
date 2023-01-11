@@ -9,12 +9,4 @@ public sealed interface Kind extends Sort permits TypeKind, HigherKind, Unsolved
     <A> A accept(KindFolder<A> visitor);
 
     Kind accept(KindTransformer visitor);
-
-    default Kind substitute(UnionFind<Kind> substitution) {
-        return accept(new KindSubstitutionTransformer(substitution));
-    }
-
-    default Kind defaultKind() {
-        return accept(new KindDefaultingTransformer());
-    }
 }

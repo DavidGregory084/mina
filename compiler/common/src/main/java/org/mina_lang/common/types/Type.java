@@ -27,16 +27,6 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public Type accept(TypeTransformer visitor);
 
-    default public Type substitute(
-            UnionFind<MonoType> typeSubstitution,
-            UnionFind<Kind> kindSubstitution) {
-        return accept(new TypeSubstitutionTransformer(typeSubstitution, kindSubstitution));
-    }
-
-    default public Type defaultKinds() {
-        return accept(new TypeSubstitutionTransformer(new KindDefaultingTransformer()));
-    }
-
     public static boolean isFunction(Type type) {
         if (type instanceof TypeApply tyApp) {
             if (tyApp.type() instanceof BuiltInType builtIn) {
