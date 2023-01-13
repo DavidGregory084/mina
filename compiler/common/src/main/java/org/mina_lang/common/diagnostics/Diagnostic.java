@@ -1,6 +1,6 @@
 package org.mina_lang.common.diagnostics;
 
-import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Location;
 

@@ -4,7 +4,7 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.util.Optional;
 
-import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.*;

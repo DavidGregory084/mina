@@ -4,7 +4,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.codegen.jvm.Asm;

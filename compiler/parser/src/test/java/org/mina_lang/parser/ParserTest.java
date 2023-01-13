@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Range;
 import org.mina_lang.parser.Parser.Visitor;

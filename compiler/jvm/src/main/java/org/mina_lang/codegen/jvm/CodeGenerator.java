@@ -9,8 +9,8 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.codegen.jvm.scopes.*;
 import org.mina_lang.common.Attributes;

@@ -1,7 +1,6 @@
 plugins {
     application
     `java-project-convention`
-    alias(libs.plugins.gradleBuildInfo)
 }
 
 dependencies {
@@ -31,23 +30,12 @@ dependencies {
     // Parser
     implementation(project(":compiler:parser"))
 
-    // Renamer
-    implementation(project(":compiler:renamer"))
-
-    // Typechecker
-    implementation(project(":compiler:typechecker"))
-
-    // JVM Bytecode Generation
-    implementation(project(":compiler:jvm"))
+    // Compiler Main
+    implementation(project(":compiler:main"))
 
     // Logging
     implementation(libs.bundles.slf4j)
     runtimeOnly(libs.logback)
-}
-
-buildInfo {
-    packageName.set("org.mina_lang")
-    properties.set(mapOf("version" to project.version.toString()))
 }
 
 application {

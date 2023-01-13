@@ -2,7 +2,7 @@ package org.mina_lang.common.types;
 
 import java.util.Arrays;
 
-import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 
 public record HigherKind(ImmutableList<Kind> argKinds, Kind resultKind) implements Kind {

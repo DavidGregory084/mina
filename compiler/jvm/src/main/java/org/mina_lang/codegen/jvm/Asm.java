@@ -5,7 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 import java.lang.invoke.*;
 import java.lang.runtime.ObjectMethods;
 
-import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;

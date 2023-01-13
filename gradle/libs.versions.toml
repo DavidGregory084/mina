@@ -19,6 +19,7 @@ picocli = "4.7.0"
 prettier4j = "0.1.1"
 protobuf = "3.21.12"
 protobufGradle = "0.9.2"
+reactorCore = "3.5.1"
 slf4j = "2.0.6"
 
 [libraries]
@@ -33,6 +34,7 @@ gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin",
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "hamcrestOptional" }
 jgrapht = { module = "org.jgrapht:jgrapht-core", version.ref = "jgrapht" }
+jgraphtIo = { module = "org.jgrapht:jgrapht-io", version.ref = "jgrapht" }
 jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
 julToSlf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
@@ -44,6 +46,7 @@ prettier4j = { module = "com.opencastsoftware:prettier4j", version.ref = "pretti
 protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 protobufJava = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protobufPlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobufGradle" }
+reactorCore = { module = "io.projectreactor:reactor-core", version.ref = "reactorCore" }
 slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 
 [bundles]

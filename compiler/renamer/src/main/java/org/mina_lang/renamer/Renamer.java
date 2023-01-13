@@ -2,17 +2,22 @@ package org.mina_lang.renamer;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
+import java.net.URI;
+import java.io.PrintWriter;
 import java.util.Comparator;
 import java.util.Optional;
 
-import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.collector.Collectors2;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Maps;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.mina_lang.common.Location;
+import org.jgrapht.nio.DefaultAttribute;
+import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
@@ -31,11 +36,15 @@ public class Renamer {
             .edgeClass(DefaultEdge.class)
             .buildGraph();
 
+    private DOTExporter<DeclarationName, DefaultEdge> dotExporter = new DOTExporter<>();
+
     private int localVarIndex = 0;
 
     public Renamer(ScopedDiagnosticCollector diagnostics, NameEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
+        dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
+                "label", DefaultAttribute.createAttribute(nsName.canonicalName())));
     }
 
     public NameEnvironment getEnvironment() {
@@ -199,6 +208,8 @@ public class Renamer {
             if (connectedComponents.isEmpty()) {
                 return new NamespaceNode<>(namespaceMeta, id, imports, declarationGroups);
             } else {
+                dotExporter.exportGraph(declarationGraph, new PrintWriter(System.out));
+
                 var sortedDeclarations = Lists.mutable
                         .<ImmutableList<DeclarationNode<Name>>>empty();
 

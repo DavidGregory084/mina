@@ -2,7 +2,7 @@ package org.mina_lang.typechecker;
 
 import java.util.Optional;
 
-import org.eclipse.collections.api.factory.Stacks;
+import org.eclipse.collections.impl.factory.Stacks;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
