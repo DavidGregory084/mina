@@ -68,11 +68,6 @@ public class CodeGenerator {
             }
 
             try {
-                var reader = new ClassReader(classData);
-                var writer = new PrintWriter(System.err);
-                var visitor = new TraceClassVisitor(writer);
-                reader.accept(visitor, 0);
-
                 var verifier = new ClassReader(classData);
                 var verifyWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
                 var verifyAdapter = new CheckClassAdapter(verifyWriter, true);

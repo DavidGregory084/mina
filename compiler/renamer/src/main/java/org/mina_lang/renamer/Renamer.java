@@ -14,6 +14,7 @@ import org.eclipse.collections.impl.factory.Maps;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.mina_lang.common.Location;
 import org.jgrapht.nio.DefaultAttribute;
@@ -44,7 +45,7 @@ public class Renamer {
         this.diagnostics = diagnostics;
         this.environment = environment;
         dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
-                "label", DefaultAttribute.createAttribute(nsName.canonicalName())));
+                "label", DefaultAttribute.createAttribute(nsName.localName())));
     }
 
     public NameEnvironment getEnvironment() {
@@ -202,38 +203,41 @@ public class Renamer {
 
             var namespaceMeta = new Meta<Name>(meta.range(), environment.enclosingNamespace().get().namespace());
 
-            var connectedComponents = new KosarajuStrongConnectivityInspector<>(declarationGraph)
-                    .stronglyConnectedSets();
+            var strongConnectivityInspector = new KosarajuStrongConnectivityInspector<>(declarationGraph);
 
-            if (connectedComponents.isEmpty()) {
+            var connectedComponents = DirectedAcyclicGraph
+                    .<Graph<DeclarationName, DefaultEdge>, DefaultEdge>createBuilder(DefaultEdge.class)
+                    .addGraph(strongConnectivityInspector.getCondensation())
+                    .build();
+
+            if (connectedComponents.vertexSet().isEmpty()) {
                 return new NamespaceNode<>(namespaceMeta, id, imports, declarationGroups);
             } else {
-                dotExporter.exportGraph(declarationGraph, new PrintWriter(System.out));
-
                 var sortedDeclarations = Lists.mutable
                         .<ImmutableList<DeclarationNode<Name>>>empty();
 
                 var unsortedDeclarations = declarationGroups.getFirst()
-                        .<DeclarationName, DeclarationNode<Name>>toImmutableMap(
+                        .<DeclarationName, DeclarationNode<Name>>toMap(
                                 decl -> (DeclarationName) decl.meta().meta(),
                                 decl -> decl);
 
-                connectedComponents.forEach(connectedSet -> {
-                    var declarationGroup = connectedSet.stream()
+                connectedComponents.iterator().forEachRemaining(subGraph -> {
+                    var declarationGroup = subGraph.vertexSet().stream()
                             .filter(unsortedDeclarations::containsKey)
                             .map(unsortedDeclarations::get)
                             .sorted(Comparator.comparing(decl -> decl.range().start()))
                             .collect(Collectors2.toImmutableList());
+
+                    declarationGroup.forEach(decl -> {
+                        unsortedDeclarations.remove(decl.meta().meta());
+                    });
 
                     if (!declarationGroup.isEmpty()) {
                         sortedDeclarations.add(declarationGroup);
                     }
                 });
 
-                var disconnectedComponents = unsortedDeclarations
-                        .reject(unsortedDecl -> sortedDeclarations
-                                .anySatisfy(declGroup -> declGroup.contains(unsortedDecl)))
-                        .toImmutableList();
+                var disconnectedComponents = unsortedDeclarations.valuesView().toImmutableList();
 
                 if (!disconnectedComponents.isEmpty()) {
                     sortedDeclarations.add(disconnectedComponents);
@@ -241,7 +245,6 @@ public class Renamer {
 
                 return new NamespaceNode<>(namespaceMeta, id, imports, sortedDeclarations.toImmutable());
             }
-
         }
 
         @Override
