@@ -2,6 +2,9 @@ package org.mina_lang.main;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,16 +84,31 @@ public class Main {
                 .flatMap(this::createPathStream);
     }
 
+    CharStream readFileContent(Path filePath) throws IOException {
+        try (var channel = Files.newByteChannel(filePath)) {
+            return CharStreams.fromChannel(
+                    channel,
+                    StandardCharsets.UTF_8,
+                    4096,
+                    CodingErrorAction.REPORT,
+                    filePath.toUri().toString(),
+                    Files.size(filePath));
+        }
+    }
+
     public CompletableFuture<Void> compilePath(Path... sourcePaths) throws IOException {
         return pathStreamFrom(sourcePaths)
                 .parallel()
                 .flatMap(filePath -> {
                     return Mono
-                            .fromCallable(() -> CharStreams.fromPath(filePath))
+                            .fromCallable(() -> readFileContent(filePath))
                             .subscribeOn(ioScheduler);
                 })
                 .runOn(parScheduler)
-                .map(source -> new Parser(diagnosticsCollector).parse(source))
+                .map(source -> {
+                    var sourceUri = URI.create(source.getSourceName());
+                    return new Parser(sourceUri, diagnosticsCollector).parse(source);
+                })
                 .doOnNext(namespaceNode -> {
                     var namespaceName = namespaceNode.id().getName();
                     namespaceNodes.put(namespaceName, namespaceNode);
@@ -136,13 +154,15 @@ public class Main {
             Path destination,
             CharStream source) {
         return Mono.fromSupplier(() -> {
-            var parser = new Parser(diagnosticsCollector);
+            var documentUri = URI.create(source.getSourceName());
+            var parser = new Parser(documentUri, diagnosticsCollector);
             var parsed = parser.parse(source);
             if (diagnosticsCollector.getDiagnostics().isEmpty()) {
-                var renamer = new Renamer(diagnosticsCollector, NameEnvironment.withBuiltInNames());
+                var renamer = new Renamer(documentUri, diagnosticsCollector, NameEnvironment.withBuiltInNames());
                 var renamed = renamer.rename(parsed);
                 if (diagnosticsCollector.getDiagnostics().isEmpty()) {
-                    var typechecker = new Typechecker(diagnosticsCollector, TypeEnvironment.withBuiltInTypes());
+                    var typechecker = new Typechecker(documentUri, diagnosticsCollector,
+                            TypeEnvironment.withBuiltInTypes());
                     var typed = typechecker.typecheck(renamed);
                     if (diagnosticsCollector.getDiagnostics().isEmpty()) {
                         var codegen = new CodeGenerator();

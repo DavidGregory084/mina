@@ -1,6 +1,5 @@
 package org.mina_lang.langserver;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -54,7 +53,6 @@ public class MinaTextDocumentService implements TextDocumentService {
         server.ifShouldNotify(() -> {
             var document = params.getTextDocument();
             var documentUri = document.getUri();
-            var documentJavaUri = URI.create(documentUri);
             documents.addDocument(params);
 
             var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();
@@ -84,7 +82,6 @@ public class MinaTextDocumentService implements TextDocumentService {
     public void didChange(DidChangeTextDocumentParams params) {
         server.ifShouldNotify(() -> {
             var documentUri = params.getTextDocument().getUri();
-            var documentJavaUri = URI.create(documentUri);
             var updatedDocument = documents.updateDocument(params);
 
             var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();

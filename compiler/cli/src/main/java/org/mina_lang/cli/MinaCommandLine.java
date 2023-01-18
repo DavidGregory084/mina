@@ -9,9 +9,9 @@ import org.mina_lang.main.Main;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
-import picocli.CommandLine.Model.CommandSpec;
 
 @Command(name = "minac", mixinStandardHelpOptions = true, version = BuildInfo.version)
 public class MinaCommandLine implements Callable<Integer> {
@@ -40,9 +40,12 @@ public class MinaCommandLine implements Callable<Integer> {
                     .getDiagnosticsCollector()
                     .getDiagnostics()
                     .forEach(diagnostic -> {
+                        var location = diagnostic.location();
+                        var rangeStart = location.range().start();
                         System.err.println(diagnostic.severity() + " " +
-                                (diagnostic.range().start().line() + 1) + ":" +
-                                (diagnostic.range().start().character() + 1) +
+                                "[" + (location.uri().toString()) + ":" +
+                                (rangeStart.line() + 1) + ":" +
+                                (rangeStart.character() + 1) + "]" +
                                 " " + diagnostic.message());
                     });
 
