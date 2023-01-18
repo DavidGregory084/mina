@@ -1,14 +1,13 @@
 package org.mina_lang.parser;
 
+import java.net.URI;
 import java.util.BitSet;
 
-import org.antlr.v4.runtime.ANTLRErrorListener;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
+import org.mina_lang.common.Location;
 import org.mina_lang.common.Position;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
@@ -43,6 +42,18 @@ public abstract class ANTLRDiagnosticCollector extends BaseDiagnosticCollector i
 
         var range = new Range(startPos, endPos);
 
-        reportError(range, msg);
+        if (recognizer instanceof Lexer lexer) {
+            var sourceName = lexer.getInputStream().getSourceName();
+            if (!CharStream.UNKNOWN_SOURCE_NAME.equals(sourceName)) {
+                var location = new Location(URI.create(sourceName), range);
+                reportError(location, msg);
+            }
+        } else if (recognizer instanceof Parser parser) {
+            var sourceName = parser.getInputStream().getSourceName();
+            if (!CharStream.UNKNOWN_SOURCE_NAME.equals(sourceName)) {
+                var location = new Location(URI.create(sourceName), range);
+                reportError(location, msg);
+            }
+        }
     }
 }

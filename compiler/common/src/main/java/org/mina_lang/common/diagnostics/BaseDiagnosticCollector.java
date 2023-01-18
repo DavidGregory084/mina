@@ -14,46 +14,46 @@ public abstract class BaseDiagnosticCollector implements DiagnosticCollector {
     }
 
     @Override
-    public void reportError(Range range, String message) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Error, message));
+    public void reportError(Location location, String message) {
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Error, message));
     }
 
     @Override
-    public void reportError(Range range, String message,
+    public void reportError(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Error, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Error, message, relatedInformation));
     }
 
     @Override
-    public void reportWarning(Range range, String message) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Warning, message));
+    public void reportWarning(Location location, String message) {
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Warning, message));
     }
 
     @Override
-    public void reportWarning(Range range, String message,
+    public void reportWarning(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Warning, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Warning, message, relatedInformation));
     }
 
     @Override
-    public void reportInfo(Range range, String message) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Information, message));
+    public void reportInfo(Location location, String message) {
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Information, message));
     }
 
     @Override
-    public void reportInfo(Range range, String message,
+    public void reportInfo(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Information, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Information, message, relatedInformation));
     }
 
     @Override
-    public void reportHint(Range range, String message) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Hint, message));
+    public void reportHint(Location location, String message) {
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Hint, message));
     }
 
     @Override
-    public void reportHint(Range range, String message,
+    public void reportHint(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(range, DiagnosticSeverity.Hint, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Hint, message, relatedInformation));
     }
 }

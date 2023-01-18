@@ -5,6 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,7 +30,8 @@ public class TypecheckerTest {
             NamespaceNode<Name> originalNode,
             NamespaceNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, environment);
         var typecheckedNode = typechecker.typecheck(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(typecheckedNode, is(equalTo(expectedNode)));
@@ -40,7 +42,8 @@ public class TypecheckerTest {
             DataNode<Name> originalNode,
             DataNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, environment);
         var typecheckedNodes = typechecker.typecheck(Lists.immutable.of(originalNode));
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(typecheckedNodes.getFirst(), is(equalTo(expectedNode)));
@@ -51,7 +54,8 @@ public class TypecheckerTest {
             DeclarationNode<Name> originalNode,
             DeclarationNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, environment);
         var typecheckedNode = typechecker.typecheck(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(typecheckedNode, is(equalTo(expectedNode)));
@@ -62,7 +66,8 @@ public class TypecheckerTest {
             ExprNode<Name> originalNode,
             ExprNode<Attributes> expectedNode) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, environment);
         var typecheckedNode = typechecker.typecheck(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(typecheckedNode, is(equalTo(expectedNode)));
@@ -72,7 +77,8 @@ public class TypecheckerTest {
             TypeEnvironment environment,
             DeclarationNode<Name> originalNode) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, environment);
         typechecker.typecheck(originalNode);
         var errors = diagnostics.getErrors();
         assertThat("There should be type errors", errors, is(not(empty())));
@@ -83,7 +89,8 @@ public class TypecheckerTest {
             TypeEnvironment environment,
             ExprNode<Name> originalNode) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, environment);
         typechecker.typecheck(originalNode);
         var errors = diagnostics.getErrors();
         assertThat("There should be type errors", errors, is(not(empty())));
@@ -94,7 +101,7 @@ public class TypecheckerTest {
         assertThat(diagnostics, is(not(empty())));
         var firstDiagnostic = diagnostics.get(0);
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
-        assertThat(firstDiagnostic.range(), is(equalTo(range)));
+        assertThat(firstDiagnostic.location().range(), is(equalTo(range)));
         assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
     }
 
@@ -1181,7 +1188,8 @@ public class TypecheckerTest {
     @DisplayName("Identity function type is subtype of its instantiations")
     void checkIdPolyInstantiationSubtyping() {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, TypeEnvironment.withBuiltInTypes());
 
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
 
@@ -1199,7 +1207,8 @@ public class TypecheckerTest {
     @DisplayName("Identity function type is not supertype of its instantiations")
     void checkIdPolyInstantiationSupertyping() {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, TypeEnvironment.withBuiltInTypes());
 
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
 
@@ -1217,7 +1226,8 @@ public class TypecheckerTest {
     @Label("Unsolved types are supertype of any other type")
     void checkUnsolvedSuperTyping(@ForAll("types") Type type) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, TypeEnvironment.withBuiltInTypes());
         var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
         assertThat(typechecker.checkSubType(type, unsolved), is(true));
     }
@@ -1226,7 +1236,8 @@ public class TypecheckerTest {
     @Label("Unsolved types are subtype of any other type")
     void checkUnsolvedSubTyping(@ForAll("types") Type type) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, TypeEnvironment.withBuiltInTypes());
         var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
         assertThat(typechecker.checkSubType(unsolved, type), is(true));
     }
@@ -1235,7 +1246,8 @@ public class TypecheckerTest {
     @Label("Subtype reflexivity - unsolved types are subtype of themselves")
     void checkUnsolvedSubTypeReflexivity() {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, TypeEnvironment.withBuiltInTypes());
         var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
         assertThat(typechecker.checkSubType(unsolved, unsolved), is(true));
     }
@@ -1244,7 +1256,8 @@ public class TypecheckerTest {
     @Label("Subtype reflexivity - types are subtype of themselves")
     void checkSubTypeReflexivity(@ForAll("types") Type type) {
         var diagnostics = new ErrorCollector();
-        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+        var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
+        var typechecker = new Typechecker(dummyUri, diagnostics, TypeEnvironment.withBuiltInTypes());
         assertThat(typechecker.checkSubType(type, type), is(true));
     }
 

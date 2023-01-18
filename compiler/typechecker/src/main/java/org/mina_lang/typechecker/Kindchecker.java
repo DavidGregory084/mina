@@ -2,11 +2,13 @@ package org.mina_lang.typechecker;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
+import java.net.URI;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Location;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.DiagnosticCollector;
@@ -20,6 +22,7 @@ import org.mina_lang.typechecker.scopes.*;
 import com.opencastsoftware.prettier4j.Doc;
 
 public class Kindchecker {
+    private URI sourceUri;
     private DiagnosticCollector diagnostics;
     private TypeEnvironment environment;
     private UnsolvedVariableSupply varSupply;
@@ -28,10 +31,12 @@ public class Kindchecker {
     private KindPrinter kindPrinter = new KindPrinter();
 
     public Kindchecker(
+            URI sourceUri,
             DiagnosticCollector diagnostics,
             TypeEnvironment environment,
             UnsolvedVariableSupply varSupply,
             SortSubstitutionTransformer sortTransformer) {
+        this.sourceUri = sourceUri;
         this.diagnostics = diagnostics;
         this.environment = environment;
         this.varSupply = varSupply;
@@ -124,7 +129,7 @@ public class Kindchecker {
                         .appendLineOr(Doc.text(", "), Doc.text("Actual:").appendSpace(actual)))
                 .render(80);
 
-        diagnostics.reportError(range, message);
+        diagnostics.reportError(new Location(sourceUri, range), message);
     }
 
     void mismatchedTypeApplication(Range range, Kind actualKind, Kind expectedKind) {
@@ -142,7 +147,7 @@ public class Kindchecker {
                         .appendLineOr(Doc.text(", "), Doc.text("Actual:").appendSpace(actual)))
                 .render(80);
 
-        diagnostics.reportError(range, message);
+        diagnostics.reportError(new Location(sourceUri, range), message);
     }
 
     void instantiateAsSubKind(UnsolvedKind unsolved, Kind superKind) {
