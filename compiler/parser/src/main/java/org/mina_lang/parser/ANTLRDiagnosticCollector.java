@@ -42,18 +42,11 @@ public abstract class ANTLRDiagnosticCollector extends BaseDiagnosticCollector i
 
         var range = new Range(startPos, endPos);
 
-        if (recognizer instanceof Lexer lexer) {
-            var sourceName = lexer.getInputStream().getSourceName();
-            if (!CharStream.UNKNOWN_SOURCE_NAME.equals(sourceName)) {
-                var location = new Location(URI.create(sourceName), range);
-                reportError(location, msg);
-            }
-        } else if (recognizer instanceof Parser parser) {
-            var sourceName = parser.getInputStream().getSourceName();
-            if (!CharStream.UNKNOWN_SOURCE_NAME.equals(sourceName)) {
-                var location = new Location(URI.create(sourceName), range);
-                reportError(location, msg);
-            }
+        var sourceName = recognizer.getInputStream().getSourceName();
+
+        if (!CharStream.UNKNOWN_SOURCE_NAME.equals(sourceName)) {
+            var location = new Location(URI.create(sourceName), range);
+            reportError(location, msg);
         }
     }
 }
