@@ -1,7 +1,7 @@
 package org.mina_lang.common.diagnostics;
 
-import org.mina_lang.common.Range;
+import org.mina_lang.common.Location;
 
-public record DiagnosticRelatedInformation(Range range, String message) {
+public record DiagnosticRelatedInformation(Location location, String message) {
 
 }

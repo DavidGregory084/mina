@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +35,8 @@ public class KindcheckerTest {
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
             environment.typeSubstitution(), environment.kindSubstitution());
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
+        var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
+        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
         var kindDefaultingTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(),
                 new KindDefaultingTransformer(environment.kindSubstitution()));
@@ -52,7 +54,8 @@ public class KindcheckerTest {
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
+        var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
+        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
         var kindcheckedNode = kindchecker.kindcheck(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(kindcheckedNode, is(equalTo(expectedNode)));
@@ -65,7 +68,8 @@ public class KindcheckerTest {
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
+        var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
+        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = diagnostics.getErrors();
         assertThat("There should be kind errors", errors, is(not(empty())));
@@ -79,7 +83,8 @@ public class KindcheckerTest {
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
-        var kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
+        var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
+        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = diagnostics.getErrors();
         assertThat("There should be kind errors", errors, is(not(empty())));
@@ -90,7 +95,7 @@ public class KindcheckerTest {
         assertThat(diagnostics, is(not(empty())));
         var firstDiagnostic = diagnostics.get(0);
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
-        assertThat(firstDiagnostic.range(), is(equalTo(range)));
+        assertThat(firstDiagnostic.location().range(), is(equalTo(range)));
         assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
     }
 

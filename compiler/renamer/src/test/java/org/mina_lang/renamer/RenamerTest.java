@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +26,8 @@ public class RenamerTest {
             NamespaceNode<Void> originalNode,
             NamespaceNode<Name> expectedNode) {
         var diagnostics = new ErrorCollector();
-        var renamer = new Renamer(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var renamer = new Renamer(dummyUri, diagnostics, environment);
         var renamedNode = renamer.rename(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(renamedNode, is(equalTo(expectedNode)));
@@ -36,7 +38,8 @@ public class RenamerTest {
             MetaNode<Void> originalNode,
             MetaNode<A> expectedNode) {
         var diagnostics = new ErrorCollector();
-        var renamer = new Renamer(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var renamer = new Renamer(dummyUri, diagnostics, environment);
         var renamedNode = renamer.rename(originalNode);
         assertThat(diagnostics.getDiagnostics(), is(empty()));
         assertThat(renamedNode, is(equalTo(expectedNode)));
@@ -46,7 +49,8 @@ public class RenamerTest {
             NameEnvironment environment,
             MetaNode<Void> originalNode) {
         var diagnostics = new ErrorCollector();
-        var renamer = new Renamer(diagnostics, environment);
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var renamer = new Renamer(dummyUri, diagnostics, environment);
         renamer.rename(originalNode);
         var errors = diagnostics.getErrors();
         assertThat("There should be renaming errors", errors, is(not(empty())));
@@ -57,7 +61,7 @@ public class RenamerTest {
         assertThat(diagnostics, is(not(empty())));
         var firstDiagnostic = diagnostics.get(0);
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
-        assertThat(firstDiagnostic.range(), is(equalTo(range)));
+        assertThat(firstDiagnostic.location().range(), is(equalTo(range)));
         assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
     }
 
@@ -67,13 +71,13 @@ public class RenamerTest {
 
         var firstDiagnostic = diagnostics.get(0);
         assertThat(firstDiagnostic.message(), is(equalTo(diagnosticMessage)));
-        assertThat(firstDiagnostic.range(), is(equalTo(diagnosticRange)));
+        assertThat(firstDiagnostic.location().range(), is(equalTo(diagnosticRange)));
 
         assertThat(firstDiagnostic.relatedInformation().toList(), is(not(empty())));
 
         var firstRelatedInfo = firstDiagnostic.relatedInformation().get(0);
         assertThat(firstRelatedInfo.message(), startsWith(relatedInfoMessage));
-        assertThat(firstRelatedInfo.range(), is(equalTo(relatedInfoRange)));
+        assertThat(firstRelatedInfo.location().range(), is(equalTo(relatedInfoRange)));
     }
 
     void assertDuplicateValueDefinition(List<Diagnostic> diagnostics, Range duplicateRange, Range originalRange,

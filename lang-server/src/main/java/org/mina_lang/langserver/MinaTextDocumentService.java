@@ -1,5 +1,6 @@
 package org.mina_lang.langserver;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -58,6 +59,7 @@ public class MinaTextDocumentService implements TextDocumentService {
         server.ifShouldNotify(() -> {
             var document = params.getTextDocument();
             var documentUri = document.getUri();
+            var documentJavaUri = URI.create(documentUri);
             documents.addDocument(params);
             var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();
             hoverRanges.addHoverRanges(params, hoversFuture);
@@ -65,9 +67,9 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(document, diagnostics -> {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
                     try {
-                        var parser = new Parser(diagnostics);
-                        var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var parser = new Parser(documentJavaUri, diagnostics);
+                        var renamer = new Renamer(documentJavaUri, diagnostics, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(documentJavaUri, diagnostics, TypeEnvironment.withBuiltInTypes());
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
@@ -104,6 +106,7 @@ public class MinaTextDocumentService implements TextDocumentService {
     public void didChange(DidChangeTextDocumentParams params) {
         server.ifShouldNotify(() -> {
             var documentUri = params.getTextDocument().getUri();
+            var documentJavaUri = URI.create(documentUri);
             var updatedDocument = documents.updateDocument(params);
             var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();
             hoverRanges.updateHoverRanges(params, hoversFuture);
@@ -111,9 +114,9 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(updatedDocument, diagnostics -> {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
                     try {
-                        var parser = new Parser(diagnostics);
-                        var renamer = new Renamer(diagnostics, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var parser = new Parser(documentJavaUri, diagnostics);
+                        var renamer = new Renamer(documentJavaUri, diagnostics, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(documentJavaUri, diagnostics, TypeEnvironment.withBuiltInTypes());
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();

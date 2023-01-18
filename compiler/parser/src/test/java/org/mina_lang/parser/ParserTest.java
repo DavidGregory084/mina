@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.*;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -23,7 +24,8 @@ public class ParserTest {
             String source,
             NamespaceNode<Void> expected) {
         var errorCollector = new ErrorCollector();
-        var actual = new Parser(errorCollector).parse(source);
+        var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
+        var actual = new Parser(dummyUri, errorCollector).parse(source);
         assertThat("There should be no parsing errors", errorCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
         assertThat(actual, equalTo(expected));
@@ -31,7 +33,8 @@ public class ParserTest {
 
     List<String> testFailedParse(String source) {
         var errorCollector = new ErrorCollector();
-        new Parser(errorCollector).parse(source);
+        var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
+        new Parser(dummyUri, errorCollector).parse(source);
         var errors = errorCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
         return errors;
@@ -43,7 +46,8 @@ public class ParserTest {
             Function<MinaParser, A> startRule,
             B expected) {
         var errorCollector = new ErrorCollector();
-        var parser = new Parser(errorCollector);
+        var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
+        var parser = new Parser(dummyUri, errorCollector);
         var actual = parser.parse(source, visitor, startRule);
         assertThat("There should be no parsing errors", errorCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
@@ -55,7 +59,8 @@ public class ParserTest {
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
         var errorCollector = new ErrorCollector();
-        var parser = new Parser(errorCollector);
+        var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
+        var parser = new Parser(dummyUri, errorCollector);
         parser.parse(source, visitor, startRule);
         var errors = errorCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
