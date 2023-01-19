@@ -2,7 +2,6 @@ package org.mina_lang.typechecker;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
-import java.net.URI;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -12,8 +11,11 @@ import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
-import org.mina_lang.common.*;
-import org.mina_lang.common.diagnostics.DiagnosticCollector;
+import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.Range;
+import org.mina_lang.common.Scope;
+import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
@@ -22,8 +24,7 @@ import org.mina_lang.typechecker.scopes.*;
 import com.opencastsoftware.prettier4j.Doc;
 
 public class Typechecker {
-    private URI sourceUri;
-    private DiagnosticCollector diagnostics;
+    private ScopedDiagnosticCollector diagnostics;
     private TypeEnvironment environment;
     private UnsolvedVariableSupply varSupply;
     private Kindchecker kindchecker;
@@ -31,8 +32,7 @@ public class Typechecker {
     private SortSubstitutionTransformer sortTransformer;
     private SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
 
-    public Typechecker(URI sourceUri, DiagnosticCollector diagnostics, TypeEnvironment environment) {
-        this.sourceUri = sourceUri;
+    public Typechecker(ScopedDiagnosticCollector diagnostics, TypeEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
 
@@ -44,7 +44,7 @@ public class Typechecker {
                 environment.typeSubstitution(),
                 environment.kindSubstitution());
 
-        this.kindchecker = new Kindchecker(sourceUri, diagnostics, environment, varSupply, sortTransformer);
+        this.kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
     }
 
     public TypeEnvironment getEnvironment() {
@@ -160,7 +160,7 @@ public class Typechecker {
                         .appendLineOr(Doc.text(", "), Doc.text("Actual: ").append(actual)))
                 .render(80);
 
-        diagnostics.reportError(new Location(sourceUri, range), message);
+        diagnostics.reportError(range, message);
     }
 
     void mismatchedApplication(Range range, Type actualType, Type expectedType) {
@@ -178,7 +178,7 @@ public class Typechecker {
                         .appendLineOr(Doc.text(", "), Doc.text("Actual:").appendSpace(actual)))
                 .render(80);
 
-        diagnostics.reportError(new Location(sourceUri, range), message);
+        diagnostics.reportError(range, message);
     }
 
     void noUniqueType(Range range, DeclarationName name, Type inferredType,
@@ -201,7 +201,7 @@ public class Typechecker {
                                                 : Doc.text("is an unsolved variable."))))
                 .render(80);
 
-        diagnostics.reportError(new Location(sourceUri, range), message);
+        diagnostics.reportError(range, message);
     }
 
     TypeInstantiationTransformer subTypeInstantiation(TypeLambda tyLam) {

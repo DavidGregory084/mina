@@ -68,10 +68,10 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(document, diagnostics -> {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
                     try {
-                        var parserCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
-                        var parser = new Parser(documentJavaUri, parserCollector);
-                        var renamer = new Renamer(documentJavaUri, diagnostics, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(documentJavaUri, diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var scopedCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
+                        var parser = new Parser(scopedCollector);
+                        var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
@@ -116,10 +116,10 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(updatedDocument, diagnostics -> {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
                     try {
-                        var parserCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
-                        var parser = new Parser(documentJavaUri, parserCollector);
-                        var renamer = new Renamer(documentJavaUri, diagnostics, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(documentJavaUri, diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var scopedCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
+                        var parser = new Parser(scopedCollector);
+                        var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();

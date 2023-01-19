@@ -26,7 +26,7 @@ public class ParserTest {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
-        var actual = new Parser(dummyUri, parsingCollector).parse(source);
+        var actual = new Parser(parsingCollector).parse(source);
         assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
         assertThat(actual, equalTo(expected));
@@ -36,7 +36,7 @@ public class ParserTest {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
-        new Parser(dummyUri, parsingCollector).parse(source);
+        new Parser(parsingCollector).parse(source);
         var errors = baseCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
         return errors;
@@ -50,7 +50,7 @@ public class ParserTest {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
-        var parser = new Parser(dummyUri, parsingCollector);
+        var parser = new Parser(parsingCollector);
         var actual = parser.parse(source, visitor, startRule);
         assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
@@ -64,7 +64,7 @@ public class ParserTest {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
-        var parser = new Parser(dummyUri, parsingCollector);
+        var parser = new Parser(parsingCollector);
         parser.parse(source, visitor, startRule);
         var errors = baseCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));

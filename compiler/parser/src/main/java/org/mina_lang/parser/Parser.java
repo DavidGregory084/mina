@@ -4,7 +4,6 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -17,7 +16,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.collector.Collectors2;
-import org.mina_lang.common.Location;
 import org.mina_lang.common.Position;
 import org.mina_lang.common.Range;
 import org.mina_lang.parser.MinaParser.*;
@@ -42,10 +40,7 @@ public class Parser {
     private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
     private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
 
-    private URI sourceUri;
-
-    public Parser(URI sourceUri, ANTLRDiagnosticCollector diagnostics) {
-        this.sourceUri = sourceUri;
+    public Parser(ANTLRDiagnosticCollector diagnostics) {
         this.diagnostics = diagnostics;
     }
 
@@ -102,7 +97,7 @@ public class Parser {
     }
 
     public NamespaceNode<Void> parse(String source) {
-        var charStream = CharStreams.fromString(source, sourceUri.toString());
+        var charStream = CharStreams.fromString(source);
         return parse(charStream);
     }
 
@@ -114,7 +109,7 @@ public class Parser {
             String source,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
-        var charStream = CharStreams.fromString(source, sourceUri.toString());
+        var charStream = CharStreams.fromString(source);
         return parse(charStream, visitor, startRule);
     }
 

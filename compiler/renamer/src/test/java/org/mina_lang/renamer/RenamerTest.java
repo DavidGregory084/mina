@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
+import org.mina_lang.common.diagnostics.DelegatingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
 import org.mina_lang.renamer.scopes.ImportedNamesScope;
@@ -25,11 +26,12 @@ public class RenamerTest {
             NameEnvironment environment,
             NamespaceNode<Void> originalNode,
             NamespaceNode<Name> expectedNode) {
-        var diagnostics = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
-        var renamer = new Renamer(dummyUri, diagnostics, environment);
+        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var renamer = new Renamer(scopedCollector, environment);
         var renamedNode = renamer.rename(originalNode);
-        assertThat(diagnostics.getDiagnostics(), is(empty()));
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
         assertThat(renamedNode, is(equalTo(expectedNode)));
     }
 
@@ -37,24 +39,26 @@ public class RenamerTest {
             NameEnvironment environment,
             MetaNode<Void> originalNode,
             MetaNode<A> expectedNode) {
-        var diagnostics = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
-        var renamer = new Renamer(dummyUri, diagnostics, environment);
+        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var renamer = new Renamer(scopedCollector, environment);
         var renamedNode = renamer.rename(originalNode);
-        assertThat(diagnostics.getDiagnostics(), is(empty()));
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
         assertThat(renamedNode, is(equalTo(expectedNode)));
     }
 
     ErrorCollector testFailedRename(
             NameEnvironment environment,
             MetaNode<Void> originalNode) {
-        var diagnostics = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
-        var renamer = new Renamer(dummyUri, diagnostics, environment);
+        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var renamer = new Renamer(scopedCollector, environment);
         renamer.rename(originalNode);
-        var errors = diagnostics.getErrors();
+        var errors = baseCollector.getErrors();
         assertThat("There should be renaming errors", errors, is(not(empty())));
-        return diagnostics;
+        return baseCollector;
     }
 
     void assertDiagnostic(List<Diagnostic> diagnostics, Range range, String message) {
