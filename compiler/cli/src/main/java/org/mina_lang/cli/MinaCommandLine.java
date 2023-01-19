@@ -42,11 +42,12 @@ public class MinaCommandLine implements Callable<Integer> {
                     .forEach(diagnostic -> {
                         var location = diagnostic.location();
                         var rangeStart = location.range().start();
-                        System.err.println(diagnostic.severity() + " " +
-                                "[" + (location.uri().toString()) + ":" +
-                                (rangeStart.line() + 1) + ":" +
-                                (rangeStart.character() + 1) + "]" +
-                                " " + diagnostic.message());
+                        System.err.println(
+                                System.lineSeparator() + diagnostic.severity() + " " +
+                                        "[" + (location.uri().toString()) + ":" +
+                                        (rangeStart.line() + 1) + ":" +
+                                        (rangeStart.character() + 1) + "]" +
+                                        " " + diagnostic.message());
                     });
 
             return ExitCode.OK;

@@ -9,6 +9,7 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -16,12 +17,13 @@ import java.util.stream.Stream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.collections.api.factory.Maps;
-import org.jgrapht.alg.cycle.TiernanSimpleCycles;
+import org.jgrapht.alg.cycle.HawickJamesSimpleCycles;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.codegen.jvm.CodeGenerator;
+import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticCollector;
@@ -59,6 +61,28 @@ public class Main {
 
     public BaseDiagnosticCollector getMainCollector() {
         return mainCollector;
+    }
+
+    void cyclicFileDependency(ANTLRDiagnosticCollector collector, Range range, NamespaceName startNamespace,
+            List<NamespaceName> cycle) {
+        var messageHeader = "Cyclic namespace dependency found, starting with namespace "
+                + startNamespace.canonicalName();
+
+        var namespaceCycleMessage = cycle.stream()
+                .<String>reduce("", (concatenatedMessage, namespaceName) -> {
+                    if (concatenatedMessage.isEmpty()) {
+                        return namespaceName.canonicalName();
+                    } else {
+                        return concatenatedMessage +
+                                ", which imports" +
+                                System.lineSeparator() +
+                                namespaceName.canonicalName();
+                    }
+                }, (l, r) -> l + r);
+
+        collector.reportError(
+                range,
+                messageHeader + ":\n\n" + namespaceCycleMessage);
     }
 
     boolean matchRegularMinaFile(Path filePath, BasicFileAttributes fileAttrs) {
@@ -134,19 +158,26 @@ public class Main {
                                 namespaceNodes.get(namespaceName)
                                         .imports()
                                         .forEach(imp -> {
+                                            // TODO: Handle fully-qualified references
                                             var importName = imp.namespace().getName();
                                             if (namespaceGraph.containsVertex(importName)) {
                                                 namespaceGraph.addVertex(imp.namespace().getName());
                                                 namespaceGraph.addEdge(namespaceName, importName);
                                             } else {
+                                                // TODO: find the namespace on the classpath
+                                                // or produce an "unknown namespace" error
                                             }
                                         });
                             });
 
-                    new TiernanSimpleCycles<>(namespaceGraph)
+                    new HawickJamesSimpleCycles<>(namespaceGraph)
                             .findSimpleCycles()
                             .forEach(cycle -> {
-                                System.err.println("Cyclic dependencies found: " + cycle);
+                                var cycleStart = cycle.get(0);
+                                cycle.add(cycleStart);
+                                var cycleStartNs = namespaceNodes.get(cycleStart);
+                                var collector = scopedDiagnostics.get(cycleStart);
+                                cyclicFileDependency(collector, cycleStartNs.range(), cycleStart, cycle);
                             });
 
                     dotExporter.exportGraph(namespaceGraph, new PrintWriter(System.out));
