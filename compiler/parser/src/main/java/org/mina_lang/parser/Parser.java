@@ -4,7 +4,6 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -17,7 +16,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.collector.Collectors2;
-import org.mina_lang.common.Location;
 import org.mina_lang.common.Position;
 import org.mina_lang.common.Range;
 import org.mina_lang.parser.MinaParser.*;
@@ -42,10 +40,7 @@ public class Parser {
     private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
     private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
 
-    private URI sourceUri;
-
-    public Parser(URI sourceUri, ANTLRDiagnosticCollector diagnostics) {
-        this.sourceUri = sourceUri;
+    public Parser(ANTLRDiagnosticCollector diagnostics) {
         this.diagnostics = diagnostics;
     }
 
@@ -102,7 +97,7 @@ public class Parser {
     }
 
     public NamespaceNode<Void> parse(String source) {
-        var charStream = CharStreams.fromString(source, sourceUri.toString());
+        var charStream = CharStreams.fromString(source);
         return parse(charStream);
     }
 
@@ -114,7 +109,7 @@ public class Parser {
             String source,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
-        var charStream = CharStreams.fromString(source, sourceUri.toString());
+        var charStream = CharStreams.fromString(source);
         return parse(charStream, visitor, startRule);
     }
 
@@ -482,7 +477,7 @@ public class Parser {
                 var intValue = decimalValue.intValueExact();
                 return intNode(range, intValue);
             } catch (ArithmeticException exc) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Integer overflow detected");
+                diagnostics.reportWarning(range, "Integer overflow detected");
                 return intNode(range, decimalValue.intValue());
             }
         }
@@ -493,7 +488,7 @@ public class Parser {
                 var longValue = decimalValue.longValueExact();
                 return longNode(range, longValue);
             } catch (ArithmeticException exc) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Long overflow detected");
+                diagnostics.reportWarning(range, "Long overflow detected");
                 return longNode(range, decimalValue.longValue());
             }
         }
@@ -505,7 +500,7 @@ public class Parser {
             var outOfRange = Float.isNaN(floatValue) || Float.isInfinite(floatValue);
             var notExact = new BigDecimal(String.valueOf(floatValue)).compareTo(decimalValue) != 0;
             if (outOfRange || notExact) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Float precision loss detected");
+                diagnostics.reportWarning(range, "Float precision loss detected");
             }
 
             return floatNode(range, floatValue);
@@ -518,7 +513,7 @@ public class Parser {
             var outOfRange = Double.isNaN(doubleValue) || Double.isInfinite(doubleValue);
             var notExact = new BigDecimal(String.valueOf(doubleValue)).compareTo(decimalValue) != 0;
             if (outOfRange || notExact) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Double precision loss detected");
+                diagnostics.reportWarning(range, "Double precision loss detected");
             }
 
             return doubleNode(range, doubleValue);

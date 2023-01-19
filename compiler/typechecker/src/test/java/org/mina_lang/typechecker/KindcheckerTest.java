@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
+import org.mina_lang.common.diagnostics.DelegatingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.Name;
@@ -31,18 +32,19 @@ public class KindcheckerTest {
             TypeEnvironment environment,
             DataNode<Name> originalNode,
             DataNode<Attributes> expectedNode) {
-        var diagnostics = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
             environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
+        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         var kindDefaultingTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(),
                 new KindDefaultingTransformer(environment.kindSubstitution()));
         var kindcheckedNode = kindchecker.kindcheck(originalNode)
                 .accept(new MetaNodeSubstitutionTransformer(kindDefaultingTransformer));
-        assertThat(diagnostics.getDiagnostics(), is(empty()));
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
         assertThat(kindcheckedNode, is(equalTo(expectedNode)));
     }
 
@@ -50,45 +52,48 @@ public class KindcheckerTest {
             TypeEnvironment environment,
             TypeNode<Name> originalNode,
             TypeNode<Attributes> expectedNode) {
-        var diagnostics = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
+        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         var kindcheckedNode = kindchecker.kindcheck(originalNode);
-        assertThat(diagnostics.getDiagnostics(), is(empty()));
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
         assertThat(kindcheckedNode, is(equalTo(expectedNode)));
     }
 
     ErrorCollector testFailedKindcheck(
             TypeEnvironment environment,
             DataNode<Name> originalNode) {
-        var diagnostics = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
+        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
-        var errors = diagnostics.getErrors();
+        var errors = baseCollector.getErrors();
         assertThat("There should be kind errors", errors, is(not(empty())));
-        return diagnostics;
+        return baseCollector;
     }
 
     ErrorCollector testFailedKindcheck(
             TypeEnvironment environment,
             TypeNode<Name> originalNode) {
-        var diagnostics = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var varSupply = new UnsolvedVariableSupply();
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var kindchecker = new Kindchecker(dummyUri, diagnostics, environment, varSupply, sortTransformer);
+        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
-        var errors = diagnostics.getErrors();
+        var errors = baseCollector.getErrors();
         assertThat("There should be kind errors", errors, is(not(empty())));
-        return diagnostics;
+        return baseCollector;
     }
 
     void assertDiagnostic(List<Diagnostic> diagnostics, Range range, String message) {

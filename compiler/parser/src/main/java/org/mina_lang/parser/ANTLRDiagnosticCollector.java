@@ -3,16 +3,24 @@ package org.mina_lang.parser;
 import java.net.URI;
 import java.util.BitSet;
 
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.mina_lang.common.Location;
 import org.mina_lang.common.Position;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
+import org.mina_lang.common.diagnostics.DelegatingDiagnosticCollector;
 
-public abstract class ANTLRDiagnosticCollector extends BaseDiagnosticCollector implements ANTLRErrorListener {
+public class ANTLRDiagnosticCollector extends DelegatingDiagnosticCollector implements ANTLRErrorListener {
+
+    public ANTLRDiagnosticCollector(BaseDiagnosticCollector parent, URI sourceUri) {
+        super(parent, sourceUri);
+    }
+
     @Override
     public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact,
             BitSet ambigAlts, ATNConfigSet configs) {
@@ -42,11 +50,6 @@ public abstract class ANTLRDiagnosticCollector extends BaseDiagnosticCollector i
 
         var range = new Range(startPos, endPos);
 
-        var sourceName = recognizer.getInputStream().getSourceName();
-
-        if (!CharStream.UNKNOWN_SOURCE_NAME.equals(sourceName)) {
-            var location = new Location(URI.create(sourceName), range);
-            reportError(location, msg);
-        }
+        reportError(range, msg);
     }
 }

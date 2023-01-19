@@ -1,6 +1,6 @@
 package org.mina_lang.langserver;
 
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 
-public class MinaDiagnosticCollector extends ANTLRDiagnosticCollector implements LSPDiagnosticCollector {
+public class MinaDiagnosticCollector extends BaseDiagnosticCollector implements LSPDiagnosticCollector {
 }

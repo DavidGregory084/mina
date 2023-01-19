@@ -17,6 +17,7 @@ import org.mina_lang.common.names.Named;
 import org.mina_lang.common.types.KindPrinter;
 import org.mina_lang.common.types.SortPrinter;
 import org.mina_lang.common.types.TypePrinter;
+import org.mina_lang.parser.ANTLRDiagnosticCollector;
 import org.mina_lang.parser.Parser;
 import org.mina_lang.renamer.NameEnvironment;
 import org.mina_lang.renamer.Renamer;
@@ -67,9 +68,10 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(document, diagnostics -> {
                     var charStream = CharStreams.fromString(document.getText(), documentUri);
                     try {
-                        var parser = new Parser(documentJavaUri, diagnostics);
-                        var renamer = new Renamer(documentJavaUri, diagnostics, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(documentJavaUri, diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var scopedCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
+                        var parser = new Parser(scopedCollector);
+                        var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
@@ -114,9 +116,10 @@ public class MinaTextDocumentService implements TextDocumentService {
                 return withDiagnostics(updatedDocument, diagnostics -> {
                     var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
                     try {
-                        var parser = new Parser(documentJavaUri, diagnostics);
-                        var renamer = new Renamer(documentJavaUri, diagnostics, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(documentJavaUri, diagnostics, TypeEnvironment.withBuiltInTypes());
+                        var scopedCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
+                        var parser = new Parser(scopedCollector);
+                        var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
+                        var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();

@@ -2,7 +2,6 @@ package org.mina_lang.renamer;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
-import java.net.URI;
 import java.util.Comparator;
 import java.util.Optional;
 
@@ -15,16 +14,15 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.mina_lang.common.Location;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.diagnostics.DiagnosticCollector;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
+import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
 import org.mina_lang.common.names.*;
 import org.mina_lang.renamer.scopes.*;
 import org.mina_lang.syntax.*;
 
 public class Renamer {
 
-    private URI sourceUri;
-    private DiagnosticCollector diagnostics;
+    private ScopedDiagnosticCollector diagnostics;
     private NameEnvironment environment;
 
     private Graph<DeclarationName, DefaultEdge> declarationGraph = GraphTypeBuilder
@@ -35,8 +33,7 @@ public class Renamer {
 
     private int localVarIndex = 0;
 
-    public Renamer(URI sourceUri, DiagnosticCollector diagnostics, NameEnvironment environment) {
-        this.sourceUri = sourceUri;
+    public Renamer(ScopedDiagnosticCollector diagnostics, NameEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
     }
@@ -57,10 +54,10 @@ public class Renamer {
 
     public Void duplicateValueDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
-                new Location(sourceUri, existing.range()),
+                new Location(diagnostics.getSourceUri(), existing.range()),
                 "Original definition of value '" + name + "'");
         diagnostics.reportError(
-                new Location(sourceUri, proposed.range()),
+                proposed.range(),
                 "Duplicate definition of value '" + name + "'",
                 Lists.immutable.of(originalDefinition));
         return null;
@@ -68,10 +65,10 @@ public class Renamer {
 
     public Void duplicateTypeDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
-                new Location(sourceUri, existing.range()),
+                new Location(diagnostics.getSourceUri(), existing.range()),
                 "Original definition of type '" + name + "'");
         diagnostics.reportError(
-                new Location(sourceUri, proposed.range()),
+                proposed.range(),
                 "Duplicate definition of type '" + name + "'",
                 Lists.immutable.of(originalDefinition));
         return null;
@@ -80,30 +77,30 @@ public class Renamer {
     public Void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
             Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
-                new Location(sourceUri, existing.range()),
+                new Location(diagnostics.getSourceUri(), existing.range()),
                 "Original definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");
         diagnostics.reportError(
-                new Location(sourceUri, proposed.range()),
+                proposed.range(),
                 "Duplicate definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'",
                 Lists.immutable.of(originalDefinition));
         return null;
     }
 
     public void undefinedType(String name, Meta<Void> meta) {
-        diagnostics.reportError(new Location(sourceUri, meta.range()), "Reference to undefined type '" + name + "'");
+        diagnostics.reportError(meta.range(), "Reference to undefined type '" + name + "'");
     }
 
     public void undefinedValue(String name, Meta<Void> meta) {
-        diagnostics.reportError(new Location(sourceUri, meta.range()), "Reference to undefined value '" + name + "'");
+        diagnostics.reportError(meta.range(), "Reference to undefined value '" + name + "'");
     }
 
     public void unknownConstructor(String name, Meta<Void> meta) {
-        diagnostics.reportError(new Location(sourceUri, meta.range()), "Reference to unknown constructor '" + name + "'");
+        diagnostics.reportError(meta.range(), "Reference to unknown constructor '" + name + "'");
     }
 
     public void unknownConstructorField(ConstructorName constr, String name, Meta<Void> meta) {
         diagnostics.reportError(
-                new Location(sourceUri, meta.range()),
+                meta.range(),
                 // TODO: Print qualified names according to how they are introduced
                 "Reference to unknown field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");
     }
