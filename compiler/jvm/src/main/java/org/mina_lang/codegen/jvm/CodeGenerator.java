@@ -3,15 +3,14 @@ package org.mina_lang.codegen.jvm;
 import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Maps;
-import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.codegen.jvm.scopes.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -20,11 +19,13 @@ import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.Sort;
 import org.mina_lang.common.types.TypeApply;
 import org.mina_lang.syntax.*;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.CheckClassAdapter;
-import org.objectweb.asm.util.TraceClassVisitor;
 
 public class CodeGenerator {
     CodegenEnvironment environment = CodegenEnvironment.empty();

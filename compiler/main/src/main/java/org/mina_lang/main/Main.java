@@ -22,6 +22,7 @@ import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.codegen.jvm.CodeGenerator;
+import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticCollector;
 import org.mina_lang.parser.Parser;
@@ -38,24 +39,26 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 public class Main {
-    private ANTLRDiagnosticCollector diagnosticsCollector;
+    private BaseDiagnosticCollector mainCollector;
 
     private Scheduler parScheduler = Schedulers.parallel();
     private Scheduler ioScheduler = Schedulers.boundedElastic();
 
     private ConcurrentHashMap<NamespaceName, NamespaceNode<?>> namespaceNodes;
+    private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
 
     private DOTExporter<NamespaceName, DefaultEdge> dotExporter = new DOTExporter<>();
 
-    public Main(ANTLRDiagnosticCollector diagnostics) {
-        this.diagnosticsCollector = diagnostics;
+    public Main(BaseDiagnosticCollector diagnostics) {
+        this.mainCollector = diagnostics;
         this.namespaceNodes = new ConcurrentHashMap<>();
+        this.scopedDiagnostics = new ConcurrentHashMap<>();
         dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
                 "label", DefaultAttribute.createAttribute(nsName.canonicalName())));
     }
 
-    public ANTLRDiagnosticCollector getDiagnosticsCollector() {
-        return diagnosticsCollector;
+    public BaseDiagnosticCollector getMainCollector() {
+        return mainCollector;
     }
 
     boolean matchRegularMinaFile(Path filePath, BasicFileAttributes fileAttrs) {
@@ -105,13 +108,14 @@ public class Main {
                             .subscribeOn(ioScheduler);
                 })
                 .runOn(parScheduler)
-                .map(source -> {
+                .doOnNext(source -> {
                     var sourceUri = URI.create(source.getSourceName());
-                    return new Parser(sourceUri, diagnosticsCollector).parse(source);
-                })
-                .doOnNext(namespaceNode -> {
-                    var namespaceName = namespaceNode.id().getName();
-                    namespaceNodes.put(namespaceName, namespaceNode);
+                    var scopedCollector = new ANTLRDiagnosticCollector(mainCollector, sourceUri);
+                    var parser = new Parser(scopedCollector);
+                    var parsed = parser.parse(source);
+                    var namespaceName = parsed.id().getName();
+                    scopedDiagnostics.put(namespaceName, scopedCollector);
+                    namespaceNodes.put(namespaceName, parsed);
                 })
                 .then()
                 .doOnSuccess(v -> {
@@ -155,16 +159,16 @@ public class Main {
             CharStream source) {
         return Mono.fromSupplier(() -> {
             var documentUri = URI.create(source.getSourceName());
-            var parser = new Parser(documentUri, diagnosticsCollector);
+            var scopedCollector = new ANTLRDiagnosticCollector(mainCollector, documentUri);
+            var parser = new Parser(scopedCollector);
             var parsed = parser.parse(source);
-            if (diagnosticsCollector.getDiagnostics().isEmpty()) {
-                var renamer = new Renamer(documentUri, diagnosticsCollector, NameEnvironment.withBuiltInNames());
+            if (!mainCollector.hasErrors()) {
+                var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
                 var renamed = renamer.rename(parsed);
-                if (diagnosticsCollector.getDiagnostics().isEmpty()) {
-                    var typechecker = new Typechecker(documentUri, diagnosticsCollector,
-                            TypeEnvironment.withBuiltInTypes());
+                if (!mainCollector.hasErrors()) {
+                    var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
                     var typed = typechecker.typecheck(renamed);
-                    if (diagnosticsCollector.getDiagnostics().isEmpty()) {
+                    if (!mainCollector.hasErrors()) {
                         var codegen = new CodeGenerator();
                         codegen.generate(destination, typed);
                     }

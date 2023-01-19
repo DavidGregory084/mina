@@ -1,7 +1,7 @@
 package org.mina_lang.cli;
 
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 
-public class MinaDiagnosticCollector extends ANTLRDiagnosticCollector {
+public class MinaDiagnosticCollector extends BaseDiagnosticCollector {
 
 }

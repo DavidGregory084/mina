@@ -37,7 +37,7 @@ public class MinaCommandLine implements Callable<Integer> {
             compilerMain.compilePath(paths).join();
 
             compilerMain
-                    .getDiagnosticsCollector()
+                    .getMainCollector()
                     .getDiagnostics()
                     .forEach(diagnostic -> {
                         var location = diagnostic.location();
