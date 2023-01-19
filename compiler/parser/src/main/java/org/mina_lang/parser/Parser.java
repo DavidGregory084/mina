@@ -482,7 +482,7 @@ public class Parser {
                 var intValue = decimalValue.intValueExact();
                 return intNode(range, intValue);
             } catch (ArithmeticException exc) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Integer overflow detected");
+                diagnostics.reportWarning(range, "Integer overflow detected");
                 return intNode(range, decimalValue.intValue());
             }
         }
@@ -493,7 +493,7 @@ public class Parser {
                 var longValue = decimalValue.longValueExact();
                 return longNode(range, longValue);
             } catch (ArithmeticException exc) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Long overflow detected");
+                diagnostics.reportWarning(range, "Long overflow detected");
                 return longNode(range, decimalValue.longValue());
             }
         }
@@ -505,7 +505,7 @@ public class Parser {
             var outOfRange = Float.isNaN(floatValue) || Float.isInfinite(floatValue);
             var notExact = new BigDecimal(String.valueOf(floatValue)).compareTo(decimalValue) != 0;
             if (outOfRange || notExact) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Float precision loss detected");
+                diagnostics.reportWarning(range, "Float precision loss detected");
             }
 
             return floatNode(range, floatValue);
@@ -518,7 +518,7 @@ public class Parser {
             var outOfRange = Double.isNaN(doubleValue) || Double.isInfinite(doubleValue);
             var notExact = new BigDecimal(String.valueOf(doubleValue)).compareTo(decimalValue) != 0;
             if (outOfRange || notExact) {
-                diagnostics.reportWarning(new Location(sourceUri, range), "Double precision loss detected");
+                diagnostics.reportWarning(range, "Double precision loss detected");
             }
 
             return doubleNode(range, doubleValue);

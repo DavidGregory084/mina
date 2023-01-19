@@ -23,19 +23,21 @@ public class ParserTest {
     void testSuccessfulParse(
             String source,
             NamespaceNode<Void> expected) {
-        var errorCollector = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        var actual = new Parser(dummyUri, errorCollector).parse(source);
-        assertThat("There should be no parsing errors", errorCollector.getErrors(), empty());
+        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        var actual = new Parser(dummyUri, parsingCollector).parse(source);
+        assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
         assertThat(actual, equalTo(expected));
     }
 
     List<String> testFailedParse(String source) {
-        var errorCollector = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        new Parser(dummyUri, errorCollector).parse(source);
-        var errors = errorCollector.getErrors();
+        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        new Parser(dummyUri, parsingCollector).parse(source);
+        var errors = baseCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
         return errors;
     }
@@ -45,11 +47,12 @@ public class ParserTest {
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule,
             B expected) {
-        var errorCollector = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        var parser = new Parser(dummyUri, errorCollector);
+        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        var parser = new Parser(dummyUri, parsingCollector);
         var actual = parser.parse(source, visitor, startRule);
-        assertThat("There should be no parsing errors", errorCollector.getErrors(), empty());
+        assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
         assertThat(actual, equalTo(expected));
     }
@@ -58,11 +61,12 @@ public class ParserTest {
             String source,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
-        var errorCollector = new ErrorCollector();
+        var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        var parser = new Parser(dummyUri, errorCollector);
+        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        var parser = new Parser(dummyUri, parsingCollector);
         parser.parse(source, visitor, startRule);
-        var errors = errorCollector.getErrors();
+        var errors = baseCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
         return errors;
     }
