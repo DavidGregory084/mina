@@ -69,4 +69,24 @@ public class DelegatingDiagnosticCollector implements ScopedDiagnosticCollector 
     public URI getSourceUri() {
         return sourceUri;
     }
+
+    @Override
+    public int errorCount() {
+        return parent.errorCount();
+    }
+
+    @Override
+    public int warningCount() {
+        return parent.warningCount();
+    }
+
+    @Override
+    public boolean hasErrors() {
+        return parent.hasErrors();
+    }
+
+    @Override
+    public boolean hasWarnings() {
+        return parent.hasWarnings();
+    }
 }
