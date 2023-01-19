@@ -8,6 +8,14 @@ import org.mina_lang.common.Location;
 public interface DiagnosticCollector {
     public List<Diagnostic> getDiagnostics();
 
+    public int errorCount();
+
+    public int warningCount();
+
+    public boolean hasErrors();
+
+    public boolean hasWarnings();
+
     public void reportError(Location location, String message);
 
     public void reportError(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation);

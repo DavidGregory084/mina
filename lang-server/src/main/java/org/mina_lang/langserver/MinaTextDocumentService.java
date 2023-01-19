@@ -75,13 +75,15 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
-                        if (diagnostics.getDiagnostics().isEmpty()) {
+                        if (!diagnostics.hasErrors()) {
                             var renamed = renamer.rename(parsed);
-                            if (diagnostics.getDiagnostics().isEmpty()) {
+                            if (!diagnostics.hasErrors()) {
                                 var typed = typechecker.typecheck(renamed);
                                 typed.accept(rangeVisitor);
                                 hoversFuture.complete(rangeVisitor.getRangeNodes());
-                                codegen.generate(storagePath, typed);
+                                if (!diagnostics.hasErrors()) {
+                                    codegen.generate(storagePath, typed);
+                                }
                                 return typed;
                             } else {
                                 renamed.accept(rangeVisitor);
@@ -123,13 +125,15 @@ public class MinaTextDocumentService implements TextDocumentService {
                         var codegen = new CodeGenerator();
                         var parsed = parser.parse(charStream);
                         var rangeVisitor = new SyntaxNodeRangeVisitor();
-                        if (diagnostics.getDiagnostics().isEmpty()) {
+                        if (!diagnostics.hasErrors()) {
                             var renamed = renamer.rename(parsed);
-                            if (diagnostics.getDiagnostics().isEmpty()) {
+                            if (!diagnostics.hasErrors()) {
                                 var typed = typechecker.typecheck(renamed);
                                 typed.accept(rangeVisitor);
                                 hoversFuture.complete(rangeVisitor.getRangeNodes());
-                                codegen.generate(storagePath, typed);
+                                if (!diagnostics.hasErrors()) {
+                                    codegen.generate(storagePath, typed);
+                                }
                                 return typed;
                             } else {
                                 renamed.accept(rangeVisitor);
