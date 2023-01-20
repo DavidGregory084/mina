@@ -114,6 +114,8 @@ public class Main {
     }
 
     CharStream readFileContent(Path filePath) throws IOException {
+        System.err.printf("[%s] Reading file %s%n",
+                Thread.currentThread().getName(), filePath.toUri().toString());
         try (var channel = Files.newByteChannel(filePath)) {
             return CharStreams.fromChannel(
                     channel,
@@ -223,6 +225,7 @@ public class Main {
                             return Flux.concat(typecheckingPhase.traverse(), Mono.defer(() -> {
                                 return Flux.fromIterable(typecheckingPhase.getTransformedNodes().values())
                                         .parallel()
+                                        .runOn(Schedulers.boundedElastic())
                                         .doOnNext(typechecked -> {
                                             var nsName = typechecked.id().getName();
                                             var nsDiagnostics = scopedDiagnostics.get(nsName);
