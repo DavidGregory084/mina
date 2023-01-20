@@ -13,9 +13,9 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.mina_lang.common.Position;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
-import org.mina_lang.common.diagnostics.DelegatingDiagnosticCollector;
+import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 
-public class ANTLRDiagnosticCollector extends DelegatingDiagnosticCollector implements ANTLRErrorListener {
+public class ANTLRDiagnosticCollector extends ForwardingDiagnosticCollector implements ANTLRErrorListener {
 
     public ANTLRDiagnosticCollector(BaseDiagnosticCollector parent, URI sourceUri) {
         super(parent, sourceUri);

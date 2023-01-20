@@ -23,8 +23,10 @@ import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.codegen.jvm.CodeGenerator;
+import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
+import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticCollector;
 import org.mina_lang.parser.Parser;
@@ -46,7 +48,7 @@ public class Main {
     private Scheduler parScheduler = Schedulers.parallel();
     private Scheduler ioScheduler = Schedulers.boundedElastic();
 
-    private ConcurrentHashMap<NamespaceName, NamespaceNode<?>> namespaceNodes;
+    private ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes;
     private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
 
     private DOTExporter<NamespaceName, DefaultEdge> dotExporter = new DOTExporter<>();
@@ -123,7 +125,7 @@ public class Main {
         }
     }
 
-    public CompletableFuture<Void> compilePath(Path... sourcePaths) throws IOException {
+    public CompletableFuture<Void> compilePath(Path destinationPath, Path... sourcePaths) throws IOException {
         return pathStreamFrom(sourcePaths)
                 .parallel()
                 .flatMap(filePath -> {
@@ -133,6 +135,8 @@ public class Main {
                 })
                 .runOn(parScheduler)
                 .doOnNext(source -> {
+                    System.err.printf("[%s] Parsing file %s%n",
+                            Thread.currentThread().getName(), source.getSourceName());
                     var sourceUri = URI.create(source.getSourceName());
                     var scopedCollector = new ANTLRDiagnosticCollector(mainCollector, sourceUri);
                     var parser = new Parser(scopedCollector);
@@ -142,7 +146,7 @@ public class Main {
                     namespaceNodes.put(namespaceName, parsed);
                 })
                 .then()
-                .doOnSuccess(v -> {
+                .concatWith(Mono.defer(() -> {
                     var namespaceGraph = GraphTypeBuilder.<NamespaceName, DefaultEdge>directed()
                             .edgeClass(DefaultEdge.class)
                             .allowingMultipleEdges(false)
@@ -181,7 +185,60 @@ public class Main {
                             });
 
                     dotExporter.exportGraph(namespaceGraph, new PrintWriter(System.out));
-                })
+
+                    // We can't proceed if our namespace graph is badly formed
+                    if (mainCollector.hasErrors()) {
+                        return Mono.empty();
+                    } else {
+                        var renamingPhase = new NamespaceGraphTraversal<Void, Name>(parsed -> {
+                            var nsName = parsed.id().getName();
+                            var nsDiagnostics = scopedDiagnostics.get(nsName);
+                            if (nsDiagnostics.hasErrors()) {
+                                return Mono.empty();
+                            } else {
+                                System.err.printf("[%s] Renaming module %s%n", Thread.currentThread().getName(),
+                                        nsName.canonicalName());
+                                var renamer = new Renamer(nsDiagnostics, NameEnvironment.withBuiltInNames());
+                                var renamed = renamer.rename(parsed);
+                                return Mono.just(renamed);
+                            }
+                        }, namespaceGraph, namespaceNodes);
+
+                        return Flux.concat(renamingPhase.traverse(), Mono.defer(() -> {
+                            var typecheckingPhase = new NamespaceGraphTraversal<Name, Attributes>(renamed -> {
+                                var nsName = renamed.id().getName();
+                                var nsDiagnostics = scopedDiagnostics.get(nsName);
+                                if (nsDiagnostics.hasErrors()) {
+                                    return Mono.empty();
+                                } else {
+                                    System.err.printf("[%s] Typechecking module %s%n", Thread.currentThread().getName(),
+                                            nsName.canonicalName());
+                                    var typechecker = new Typechecker(nsDiagnostics,
+                                            TypeEnvironment.withBuiltInTypes());
+                                    var typechecked = typechecker.typecheck(renamed);
+                                    return Mono.just(typechecked);
+                                }
+                            }, namespaceGraph, renamingPhase.getTransformedNodes());
+
+                            return Flux.concat(typecheckingPhase.traverse(), Mono.defer(() -> {
+                                return Flux.fromIterable(typecheckingPhase.getTransformedNodes().values())
+                                        .parallel()
+                                        .doOnNext(typechecked -> {
+                                            var nsName = typechecked.id().getName();
+                                            var nsDiagnostics = scopedDiagnostics.get(nsName);
+                                            if (!nsDiagnostics.hasErrors()) {
+                                                System.err.printf("[%s] Emitting module %s%n",
+                                                        Thread.currentThread().getName(), nsName.canonicalName());
+                                                var codegen = new CodeGenerator();
+                                                codegen.generate(destinationPath, typechecked);
+                                            }
+                                        }).then();
+                            })).then();
+                        })).then();
+
+                    }
+                }))
+                .then()
                 .toFuture();
     }
 

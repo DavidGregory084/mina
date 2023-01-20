@@ -1,20 +1,20 @@
 package org.mina_lang.cli;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 
 import org.mina_lang.BuildInfo;
 import org.mina_lang.main.Main;
 
 import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.ExitCode;
+import picocli.CommandLine.*;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Parameters;
-import picocli.CommandLine.Spec;
 
 @Command(name = "minac", mixinStandardHelpOptions = true, version = BuildInfo.version)
 public class MinaCommandLine implements Callable<Integer> {
+    @Option(names = "-d")
+    Path destination = Paths.get(".");
 
     @Parameters()
     Path[] paths;
@@ -34,7 +34,7 @@ public class MinaCommandLine implements Callable<Integer> {
             command.commandLine().usage(System.err);
             return ExitCode.USAGE;
         } else {
-            compilerMain.compilePath(paths).join();
+            compilerMain.compilePath(destination, paths).join();
 
             compilerMain
                     .getMainCollector()

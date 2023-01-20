@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
-import org.mina_lang.common.diagnostics.DelegatingDiagnosticCollector;
+import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.Name;
@@ -37,7 +37,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
             environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         var kindDefaultingTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(),
@@ -57,7 +57,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         var kindcheckedNode = kindchecker.kindcheck(originalNode);
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -72,7 +72,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = baseCollector.getErrors();
@@ -88,7 +88,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = baseCollector.getErrors();

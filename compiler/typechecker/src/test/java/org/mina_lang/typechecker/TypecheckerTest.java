@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Range;
-import org.mina_lang.common.diagnostics.DelegatingDiagnosticCollector;
+import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
@@ -32,7 +32,7 @@ public class TypecheckerTest {
             NamespaceNode<Attributes> expectedNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, environment);
         var typecheckedNode = typechecker.typecheck(originalNode);
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -45,7 +45,7 @@ public class TypecheckerTest {
             DataNode<Attributes> expectedNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, environment);
         var typecheckedNodes = typechecker.typecheck(Lists.immutable.of(originalNode));
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -58,7 +58,7 @@ public class TypecheckerTest {
             DeclarationNode<Attributes> expectedNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, environment);
         var typecheckedNode = typechecker.typecheck(originalNode);
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -71,7 +71,7 @@ public class TypecheckerTest {
             ExprNode<Attributes> expectedNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, environment);
         var typecheckedNode = typechecker.typecheck(originalNode);
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -83,7 +83,7 @@ public class TypecheckerTest {
             DeclarationNode<Name> originalNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, environment);
         typechecker.typecheck(originalNode);
         var errors = baseCollector.getErrors();
@@ -96,7 +96,7 @@ public class TypecheckerTest {
             ExprNode<Name> originalNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, environment);
         typechecker.typecheck(originalNode);
         var errors = baseCollector.getErrors();
@@ -1196,7 +1196,7 @@ public class TypecheckerTest {
     void checkIdPolyInstantiationSubtyping() {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
 
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
@@ -1216,7 +1216,7 @@ public class TypecheckerTest {
     void checkIdPolyInstantiationSupertyping() {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
 
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
@@ -1236,7 +1236,7 @@ public class TypecheckerTest {
     void checkUnsolvedSuperTyping(@ForAll("types") Type type) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
         var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
         assertThat(typechecker.checkSubType(type, unsolved), is(true));
@@ -1247,7 +1247,7 @@ public class TypecheckerTest {
     void checkUnsolvedSubTyping(@ForAll("types") Type type) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
         var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
         assertThat(typechecker.checkSubType(unsolved, type), is(true));
@@ -1258,7 +1258,7 @@ public class TypecheckerTest {
     void checkUnsolvedSubTypeReflexivity() {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
         var unsolved = typechecker.newUnsolvedType(TypeKind.INSTANCE);
         assertThat(typechecker.checkSubType(unsolved, unsolved), is(true));
@@ -1269,7 +1269,7 @@ public class TypecheckerTest {
     void checkSubTypeReflexivity(@ForAll("types") Type type) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
-        var scopedCollector = new DelegatingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
         assertThat(typechecker.checkSubType(type, type), is(true));
     }
