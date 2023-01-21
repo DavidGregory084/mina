@@ -45,9 +45,6 @@ import reactor.core.scheduler.Schedulers;
 public class Main {
     private BaseDiagnosticCollector mainCollector;
 
-    private Scheduler parScheduler = Schedulers.parallel();
-    private Scheduler ioScheduler = Schedulers.boundedElastic();
-
     private ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes;
     private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
 
@@ -105,7 +102,7 @@ public class Main {
                 () -> findMinaFiles(startPath),
                 Flux::fromStream,
                 Stream::close)
-                .subscribeOn(ioScheduler);
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     Flux<Path> pathStreamFrom(Path... sourcePaths) {
@@ -130,12 +127,13 @@ public class Main {
     public CompletableFuture<Void> compilePath(Path destinationPath, Path... sourcePaths) throws IOException {
         return pathStreamFrom(sourcePaths)
                 .parallel()
+                .runOn(Schedulers.boundedElastic())
                 .flatMap(filePath -> {
                     return Mono
                             .fromCallable(() -> readFileContent(filePath))
-                            .subscribeOn(ioScheduler);
+                            .subscribeOn(Schedulers.boundedElastic());
                 })
-                .runOn(parScheduler)
+                .runOn(Schedulers.parallel())
                 .doOnNext(source -> {
                     System.err.printf("[%s] Parsing file %s%n",
                             Thread.currentThread().getName(), source.getSourceName());
@@ -167,8 +165,8 @@ public class Main {
                                             // TODO: Handle fully-qualified references
                                             var importName = imp.namespace().getName();
                                             if (namespaceGraph.containsVertex(importName)) {
-                                                namespaceGraph.addVertex(imp.namespace().getName());
-                                                namespaceGraph.addEdge(namespaceName, importName);
+                                                namespaceGraph.addVertex(importName);
+                                                namespaceGraph.addEdge(importName, namespaceName);
                                             } else {
                                                 // TODO: find the namespace on the classpath
                                                 // or produce an "unknown namespace" error
@@ -195,34 +193,25 @@ public class Main {
                         var renamingPhase = new NamespaceGraphTraversal<Void, Name>(parsed -> {
                             var nsName = parsed.id().getName();
                             var nsDiagnostics = scopedDiagnostics.get(nsName);
-                            if (nsDiagnostics.hasErrors()) {
-                                return Mono.empty();
-                            } else {
-                                System.err.printf("[%s] Renaming module %s%n", Thread.currentThread().getName(),
-                                        nsName.canonicalName());
-                                var renamer = new Renamer(nsDiagnostics, NameEnvironment.withBuiltInNames());
-                                var renamed = renamer.rename(parsed);
-                                return Mono.just(renamed);
-                            }
-                        }, namespaceGraph, namespaceNodes);
+                            System.err.printf("[%s] Renaming module %s%n", Thread.currentThread().getName(),
+                                    nsName.canonicalName());
+                            var renamer = new Renamer(nsDiagnostics, NameEnvironment.withBuiltInNames());
+                            var renamed = renamer.rename(parsed);
+                            return Mono.just(renamed);
+                        }, namespaceGraph, namespaceNodes, scopedDiagnostics);
 
-                        return Flux.concat(renamingPhase.traverse(), Mono.defer(() -> {
+                        return Flux.concat(renamingPhase.topoTraverse(), Mono.defer(() -> {
                             var typecheckingPhase = new NamespaceGraphTraversal<Name, Attributes>(renamed -> {
                                 var nsName = renamed.id().getName();
                                 var nsDiagnostics = scopedDiagnostics.get(nsName);
-                                if (nsDiagnostics.hasErrors()) {
-                                    return Mono.empty();
-                                } else {
-                                    System.err.printf("[%s] Typechecking module %s%n", Thread.currentThread().getName(),
-                                            nsName.canonicalName());
-                                    var typechecker = new Typechecker(nsDiagnostics,
-                                            TypeEnvironment.withBuiltInTypes());
-                                    var typechecked = typechecker.typecheck(renamed);
-                                    return Mono.just(typechecked);
-                                }
-                            }, namespaceGraph, renamingPhase.getTransformedNodes());
+                                System.err.printf("[%s] Typechecking module %s%n", Thread.currentThread().getName(),
+                                        nsName.canonicalName());
+                                var typechecker = new Typechecker(nsDiagnostics, TypeEnvironment.withBuiltInTypes());
+                                var typechecked = typechecker.typecheck(renamed);
+                                return Mono.just(typechecked);
+                            }, namespaceGraph, renamingPhase.getTransformedNodes(), scopedDiagnostics);
 
-                            return Flux.concat(typecheckingPhase.traverse(), Mono.defer(() -> {
+                            return Flux.concat(typecheckingPhase.topoTraverse(), Mono.defer(() -> {
                                 return Flux.fromIterable(typecheckingPhase.getTransformedNodes().values())
                                         .parallel()
                                         .runOn(Schedulers.boundedElastic())
@@ -270,6 +259,6 @@ public class Main {
             } else {
                 return parsed;
             }
-        }).subscribeOn(parScheduler).toFuture();
+        }).subscribeOn(Schedulers.parallel()).toFuture();
     }
 }

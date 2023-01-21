@@ -13,6 +13,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.mina_lang.common.names.NamespaceName;
+import org.mina_lang.parser.ANTLRDiagnosticCollector;
 import org.mina_lang.syntax.NamespaceNode;
 
 import reactor.core.publisher.Flux;
@@ -28,56 +29,78 @@ public class NamespaceGraphTraversal<A, B> {
     private ConcurrentHashMap<NamespaceName, NamespaceNode<A>> inputNodes;
     private ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedNodes;
 
+    private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
+
     private Set<NamespaceName> rootNodes;
     private Map<NamespaceName, AtomicInteger> namespaceDependencies;
 
     public NamespaceGraphTraversal(
             Function<NamespaceNode<A>, Mono<NamespaceNode<B>>> phaseFn,
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
-            ConcurrentHashMap<NamespaceName, NamespaceNode<A>> namespaceNodes) {
+            ConcurrentHashMap<NamespaceName, NamespaceNode<A>> namespaceNodes,
+            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics) {
         this.phaseFn = phaseFn;
         this.namespaceGraph = namespaceGraph;
         this.inputNodes = namespaceNodes;
+        this.scopedDiagnostics = scopedDiagnostics;
         this.transformedNodes = new ConcurrentHashMap<>();
         this.rootNodes = Sets.mutable.empty();
         this.namespaceDependencies = Maps.mutable.empty();
         namespaceGraph.vertexSet().forEach(namespace -> {
-            if (namespaceGraph.inDegreeOf(namespace) == 0) {
-                rootNodes.add(namespace);
+            var inDegree = namespaceGraph.inDegreeOf(namespace);
+            if (inDegree > 0) {
+                namespaceDependencies.put(namespace, new AtomicInteger(inDegree));
             } else {
-                namespaceDependencies.put(namespace, new AtomicInteger(namespaceGraph.inDegreeOf(namespace)));
+                rootNodes.add(namespace);
             }
         });
     }
 
-    ParallelFlux<NamespaceNode<B>> recurse(NamespaceName startNode) {
+    ParallelFlux<NamespaceNode<B>> topoTraverseFrom(NamespaceName startNode) {
         return Optional.ofNullable(inputNodes.get(startNode))
-                .map(phaseFn::apply)
-                .orElseGet(() -> Mono.empty())
-                .doOnNext(processedNamespace -> {
-                    transformedNodes.put(startNode, processedNamespace);
+                .map(inputNode -> {
+                    var nsName = inputNode.id().getName();
+                    var nsDiagnostics = scopedDiagnostics.get(nsName);
+                    if (nsDiagnostics.hasErrors()) {
+                        return Mono.<NamespaceNode<B>>empty();
+                    } else {
+                        return phaseFn.apply(inputNode);
+                    }
                 })
-                .flatMapMany(processedNamespace -> {
-                    return Flux.concat(
-                            Flux.just(processedNamespace),
-                            Flux.fromIterable(Graphs.successorListOf(namespaceGraph, startNode))
-                                    .parallel()
-                                    .flatMap(successorNode -> {
-                                        var remaining = namespaceDependencies
-                                                .get(successorNode)
-                                                .decrementAndGet();
-                                        var emptyFlux = ParallelFlux.from(Flux.<NamespaceNode<B>>empty());
-                                        return remaining > 0 ? emptyFlux : recurse(successorNode);
-                                    }));
+                .orElseGet(() -> Mono.empty()) // This may happen if the node had errors in a previous phase
+                .doOnNext(transformedNode -> {
+                    transformedNodes.put(startNode, transformedNode);
                 })
-                .parallel();
+                .flatMapMany(transformedNode -> {
+                    var nsName = transformedNode.id().getName();
+                    var nsDiagnostics = scopedDiagnostics.get(nsName);
+                    if (nsDiagnostics.hasErrors()) {
+                        return Flux.empty();
+                    } else {
+                        return Flux.fromIterable(Graphs.successorListOf(namespaceGraph, startNode))
+                                .parallel()
+                                .runOn(Schedulers.parallel())
+                                .flatMap(successorNode -> {
+                                    var remaining = namespaceDependencies
+                                            .get(successorNode)
+                                            .decrementAndGet();
+                                    if (remaining > 0) {
+                                        return Flux.<NamespaceNode<B>>empty().parallel();
+                                    } else {
+                                        return topoTraverseFrom(successorNode);
+                                    }
+                                });
+                    }
+                })
+                .parallel()
+                .runOn(Schedulers.parallel());
     }
 
-    public Mono<Void> traverse() {
+    public Mono<Void> topoTraverse() {
         return Flux.fromIterable(rootNodes)
                 .parallel()
                 .runOn(Schedulers.parallel())
-                .flatMap(this::recurse)
+                .flatMap(this::topoTraverseFrom)
                 .then();
     }
 
