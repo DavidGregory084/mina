@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MinaTextDocumentService implements TextDocumentService {
-    private Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
+    private static Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
 
     private MinaLanguageServer server;
     private MinaTextDocuments documents = new MinaTextDocuments();

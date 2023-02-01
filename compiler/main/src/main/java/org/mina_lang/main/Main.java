@@ -1,7 +1,6 @@
 package org.mina_lang.main;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -9,6 +8,7 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,13 +36,16 @@ import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.typechecker.TypeEnvironment;
 import org.mina_lang.typechecker.Typechecker;
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 public class Main {
+    private static Logger logger = LoggerFactory.getLogger(Main.class);
+
     private BaseDiagnosticCollector mainCollector;
 
     private ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes;
@@ -64,24 +67,22 @@ public class Main {
 
     void cyclicFileDependency(ANTLRDiagnosticCollector collector, Range range, NamespaceName startNamespace,
             List<NamespaceName> cycle) {
-        var messageHeader = "Cyclic namespace dependency found, starting with namespace "
-                + startNamespace.canonicalName();
+        var cycleMessage = new StringBuilder();
 
-        var namespaceCycleMessage = cycle.stream()
-                .<String>reduce("", (concatenatedMessage, namespaceName) -> {
-                    if (concatenatedMessage.isEmpty()) {
-                        return namespaceName.canonicalName();
-                    } else {
-                        return concatenatedMessage +
-                                ", which imports" +
+        cycle.forEach(namespaceName -> {
+            if (cycleMessage.isEmpty()) {
+                cycleMessage.append("Cyclic namespace dependency found, starting with namespace ");
+                cycleMessage.append(startNamespace.canonicalName() + ":" + System.lineSeparator().repeat(2));
+                cycleMessage.append(namespaceName.canonicalName());
+            } else {
+                cycleMessage.append(
+                        ", which imports" +
                                 System.lineSeparator() +
-                                namespaceName.canonicalName();
-                    }
-                }, (l, r) -> l + r);
+                                namespaceName.canonicalName());
+            }
+        });
 
-        collector.reportError(
-                range,
-                messageHeader + ":\n\n" + namespaceCycleMessage);
+        collector.reportError(range, cycleMessage.toString());
     }
 
     boolean matchRegularMinaFile(Path filePath, BasicFileAttributes fileAttrs) {
@@ -111,8 +112,7 @@ public class Main {
     }
 
     CharStream readFileContent(Path filePath) throws IOException {
-        System.err.printf("[%s] Reading file %s%n",
-                Thread.currentThread().getName(), filePath.toUri().toString());
+        logger.info("Reading {}", filePath.toUri().toString());
         try (var channel = Files.newByteChannel(filePath)) {
             return CharStreams.fromChannel(
                     channel,
@@ -124,7 +124,7 @@ public class Main {
         }
     }
 
-    public CompletableFuture<Void> compilePath(Path destinationPath, Path... sourcePaths) throws IOException {
+    public CompletableFuture<Void> compileSourcePaths(Path destinationPath, Path... sourcePaths) throws IOException {
         return pathStreamFrom(sourcePaths)
                 .parallel()
                 .runOn(Schedulers.boundedElastic())
@@ -135,8 +135,7 @@ public class Main {
                 })
                 .runOn(Schedulers.parallel())
                 .doOnNext(source -> {
-                    System.err.printf("[%s] Parsing file %s%n",
-                            Thread.currentThread().getName(), source.getSourceName());
+                    logger.info("Parsing {}", source.getSourceName());
                     var sourceUri = URI.create(source.getSourceName());
                     var scopedCollector = new ANTLRDiagnosticCollector(mainCollector, sourceUri);
                     var parser = new Parser(scopedCollector);
@@ -177,14 +176,18 @@ public class Main {
                     new HawickJamesSimpleCycles<>(namespaceGraph)
                             .findSimpleCycles()
                             .forEach(cycle -> {
+                                Collections.reverse(cycle);
                                 var cycleStart = cycle.get(0);
                                 cycle.add(cycleStart);
                                 var cycleStartNs = namespaceNodes.get(cycleStart);
                                 var collector = scopedDiagnostics.get(cycleStart);
-                                cyclicFileDependency(collector, cycleStartNs.range(), cycleStart, cycle);
+                                var cyclicImport = cycleStartNs.imports().detect(imp -> {
+                                    var cycleNext = cycle.get(1);
+                                    return imp.namespace().pkg().equals(cycleNext.pkg()) &&
+                                            imp.namespace().ns().equals(cycleNext.name());
+                                });
+                                cyclicFileDependency(collector, cyclicImport.range(), cycleStart, cycle);
                             });
-
-                    dotExporter.exportGraph(namespaceGraph, new PrintWriter(System.out));
 
                     // We can't proceed if our namespace graph is badly formed
                     if (mainCollector.hasErrors()) {
@@ -193,8 +196,7 @@ public class Main {
                         var renamingPhase = new NamespaceGraphTraversal<Void, Name>(parsed -> {
                             var nsName = parsed.id().getName();
                             var nsDiagnostics = scopedDiagnostics.get(nsName);
-                            System.err.printf("[%s] Renaming module %s%n", Thread.currentThread().getName(),
-                                    nsName.canonicalName());
+                            logger.info("Renaming namespace {}", nsName.canonicalName());
                             var renamer = new Renamer(nsDiagnostics, NameEnvironment.withBuiltInNames());
                             var renamed = renamer.rename(parsed);
                             return Mono.just(renamed);
@@ -204,8 +206,7 @@ public class Main {
                             var typecheckingPhase = new NamespaceGraphTraversal<Name, Attributes>(renamed -> {
                                 var nsName = renamed.id().getName();
                                 var nsDiagnostics = scopedDiagnostics.get(nsName);
-                                System.err.printf("[%s] Typechecking module %s%n", Thread.currentThread().getName(),
-                                        nsName.canonicalName());
+                                logger.info("Typechecking namespace {}", nsName.canonicalName());
                                 var typechecker = new Typechecker(nsDiagnostics, TypeEnvironment.withBuiltInTypes());
                                 var typechecked = typechecker.typecheck(renamed);
                                 return Mono.just(typechecked);
@@ -219,8 +220,7 @@ public class Main {
                                             var nsName = typechecked.id().getName();
                                             var nsDiagnostics = scopedDiagnostics.get(nsName);
                                             if (!nsDiagnostics.hasErrors()) {
-                                                System.err.printf("[%s] Emitting module %s%n",
-                                                        Thread.currentThread().getName(), nsName.canonicalName());
+                                                logger.info("Emitting namespace {}", nsName.canonicalName());
                                                 var codegen = new CodeGenerator();
                                                 codegen.generate(destinationPath, typechecked);
                                             }

@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MinaNotebookDocumentService implements NotebookDocumentService {
-    private Logger logger = LoggerFactory.getLogger(MinaNotebookDocumentService.class);
+    private static Logger logger = LoggerFactory.getLogger(MinaNotebookDocumentService.class);
 
     private MinaLanguageServer server;
 

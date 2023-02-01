@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+
+<configuration>
+    <!-- Should be disabled when making changes to this logging configuration -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <conversionRule conversionWord="faint" converterClass="org.mina_lang.cli.logging.FaintCompositeConverter" />
+
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- Can't be enabled until logback updates its jansi dependency to 2.x -->
+        <!-- <withJansi>true</withJansi> -->
+        <target>System.err</target>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.mina_lang.cli.logging.ColourSupportCheckingPatternLayout">
+                <pattern>%highlight(%3(%.-1level)) %msg %faint(%r{}ms){}%n</pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDERR" />
+    </root>
+</configuration>

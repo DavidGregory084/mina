@@ -11,3 +11,4 @@ out/
 .classpath
 .jqwik-database
 .project
+*.class

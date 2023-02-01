@@ -32,6 +32,9 @@ dependencies {
     // Graph Data Structures
     implementation(libs.jgrapht)
     implementation(libs.jgraphtIo)
+
+    // Logging
+    implementation(libs.slf4jApi)
 }
 
 buildInfo {

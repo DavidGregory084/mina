@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 @Command(name = "Mina Language Server", version = BuildInfo.version, mixinStandardHelpOptions = true)
 public class MinaServerLauncher implements Callable<Integer> {
-    Logger logger = LoggerFactory.getLogger(MinaServerLauncher.class);
+    private static Logger logger = LoggerFactory.getLogger(MinaServerLauncher.class);
 
     @ArgGroup(exclusive = true, multiplicity = "1")
     private Transport transport;
@@ -57,7 +57,7 @@ public class MinaServerLauncher implements Callable<Integer> {
         SLF4JBridgeHandler.install();
 
         Thread.setDefaultUncaughtExceptionHandler((t, ex) -> {
-            logger.error("Uncaught exception in thread " + t.getName(), ex);
+            logger.error("Uncaught exception in thread {}", t.getName(), ex);
         });
 
         if (transport.useStdio) {
