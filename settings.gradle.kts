@@ -12,7 +12,7 @@ include("compiler:parser")
 include("compiler:renamer")
 include("compiler:typechecker")
 
-// Compiler Main
+// Compiler main
 include("compiler:main")
 
 // Command line interface
