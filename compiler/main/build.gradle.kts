@@ -6,19 +6,16 @@ plugins {
 
 dependencies {
     // Concurrent Streams
-    implementation(libs.reactorCore)
+    api(libs.reactorCore)
 
-    // Immutable Collections
-    implementation(libs.bundles.eclipseCollections)
-
-    // Common Definitions
-    implementation(project(":compiler:common"))
-
-    // Syntax Trees
-    implementation(project(":compiler:syntax"))
+    // Sytax Tree Definitions
+    api(project(":compiler:syntax"))
 
     // Parser
     implementation(project(":compiler:parser"))
+
+    // CharStream appears in the public API
+    api(libs.antlr)
 
     // Renamer
     implementation(project(":compiler:renamer"))

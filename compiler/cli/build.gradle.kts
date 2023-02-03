@@ -7,15 +7,6 @@ dependencies {
     // Command Line Arg Parsing
     implementation(libs.picocli)
 
-    // Immutable Collections
-    implementation(libs.bundles.eclipseCollections)
-
-    // Common Definitions
-    implementation(project(":compiler:common"))
-
-    // Parser
-    implementation(project(":compiler:parser"))
-
     // Compiler Main
     implementation(project(":compiler:main"))
 
@@ -24,7 +15,6 @@ dependencies {
     implementation(libs.logback)
 
     // Diagnostic Reporting
-    implementation(libs.yvette)
     implementation(libs.jansi)
 
     // Failable Streams

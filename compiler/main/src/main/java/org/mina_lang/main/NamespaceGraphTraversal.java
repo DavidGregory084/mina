@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
-public class NamespaceGraphTraversal<A, B> {
+class NamespaceGraphTraversal<A, B> {
     private Function<NamespaceNode<A>, Mono<NamespaceNode<B>>> phaseFn;
 
     private Graph<NamespaceName, DefaultEdge> namespaceGraph;
@@ -34,7 +34,7 @@ public class NamespaceGraphTraversal<A, B> {
     private Set<NamespaceName> rootNodes;
     private Map<NamespaceName, AtomicInteger> namespaceDependencies;
 
-    public NamespaceGraphTraversal(
+    NamespaceGraphTraversal(
             Function<NamespaceNode<A>, Mono<NamespaceNode<B>>> phaseFn,
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
             ConcurrentHashMap<NamespaceName, NamespaceNode<A>> namespaceNodes,
@@ -96,7 +96,7 @@ public class NamespaceGraphTraversal<A, B> {
                 .runOn(Schedulers.parallel());
     }
 
-    public Mono<Void> topoTraverse() {
+    Mono<Void> topoTraverse() {
         return Flux.fromIterable(rootNodes)
                 .parallel()
                 .runOn(Schedulers.parallel())
@@ -104,7 +104,7 @@ public class NamespaceGraphTraversal<A, B> {
                 .then();
     }
 
-    public ConcurrentHashMap<NamespaceName, NamespaceNode<B>> getTransformedNodes() {
+    ConcurrentHashMap<NamespaceName, NamespaceNode<B>> getTransformedNodes() {
         return transformedNodes;
     }
 }

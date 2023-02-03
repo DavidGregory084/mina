@@ -5,20 +5,14 @@ plugins {
 }
 
 dependencies {
-    // Immutable Collections
-    implementation(libs.bundles.eclipseCollections)
-
     // String escaping
     implementation(libs.apacheCommonsText)
 
     // Syntax Tree Parsing
     antlr(libs.antlr)
 
-    // Common Definitions
-    implementation(project(":compiler:common"))
-
     // Syntax Tree Definitions
-    implementation(project(":compiler:syntax"))
+    api(project(":compiler:syntax"))
 }
 
 tasks.generateGrammarSource {

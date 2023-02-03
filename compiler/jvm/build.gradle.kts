@@ -4,17 +4,11 @@ plugins {
 }
 
 dependencies {
-    // Immutable Collections
-    implementation(libs.bundles.eclipseCollections)
-
-    // Common Definitions
-    implementation(project(":compiler:common"))
-
     // Syntax Tree Definitions
-    implementation(project(":compiler:syntax"))
+    api(project(":compiler:syntax"))
 
     // Java Bytecode Generation
-    implementation(libs.asm)
-    implementation(libs.asmCommons)
-    implementation(libs.asmUtil)
+    api(libs.asm)
+    api(libs.asmCommons)
+    api(libs.asmUtil)
 }
