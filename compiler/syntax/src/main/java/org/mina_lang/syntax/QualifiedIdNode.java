@@ -2,9 +2,10 @@ package org.mina_lang.syntax;
 
 import java.util.Optional;
 
-import org.mina_lang.common.Range;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
+
+import com.opencastsoftware.yvette.Range;
 
 public record QualifiedIdNode (Range range, Optional<NamespaceIdNode> ns, String name) implements SyntaxNode {
 

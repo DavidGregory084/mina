@@ -12,7 +12,7 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.Range;
+import com.opencastsoftware.yvette.Range;
 import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.ForAllVarName;

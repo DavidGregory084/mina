@@ -1,6 +1,6 @@
 package org.mina_lang.syntax;
 
-import org.mina_lang.common.Range;
+import com.opencastsoftware.yvette.Range;
 
 public interface SyntaxNode {
    Range range();

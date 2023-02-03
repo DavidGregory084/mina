@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Location;
 
+import com.opencastsoftware.yvette.Severity;
+
 public class ForwardingDiagnosticCollector implements ScopedDiagnosticCollector {
 
     ConcurrentLinkedQueue<Diagnostic> diagnostics = new ConcurrentLinkedQueue<>();
@@ -29,7 +31,7 @@ public class ForwardingDiagnosticCollector implements ScopedDiagnosticCollector 
 
     @Override
     public void reportError(Location location, String message) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Error, message));
+        diagnostics.offer(new Diagnostic(location, Severity.Error, message));
         errorCount.incrementAndGet();
         parent.reportError(location, message);
     }
@@ -37,14 +39,14 @@ public class ForwardingDiagnosticCollector implements ScopedDiagnosticCollector 
     @Override
     public void reportError(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Error, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, Severity.Error, message, relatedInformation));
         errorCount.incrementAndGet();
         parent.reportError(location, message, relatedInformation);
     }
 
     @Override
     public void reportWarning(Location location, String message) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Warning, message));
+        diagnostics.offer(new Diagnostic(location, Severity.Warning, message));
         warningCount.incrementAndGet();
         parent.reportWarning(location, message);
     }
@@ -52,34 +54,34 @@ public class ForwardingDiagnosticCollector implements ScopedDiagnosticCollector 
     @Override
     public void reportWarning(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Warning, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, Severity.Warning, message, relatedInformation));
         warningCount.incrementAndGet();
         parent.reportWarning(location, message, relatedInformation);
     }
 
     @Override
     public void reportInfo(Location location, String message) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Information, message));
+        diagnostics.offer(new Diagnostic(location, Severity.Information, message));
         parent.reportInfo(location, message);
     }
 
     @Override
     public void reportInfo(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Information, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, Severity.Information, message, relatedInformation));
         parent.reportInfo(location, message, relatedInformation);
     }
 
     @Override
     public void reportHint(Location location, String message) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Hint, message));
+        diagnostics.offer(new Diagnostic(location, Severity.Hint, message));
         parent.reportHint(location, message);
     }
 
     @Override
     public void reportHint(Location location, String message,
             ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        diagnostics.offer(new Diagnostic(location, DiagnosticSeverity.Hint, message, relatedInformation));
+        diagnostics.offer(new Diagnostic(location, Severity.Hint, message, relatedInformation));
         parent.reportHint(location, message, relatedInformation);
     }
 

@@ -3,12 +3,6 @@ plugins {
     `java-project-convention`
 }
 
-repositories {
-    maven {
-        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-    }
-}
-
 dependencies {
     // Command Line Arg Parsing
     implementation(libs.picocli)

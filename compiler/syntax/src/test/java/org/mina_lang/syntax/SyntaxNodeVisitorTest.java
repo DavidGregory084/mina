@@ -11,8 +11,9 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mina_lang.common.Range;
 import org.mina_lang.syntax.TracingSyntaxNodeVisitor.Entry;
+
+import com.opencastsoftware.yvette.Range;
 
 public class SyntaxNodeVisitorTest {
 

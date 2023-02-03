@@ -1,11 +1,8 @@
 package org.mina_lang.cli;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.function.Failable;
@@ -14,7 +11,7 @@ import org.mina_lang.main.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.opencastsoftware.yvette.*;
+import com.opencastsoftware.yvette.handlers.ReportHandler;
 import com.opencastsoftware.yvette.handlers.graphical.GraphicalReportHandler;
 import com.opencastsoftware.yvette.handlers.graphical.RgbColours;
 
@@ -36,7 +33,7 @@ public class MinaCommandLine implements Callable<Integer> {
     CommandSpec command;
 
     private Main compilerMain;
-    private GraphicalReportHandler reportHandler;
+    private ReportHandler reportHandler;
 
     public MinaCommandLine(Main compilerMain) {
         this.compilerMain = compilerMain;
@@ -53,50 +50,7 @@ public class MinaCommandLine implements Callable<Integer> {
         var mainCollector = compilerMain.getMainCollector();
 
         Failable.stream(mainCollector.getDiagnostics()).forEach(diagnostic -> {
-            reportHandler.display(new Diagnostic(diagnostic.message()) {
-                @Override
-                public String code() {
-                    return null;
-                }
-
-                @Override
-                public Severity severity() {
-                    return switch (diagnostic.severity()) {
-                        case Error -> Severity.Error;
-                        case Warning -> Severity.Warning;
-                        case Information -> Severity.Information;
-                        case Hint -> Severity.Hint;
-                    };
-                }
-
-                @Override
-                public String help() {
-                    return null;
-                }
-
-                @Override
-                public URI url() {
-                    return null;
-                }
-
-                @Override
-                public SourceCode sourceCode() {
-                    return new URISourceCode(diagnostic.location().uri());
-                }
-
-                @Override
-                public Collection<LabelledRange> labels() {
-                    var location = diagnostic.location();
-                    var rangeStart = location.range().start();
-                    var rangeEnd = location.range().end();
-
-                    return Collections.singletonList(
-                            new LabelledRange(
-                                    null,
-                                    new Position(rangeStart.line(), rangeStart.character()),
-                                    new Position(rangeEnd.line(), rangeEnd.character())));
-                }
-            }, System.err);
+            reportHandler.display(diagnostic, System.err);
         });
 
         return mainCollector.hasErrors() ? ExitCode.SOFTWARE : ExitCode.OK;

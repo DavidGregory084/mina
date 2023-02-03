@@ -1,5 +1,7 @@
 package org.mina_lang.common;
 
+import com.opencastsoftware.yvette.Range;
+
 public record Meta<A>(Range range, A meta) {
     public static Meta<Void> EMPTY = new Meta<>(Range.EMPTY, null);
 

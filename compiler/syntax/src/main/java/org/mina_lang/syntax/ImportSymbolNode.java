@@ -1,6 +1,6 @@
 package org.mina_lang.syntax;
 
-import org.mina_lang.common.Range;
+import com.opencastsoftware.yvette.Range;
 
 public record ImportSymbolNode(Range range, String symbol) implements SyntaxNode {
     @Override

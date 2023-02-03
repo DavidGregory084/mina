@@ -24,7 +24,6 @@ import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.codegen.jvm.CodeGenerator;
 import org.mina_lang.common.Attributes;
-import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.NamespaceName;
@@ -38,6 +37,8 @@ import org.mina_lang.typechecker.Typechecker;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.opencastsoftware.yvette.Range;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -183,8 +184,7 @@ public class Main {
                                 var collector = scopedDiagnostics.get(cycleStart);
                                 var cyclicImport = cycleStartNs.imports().detect(imp -> {
                                     var cycleNext = cycle.get(1);
-                                    return imp.namespace().pkg().equals(cycleNext.pkg()) &&
-                                            imp.namespace().ns().equals(cycleNext.name());
+                                    return imp.namespace().getName().equals(cycleNext);
                                 });
                                 cyclicFileDependency(collector, cyclicImport.range(), cycleStart, cycle);
                             });

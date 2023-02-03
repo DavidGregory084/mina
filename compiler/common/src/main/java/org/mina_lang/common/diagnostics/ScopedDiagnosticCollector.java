@@ -4,7 +4,8 @@ import java.net.URI;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Location;
-import org.mina_lang.common.Range;
+
+import com.opencastsoftware.yvette.Range;
 
 public interface ScopedDiagnosticCollector extends DiagnosticCollector {
 

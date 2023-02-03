@@ -16,7 +16,7 @@ public interface LSPDiagnosticCollector extends DiagnosticCollector {
                     var range = new Range(
                             new Position(start.line(), start.character()),
                             new Position(end.line(), end.character()));
-                    var severity = DiagnosticSeverity.forValue(diagnostic.severity().getCode());
+                    var severity = DiagnosticSeverity.forValue(diagnostic.severity().code());
                     var relatedInformation = diagnostic.relatedInformation().stream().map(related -> {
                         var relatedUri = related.location().uri();
                         var relatedStart = related.location().range().start();

@@ -12,13 +12,14 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.Range;
 import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.names.*;
 import org.mina_lang.renamer.scopes.ImportedNamesScope;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
+
+import com.opencastsoftware.yvette.Range;
 
 public class RenamerTest {
 
