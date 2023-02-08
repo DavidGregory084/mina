@@ -57,6 +57,7 @@ protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 protobufJava = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protobufPlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobufGradle" }
 reactorCore = { module = "io.projectreactor:reactor-core", version.ref = "reactorCore" }
+reactorTest = { module = "io.projectreactor:reactor-test", version.ref = "reactorCore" }
 slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 toStringVerifier = { module = "com.jparams:to-string-verifier", version.ref = "toStringVerifier" }
 yvette = { module = "com.opencastsoftware:yvette", version.ref = "yvette" }

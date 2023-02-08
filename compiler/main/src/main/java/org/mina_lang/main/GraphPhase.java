@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.factory.Sets;
@@ -21,25 +20,24 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
-class NamespaceGraphTraversal<A, B> {
-    private Function<NamespaceNode<A>, Mono<NamespaceNode<B>>> phaseFn;
+public non-sealed abstract class GraphPhase<A, B>
+        implements
+        Phase<ConcurrentHashMap<NamespaceName, NamespaceNode<B>>> {
 
-    private Graph<NamespaceName, DefaultEdge> namespaceGraph;
+    protected Graph<NamespaceName, DefaultEdge> namespaceGraph;
 
-    private ConcurrentHashMap<NamespaceName, NamespaceNode<A>> inputNodes;
-    private ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedNodes;
+    protected ConcurrentHashMap<NamespaceName, NamespaceNode<A>> inputNodes;
+    protected ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedNodes;
 
-    private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
+    protected ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
 
-    private Set<NamespaceName> rootNodes;
-    private Map<NamespaceName, AtomicInteger> namespaceDependencies;
+    private final Set<NamespaceName> rootNodes;
+    private final Map<NamespaceName, AtomicInteger> namespaceDependencies;
 
-    NamespaceGraphTraversal(
-            Function<NamespaceNode<A>, Mono<NamespaceNode<B>>> phaseFn,
+    GraphPhase(
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
             ConcurrentHashMap<NamespaceName, NamespaceNode<A>> namespaceNodes,
             ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics) {
-        this.phaseFn = phaseFn;
         this.namespaceGraph = namespaceGraph;
         this.inputNodes = namespaceNodes;
         this.scopedDiagnostics = scopedDiagnostics;
@@ -56,6 +54,8 @@ class NamespaceGraphTraversal<A, B> {
         });
     }
 
+    abstract Mono<NamespaceNode<B>> transformNode(NamespaceNode<A> inputNode);
+
     ParallelFlux<NamespaceNode<B>> topoTraverseFrom(NamespaceName startNode) {
         return Optional.ofNullable(inputNodes.get(startNode))
                 .map(inputNode -> {
@@ -64,13 +64,11 @@ class NamespaceGraphTraversal<A, B> {
                     if (nsDiagnostics.hasErrors()) {
                         return Mono.<NamespaceNode<B>>empty();
                     } else {
-                        return phaseFn.apply(inputNode);
+                        return transformNode(inputNode);
                     }
                 })
-                .orElseGet(() -> Mono.empty()) // This may happen if the node had errors in a previous phase
-                .doOnNext(transformedNode -> {
-                    transformedNodes.put(startNode, transformedNode);
-                })
+                .orElseGet(Mono::empty) // This may happen if the node had errors in a previous phase
+                .doOnNext(transformedNode -> transformedNodes.put(startNode, transformedNode))
                 .flatMapMany(transformedNode -> {
                     var nsName = transformedNode.id().getName();
                     var nsDiagnostics = scopedDiagnostics.get(nsName);
@@ -96,7 +94,7 @@ class NamespaceGraphTraversal<A, B> {
                 .runOn(Schedulers.parallel());
     }
 
-    Mono<Void> topoTraverse() {
+    public Mono<Void> runPhase() {
         return Flux.fromIterable(rootNodes)
                 .parallel()
                 .runOn(Schedulers.parallel())
@@ -104,7 +102,7 @@ class NamespaceGraphTraversal<A, B> {
                 .then();
     }
 
-    ConcurrentHashMap<NamespaceName, NamespaceNode<B>> getTransformedNodes() {
+    public ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedData() {
         return transformedNodes;
     }
 }

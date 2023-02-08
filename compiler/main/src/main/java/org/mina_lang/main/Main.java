@@ -17,15 +17,14 @@ import java.util.stream.Stream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.collections.api.factory.Maps;
+import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.HawickJamesSimpleCycles;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.codegen.jvm.CodeGenerator;
-import org.mina_lang.common.Attributes;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
-import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticCollector;
 import org.mina_lang.parser.Parser;
@@ -42,6 +41,7 @@ import com.opencastsoftware.yvette.Range;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
 public class Main {
@@ -125,7 +125,7 @@ public class Main {
         }
     }
 
-    public CompletableFuture<Void> compileSourcePaths(Path destinationPath, Path... sourcePaths) throws IOException {
+    public ParallelFlux<CharStream> readSourceData(Path... sourcePaths) {
         return pathStreamFrom(sourcePaths)
                 .parallel()
                 .runOn(Schedulers.boundedElastic())
@@ -134,104 +134,82 @@ public class Main {
                             .fromCallable(() -> readFileContent(filePath))
                             .subscribeOn(Schedulers.boundedElastic());
                 })
-                .runOn(Schedulers.parallel())
-                .doOnNext(source -> {
-                    logger.info("Parsing {}", source.getSourceName());
-                    var sourceUri = URI.create(source.getSourceName());
-                    var scopedCollector = new ANTLRDiagnosticCollector(mainCollector, sourceUri);
-                    var parser = new Parser(scopedCollector);
-                    var parsed = parser.parse(source);
-                    var namespaceName = parsed.id().getName();
-                    scopedDiagnostics.put(namespaceName, scopedCollector);
-                    namespaceNodes.put(namespaceName, parsed);
-                })
-                .then()
-                .concatWith(Mono.defer(() -> {
-                    var namespaceGraph = GraphTypeBuilder.<NamespaceName, DefaultEdge>directed()
-                            .edgeClass(DefaultEdge.class)
-                            .allowingMultipleEdges(false)
-                            .allowingSelfLoops(false)
-                            .buildGraph();
+                .runOn(Schedulers.parallel());
+    }
 
-                    namespaceNodes.keySet().forEach(namespaceName -> {
-                        namespaceGraph.addVertex(namespaceName);
+    public Graph<NamespaceName, DefaultEdge> constructNamespaceGraph(
+            ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes) {
+        var namespaceGraph = GraphTypeBuilder.<NamespaceName, DefaultEdge>directed()
+                .edgeClass(DefaultEdge.class)
+                .allowingMultipleEdges(false)
+                .allowingSelfLoops(false)
+                .buildGraph();
+
+        namespaceNodes.keySet().forEach(namespaceName -> {
+            namespaceGraph.addVertex(namespaceName);
+        });
+
+        namespaceGraph.vertexSet()
+                .forEach(namespaceName -> {
+                    namespaceNodes.get(namespaceName)
+                            .imports()
+                            .forEach(imp -> {
+                                // TODO: Handle fully-qualified references
+                                var importName = imp.namespace().getName();
+                                if (namespaceGraph.containsVertex(importName)) {
+                                    namespaceGraph.addVertex(importName);
+                                    namespaceGraph.addEdge(importName, namespaceName);
+                                } else {
+                                    // TODO: find the namespace on the classpath
+                                    // or produce an "unknown namespace" error
+                                }
+                            });
+                });
+
+        // TODO: Figure out why JohnsonSimpleCycles throws exception
+        new HawickJamesSimpleCycles<>(namespaceGraph)
+                .findSimpleCycles()
+                .forEach(cycle -> {
+                    Collections.reverse(cycle);
+                    var cycleStart = cycle.get(0);
+                    cycle.add(cycleStart);
+                    var cycleStartNs = namespaceNodes.get(cycleStart);
+                    var collector = scopedDiagnostics.get(cycleStart);
+                    var cyclicImport = cycleStartNs.imports().detect(imp -> {
+                        var cycleNext = cycle.get(1);
+                        return imp.namespace().getName().equals(cycleNext);
                     });
+                    cyclicFileDependency(collector, cyclicImport.range(), cycleStart, cycle);
+                });
 
-                    namespaceGraph.vertexSet()
-                            .forEach(namespaceName -> {
-                                namespaceNodes.get(namespaceName)
-                                        .imports()
-                                        .forEach(imp -> {
-                                            // TODO: Handle fully-qualified references
-                                            var importName = imp.namespace().getName();
-                                            if (namespaceGraph.containsVertex(importName)) {
-                                                namespaceGraph.addVertex(importName);
-                                                namespaceGraph.addEdge(importName, namespaceName);
-                                            } else {
-                                                // TODO: find the namespace on the classpath
-                                                // or produce an "unknown namespace" error
-                                            }
-                                        });
-                            });
+        return namespaceGraph;
+    }
 
-                    new HawickJamesSimpleCycles<>(namespaceGraph)
-                            .findSimpleCycles()
-                            .forEach(cycle -> {
-                                Collections.reverse(cycle);
-                                var cycleStart = cycle.get(0);
-                                cycle.add(cycleStart);
-                                var cycleStartNs = namespaceNodes.get(cycleStart);
-                                var collector = scopedDiagnostics.get(cycleStart);
-                                var cyclicImport = cycleStartNs.imports().detect(imp -> {
-                                    var cycleNext = cycle.get(1);
-                                    return imp.namespace().getName().equals(cycleNext);
-                                });
-                                cyclicFileDependency(collector, cyclicImport.range(), cycleStart, cycle);
-                            });
+    public CompletableFuture<Void> compileSourcePaths(Path destinationPath, Path... sourcePaths) throws IOException {
+        var sourceData = readSourceData(sourcePaths);
 
-                    // We can't proceed if our namespace graph is badly formed
-                    if (mainCollector.hasErrors()) {
-                        return Mono.empty();
-                    } else {
-                        var renamingPhase = new NamespaceGraphTraversal<Void, Name>(parsed -> {
-                            var nsName = parsed.id().getName();
-                            var nsDiagnostics = scopedDiagnostics.get(nsName);
-                            logger.info("Renaming namespace {}", nsName.canonicalName());
-                            var renamer = new Renamer(nsDiagnostics, NameEnvironment.withBuiltInNames());
-                            var renamed = renamer.rename(parsed);
-                            return Mono.just(renamed);
-                        }, namespaceGraph, namespaceNodes, scopedDiagnostics);
+        var parsingPhase = new ParsingPhase(sourceData, scopedDiagnostics, namespaceNodes, mainCollector);
 
-                        return Flux.concat(renamingPhase.topoTraverse(), Mono.defer(() -> {
-                            var typecheckingPhase = new NamespaceGraphTraversal<Name, Attributes>(renamed -> {
-                                var nsName = renamed.id().getName();
-                                var nsDiagnostics = scopedDiagnostics.get(nsName);
-                                logger.info("Typechecking namespace {}", nsName.canonicalName());
-                                var typechecker = new Typechecker(nsDiagnostics, TypeEnvironment.withBuiltInTypes());
-                                var typechecked = typechecker.typecheck(renamed);
-                                return Mono.just(typechecked);
-                            }, namespaceGraph, renamingPhase.getTransformedNodes(), scopedDiagnostics);
+        return Phase.sequenceMono(parsingPhase, namespaceNodes -> {
+            var namespaceGraph = constructNamespaceGraph(namespaceNodes);
 
-                            return Flux.concat(typecheckingPhase.topoTraverse(), Mono.defer(() -> {
-                                return Flux.fromIterable(typecheckingPhase.getTransformedNodes().values())
-                                        .parallel()
-                                        .runOn(Schedulers.boundedElastic())
-                                        .doOnNext(typechecked -> {
-                                            var nsName = typechecked.id().getName();
-                                            var nsDiagnostics = scopedDiagnostics.get(nsName);
-                                            if (!nsDiagnostics.hasErrors()) {
-                                                logger.info("Emitting namespace {}", nsName.canonicalName());
-                                                var codegen = new CodeGenerator();
-                                                codegen.generate(destinationPath, typechecked);
-                                            }
-                                        }).then();
-                            })).then();
-                        })).then();
+            // We can't proceed if our namespace graph is badly formed
+            if (mainCollector.hasErrors()) {
+                return Mono.empty();
+            } else {
+                var renamingPhase = new RenamingPhase(namespaceGraph, namespaceNodes, scopedDiagnostics);
 
-                    }
-                }))
-                .then()
-                .toFuture();
+                var typecheckingPhase = Phase.sequence(renamingPhase, renamedNodes -> {
+                    return new TypecheckingPhase(namespaceGraph, renamedNodes, scopedDiagnostics);
+                });
+
+                var codegenPhase = Phase.sequence(typecheckingPhase, typecheckedNodes -> {
+                    return new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                });
+
+                return Phase.runMono(codegenPhase);
+            }
+        }).then().toFuture();
     }
 
     public CompletableFuture<NamespaceNode<?>> compileNamespace(

@@ -7,6 +7,7 @@ plugins {
 dependencies {
     // Concurrent Streams
     api(libs.reactorCore)
+    testImplementation(libs.reactorTest)
 
     // Sytax Tree Definitions
     api(project(":compiler:syntax"))

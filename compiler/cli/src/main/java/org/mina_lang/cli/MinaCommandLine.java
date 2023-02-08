@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
-import java.io.PrintWriter;
 
 import org.apache.commons.lang3.function.Failable;
 import org.mina_lang.BuildInfo;
@@ -23,7 +22,7 @@ import picocli.CommandLine.Model.CommandSpec;
 
 @Command(name = "minac", description = "The command line interface for the Mina compiler.", version = BuildInfo.version, mixinStandardHelpOptions = true, usageHelpAutoWidth = true)
 public class MinaCommandLine implements Callable<Integer> {
-    private static Logger logger = LoggerFactory.getLogger(MinaCommandLine.class);
+    private static final Logger logger = LoggerFactory.getLogger(MinaCommandLine.class);
 
     @Option(names = { "-d", "--destination" }, paramLabel = "path", description = {
             "The destination path for compiled class files.",
@@ -33,19 +32,15 @@ public class MinaCommandLine implements Callable<Integer> {
     @Parameters(description = { "The source paths from which to compile *.mina files." }, arity = "1..*")
     private Path[] paths;
 
-    @Spec
-    private CommandSpec command;
-
     private Main compilerMain;
     private ReportHandler reportHandler;
 
-    private IExecutionExceptionHandler exceptionHandler = (exc, cmd, result) -> {
-        var output = command.commandLine().getOut();
+    private final IExecutionExceptionHandler exceptionHandler = (exc, cmd, result) -> {
         // TODO: Add an InternalCompilerError diagnostic
         var diagnostic = new BasicDiagnostic(exc.getMessage(), exc.getCause());
-        reportHandler.display(diagnostic, output);
-        output.println();
-        exc.printStackTrace(output);
+        reportHandler.display(diagnostic, System.err);
+        System.err.println();
+        exc.printStackTrace(System.err);
         return ExitCode.SOFTWARE;
     };
 
@@ -76,7 +71,7 @@ public class MinaCommandLine implements Callable<Integer> {
         var mainCollector = compilerMain.getMainCollector();
 
         Failable.stream(mainCollector.getDiagnostics()).forEach(diagnostic -> {
-            reportHandler.display(diagnostic, command.commandLine().getOut());
+            reportHandler.display(diagnostic, System.err);
         });
 
         return mainCollector.hasErrors() ? ExitCode.SOFTWARE : ExitCode.OK;
@@ -96,7 +91,6 @@ public class MinaCommandLine implements Callable<Integer> {
                 .buildFor(System.err);
         var minaCli = new MinaCommandLine(compilerMain, reportHandler);
         var commandLine = new CommandLine(minaCli);
-        commandLine.setOut(new PrintWriter(System.err));
         commandLine.setExecutionExceptionHandler(minaCli.exceptionHandler());
         System.exit(commandLine.execute(args));
     }
