@@ -2,6 +2,7 @@
 antlr = "4.11.1"
 apacheCommonsLang = "3.12.0"
 apacheCommonsText = "1.10.0"
+asciiDoctorGradle = "4.0.0-alpha.1"
 asm = "9.4"
 eclipseCollections = "11.1.0"
 equalsVerifier = "3.13"
@@ -50,6 +51,7 @@ junixSocket = { module = "com.kohlschutter.junixsocket:junixsocket-core", versio
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+picocliCodegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
 prettier4j = { module = "com.opencastsoftware:prettier4j", version.ref = "prettier4j" }
 protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 protobufJava = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
@@ -64,6 +66,7 @@ eclipseCollections = ["eclipseCollectionsApi", "eclipseCollections"]
 slf4j = ["slf4jApi", "julToSlf4j"]
 
 [plugins]
+asciiDoctor = { id = "org.asciidoctor.jvm.convert", version.ref = "asciiDoctorGradle" }
 gradleBuildInfo = { id = "com.opencastsoftware.gradle.buildinfo", version.ref = "gradleBuildInfo" }
 gradleNode = { id = "com.github.node-gradle.node", version.ref = "gradleNode" }
 gradleVersions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersions" }
