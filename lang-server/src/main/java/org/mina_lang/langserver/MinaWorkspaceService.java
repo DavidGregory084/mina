@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MinaWorkspaceService implements WorkspaceService {
-    private Logger logger = LoggerFactory.getLogger(MinaWorkspaceService.class);
+    private static Logger logger = LoggerFactory.getLogger(MinaWorkspaceService.class);
 
     private MinaLanguageServer server;
 

@@ -1,4 +1,6 @@
 namespace Mina/Examples/DeclareFix {
+    import Mina/Examples/Bla
+
     data Fix[F] {
         case Unfix(unfix: F[Fix[F]])
     }

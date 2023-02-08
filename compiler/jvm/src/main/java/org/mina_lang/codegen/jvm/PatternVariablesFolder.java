@@ -2,7 +2,7 @@ package org.mina_lang.codegen.jvm;
 
 import java.util.Optional;
 
-import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.mina_lang.common.Attributes;

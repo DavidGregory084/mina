@@ -2,7 +2,7 @@ package org.mina_lang.codegen.jvm.scopes;
 
 import static org.objectweb.asm.Opcodes.*;
 
-import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.codegen.jvm.JavaSignature;
 import org.mina_lang.codegen.jvm.Types;

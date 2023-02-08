@@ -12,6 +12,12 @@ include("compiler:parser")
 include("compiler:renamer")
 include("compiler:typechecker")
 
+// Compiler main
+include("compiler:main")
+
+// Command line interface
+include("compiler:cli")
+
 // Optimizer & code generation
 include("compiler:intermediate")
 include("compiler:jvm")

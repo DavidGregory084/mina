@@ -1,6 +1,6 @@
 package org.mina_lang.langserver;
 
-import org.eclipse.collections.api.factory.primitive.IntLists;
+import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;

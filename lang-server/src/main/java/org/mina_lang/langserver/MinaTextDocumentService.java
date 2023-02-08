@@ -1,6 +1,5 @@
 package org.mina_lang.langserver;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -10,26 +9,20 @@ import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
-import org.mina_lang.codegen.jvm.CodeGenerator;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.types.KindPrinter;
 import org.mina_lang.common.types.SortPrinter;
 import org.mina_lang.common.types.TypePrinter;
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
-import org.mina_lang.parser.Parser;
-import org.mina_lang.renamer.NameEnvironment;
-import org.mina_lang.renamer.Renamer;
+import org.mina_lang.main.Main;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
-import org.mina_lang.typechecker.TypeEnvironment;
-import org.mina_lang.typechecker.Typechecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MinaTextDocumentService implements TextDocumentService {
-    private Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
+    private static Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
 
     private MinaLanguageServer server;
     private MinaTextDocuments documents = new MinaTextDocuments();
@@ -42,17 +35,17 @@ public class MinaTextDocumentService implements TextDocumentService {
         this.server = server;
     }
 
-    private <A> A withDiagnostics(TextDocumentItem document, Function<MinaDiagnosticCollector, A> action) {
+    private <A> CompletableFuture<A> withDiagnostics(TextDocumentItem document,
+            Function<MinaDiagnosticCollector, CompletableFuture<A>> action) {
         var diagnostics = new MinaDiagnosticCollector();
-        try {
-            return action.apply(diagnostics);
-        } finally {
+        return action.apply(diagnostics).thenApply(result -> {
             server.getClient().publishDiagnostics(
                     new PublishDiagnosticsParams(
                             document.getUri(),
                             diagnostics.getLSPDiagnostics(document.getUri()),
                             document.getVersion()));
-        }
+            return result;
+        });
     }
 
     @Override
@@ -60,48 +53,27 @@ public class MinaTextDocumentService implements TextDocumentService {
         server.ifShouldNotify(() -> {
             var document = params.getTextDocument();
             var documentUri = document.getUri();
-            var documentJavaUri = URI.create(documentUri);
             documents.addDocument(params);
+
             var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();
             hoverRanges.addHoverRanges(params, hoversFuture);
-            CompletableFuture<NamespaceNode<?>> parsingFuture = CompletableFuture.supplyAsync(() -> {
-                return withDiagnostics(document, diagnostics -> {
-                    var charStream = CharStreams.fromString(document.getText(), documentUri);
-                    try {
-                        var scopedCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
-                        var parser = new Parser(scopedCollector);
-                        var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
-                        var codegen = new CodeGenerator();
-                        var parsed = parser.parse(charStream);
-                        var rangeVisitor = new SyntaxNodeRangeVisitor();
-                        if (!diagnostics.hasErrors()) {
-                            var renamed = renamer.rename(parsed);
-                            if (!diagnostics.hasErrors()) {
-                                var typed = typechecker.typecheck(renamed);
-                                typed.accept(rangeVisitor);
-                                hoversFuture.complete(rangeVisitor.getRangeNodes());
-                                if (!diagnostics.hasErrors()) {
-                                    codegen.generate(storagePath, typed);
-                                }
-                                return typed;
-                            } else {
-                                renamed.accept(rangeVisitor);
-                                hoversFuture.complete(rangeVisitor.getRangeNodes());
-                                return renamed;
-                            }
-                        } else {
-                            parsed.accept(rangeVisitor);
-                            hoversFuture.complete(rangeVisitor.getRangeNodes());
-                            return parsed;
-                        }
-                    } catch (Exception e) {
-                        logger.error("Exception while processing syntax tree", e);
-                        hoversFuture.completeExceptionally(e);
-                        throw e;
-                    }
-                });
-            }, server.getExecutor());
+
+            CompletableFuture<NamespaceNode<?>> parsingFuture = withDiagnostics(document, diagnostics -> {
+                var charStream = CharStreams.fromString(document.getText(), documentUri);
+                var compilerMain = new Main(diagnostics);
+                return compilerMain.compileNamespace(storagePath, charStream);
+            });
+
+            parsingFuture.whenComplete((namespaceNode, exception) -> {
+                if (exception != null) {
+                    hoversFuture.completeExceptionally(exception);
+                } else if (namespaceNode != null) {
+                    var rangeVisitor = new SyntaxNodeRangeVisitor();
+                    namespaceNode.accept(rangeVisitor);
+                    hoversFuture.complete(rangeVisitor.getRangeNodes());
+                }
+            });
+
             syntaxTrees.addSyntaxTree(params, parsingFuture);
         });
     }
@@ -110,48 +82,27 @@ public class MinaTextDocumentService implements TextDocumentService {
     public void didChange(DidChangeTextDocumentParams params) {
         server.ifShouldNotify(() -> {
             var documentUri = params.getTextDocument().getUri();
-            var documentJavaUri = URI.create(documentUri);
             var updatedDocument = documents.updateDocument(params);
+
             var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();
             hoverRanges.updateHoverRanges(params, hoversFuture);
-            CompletableFuture<NamespaceNode<?>> parsingFuture = CompletableFuture.supplyAsync(() -> {
-                return withDiagnostics(updatedDocument, diagnostics -> {
-                    var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
-                    try {
-                        var scopedCollector = new ANTLRDiagnosticCollector(diagnostics, documentJavaUri);
-                        var parser = new Parser(scopedCollector);
-                        var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
-                        var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
-                        var codegen = new CodeGenerator();
-                        var parsed = parser.parse(charStream);
-                        var rangeVisitor = new SyntaxNodeRangeVisitor();
-                        if (!diagnostics.hasErrors()) {
-                            var renamed = renamer.rename(parsed);
-                            if (!diagnostics.hasErrors()) {
-                                var typed = typechecker.typecheck(renamed);
-                                typed.accept(rangeVisitor);
-                                hoversFuture.complete(rangeVisitor.getRangeNodes());
-                                if (!diagnostics.hasErrors()) {
-                                    codegen.generate(storagePath, typed);
-                                }
-                                return typed;
-                            } else {
-                                renamed.accept(rangeVisitor);
-                                hoversFuture.complete(rangeVisitor.getRangeNodes());
-                                return renamed;
-                            }
-                        } else {
-                            parsed.accept(rangeVisitor);
-                            hoversFuture.complete(rangeVisitor.getRangeNodes());
-                            return parsed;
-                        }
-                    } catch (Exception e) {
-                        logger.error("Exception while processing syntax tree", e);
-                        hoversFuture.completeExceptionally(e);
-                        throw e;
-                    }
-                });
-            }, server.getExecutor());
+
+            CompletableFuture<NamespaceNode<?>> parsingFuture = withDiagnostics(updatedDocument, diagnostics -> {
+                var charStream = CharStreams.fromString(updatedDocument.getText(), documentUri);
+                var compilerMain = new Main(diagnostics);
+                return compilerMain.compileNamespace(storagePath, charStream);
+            });
+
+            parsingFuture.whenComplete((namespaceNode, exception) -> {
+                if (exception != null) {
+                    hoversFuture.completeExceptionally(exception);
+                } else if (namespaceNode != null) {
+                    var rangeVisitor = new SyntaxNodeRangeVisitor();
+                    namespaceNode.accept(rangeVisitor);
+                    hoversFuture.complete(rangeVisitor.getRangeNodes());
+                }
+            });
+
             syntaxTrees.updateSyntaxTree(params, parsingFuture);
         });
     }

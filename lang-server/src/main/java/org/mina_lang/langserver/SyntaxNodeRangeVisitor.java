@@ -1,6 +1,6 @@
 package org.mina_lang.langserver;
 
-import org.eclipse.collections.api.factory.SortedMaps;
+import org.eclipse.collections.impl.factory.SortedMaps;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.api.map.sorted.MutableSortedMap;
 import org.eclipse.lsp4j.Position;

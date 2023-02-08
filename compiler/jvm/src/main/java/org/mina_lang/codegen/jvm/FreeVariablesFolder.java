@@ -4,8 +4,8 @@ import static org.mina_lang.syntax.SyntaxNodes.refNode;
 
 import java.util.Optional;
 
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.MutableSet;
 import org.mina_lang.common.Attributes;

@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.Range;
+import com.opencastsoftware.yvette.Range;
 import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;

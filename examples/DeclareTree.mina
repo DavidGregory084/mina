@@ -1,4 +1,6 @@
 namespace Mina/Examples/DeclareTree {
+    import Mina/Examples/DeclareOption
+
     data Tree[A] {
         case Node(root: A, subtrees: Forest[A])
         case Empty()

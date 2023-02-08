@@ -2,9 +2,9 @@ package org.mina_lang.syntax;
 
 import java.util.List;
 
-import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.api.list.MutableList;
-import org.mina_lang.common.Range;
+import com.opencastsoftware.yvette.Range;
 
 public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
     private MutableList<Entry> entries = Lists.mutable.empty();

@@ -4,7 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 
 public class KindPrinterTest {

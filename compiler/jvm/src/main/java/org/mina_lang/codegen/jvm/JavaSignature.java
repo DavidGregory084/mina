@@ -1,6 +1,6 @@
 package org.mina_lang.codegen.jvm;
 
-import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.api.set.MutableSet;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.types.*;

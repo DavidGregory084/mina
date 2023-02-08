@@ -23,6 +23,8 @@ dependencies {
     testImplementation(libs.hamcrest)
     testImplementation(libs.hamcrestOptional)
     testImplementation(libs.jqwik)
+    testImplementation(libs.equalsVerifier)
+    testImplementation(libs.toStringVerifier)
 }
 
 java {

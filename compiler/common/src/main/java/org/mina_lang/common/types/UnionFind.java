@@ -3,8 +3,8 @@ package org.mina_lang.common.types;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.factory.primitive.ObjectIntMaps;
+import org.eclipse.collections.impl.factory.Maps;
+import org.eclipse.collections.impl.factory.primitive.ObjectIntMaps;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.collector.Collectors2;

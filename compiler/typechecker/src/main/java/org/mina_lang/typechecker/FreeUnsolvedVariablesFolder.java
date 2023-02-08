@@ -2,7 +2,7 @@ package org.mina_lang.typechecker;
 
 import java.util.Comparator;
 
-import org.eclipse.collections.api.factory.SortedSets;
+import org.eclipse.collections.impl.factory.SortedSets;
 import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.mina_lang.common.types.*;
 

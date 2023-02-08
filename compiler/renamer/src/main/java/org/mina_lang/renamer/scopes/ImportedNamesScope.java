@@ -1,6 +1,6 @@
 package org.mina_lang.renamer.scopes;
 
-import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;

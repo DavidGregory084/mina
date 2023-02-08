@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
-    private Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
+    private static Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
 
     private int exitCode = 0;
     private LanguageClient client;
@@ -37,7 +37,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             .setDaemon(true)
             .setNameFormat("mina-langserver-%d")
             .setUncaughtExceptionHandler((t, ex) -> {
-                logger.error("Uncaught exception in thread " + t.getName(), ex);
+                logger.error("Uncaught exception in thread {}", t.getName(), ex);
             })
             .build();
 
