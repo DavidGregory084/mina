@@ -36,10 +36,6 @@ public class GraphPhaseTest {
     private BaseDiagnosticCollector baseCollector = new BaseDiagnosticCollector() {
     };
 
-    private Function<NamespaceNode<Void>, Mono<NamespaceNode<Void>>> randomDelayFn = ns -> {
-        return Mono.delay(Duration.ofMillis(random.nextLong(20))).map(delay -> ns);
-    };
-
     @Property(tries = 100)
     void graphTraversalIsTopological(@ForAll("namespaceGraph") DirectedAcyclicGraph<NamespaceName, DefaultEdge> graph) {
         var visited = new ConcurrentLinkedQueue<NamespaceName>();

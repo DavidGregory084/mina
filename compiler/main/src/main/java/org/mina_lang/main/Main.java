@@ -190,14 +190,14 @@ public class Main {
 
         var parsingPhase = new ParsingPhase(sourceData, scopedDiagnostics, namespaceNodes, mainCollector);
 
-        return Phase.sequenceMono(parsingPhase, namespaceNodes -> {
-            var namespaceGraph = constructNamespaceGraph(namespaceNodes);
+        return Phase.sequenceMono(parsingPhase, parsedNodes -> {
+            var namespaceGraph = constructNamespaceGraph(parsedNodes);
 
             // We can't proceed if our namespace graph is badly formed
             if (mainCollector.hasErrors()) {
                 return Mono.empty();
             } else {
-                var renamingPhase = new RenamingPhase(namespaceGraph, namespaceNodes, scopedDiagnostics);
+                var renamingPhase = new RenamingPhase(namespaceGraph, parsedNodes, scopedDiagnostics);
 
                 var typecheckingPhase = Phase.sequence(renamingPhase, renamedNodes -> {
                     return new TypecheckingPhase(namespaceGraph, renamedNodes, scopedDiagnostics);
