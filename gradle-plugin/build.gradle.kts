@@ -1,16 +1,6 @@
 plugins {
     `java-gradle-plugin`
-    jacoco
-    id("com.github.ben-manes.versions")
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(libs.junitJupiter)
-    testImplementation(libs.hamcrest)
+    `java-project-convention`
 }
 
 gradlePlugin {
@@ -37,25 +27,4 @@ gradlePlugin.testSourceSets(functionalTestSourceSet)
 
 tasks.named<Task>("check") {
     dependsOn(functionalTest)
-}
-
-tasks.named<Test>("test") {
-    useJUnitPlatform()
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-
-jacoco {
-    toolVersion = libs.versions.jacoco.get()
-}
-
-tasks.test {
-    finalizedBy(tasks.jacocoTestReport)
 }

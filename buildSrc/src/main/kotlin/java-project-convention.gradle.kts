@@ -6,7 +6,6 @@ val libs = the<LibrariesForLibs>()
 plugins {
     java
     `ivy-publish`
-    eclipse
     jacoco
     id("com.github.ben-manes.versions")
 }
@@ -25,6 +24,11 @@ dependencies {
     testImplementation(libs.jqwik)
     testImplementation(libs.equalsVerifier)
     testImplementation(libs.toStringVerifier)
+    constraints {
+        implementation("org.apache.commons:commons-text:[1.10.0,)") {
+            because("CVE-2022-42889")
+        }
+    }
 }
 
 java {
