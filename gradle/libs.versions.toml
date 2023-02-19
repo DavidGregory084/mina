@@ -1,5 +1,5 @@
 [versions]
-antlr = "4.11.1"
+antlr = "4.12.0"
 apacheCommonsLang = "3.12.0"
 apacheCommonsText = "1.10.0"
 asciiDoctorGradle = "4.0.0-alpha.1"
