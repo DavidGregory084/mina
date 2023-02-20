@@ -16,7 +16,7 @@ public class DefaultMinaSourceSet implements MinaSourceSet, HasPublicType {
     private final SourceDirectorySet allMina;
 
     public DefaultMinaSourceSet(String displayName, ObjectFactory objectFactory) {
-        mina = new DefaultMinaSourceDirectorySet(objectFactory.sourceDirectorySet("mina", displayName + " Mina source"));
+        mina = objectFactory.newInstance(DefaultMinaSourceDirectorySet.class, objectFactory.sourceDirectorySet("mina", displayName + " Mina source"));
         mina.getFilter().include("**/*.mina");
         allMina = objectFactory.sourceDirectorySet("allmina", displayName + " Mina source");
         allMina.getFilter().include("**/*.mina");

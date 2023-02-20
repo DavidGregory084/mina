@@ -24,12 +24,18 @@ class MinaPluginFunctionalTest {
         return new File(projectDir, "settings.gradle");
     }
 
-    @Test void canRunTask() throws IOException {
+    @Test
+    void canRunTask() throws IOException {
         writeString(getSettingsFile(), "");
         writeString(getBuildFile(),
-            "plugins {" +
-            "  id('org.mina_lang.gradle')" +
-            "}");
+                String.join(System.lineSeparator(),
+                        "plugins {",
+                        "  id('org.mina-lang.gradle')",
+                        "}",
+                        "",
+                        "dependencies {",
+                        "  implementation('org.mina_lang:mina-runtime:0.1.0-SNAPSHOT')",
+                        "}"));
 
         GradleRunner runner = GradleRunner.create();
         runner.forwardOutput();

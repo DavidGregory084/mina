@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     // Syntax Tree Definitions
-    api(project(":compiler:syntax"))
+    api(project(":compiler:mina-compiler-syntax"))
 
     // Java Bytecode Generation
     api(libs.asm)

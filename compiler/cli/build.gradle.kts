@@ -12,7 +12,7 @@ dependencies {
     annotationProcessor(libs.picocliCodegen)
 
     // Compiler Main
-    implementation(project(":compiler:main"))
+    implementation(project(":compiler:mina-compiler-main"))
 
     // Logging
     implementation(libs.slf4jApi)
@@ -30,8 +30,8 @@ tasks.register<JavaExec>("generateManpageAsciiDoc") {
     group = "documentation"
     description = "Generate AsciiDoc manpage"
     classpath = files(listOf(configurations.compileClasspath, configurations.annotationProcessor, sourceSets.main.get().runtimeClasspath))
-    main = "picocli.codegen.docgen.manpage.ManPageGenerator"
-    args = listOf(application.mainClassName, "--outdir=${project.buildDir}/generated-picocli-docs", "-v")
+    mainClass.set("picocli.codegen.docgen.manpage.ManPageGenerator")
+    args = listOf(application.mainClass.get(), "--outdir=${project.buildDir}/generated-picocli-docs", "-v")
 }
 
 tasks.named<AsciidoctorTask>("asciidoctor") {
