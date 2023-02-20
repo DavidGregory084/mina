@@ -9,14 +9,12 @@ import org.gradle.workers.internal.KeepAliveMode;
 
 public class MinimalMinaCompileOptions implements Serializable {
     private List<String> additionalParameters;
-    private boolean fork = true;
     private MinimalMinaCompilerDaemonForkOptions forkOptions;
     private KeepAliveMode keepAliveMode;
 
     public MinimalMinaCompileOptions(BaseMinaCompileOptions compileOptions) {
         this.additionalParameters = compileOptions.getAdditionalParameters() == null ? null
                 : List.copyOf(compileOptions.getAdditionalParameters());
-        this.fork = compileOptions.getIsFork().get();
         this.forkOptions = new MinimalMinaCompilerDaemonForkOptions(compileOptions.getForkOptions());
         this.keepAliveMode = compileOptions.getKeepAliveMode().get();
     }
@@ -28,14 +26,6 @@ public class MinimalMinaCompileOptions implements Serializable {
 
     public void setAdditionalParameters(@Nullable List<String> additionalParameters) {
         this.additionalParameters = additionalParameters;
-    }
-
-    public boolean isFork() {
-        return fork;
-    }
-
-    public void setFork(boolean fork) {
-        this.fork = fork;
     }
 
     public MinimalMinaCompilerDaemonForkOptions getForkOptions() {

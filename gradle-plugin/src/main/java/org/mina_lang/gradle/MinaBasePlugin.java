@@ -51,7 +51,6 @@ public class MinaBasePlugin implements Plugin<Project> {
             ConventionMapping conventionMapping = compile.getConventionMapping();
             conventionMapping.map("minaClasspath",
                     (Callable<FileCollection>) () -> minaRuntime.inferMinaClasspath(compile.getClasspath()));
-            compile.getMinaCompileOptions().getIsFork().convention(false);
             compile.getMinaCompileOptions().getKeepAliveMode().convention(KeepAliveMode.SESSION);
         });
     }

@@ -64,7 +64,7 @@ public abstract class MinaCompile extends AbstractMinaCompile {
             ClassLoaderRegistry classLoaderRegistry = getServices().get(ClassLoaderRegistry.class);
             ActionExecutionSpecFactory actionExecutionSpecFactory = getServices().get(ActionExecutionSpecFactory.class);
             File daemonWorkingDir = getServices().get(WorkerDirectoryProvider.class).getWorkingDirectory();
-            CompilerWorkerExecutor compilerWorkerExecutor = getMinaCompileOptions().getIsFork().get()
+            CompilerWorkerExecutor compilerWorkerExecutor = getOptions().isFork()
                     ? new ProcessIsolatedCompilerWorkerExecutor(workerDaemonFactory, actionExecutionSpecFactory)
                     : new ClassloaderIsolatedCompilerWorkerExecutor(inProcessWorkerFactory, actionExecutionSpecFactory);
             ClasspathHasher classpathHasher = getServices().get(ClasspathHasher.class);

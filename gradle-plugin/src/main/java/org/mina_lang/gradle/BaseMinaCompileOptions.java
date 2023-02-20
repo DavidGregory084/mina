@@ -18,7 +18,6 @@ public class BaseMinaCompileOptions extends AbstractOptions {
 
     private List<String> additionalParameters;
     private MinaForkOptions forkOptions = new MinaForkOptions();
-    private Property<Boolean> fork = getObjectFactory().property(Boolean.class);
     private Property<KeepAliveMode> keepAliveMode = getObjectFactory().property(KeepAliveMode.class);
 
     @Inject
@@ -42,11 +41,6 @@ public class BaseMinaCompileOptions extends AbstractOptions {
 
     public void setForkOptions(MinaForkOptions forkOptions) {
         this.forkOptions = forkOptions;
-    }
-
-    @Input
-    public Property<Boolean> getIsFork() {
-        return fork;
     }
 
     @Input
