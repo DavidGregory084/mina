@@ -1,93 +1,89 @@
 package org.mina_lang.gradle;
 
-import java.io.File;
-
 import javax.inject.Inject;
 
-import org.gradle.api.InvalidUserDataException;
+import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.ClassPathRegistry;
-import org.gradle.api.internal.tasks.compile.daemon.ClassloaderIsolatedCompilerWorkerExecutor;
-import org.gradle.api.internal.tasks.compile.daemon.CompilerWorkerExecutor;
-import org.gradle.api.internal.tasks.compile.daemon.ProcessIsolatedCompilerWorkerExecutor;
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
+import org.gradle.api.internal.tasks.compile.HasCompileOptions;
+import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Nested;
-import org.gradle.initialization.ClassLoaderRegistry;
-import org.gradle.internal.classloader.ClasspathHasher;
-import org.gradle.language.base.internal.compile.Compiler;
-import org.gradle.process.internal.JavaForkOptionsFactory;
-import org.gradle.process.internal.worker.child.WorkerDirectoryProvider;
-import org.gradle.workers.internal.ActionExecutionSpecFactory;
-import org.gradle.workers.internal.IsolatedClassloaderWorkerFactory;
-import org.gradle.workers.internal.WorkerDaemonFactory;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.compile.AbstractCompile;
+import org.gradle.api.tasks.compile.CompileOptions;
+import org.gradle.api.tasks.compile.ForkOptions;
+import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.workers.WorkQueue;
+import org.gradle.workers.WorkerExecutor;
 
 @CacheableTask
-public abstract class MinaCompile extends AbstractMinaCompile {
+public abstract class MinaCompile extends AbstractCompile implements HasCompileOptions {
 
-    private FileCollection minaClasspath;
-
-    private Compiler<DefaultMinaCompileSpec> compiler;
+    private CompileOptions compileOptions;
+    private ConfigurableFileCollection minaCompilerClasspath;
 
     @Inject
-    public MinaCompile() {
+    public MinaCompile(Project project) {
+        this.compileOptions = getObjectFactory().newInstance(CompileOptions.class);
+
+        Property<String> minaVersion = project.getExtensions().getByType(MinaExtension.class).getMinaVersion();
+
+        this.minaCompilerClasspath = getObjectFactory().fileCollection().from(
+                minaVersion.map(version -> {
+                    return project.getConfigurations().detachedConfiguration(
+                            new DefaultExternalModuleDependency("org.mina-lang", "mina-compiler", version))
+                            .getAsFileTree();
+                }));
     }
 
     @Nested
-    @Override
-    public MinaCompileOptions getMinaCompileOptions() {
-        return (MinaCompileOptions) super.getMinaCompileOptions();
-    }
+    public abstract MinaCompileOptions getMinaCompileOptions();
 
     @Classpath
-    public FileCollection getMinaClasspath() {
-        return minaClasspath;
+    public FileCollection getMinaCompilerClasspath() {
+        return minaCompilerClasspath;
     }
 
-    public void setMinaClasspath(FileCollection minaClasspath) {
-        this.minaClasspath = minaClasspath;
+    @Nested
+    public CompileOptions getOptions() {
+        return compileOptions;
     }
 
-    public void setCompiler(Compiler<DefaultMinaCompileSpec> compiler) {
-        this.compiler = compiler;
+    @Nested
+    public abstract Property<JavaLauncher> getJavaLauncher();
+
+    @Inject
+    public abstract ObjectFactory getObjectFactory();
+
+    @Inject
+    public abstract WorkerExecutor getWorkerExecutor();
+
+    @TaskAction
+    public void compile() {
+        WorkQueue workQueue = getOptions().isFork() ? getWorkerExecutor().processIsolation(spec -> {
+            spec.getClasspath().from(getMinaCompilerClasspath());
+            spec.forkOptions(opts -> {
+                ForkOptions forkOpts = getOptions().getForkOptions();
+                opts.setWorkingDir(getProject().getLayout().getProjectDirectory());
+                opts.setExecutable(getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath());
+                opts.setJvmArgs(forkOpts.getJvmArgs());
+                opts.setMinHeapSize(forkOpts.getMemoryInitialSize());
+                opts.setMaxHeapSize(forkOpts.getMemoryMaximumSize());
+            });
+        }) : getWorkerExecutor().classLoaderIsolation(spec -> {
+            spec.getClasspath().from(getMinaCompilerClasspath());
+        });
+
+        workQueue.submit(MinaCompileAction.class, params -> {
+            params.getCompilerClassName().set("org.mina_lang.cli.MinaCommandLine");
+            params.getMinaCompileOptions().set(getMinaCompileOptions());
+            params.getDestinationDirectory().set(getDestinationDirectory());
+            params.getClasspath().from(getClasspath());
+            params.getSourceFiles().from(getSource());
+        });
     }
-
-    @Override
-    protected Compiler<DefaultMinaCompileSpec> getCompiler(DefaultMinaCompileSpec spec) {
-        assertMinaClasspathIsNonEmpty();
-        if (compiler == null) {
-            WorkerDaemonFactory workerDaemonFactory = getServices().get(WorkerDaemonFactory.class);
-            IsolatedClassloaderWorkerFactory inProcessWorkerFactory = getServices()
-                    .get(IsolatedClassloaderWorkerFactory.class);
-            JavaForkOptionsFactory forkOptionsFactory = getServices().get(JavaForkOptionsFactory.class);
-            ClassPathRegistry classPathRegistry = getServices().get(ClassPathRegistry.class);
-            ClassLoaderRegistry classLoaderRegistry = getServices().get(ClassLoaderRegistry.class);
-            ActionExecutionSpecFactory actionExecutionSpecFactory = getServices().get(ActionExecutionSpecFactory.class);
-            File daemonWorkingDir = getServices().get(WorkerDirectoryProvider.class).getWorkingDirectory();
-            CompilerWorkerExecutor compilerWorkerExecutor = getOptions().isFork()
-                    ? new ProcessIsolatedCompilerWorkerExecutor(workerDaemonFactory, actionExecutionSpecFactory)
-                    : new ClassloaderIsolatedCompilerWorkerExecutor(inProcessWorkerFactory, actionExecutionSpecFactory);
-            ClasspathHasher classpathHasher = getServices().get(ClasspathHasher.class);
-            MinaCompilerFactory minaCompilerFactory = new MinaCompilerFactory(
-                    daemonWorkingDir,
-                    compilerWorkerExecutor,
-                    getMinaClasspath(),
-                    forkOptionsFactory,
-                    classPathRegistry,
-                    classLoaderRegistry,
-                    classpathHasher);
-            compiler = minaCompilerFactory.newCompiler(spec);
-        }
-
-        return compiler;
-    }
-
-    protected void assertMinaClasspathIsNonEmpty() {
-        if (getMinaClasspath().isEmpty()) {
-            throw new InvalidUserDataException("'" + getName()
-                    + ".minaClasspath' must not be empty. If a Mina compile dependency is provided, "
-                    + "the 'mina-base' plugin will attempt to configure 'minaClasspath' automatically. Alternatively, you may configure 'minaClasspath' explicitly.");
-        }
-    }
-
 }

@@ -1,6 +1,7 @@
 plugins {
     `java-gradle-plugin`
     `java-project-convention`
+    alias(libs.plugins.gradleBuildInfo)
 }
 
 gradlePlugin {
@@ -10,8 +11,15 @@ gradlePlugin {
     }
 }
 
+buildInfo {
+    packageName.set("org.mina_lang.gradle")
+    properties.set(mapOf("version" to project.version.toString()))
+}
+
 // Add a source set for the functional test suite
 val functionalTestSourceSet = sourceSets.create("functionalTest") {
+    tasks[getCompileTaskName("java")].dependsOn("generateBuildInfo")
+    java.srcDir(project.buildDir.resolve("generated/sources/buildinfo/java/main"))
 }
 
 configurations["functionalTestImplementation"].extendsFrom(configurations["testImplementation"])
@@ -26,5 +34,7 @@ val functionalTest by tasks.registering(Test::class) {
 gradlePlugin.testSourceSets(functionalTestSourceSet)
 
 tasks.named<Task>("check") {
+    // We use the published CLI artifact in the functional tests
+    dependsOn(":compiler:mina-compiler:publishToMavenLocal")
     dependsOn(functionalTest)
 }

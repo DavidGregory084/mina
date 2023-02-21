@@ -94,4 +94,16 @@ public class MinaCommandLine implements Callable<Integer> {
         commandLine.setExecutionExceptionHandler(minaCli.exceptionHandler());
         System.exit(commandLine.execute(args));
     }
+
+    public static Callable<Integer> getCallable(String... args) {
+        var compilerMain = new Main(new MinaDiagnosticCollector());
+        var reportHandler = GraphicalReportHandler.builder()
+                .withColours(ColourSupport.isSupported())
+                .withRgbColours(RgbColours.PREFERRED)
+                .withUnicode(false)
+                .buildFor(System.err);
+        var minaCli = new MinaCommandLine(compilerMain, reportHandler);
+        new CommandLine(minaCli).parseArgs(args);
+        return minaCli;
+    }
 }
