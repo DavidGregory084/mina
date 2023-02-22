@@ -30,6 +30,15 @@ val functionalTest by tasks.registering(Test::class) {
     classpath = functionalTestSourceSet.runtimeClasspath
     useJUnitPlatform()
     // We use the published CLI artifact in the functional tests
+    // and sadly Gradle doesn't seem to have a way of publishing transitively
+    // or on aggregate from a child project
+    dependsOn(":compiler:mina-compiler-common:publishToMavenLocal")
+    dependsOn(":compiler:mina-compiler-syntax:publishToMavenLocal")
+    dependsOn(":compiler:mina-compiler-parser:publishToMavenLocal")
+    dependsOn(":compiler:mina-compiler-renamer:publishToMavenLocal")
+    dependsOn(":compiler:mina-compiler-typechecker:publishToMavenLocal")
+    dependsOn(":compiler:mina-compiler-jvm:publishToMavenLocal")
+    dependsOn(":compiler:mina-compiler-main:publishToMavenLocal")
     dependsOn(":compiler:mina-compiler:publishToMavenLocal")
 }
 
