@@ -8,9 +8,11 @@ import javax.inject.Inject;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.internal.tasks.DefaultSourceSet;
 import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
 import org.gradle.api.model.ObjectFactory;
@@ -30,6 +32,9 @@ public class MinaBasePlugin implements Plugin<Project> {
     private final ObjectFactory objectFactory;
     private final JvmEcosystemUtilities jvmEcosystemUtilities;
 
+    public static final String MINAC_CONFIGURATION_NAME = "minac";
+    public static final String MINA_EXTENSION_NAME = "mina";
+
     @Inject
     public MinaBasePlugin(ObjectFactory objectFactory, JvmEcosystemUtilities jvmEcosystemUtilities) {
         this.objectFactory = objectFactory;
@@ -38,9 +43,23 @@ public class MinaBasePlugin implements Plugin<Project> {
 
     public void apply(Project project) {
         project.getPluginManager().apply(JavaBasePlugin.class);
-        project.getExtensions().create(MinaExtension.class, "mina", DefaultMinaExtension.class);
-        configureCompileDefaults(project);
+
+        MinaExtension minaExtension = project.getExtensions()
+                .create(MinaExtension.class, MINA_EXTENSION_NAME, DefaultMinaExtension.class);
+
+        configureConfigurations(project, minaExtension);
         configureSourceSetDefaults(project);
+        configureCompileDefaults(project);
+    }
+
+    private void configureConfigurations(Project project, MinaExtension minaExtension) {
+        Configuration minacConfiguration = project.getConfigurations().create(MINAC_CONFIGURATION_NAME);
+        minacConfiguration.setCanBeConsumed(false);
+        minacConfiguration.setCanBeResolved(true);
+        jvmEcosystemUtilities.configureAsRuntimeClasspath(minacConfiguration);
+        minacConfiguration.getDependencies().addLater(minaExtension.getMinaVersion().map(version -> {
+            return new DefaultExternalModuleDependency("org.mina-lang", "mina-compiler", version);
+        }));
     }
 
     private void configureCompileDefaults(Project project) {

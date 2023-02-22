@@ -31,16 +31,8 @@ public abstract class MinaCompile extends AbstractCompile implements HasCompileO
     @Inject
     public MinaCompile(Project project, JvmEcosystemUtilities jvmEcosystemUtilities) {
         this.compileOptions = getObjectFactory().newInstance(CompileOptions.class);
-
-        Property<String> minaVersion = project.getExtensions().getByType(MinaExtension.class).getMinaVersion();
-
-        this.minaCompilerClasspath = getObjectFactory().fileCollection().from(
-                minaVersion.map(version -> {
-                    Configuration classpath = project.getConfigurations().detachedConfiguration(
-                            new DefaultExternalModuleDependency("org.mina-lang", "mina-compiler", version));
-                    jvmEcosystemUtilities.configureAsRuntimeClasspath(classpath);
-                    return classpath.getAsFileTree();
-                }));
+        Configuration minacConfig = project.getConfigurations().getByName(MinaBasePlugin.MINAC_CONFIGURATION_NAME);
+        this.minaCompilerClasspath = getObjectFactory().fileCollection().from(minacConfig.getAsFileTree());
     }
 
     @Nested
