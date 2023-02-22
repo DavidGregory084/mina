@@ -21,3 +21,18 @@ jobs:
 
       - name: Submit Gradle Dependencies
         uses: mikepenz/gradle-dependency-submission@v0.8.4
+        with:
+          gradle-build-module: |-
+            :compiler:mina-compiler-common
+            :compiler:mina-compiler-syntax
+            :compiler:mina-compiler-parser
+            :compiler:mina-compiler-renamer
+            :compiler:mina-compiler-typechecker
+            :compiler:mina-compiler-intermediate
+            :compiler:mina-compiler-jvm
+            :compiler:mina-compiler-main
+            :compiler:mina-compiler
+            :mina-gradle-plugin
+            :mina-lang-server
+            :mina-runtime
+            :vscode-plugin
