@@ -29,12 +29,12 @@ val functionalTest by tasks.registering(Test::class) {
     testClassesDirs = functionalTestSourceSet.output.classesDirs
     classpath = functionalTestSourceSet.runtimeClasspath
     useJUnitPlatform()
+    // We use the published CLI artifact in the functional tests
+    dependsOn(":compiler:mina-compiler:publishToMavenLocal")
 }
 
 gradlePlugin.testSourceSets(functionalTestSourceSet)
 
 tasks.named<Task>("check") {
-    // We use the published CLI artifact in the functional tests
-    dependsOn(":compiler:mina-compiler:publishToMavenLocal")
     dependsOn(functionalTest)
 }
