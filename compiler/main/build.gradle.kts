@@ -10,22 +10,22 @@ dependencies {
     testImplementation(libs.reactorTest)
 
     // Sytax Tree Definitions
-    api(project(":compiler:syntax"))
+    api(project(":compiler:mina-compiler-syntax"))
 
     // Parser
-    implementation(project(":compiler:parser"))
+    implementation(project(":compiler:mina-compiler-parser"))
 
     // CharStream appears in the public API
     api(libs.antlr)
 
     // Renamer
-    implementation(project(":compiler:renamer"))
+    implementation(project(":compiler:mina-compiler-renamer"))
 
     // Typechecker
-    implementation(project(":compiler:typechecker"))
+    implementation(project(":compiler:mina-compiler-typechecker"))
 
     // JVM Bytecode Generation
-    implementation(project(":compiler:jvm"))
+    implementation(project(":compiler:mina-compiler-jvm"))
 
     // Graph Data Structures
     implementation(libs.jgrapht)

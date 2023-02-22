@@ -10,14 +10,14 @@ node {
 }
 
 tasks.register<NpmTask>("build") {
-    dependsOn(":compiler:common:publish")
-    dependsOn(":compiler:syntax:publish")
-    dependsOn(":compiler:parser:publish")
-    dependsOn(":compiler:renamer:publish")
-    dependsOn(":compiler:typechecker:publish")
-    dependsOn(":compiler:jvm:publish")
-    dependsOn(":compiler:main:publish")
-    dependsOn(":lang-server:publish")
+    dependsOn(":compiler:mina-compiler-common:publish")
+    dependsOn(":compiler:mina-compiler-syntax:publish")
+    dependsOn(":compiler:mina-compiler-parser:publish")
+    dependsOn(":compiler:mina-compiler-renamer:publish")
+    dependsOn(":compiler:mina-compiler-typechecker:publish")
+    dependsOn(":compiler:mina-compiler-jvm:publish")
+    dependsOn(":compiler:mina-compiler-main:publish")
+    dependsOn(":mina-lang-server:publish")
     dependsOn(tasks.npmInstall)
     npmCommand.set(
         if (OperatingSystem.current().isLinux())

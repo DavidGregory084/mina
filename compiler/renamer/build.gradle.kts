@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     // Syntax Tree Definitions
-    api(project(":compiler:syntax"))
+    api(project(":compiler:mina-compiler-syntax"))
 
     // Graph Data Structures
     implementation(libs.jgrapht)

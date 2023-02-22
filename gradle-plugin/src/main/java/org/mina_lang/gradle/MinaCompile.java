@@ -2,56 +2,83 @@ package org.mina_lang.gradle;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
+import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.plugins.jvm.internal.JvmEcosystemUtilities;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
-import org.gradle.language.base.internal.compile.Compiler;
-import org.gradle.process.internal.JavaForkOptionsFactory;
-import org.gradle.workers.internal.ActionExecutionSpecFactory;
-import org.gradle.workers.internal.WorkerDaemonFactory;
-import org.gradle.process.internal.worker.child.WorkerDirectoryProvider;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.compile.AbstractCompile;
+import org.gradle.api.tasks.compile.CompileOptions;
+import org.gradle.api.tasks.compile.ForkOptions;
+import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.workers.WorkQueue;
+import org.gradle.workers.WorkerExecutor;
 
-public class MinaCompile extends AbstractMinaCompile {
+@CacheableTask
+public abstract class MinaCompile extends AbstractCompile implements HasCompileOptions {
 
-    private FileCollection minaClasspath;
-
-    private Compiler<DefaultMinaCompileSpec> compiler;
+    private CompileOptions compileOptions;
+    private ConfigurableFileCollection minaCompilerClasspath;
 
     @Inject
-    public MinaCompile(ObjectFactory objectFactory) {
-        super(new MinaCompileOptions(), objectFactory);
+    public MinaCompile(Project project, JvmEcosystemUtilities jvmEcosystemUtilities) {
+        this.compileOptions = getObjectFactory().newInstance(CompileOptions.class);
+        Configuration minacConfig = project.getConfigurations().getByName(MinaBasePlugin.MINAC_CONFIGURATION_NAME);
+        this.minaCompilerClasspath = getObjectFactory().fileCollection().from(minacConfig.getAsFileTree());
     }
 
-    public MinaCompileOptions getMinaCompileOptions() {
-        return (MinaCompileOptions) super.getMinaCompileOptions();
-    }
+    @Nested
+    public abstract MinaCompileOptions getMinaCompileOptions();
 
     @Classpath
-    public FileCollection getMinaClasspath() {
-        return minaClasspath;
+    public FileCollection getMinaCompilerClasspath() {
+        return minaCompilerClasspath;
     }
 
-    public void setMinaClasspath(FileCollection minaClasspath) {
-        this.minaClasspath = minaClasspath;
+    @Nested
+    public CompileOptions getOptions() {
+        return compileOptions;
     }
 
-    public void setCompiler(Compiler<DefaultMinaCompileSpec> compiler) {
-        this.compiler = compiler;
+    @Nested
+    public abstract Property<JavaLauncher> getJavaLauncher();
+
+    @Inject
+    public abstract ObjectFactory getObjectFactory();
+
+    @Inject
+    public abstract WorkerExecutor getWorkerExecutor();
+
+    @TaskAction
+    public void compile() {
+        WorkQueue workQueue = getOptions().isFork() ? getWorkerExecutor().processIsolation(spec -> {
+            spec.getClasspath().from(getMinaCompilerClasspath());
+            spec.forkOptions(opts -> {
+                ForkOptions forkOpts = getOptions().getForkOptions();
+                opts.setWorkingDir(getProject().getLayout().getProjectDirectory());
+                opts.setExecutable(getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath());
+                opts.setJvmArgs(forkOpts.getJvmArgs());
+                opts.setMinHeapSize(forkOpts.getMemoryInitialSize());
+                opts.setMaxHeapSize(forkOpts.getMemoryMaximumSize());
+            });
+        }) : getWorkerExecutor().classLoaderIsolation(spec -> {
+            spec.getClasspath().from(getMinaCompilerClasspath());
+        });
+
+        workQueue.submit(MinaCompileAction.class, params -> {
+            params.getCompilerClassName().set("org.mina_lang.cli.MinaCommandLine");
+            params.getMinaCompileOptions().set(getMinaCompileOptions());
+            params.getDestinationDirectory().set(getDestinationDirectory());
+            params.getClasspath().from(getClasspath());
+            params.getSourceFiles().from(getSource());
+        });
     }
-
-    @Override
-    protected Compiler<DefaultMinaCompileSpec> getCompiler(DefaultMinaCompileSpec spec) {
-        if (compiler == null) {
-            WorkerDaemonFactory workerDaemonFactory = getServices().get(WorkerDaemonFactory.class);
-            JavaForkOptionsFactory forkOptionsFactory = getServices().get(JavaForkOptionsFactory.class);
-            ActionExecutionSpecFactory actionExecutionSpecFactory = getServices().get(ActionExecutionSpecFactory.class);
-            MinaCompilerFactory minaCompilerFactory = new MinaCompilerFactory(
-                    getServices().get(WorkerDirectoryProvider.class).getWorkingDirectory(),
-                    forkOptionsFactory, workerDaemonFactory, actionExecutionSpecFactory);
-            compiler = minaCompilerFactory.newCompiler(spec);
-        }
-
-        return compiler;
-    }
-
 }

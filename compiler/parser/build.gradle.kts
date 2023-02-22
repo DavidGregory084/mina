@@ -12,7 +12,7 @@ dependencies {
     antlr(libs.antlr)
 
     // Syntax Tree Definitions
-    api(project(":compiler:syntax"))
+    api(project(":compiler:mina-compiler-syntax"))
 }
 
 tasks.generateGrammarSource {

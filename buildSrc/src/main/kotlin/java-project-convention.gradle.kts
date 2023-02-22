@@ -6,6 +6,7 @@ val libs = the<LibrariesForLibs>()
 plugins {
     java
     `ivy-publish`
+    `maven-publish`
     jacoco
     id("com.github.ben-manes.versions")
 }
@@ -71,7 +72,10 @@ tasks.test {
 
 publishing {
     publications {
-        create<IvyPublication>("ivyLocal") {
+        create<IvyPublication>("ivy") {
+            from(components["java"])
+        }
+        create<MavenPublication>("maven") {
             from(components["java"])
         }
     }

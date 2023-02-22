@@ -6,5 +6,5 @@ plugins {
 
 dependencies {
     // Common Definitions
-    api(project(":compiler:common"))
+    api(project(":compiler:mina-compiler-common"))
 }
