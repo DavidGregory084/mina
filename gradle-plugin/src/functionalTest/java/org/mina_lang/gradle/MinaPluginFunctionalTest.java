@@ -66,8 +66,8 @@ class MinaPluginFunctionalTest {
         BuildResult result = runner.build();
 
         assertThat(
-            result.tasks(TaskOutcome.SUCCESS),
-            hasItem(hasProperty("path", equalTo(":compileMina"))));
+            result.task(":compileMina").getOutcome(),
+            is(equalTo(TaskOutcome.SUCCESS)));
     }
 
     @Test
@@ -105,8 +105,8 @@ class MinaPluginFunctionalTest {
         BuildResult result = runner.buildAndFail();
 
         assertThat(
-            result.tasks(TaskOutcome.FAILED),
-            hasItem(hasProperty("path", equalTo(":compileMina"))));
+            result.task(":compileMina").getOutcome(),
+            is(equalTo(TaskOutcome.FAILED)));
     }
 
     @Test
@@ -138,8 +138,8 @@ class MinaPluginFunctionalTest {
         BuildResult result = runner.build();
 
         assertThat(
-            result.tasks(TaskOutcome.NO_SOURCE),
-            hasItem(hasProperty("path", equalTo(":compileMina"))));
+            result.task(":compileMina").getOutcome(),
+            is(equalTo(TaskOutcome.NO_SOURCE)));
     }
 
     private void writeString(File file, String string) throws IOException {
