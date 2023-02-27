@@ -60,6 +60,10 @@
           "name": "keyword.other.import.mina"
         },
         {
+          "match": "\\b(as)\\b",
+          "name": "keyword.other.as.mina"
+        },
+        {
           "match": "\\b(data)\\b",
           "name": "keyword.other.data.mina"
         },

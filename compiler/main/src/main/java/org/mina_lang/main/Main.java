@@ -154,7 +154,6 @@ public class Main {
                     namespaceNodes.get(namespaceName)
                             .imports()
                             .forEach(imp -> {
-                                // TODO: Handle fully-qualified references
                                 var importName = imp.namespace().getName();
                                 if (namespaceGraph.containsVertex(importName)) {
                                     namespaceGraph.addVertex(importName);

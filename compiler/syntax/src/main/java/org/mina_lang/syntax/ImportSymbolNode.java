@@ -2,7 +2,9 @@ package org.mina_lang.syntax;
 
 import com.opencastsoftware.yvette.Range;
 
-public record ImportSymbolNode(Range range, String symbol) implements SyntaxNode {
+import java.util.Optional;
+
+public record ImportSymbolNode(Range range, String symbol, Optional<String> alias) implements SyntaxNode {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         visitor.visitImportSymbol(this);
