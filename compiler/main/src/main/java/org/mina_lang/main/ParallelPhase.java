@@ -8,9 +8,10 @@ public non-sealed interface ParallelPhase<A, B> extends Phase<B> {
 
     void consumeInput(A inputNode);
 
-    default Mono<Void> runPhase() {
+    default Mono<B> runPhase() {
         return inputFlux()
                 .doOnNext(this::consumeInput)
-                .then();
+                .then()
+                .thenReturn(transformedData());
     }
 }

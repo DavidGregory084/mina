@@ -92,12 +92,13 @@ public non-sealed abstract class GraphPhase<A, B>
                 .runOn(Schedulers.parallel());
     }
 
-    public Mono<Void> runPhase() {
+    public Mono<ConcurrentHashMap<NamespaceName, NamespaceNode<B>>> runPhase() {
         return Flux.fromIterable(rootNodes)
                 .parallel()
                 .runOn(Schedulers.parallel())
                 .flatMap(this::topoTraverseFrom)
-                .then();
+                .then()
+                .thenReturn(transformedData());
     }
 
     public ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedData() {
