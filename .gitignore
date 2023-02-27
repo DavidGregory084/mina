@@ -8,6 +8,8 @@ bin/
 build/
 node_modules/
 out/
+# I don't know where these files come from - IntelliJ ANTLR plugin?
+compiler/parser/src/main/gen/
 .classpath
 .jqwik-database
 .project
