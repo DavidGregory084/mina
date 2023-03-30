@@ -1,0 +1,12 @@
+pipeline:
+  ci:
+    image: timbru31/java-node:${JAVA_VERSION}-jdk-${NODE_VERSION}
+    commands:
+      - apt-get install -y protobuf-compiler
+      - ./gradlew build --info
+
+matrix:
+  NODE_VERSION:
+    - 16
+  JAVA_VERSION:
+    - 17
