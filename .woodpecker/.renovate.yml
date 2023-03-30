@@ -1,6 +1,6 @@
 pipeline:
   renovate:
-    image: node:lts
+    image: renovate/renovate:slim
     environment:
       - RENOVATE_AUTODISCOVER=true
       - RENOVATE_AUTODISCOVER_FILTER='mina-lang/*'
