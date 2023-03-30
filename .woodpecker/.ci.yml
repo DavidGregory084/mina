@@ -1,6 +1,8 @@
 pipeline:
   ci:
     image: timbru31/java-node:${JAVA_VERSION}-jdk-${NODE_VERSION}
+    when:
+      event: [ push, pull_request, tag ]
     commands:
       - ./gradlew build --info
 
