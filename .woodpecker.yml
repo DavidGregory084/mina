@@ -2,7 +2,8 @@ pipeline:
   ci:
     image: timbru31/java-node:${JAVA_VERSION}-alpine-jdk-${NODE_VERSION}
     commands:
-      - apk update && apk add --no-cache protoc
+      # add the glibc compatibility layer so that we can use the protoc from Maven Central
+      - apk update && apk add --no-cache gcompat
       - ./gradlew build --info
 
 matrix:
