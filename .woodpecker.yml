@@ -3,7 +3,8 @@ pipeline:
     image: timbru31/java-node:${JAVA_VERSION}-alpine-jdk-${NODE_VERSION}
     commands:
       # add the glibc compatibility layer so that we can use the protoc from Maven Central
-      - apk update && apk add --no-cache gcompat
+      # add xvfb-run so that we can execute the VS Code plugin tests
+      - apk update && apk add --no-cache gcompat xvfb-run
       - ./gradlew build --info
 
 matrix:
