@@ -1,0 +1,13 @@
+pipeline:
+  renovate:
+    image: node:lts-alpine
+    environment:
+      - RENOVATE_AUTODISCOVER=true
+      - RENOVATE_AUTODISCOVER_FILTER='mina-lang/*'
+      - RENOVATE_GIT_AUTHOR='Mina Bot <mina-bot@mina-lang.org>'
+    secrets: [ renovate_token, renovate_git_private_key ]
+    commands:
+      - npx renovate
+
+runs_on: [ cron ]
+skip_clone: true
