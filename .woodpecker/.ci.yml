@@ -4,6 +4,7 @@ pipeline:
     when:
       event: [ push, pull_request, tag ]
     commands:
+      - apt install -y xvfb
       - ./gradlew build --info
 
 matrix:
