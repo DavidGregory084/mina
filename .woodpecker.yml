@@ -1,8 +1,8 @@
 pipeline:
   ci:
-    image: timbru31/java-node:${JAVA_VERSION}-jdk-${NODE_VERSION}
+    image: timbru31/java-node:${JAVA_VERSION}-alpine-jdk-${NODE_VERSION}
     commands:
-      - apt-get install -y protobuf-compiler
+      - apk update && apk add --no-cache protoc
       - ./gradlew build --info
 
 matrix:
