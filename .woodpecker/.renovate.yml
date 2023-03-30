@@ -10,6 +10,6 @@ pipeline:
       event: cron
       cron: renovate
     commands:
-      - npx renovate
+      - renovate
 
 skip_clone: true
