@@ -2,9 +2,17 @@ pipeline:
   ci:
     image: timbru31/java-node:${JAVA_VERSION}-jdk-${NODE_VERSION}
     when:
-      event: [ push, pull_request, tag ]
+      event: [ push, tag ]
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
     commands:
-      - apt-get update && apt-get install -y xvfb
+      - apt-get -qq update && apt-get -y install curl gpg xvfb
+      # Use the awful new process of adding keys and repos now that add-apt-repository and apt-key are deprecated
+      # See https://www.digitalocean.com/community/tutorials/how-to-handle-apt-key-and-add-apt-repository-deprecation-using-gpg-to-add-external-repositories-on-ubuntu-22-04 for more details
+      - curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o packages.microsoft.gpg
+      - install -D -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/packages.microsoft.gpg
+      - sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+      - apt-get -qq update && apt-get -y install code
       - ./gradlew build --info
 
 matrix:
