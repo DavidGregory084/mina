@@ -7,6 +7,10 @@
     {
       "matchPackageNames": "@types/node",
       "allowedVersions": "<17"
+    },
+    {
+      "matchManagers": "npm",
+      "rangeStrategy": "bump"
     }
   ]
 }
