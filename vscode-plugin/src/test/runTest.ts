@@ -3,8 +3,8 @@ import * as path from "path";
 
 import {
   downloadAndUnzipVSCode,
-  runTests,
   resolveCliArgsFromVSCodeExecutablePath,
+  runTests,
 } from "@vscode/test-electron";
 import { TestOptions } from "@vscode/test-electron/out/runTest";
 
