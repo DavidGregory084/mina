@@ -20,7 +20,7 @@ tasks.register<NpmTask>("build") {
     dependsOn(":mina-lang-server:publish")
     dependsOn(tasks.npmInstall)
     npmCommand.set(
-        if (OperatingSystem.current().isLinux())
+        if (OperatingSystem.current().isLinux)
             listOf("run", "test-linux")
         else
             listOf("run", "test")

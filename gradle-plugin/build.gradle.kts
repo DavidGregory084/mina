@@ -5,7 +5,7 @@ plugins {
 }
 
 gradlePlugin {
-    val mina by plugins.creating {
+    plugins.create("mina") {
         id = "org.mina-lang.gradle"
         implementationClass = "org.mina_lang.gradle.MinaPlugin"
     }
