@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "jdk-utils": "^0.4.6",
-    "vscode-languageclient": "^8.0.0"
+    "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
     "@microsoft/vscode-file-downloader-api": "^1.0.1",
