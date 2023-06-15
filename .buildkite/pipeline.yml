@@ -4,9 +4,15 @@ steps:
     artifact_paths: "**/build/test-results/*/TEST-*.xml"
     plugins:
       - docker#v5.7.0:
-          image: timbru31/java-node:17-jdk-16
+          image: "timbru31/java-node:{{matrix.java}}-jdk-{{matrix.node}}"
           env:
             - DEBIAN_FRONTEND=noninteractive
+    matrix:
+      setup:
+        java:
+          - "17"
+        node:
+          - "16"
   - wait: ~
     continue_on_failure: true
   - name: ":junit: Collect JUnit Results"
