@@ -1,0 +1,15 @@
+steps:
+  - name: ":gradle: Continuous Integration"
+    command: "./.buildkite/ci.sh"
+    artifact_paths: "**/build/test-results/*/TEST-*.xml"
+    plugins:
+      - docker#v5.7.0:
+          image: timbru31/java-node:17-jdk-16
+          env:
+            - DEBIAN_FRONTEND=noninteractive
+  - wait: ~
+    continue_on_failure: true
+  - name: ":junit: Collect JUnit Results"
+    plugins:
+      - junit-annotate#v2.4.1:
+          artifacts: "**/build/test-results/*/TEST-*.xml"
