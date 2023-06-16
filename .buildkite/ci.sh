@@ -8,4 +8,4 @@ sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.
 apt-get -qq update && apt-get -y install code xvfb
 
 # Run the Gradle build
-./gradlew build --info
+./gradlew --build-cache build --info

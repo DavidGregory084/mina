@@ -11,6 +11,11 @@ steps:
     plugins:
       - opencastsoftware/cache#ed251b94:
           backend: s3
+          path: .gradle
+          restore: branch
+          save: branch
+      - opencastsoftware/cache#ed251b94:
+          backend: s3
           manifest: vscode-plugin/package-lock.json
           path: vscode-plugin/node_modules
           restore: file
@@ -19,6 +24,7 @@ steps:
           image: "timbru31/java-node:{{matrix.java}}-jdk-{{matrix.node}}"
           env:
             - DEBIAN_FRONTEND=noninteractive
+            - GRADLE_USER_HOME=/workdir/.gradle
 
   - wait: ~
     continue_on_failure: true
