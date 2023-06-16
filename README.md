@@ -1,5 +1,7 @@
 # mina
 
+[![Build status](https://badge.buildkite.com/fc749e98ce02606567678244499e97a8202999e22b0a6219fb.svg?branch=main)](https://buildkite.com/mina-lang/mina)
+
 *mina* is a minimum viable functional programming language for the JVM.
 
 Everything is currently under construction and subject to change.
