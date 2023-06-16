@@ -10,6 +10,7 @@ steps:
           - "16"
     plugins:
       - opencastsoftware/cache#c09026b:
+          backend: s3
           manifest: vscode-plugin/package-lock.json
           path: vscode-plugin/node_modules
           restore: file
