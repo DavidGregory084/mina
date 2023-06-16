@@ -9,7 +9,7 @@ steps:
         node:
           - "16"
     plugins:
-      - opencastsoftware/cache-buildkite-plugin#c09026b:
+      - opencastsoftware/cache#c09026b:
           manifest: vscode-plugin/package-lock.json
           path: vscode-plugin/node_modules
           restore: file
