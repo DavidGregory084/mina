@@ -9,7 +9,7 @@ steps:
         node:
           - "16"
     plugins:
-      - opencastsoftware/cache#c09026b:
+      - opencastsoftware/cache#e0ebda77:
           backend: s3
           manifest: vscode-plugin/package-lock.json
           path: vscode-plugin/node_modules
