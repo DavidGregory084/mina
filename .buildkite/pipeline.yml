@@ -9,13 +9,13 @@ steps:
         node:
           - "16"
     plugins:
-      - opencastsoftware/cache#ed251b94:
-          backend: s3
+      - opencastsoftware/cache#bff27546:
+          backend: minio
           path: .gradle
           restore: branch
           save: branch
-      - opencastsoftware/cache#ed251b94:
-          backend: s3
+      - opencastsoftware/cache#bff27546:
+          backend: minio
           manifest: vscode-plugin/package-lock.json
           path: vscode-plugin/node_modules
           restore: file
