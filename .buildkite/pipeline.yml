@@ -2,29 +2,9 @@ steps:
   - label: ":gradle: Continuous Integration"
     command: "./.buildkite/ci.sh"
     artifact_paths: "**/build/test-results/*/TEST-*.xml"
-    matrix:
-      setup:
-        java:
-          - "17"
-        node:
-          - "16"
     plugins:
-      - opencastsoftware/cache#8ed83e97:
-          backend: minio
-          path: .gradle
-          restore: branch
-          save: branch
-      - opencastsoftware/cache#8ed83e97:
-          backend: minio
-          manifest: vscode-plugin/package-lock.json
-          path: vscode-plugin/node_modules
-          restore: file
-          save: file
       - docker#v5.7.0:
-          image: "timbru31/java-node:{{matrix.java}}-jdk-{{matrix.node}}"
-          env:
-            - DEBIAN_FRONTEND=noninteractive
-            - GRADLE_USER_HOME=/workdir/.gradle
+          image: "timbru31/java-node:17-jdk-16"
 
   - wait: ~
     continue_on_failure: true
