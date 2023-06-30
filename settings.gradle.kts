@@ -47,3 +47,10 @@ project(":runtime").name = "mina-runtime"
 
 // VS Code plugin
 include("vscode-plugin")
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
