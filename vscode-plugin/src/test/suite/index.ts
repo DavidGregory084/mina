@@ -7,6 +7,14 @@ export function run(): Promise<void> {
   const mocha = new Mocha({
     ui: "tdd",
     color: true,
+    reporter: "mocha-multi-reporters",
+    reporterOptions: {
+      reporterEnabled: "spec, mocha-junit-reporter",
+      mochaJunitReporterReporterOptions: {
+        mochaFile: "build/test-results/vscode-test/TEST-vscode-test.xml",
+        testCaseSwitchClassnameAndName: true
+      }
+    }
   });
 
   const testsRoot = path.resolve(__dirname, "..");

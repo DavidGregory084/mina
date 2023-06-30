@@ -38,6 +38,8 @@
     "eslint": "^8.43.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
+    "mocha-junit-reporter": "^2.2.0",
+    "mocha-multi-reporters": "^1.5.1",
     "prettier": "^2.8.8",
     "typescript": "^5.1.3"
   },
