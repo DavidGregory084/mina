@@ -19,7 +19,6 @@ async function main() {
     const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
     const testOptions: TestOptions = {
-      version: "1.78.2",
       extensionDevelopmentPath,
       extensionTestsPath,
       launchArgs: ["--no-sandbox", "--disable-gpu-sandbox"]
