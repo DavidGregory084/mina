@@ -14,14 +14,14 @@ async function main() {
     // Passed to `--extensionDevelopmentPath`
     const extensionDevelopmentPath = path.resolve(__dirname, "../../");
 
-    // The path to the extension test script
+    // The path to the extension test runner script
     // Passed to --extensionTestsPath
     const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
     const testOptions: TestOptions = {
       extensionDevelopmentPath,
       extensionTestsPath,
-      launchArgs: ["--no-sandbox", "--disable-gpu-sandbox"]
+      launchArgs: ["--no-sandbox", "--disable-gpu-sandbox"],
     };
 
     const vscodeExecutablePath = await downloadAndUnzipVSCode(testOptions);
@@ -41,6 +41,7 @@ async function main() {
     // Download VS Code, unzip it and run the integration test
     await runTests(testOptions);
   } catch (err) {
+    console.error(err);
     console.error("Failed to run tests");
     process.exit(1);
   }
