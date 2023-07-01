@@ -18,7 +18,7 @@ import {
   TransportKind
 } from "vscode-languageclient/node";
 
-import { getApi } from "@microsoft/vscode-file-downloader-api";
+import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { findRuntimes } from "jdk-utils";
 
 let client: LanguageClient;
@@ -29,7 +29,7 @@ export async function activate(context: ExtensionContext) {
   const profilingEnabled = false;
 
   if (javaHomeRuntime) {
-    const fileDownloader = await getApi();
+    const fileDownloader: FileDownloader = await getApi();
 
     const coursierLaunchers = Uri.parse(
       "https://github.com/coursier/launchers/raw/master/coursier.jar"
