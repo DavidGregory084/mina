@@ -3,6 +3,7 @@ package org.mina_lang.langserver;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -16,8 +17,6 @@ import org.eclipse.lsp4j.services.*;
 import org.mina_lang.BuildInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private static Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
@@ -33,13 +32,21 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private AtomicReference<String> traceValue = new AtomicReference<>(TraceValue.Off);
     private AtomicReference<ClientCapabilities> clientCapabilities = new AtomicReference<>();
 
-    private ThreadFactory threadFactory = new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("mina-langserver-%d")
-            .setUncaughtExceptionHandler((t, ex) -> {
-                logger.error("Uncaught exception in thread {}", t.getName(), ex);
-            })
-            .build();
+    private ThreadFactory threadFactory = new ThreadFactory() {
+        private final AtomicLong count = new AtomicLong(0);
+        private final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = (t, ex) -> {
+            logger.error("Uncaught exception in thread {}", t.getName(), ex);
+        };
+
+        @Override
+        public Thread newThread(Runnable runnable) {
+            var thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setDaemon(true);
+            thread.setName(String.format("mina-langserver-%d", count.getAndIncrement()));
+            thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+            return thread;
+        }
+    };
 
     private ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
 
@@ -76,8 +83,8 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             });
         } else {
             var error = isShutdown()
-                    ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
-                    : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
+                ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
+                : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
             var result = new CompletableFuture<A>();
             result.completeExceptionally(new ResponseErrorException(error));
             return result;
@@ -118,11 +125,11 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             cancelToken.checkCanceled();
 
             Optional.ofNullable(params.getProcessId())
-                    .flatMap(ProcessHandle::of)
-                    .ifPresent(processHandle -> {
-                        logger.info("Monitoring termination of parent process {}", processHandle.pid());
-                        processHandle.onExit().thenRun(this::exit);
-                    });
+                .flatMap(ProcessHandle::of)
+                .ifPresent(processHandle -> {
+                    logger.info("Monitoring termination of parent process {}", processHandle.pid());
+                    processHandle.onExit().thenRun(this::exit);
+                });
 
             var serverInfo = new ServerInfo("Mina Language Server", BuildInfo.version);
 
