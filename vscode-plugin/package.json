@@ -30,7 +30,7 @@
     "@tsconfig/recommended": "^1.0.2",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^16.18.37",
+    "@types/node": "^16.18.38",
     "@types/vscode": "^1.79.1",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
