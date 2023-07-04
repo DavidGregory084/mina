@@ -50,7 +50,7 @@ include("vscode-plugin")
 
 pluginManagement {
     repositories {
-        gradlePluginPortal()
         mavenCentral()
+        gradlePluginPortal()
     }
 }
