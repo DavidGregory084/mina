@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,9 @@ public class ParserTest {
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
         var parser = new Parser(parsingCollector);
-        var actual = parser.parse(source, visitor, startRule);
+        var input = CharStreams.fromString(source);
+        var actual = parser.parse(input, visitor, startRule);
+        assertThat("The parser should consume the entire input", input.index(), is(equalTo(input.size())));
         assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
         assertThat(actual, equalTo(expected));
@@ -66,9 +69,13 @@ public class ParserTest {
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
         var parser = new Parser(parsingCollector);
-        parser.parse(source, visitor, startRule);
+        var input = CharStreams.fromString(source);
+        parser.parse(input, visitor, startRule);
         var errors = baseCollector.getErrors();
-        assertThat("There should be parsing errors", errors, not(empty()));
+        var entireInputConsumed = input.index() == input.size();
+        if (entireInputConsumed) {
+            assertThat("There should be parsing errors", errors, not(empty()));
+        }
         return errors;
     }
 
@@ -1129,25 +1136,16 @@ public class ParserTest {
     }
 
     @Test
-    void parseFullyQualifiedId() {
-        testSuccessfulParse("Mina/Test/Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
-                refNode(new Range(0, 0, 0, 32),
-                        nsIdNode(new Range(0, 0, 0, 16), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        "compilationUnit"));
-    }
-
-    @Test
-    void parseFQNMissingId() {
-        var errors = testFailedParse("Mina/Test/Parser.", Parser::getExprVisitor, MinaParser::expr);
+    void parseUnfinishedQNInExpression() {
+        var errors = testFailedParse("Parser.", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
     }
 
     @Test
-    void parsePackageOnly() {
-        var errors = testFailedParse("Mina/Test/Parser", Parser::getExprVisitor, MinaParser::expr);
-        assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting '.'"));
+    void parseIllegalFQNInExpression() {
+        // Doesn't consume the entire input
+        testFailedParse("Mina/Test/Parser", Parser::getExprVisitor, MinaParser::expr);
     }
 
     @Test

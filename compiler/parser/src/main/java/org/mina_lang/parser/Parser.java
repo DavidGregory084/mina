@@ -219,15 +219,27 @@ public class Parser {
                     .map(namespaceIdVisitor::visitNullable)
                     .orElse(null);
 
-            var symbols = selector
-                    .map(selectorCtx -> {
-                        return selectorCtx.symbols.stream()
-                                .map(sym -> importSymbolNode(tokenRange(sym), sym.getText()))
-                                .collect(Collectors2.toImmutableList());
-                    })
-                    .orElse(Lists.immutable.empty());
+            var singleImportee = selector
+                    .map(ImportSelectorContext::ID)
+                    .map(id -> importSymbolNode(tokenRange(id.getSymbol()), id.getText()))
+                    .map(Lists.immutable::of);
 
-            return importNode(contextRange(ctx), ns, symbols);
+            var multiImportees = selector
+                    .map(ImportSelectorContext::importee)
+                    .map(importees -> {
+                        return importees.stream().map(importee -> {
+                            return importSymbolNode(
+                                    contextRange(importee),
+                                    Optional.ofNullable(importee.id).map(Token::getText).orElse(null),
+                                    Optional.ofNullable(importee.alias).map(Token::getText));
+                        }).collect(Collectors2.toImmutableList());
+                    });
+
+            return importNode(
+                    contextRange(ctx), ns,
+                    singleImportee
+                            .or(() -> multiImportees)
+                            .orElseGet(() -> Lists.immutable.empty()));
         }
     }
 
@@ -601,7 +613,9 @@ public class Parser {
 
         @Override
         public PatternNode<Void> visitPattern(PatternContext ctx) {
-            return visitAlternatives(ctx.aliasPattern(), ctx.idPattern(), ctx.literalPattern(), ctx.constructorPattern());
+            return visitAlternatives(
+                    ctx.aliasPattern(), ctx.idPattern(),
+                    ctx.literalPattern(), ctx.constructorPattern());
         }
 
         @Override
@@ -665,8 +679,10 @@ public class Parser {
 
         @Override
         public QualifiedIdNode visitQualifiedId(QualifiedIdContext ctx) {
-            var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
-            var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
+            var ns = Optional.ofNullable(ctx.ns).map(token -> {
+                return nsIdNode(tokenRange(token), Lists.immutable.empty(), token.getText());
+            });
+            var id = Optional.ofNullable(ctx.id).map(Token::getText).orElse(null);
             return idNode(contextRange(ctx), ns, id);
         }
     }

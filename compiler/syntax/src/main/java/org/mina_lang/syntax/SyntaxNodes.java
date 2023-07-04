@@ -47,7 +47,11 @@ public class SyntaxNodes {
     }
 
     public static ImportSymbolNode importSymbolNode(Range range, String symbol) {
-        return new ImportSymbolNode(range, symbol);
+        return new ImportSymbolNode(range, symbol, Optional.empty());
+    }
+
+    public static ImportSymbolNode importSymbolNode(Range range, String symbol, Optional<String> alias) {
+        return new ImportSymbolNode(range, symbol, alias);
     }
 
     // Top level declarations

@@ -154,7 +154,6 @@ public class Main {
                     namespaceNodes.get(namespaceName)
                             .imports()
                             .forEach(imp -> {
-                                // TODO: Handle fully-qualified references
                                 var importName = imp.namespace().getName();
                                 if (namespaceGraph.containsVertex(importName)) {
                                     namespaceGraph.addVertex(importName);
@@ -190,7 +189,7 @@ public class Main {
 
         var parsingPhase = new ParsingPhase(sourceData, scopedDiagnostics, namespaceNodes, mainCollector);
 
-        return Phase.sequenceMono(parsingPhase, parsedNodes -> {
+        return parsingPhase.runPhase().flatMap(parsedNodes -> {
             var namespaceGraph = constructNamespaceGraph(parsedNodes);
 
             // We can't proceed if our namespace graph is badly formed
@@ -199,11 +198,11 @@ public class Main {
             } else {
                 var renamingPhase = new RenamingPhase(namespaceGraph, parsedNodes, scopedDiagnostics);
 
-                var typecheckingPhase = Phase.sequence(renamingPhase, renamedNodes -> {
+                var typecheckingPhase = Phase.andThen(renamingPhase, renamedNodes -> {
                     return new TypecheckingPhase(namespaceGraph, renamedNodes, scopedDiagnostics);
                 });
 
-                var codegenPhase = Phase.sequence(typecheckingPhase, typecheckedNodes -> {
+                var codegenPhase = Phase.andThen(typecheckingPhase, typecheckedNodes -> {
                     return new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
                 });
 

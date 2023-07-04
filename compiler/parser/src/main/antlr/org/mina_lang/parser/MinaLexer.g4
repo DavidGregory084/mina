@@ -34,6 +34,8 @@ MATCH: 'match';
 WITH: 'with';
 CASE: 'case';
 
+AS: 'as';
+
 // Block and application delimiters
 LBRACE: '{';
 RBRACE: '}';

@@ -8,7 +8,7 @@ It is a strictly-evaluated, statically-typed language.
 
 ### Syntax
 
-The keywords `namespace`, `import`, `data`, `let`, `if`, `then`, `else`, `match`, `with` and `case` are reserved.
+The keywords `namespace`, `import`, `as`, `data`, `let`, `if`, `then`, `else`, `match`, `with` and `case` are reserved.
 
 `(` and `)` are delimiters for values. They are used for value parameter lists, and for applying values to functions.
 

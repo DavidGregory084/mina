@@ -12,8 +12,11 @@ namespace: NAMESPACE namespaceId LBRACE importDeclaration* declaration* RBRACE E
 importDeclaration: IMPORT importSelector;
 
 importSelector:
-    namespaceId (DOT symbols += ID)?
-    | namespaceId DOT LBRACE symbols += ID (COMMA symbols += ID)* RBRACE;
+    namespaceId (DOT ID)?
+    | namespaceId DOT LBRACE importee (COMMA importee)* RBRACE;
+
+importee:
+    id = ID (AS alias = ID)?;
 
 // Declarations
 declaration: dataDeclaration | letFnDeclaration | letDeclaration;
@@ -125,4 +128,4 @@ literalString: LITERAL_STRING;
 
 // Identifiers
 namespaceId: (pkg += ID RSLASH)* ns = ID;
-qualifiedId: (namespaceId DOT)? ID;
+qualifiedId: (ns = ID DOT)? id = ID;

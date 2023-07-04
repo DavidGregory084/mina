@@ -73,6 +73,7 @@ public class GraphPhaseTest {
         };
 
         StepVerifier.create(phase.runPhase())
+                .expectNext(namespaceNodes)
                 .expectComplete()
                 .verify();
 

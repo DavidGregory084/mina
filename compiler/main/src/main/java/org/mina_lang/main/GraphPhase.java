@@ -59,8 +59,7 @@ public non-sealed abstract class GraphPhase<A, B>
     ParallelFlux<NamespaceNode<B>> topoTraverseFrom(NamespaceName startNode) {
         return Optional.ofNullable(inputNodes.get(startNode))
                 .map(inputNode -> {
-                    var nsName = inputNode.id().getName();
-                    var nsDiagnostics = scopedDiagnostics.get(nsName);
+                    var nsDiagnostics = scopedDiagnostics.get(startNode);
                     if (nsDiagnostics.hasErrors()) {
                         return Mono.<NamespaceNode<B>>empty();
                     } else {
@@ -70,8 +69,7 @@ public non-sealed abstract class GraphPhase<A, B>
                 .orElseGet(Mono::empty) // This may happen if the node had errors in a previous phase
                 .doOnNext(transformedNode -> transformedNodes.put(startNode, transformedNode))
                 .flatMapMany(transformedNode -> {
-                    var nsName = transformedNode.id().getName();
-                    var nsDiagnostics = scopedDiagnostics.get(nsName);
+                    var nsDiagnostics = scopedDiagnostics.get(startNode);
                     if (nsDiagnostics.hasErrors()) {
                         return Flux.empty();
                     } else {
@@ -94,12 +92,13 @@ public non-sealed abstract class GraphPhase<A, B>
                 .runOn(Schedulers.parallel());
     }
 
-    public Mono<Void> runPhase() {
+    public Mono<ConcurrentHashMap<NamespaceName, NamespaceNode<B>>> runPhase() {
         return Flux.fromIterable(rootNodes)
                 .parallel()
                 .runOn(Schedulers.parallel())
                 .flatMap(this::topoTraverseFrom)
-                .then();
+                .then()
+                .thenReturn(transformedData());
     }
 
     public ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedData() {
