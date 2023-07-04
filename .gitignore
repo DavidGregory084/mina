@@ -10,6 +10,7 @@ node_modules/
 out/
 # I don't know where these files come from - IntelliJ ANTLR plugin?
 compiler/parser/src/main/gen/
+compiler/parser/src/main/antlr/org/mina_lang/parser/gen/
 .classpath
 .jqwik-database
 .project

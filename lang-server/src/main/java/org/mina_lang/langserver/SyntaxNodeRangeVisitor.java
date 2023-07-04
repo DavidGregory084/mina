@@ -10,9 +10,9 @@ import org.mina_lang.syntax.SyntaxNode;
 import org.mina_lang.syntax.SyntaxNodeVisitor;
 
 public class SyntaxNodeRangeVisitor implements SyntaxNodeVisitor {
-    MutableSortedMap<Range, MetaNode<?>> rangeNodes = SortedMaps.mutable.of(new RangeComparator());
+    MutableSortedMap<Range, SyntaxNode> rangeNodes = SortedMaps.mutable.of(new RangeComparator());
 
-    public ImmutableSortedMap<Range, MetaNode<?>> getRangeNodes() {
+    public ImmutableSortedMap<Range, SyntaxNode> getRangeNodes() {
         return rangeNodes.toImmutable();
     }
 
@@ -26,8 +26,6 @@ public class SyntaxNodeRangeVisitor implements SyntaxNodeVisitor {
                 new Position(start.line(), start.character()),
                 new Position(end.line(), end.character()));
 
-        if (node instanceof MetaNode<?> metaNode) {
-            rangeNodes.put(range, metaNode);
-        }
+        rangeNodes.put(range, node);
     }
 }

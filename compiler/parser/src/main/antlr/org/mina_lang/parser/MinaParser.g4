@@ -12,7 +12,7 @@ namespace: NAMESPACE namespaceId LBRACE importDeclaration* declaration* RBRACE E
 importDeclaration: IMPORT importSelector;
 
 importSelector:
-    namespaceId (DOT ID)?
+    namespaceId (DOT id = ID)?
     | namespaceId DOT LBRACE importee (COMMA importee)* RBRACE;
 
 importee:

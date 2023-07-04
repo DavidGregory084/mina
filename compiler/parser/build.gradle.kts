@@ -4,12 +4,22 @@ plugins {
     antlr
 }
 
+// Workaround for https://github.com/gradle/gradle/issues/820
+configurations {
+    api {
+        setExtendsFrom(extendsFrom.filterNot { it == antlr.get() })
+    }
+}
+
 dependencies {
-    // String escaping
+    // String Escaping
     implementation(libs.apacheCommonsText)
 
-    // Syntax Tree Parsing
+    // Parser Generation
     antlr(libs.antlr)
+
+    // Syntax Tree Parsing
+    api(libs.antlrRuntime)
 
     // Syntax Tree Definitions
     api(project(":compiler:mina-compiler-syntax"))

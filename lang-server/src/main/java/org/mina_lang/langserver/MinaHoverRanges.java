@@ -8,15 +8,16 @@ import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.util.Ranges;
 import org.mina_lang.syntax.MetaNode;
+import org.mina_lang.syntax.SyntaxNode;
 
 public class MinaHoverRanges {
-    private final ConcurrentHashMap<String, CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>> hoverRanges = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<ImmutableSortedMap<Range, SyntaxNode>>> hoverRanges = new ConcurrentHashMap<>();
 
-    public CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>> get(String uri) {
+    public CompletableFuture<ImmutableSortedMap<Range, SyntaxNode>> get(String uri) {
         return hoverRanges.get(uri);
     }
 
-    public CompletableFuture<Pair<Range, MetaNode<?>>> get(String uri, Position hoverPos) {
+    public CompletableFuture<Pair<Range, SyntaxNode>> get(String uri, Position hoverPos) {
         var documentRanges = hoverRanges.get(uri);
         return documentRanges == null ? CompletableFuture.completedFuture(null)
                 : hoverRanges.get(uri).thenApply(ranges -> {
@@ -25,12 +26,12 @@ public class MinaHoverRanges {
     }
 
     public void addHoverRanges(DidOpenTextDocumentParams params,
-            CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>> ranges) {
+            CompletableFuture<ImmutableSortedMap<Range, SyntaxNode>> ranges) {
         hoverRanges.put(params.getTextDocument().getUri(), ranges);
     }
 
     public void updateHoverRanges(DidChangeTextDocumentParams params,
-            CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>> ranges) {
+            CompletableFuture<ImmutableSortedMap<Range, SyntaxNode>> ranges) {
         hoverRanges.put(params.getTextDocument().getUri(), ranges);
     }
 

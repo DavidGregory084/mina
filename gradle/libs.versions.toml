@@ -30,6 +30,7 @@ yvette = "0.1.0"
 
 [libraries]
 antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
+antlrRuntime = { module = "org.antlr:antlr4-runtime", version.ref = "antlr" }
 apacheCommonsLang = { module = "org.apache.commons:commons-lang3", version.ref = "apacheCommonsLang" }
 apacheCommonsText = { module = "org.apache.commons:commons-text", version.ref = "apacheCommonsText" }
 asm = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }

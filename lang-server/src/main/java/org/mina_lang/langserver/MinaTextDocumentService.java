@@ -18,6 +18,7 @@ import org.mina_lang.common.types.TypePrinter;
 import org.mina_lang.main.Main;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
+import org.mina_lang.syntax.SyntaxNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,14 +37,14 @@ public class MinaTextDocumentService implements TextDocumentService {
     }
 
     private <A> CompletableFuture<A> withDiagnostics(TextDocumentItem document,
-            Function<MinaDiagnosticCollector, CompletableFuture<A>> action) {
+                                                     Function<MinaDiagnosticCollector, CompletableFuture<A>> action) {
         var diagnostics = new MinaDiagnosticCollector();
         return action.apply(diagnostics).thenApply(result -> {
             server.getClient().publishDiagnostics(
-                    new PublishDiagnosticsParams(
-                            document.getUri(),
-                            diagnostics.getLSPDiagnostics(document.getUri()),
-                            document.getVersion()));
+                new PublishDiagnosticsParams(
+                    document.getUri(),
+                    diagnostics.getLSPDiagnostics(document.getUri()),
+                    document.getVersion()));
             return result;
         });
     }
@@ -55,7 +56,7 @@ public class MinaTextDocumentService implements TextDocumentService {
             var documentUri = document.getUri();
             documents.addDocument(params);
 
-            var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();
+            var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, SyntaxNode>>();
             hoverRanges.addHoverRanges(params, hoversFuture);
 
             CompletableFuture<NamespaceNode<?>> parsingFuture = withDiagnostics(document, diagnostics -> {
@@ -84,7 +85,7 @@ public class MinaTextDocumentService implements TextDocumentService {
             var documentUri = params.getTextDocument().getUri();
             var updatedDocument = documents.updateDocument(params);
 
-            var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, MetaNode<?>>>();
+            var hoversFuture = new CompletableFuture<ImmutableSortedMap<Range, SyntaxNode>>();
             hoverRanges.updateHoverRanges(params, hoversFuture);
 
             CompletableFuture<NamespaceNode<?>> parsingFuture = withDiagnostics(updatedDocument, diagnostics -> {
@@ -120,8 +121,9 @@ public class MinaTextDocumentService implements TextDocumentService {
     public void didSave(DidSaveTextDocumentParams params) {
     }
 
-    private Hover formatNode(Range range, MetaNode<?> node) {
-        if (node.meta().meta() instanceof Attributes attrs) {
+    private Hover formatNode(Range range, SyntaxNode node) {
+        if (node instanceof MetaNode metaNode &&
+            metaNode.meta().meta() instanceof Attributes attrs) {
             String nameString;
 
             if (attrs.name() instanceof LocalName name) {
@@ -133,12 +135,12 @@ public class MinaTextDocumentService implements TextDocumentService {
             }
 
             var sortString = attrs.sort()
-                    .accept(sortPrinter)
-                    .render(80);
+                .accept(sortPrinter)
+                .render(80);
 
             var markup = new MarkupContent(
-                    MarkupKind.MARKDOWN,
-                    "```mina\n" + nameString + sortString + "\n```");
+                MarkupKind.MARKDOWN,
+                "```mina\n" + nameString + sortString + "\n```");
 
             return new Hover(markup, range);
         } else {
@@ -152,14 +154,14 @@ public class MinaTextDocumentService implements TextDocumentService {
             cancelToken.checkCanceled();
 
             return hoverRanges
-                    .get(params.getTextDocument().getUri(), params.getPosition())
-                    .handle((pair, ex) -> {
-                        if (pair != null) {
-                            return formatNode(pair.getOne(), pair.getTwo());
-                        } else {
-                            return null;
-                        }
-                    });
+                .get(params.getTextDocument().getUri(), params.getPosition())
+                .handle((pair, ex) -> {
+                    if (pair != null) {
+                        return formatNode(pair.getOne(), pair.getTwo());
+                    } else {
+                        return null;
+                    }
+                });
         });
     }
 }

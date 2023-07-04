@@ -2,27 +2,28 @@ package org.mina_lang.gradle;
 
 import javax.inject.Inject;
 
+import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.jvm.internal.JvmEcosystemUtilities;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.CacheableTask;
-import org.gradle.api.tasks.Classpath;
-import org.gradle.api.tasks.Nested;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.api.tasks.compile.CompileOptions;
 import org.gradle.api.tasks.compile.ForkOptions;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
+import org.jetbrains.annotations.NotNull;
 
 @CacheableTask
+@NonNullApi
 public abstract class MinaCompile extends AbstractCompile implements HasCompileOptions {
 
     private CompileOptions compileOptions;
@@ -56,6 +57,15 @@ public abstract class MinaCompile extends AbstractCompile implements HasCompileO
 
     @Inject
     public abstract WorkerExecutor getWorkerExecutor();
+
+    @Override
+    @SkipWhenEmpty
+    @IgnoreEmptyDirectories
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @InputFiles
+    public FileTree getSource() {
+        return super.getSource();
+    }
 
     @TaskAction
     public void compile() {

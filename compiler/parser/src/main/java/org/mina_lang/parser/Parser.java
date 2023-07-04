@@ -1,6 +1,18 @@
 package org.mina_lang.parser;
 
-import static org.mina_lang.syntax.SyntaxNodes.*;
+import com.opencastsoftware.yvette.Position;
+import com.opencastsoftware.yvette.Range;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.text.StringEscapeUtils;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.impl.collector.Collectors2;
+import org.eclipse.collections.impl.factory.Lists;
+import org.mina_lang.parser.MinaParser.*;
+import org.mina_lang.syntax.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -9,18 +21,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.commons.text.StringEscapeUtils;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.collector.Collectors2;
-import org.mina_lang.parser.MinaParser.*;
-import org.mina_lang.syntax.*;
-
-import com.opencastsoftware.yvette.Position;
-import com.opencastsoftware.yvette.Range;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Parser {
 
@@ -29,6 +30,7 @@ public class Parser {
     private NamespaceIdVisitor namespaceIdVisitor = new NamespaceIdVisitor();
     private NamespaceVisitor namespaceVisitor = new NamespaceVisitor();
     private ImportVisitor importVisitor = new ImportVisitor();
+    private ImporteeVisitor importeeVisitor = new ImporteeVisitor();
     private DeclarationVisitor declarationVisitor = new DeclarationVisitor();
     private ConstructorVisitor constructorVisitor = new ConstructorVisitor();
     private ConstructorParamVisitor constructorParamVisitor = new ConstructorParamVisitor();
@@ -51,6 +53,10 @@ public class Parser {
 
     ImportVisitor getImportVisitor() {
         return importVisitor;
+    }
+
+    ImporteeVisitor getImporteeVisitor() {
+        return importeeVisitor;
     }
 
     DeclarationVisitor getDeclarationVisitor() {
@@ -121,11 +127,36 @@ public class Parser {
         var lexer = new MinaLexer(charStream);
         lexer.removeErrorListeners();
         lexer.addErrorListener(diagnostics);
+
         var tokenStream = new CommonTokenStream(lexer);
         var parser = new MinaParser(tokenStream);
+
+        // Try parsing using SLL(*) first, as it's faster
+        var interpreter = parser.getInterpreter();
+        interpreter.setPredictionMode(PredictionMode.SLL);
+
+        // Don't report diagnostics on the first pass
         parser.removeErrorListeners();
-        parser.addErrorListener(diagnostics);
-        return visitor.apply(this).visitNullable(startRule.apply(parser));
+        parser.setErrorHandler(new BailErrorStrategy());
+
+        A syntaxNode;
+
+        try {
+            syntaxNode = startRule.apply(parser);
+        } catch (ParseCancellationException e) {
+            // Try again with LL(*) if it fails
+            interpreter.setPredictionMode(PredictionMode.LL);
+            tokenStream.seek(0);
+            parser.reset();
+
+            // Collect diagnostics on the second pass
+            parser.addErrorListener(diagnostics);
+            parser.setErrorHandler(new DefaultErrorStrategy());
+
+            syntaxNode = startRule.apply(parser);
+        }
+
+        return visitor.apply(this).visitNullable(syntaxNode);
     }
 
     static Range tokenRange(Token token) {
@@ -220,26 +251,28 @@ public class Parser {
                     .orElse(null);
 
             var singleImportee = selector
-                    .map(ImportSelectorContext::ID)
-                    .map(id -> importSymbolNode(tokenRange(id.getSymbol()), id.getText()))
+                    .map(s -> s.id)
+                    .map(id -> importSymbolNode(tokenRange(id), id.getText()))
                     .map(Lists.immutable::of);
 
             var multiImportees = selector
-                    .map(ImportSelectorContext::importee)
-                    .map(importees -> {
-                        return importees.stream().map(importee -> {
-                            return importSymbolNode(
-                                    contextRange(importee),
-                                    Optional.ofNullable(importee.id).map(Token::getText).orElse(null),
-                                    Optional.ofNullable(importee.alias).map(Token::getText));
-                        }).collect(Collectors2.toImmutableList());
-                    });
+                .map(ImportSelectorContext::importee)
+                .map(importees -> visitRepeated(importees, importeeVisitor));
 
             return importNode(
                     contextRange(ctx), ns,
                     singleImportee
                             .or(() -> multiImportees)
-                            .orElseGet(() -> Lists.immutable.empty()));
+                            .orElseGet(Lists.immutable::empty));
+        }
+    }
+
+    class ImporteeVisitor extends Visitor<ImporteeContext, ImportSymbolNode> {
+        @Override
+        public ImportSymbolNode visitImportee(ImporteeContext ctx) {
+            var id = Optional.ofNullable(ctx.id).map(Token::getText).orElse(null);
+            var alias = Optional.ofNullable(ctx.alias).map(Token::getText);
+            return importSymbolNode(contextRange(ctx), id, alias);
         }
     }
 
@@ -355,7 +388,7 @@ public class Parser {
 
             if (applicableTypeNode != null) {
                 var args = ctx.typeApplication().type().stream()
-                        .<TypeNode<Void>>map(ref -> visitType(ref))
+                        .<TypeNode<Void>>map(this::visitType)
                         .collect(Collectors2.toImmutableList());
 
                 return typeApplyNode(contextRange(ctx), applicableTypeNode, args);
