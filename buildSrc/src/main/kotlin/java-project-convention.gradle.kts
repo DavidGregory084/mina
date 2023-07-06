@@ -51,7 +51,6 @@ spotless {
              */
             """.trimIndent()
         )
-        eclipse()
         formatAnnotations()
         importOrder("", "javax|java", "\\#") // IntelliJ import order
         removeUnusedImports()
