@@ -15,3 +15,4 @@ compiler/parser/src/main/antlr/org/mina_lang/parser/gen/
 .jqwik-database
 .project
 *.class
+*.tokens

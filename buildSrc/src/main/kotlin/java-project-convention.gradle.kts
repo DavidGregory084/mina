@@ -9,6 +9,7 @@ plugins {
     `maven-publish`
     jacoco
     id("com.github.ben-manes.versions")
+    id("com.diffplug.spotless")
 }
 
 repositories {
@@ -36,6 +37,39 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 }
 
+spotless {
+    ratchetFrom("origin/main")
+
+    java {
+        encoding("UTF-8")
+        targetExclude("build/**")
+        licenseHeader(
+            """
+            /*
+             * SPDX-FileCopyrightText:  © ${"$"}YEAR David Gregory
+             * SPDX-License-Identifier: Apache-2.0
+             */
+            """.trimIndent()
+        )
+        eclipse()
+        formatAnnotations()
+        importOrder("", "javax|java", "\\#") // IntelliJ import order
+        removeUnusedImports()
+        indentWithSpaces()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    kotlinGradle {
+        encoding("UTF-8")
+        target("**/*.gradle.kts")
+        ktfmt().kotlinlangStyle()
+        indentWithSpaces()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
 tasks.withType<Javadoc> {
     source = sourceSets.main.get().allJava
 
@@ -55,6 +89,7 @@ tasks.withType<Javadoc> {
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
+    options.compilerArgs.add("-Xlint")
 }
 
 tasks.named<Test>("test") {
@@ -64,6 +99,12 @@ tasks.named<Test>("test") {
 
 jacoco {
     toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.jacocoTestReport {
+    reports {
+        xml.required.set(true)
+    }
 }
 
 tasks.test {

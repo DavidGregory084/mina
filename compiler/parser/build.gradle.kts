@@ -11,6 +11,20 @@ configurations {
     }
 }
 
+spotless {
+    antlr4 {
+        licenseHeader(
+            """
+            /*
+             * SPDX-FileCopyrightText:  © ${"$"}YEAR David Gregory
+             * SPDX-License-Identifier: Apache-2.0
+             */
+            """.trimIndent()
+        )
+        antlr4Formatter()
+    }
+}
+
 dependencies {
     // String Escaping
     implementation(libs.apacheCommonsText)
@@ -31,10 +45,10 @@ tasks.generateGrammarSource {
     val outputDir = file("build/generated-src/antlr/main/org/mina_lang/parser")
     // the directory must exist or ANTLR bails
     doFirst { outputDir.mkdirs() }
-    arguments = arguments + listOf(
+    arguments.addAll(listOf(
         "-visitor",
         "-no-listener",
         // the lexer tokens file can't be found by the parser without this
         "-lib", outputDir.absolutePath,
-        "-package", "org.mina_lang.parser")
+        "-package", "org.mina_lang.parser"))
 }

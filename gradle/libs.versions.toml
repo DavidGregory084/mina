@@ -25,6 +25,7 @@ protobuf = "3.23.1"
 protobufGradle = "0.9.3"
 reactorCore = "3.5.7"
 slf4j = "2.0.7"
+spotless = "6.19.0"
 toStringVerifier = "1.4.8"
 yvette = "0.1.0"
 
@@ -60,6 +61,7 @@ protobufPlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", versio
 reactorCore = { module = "io.projectreactor:reactor-core", version.ref = "reactorCore" }
 reactorTest = { module = "io.projectreactor:reactor-test", version.ref = "reactorCore" }
 slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+spotlessGradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 toStringVerifier = { module = "com.jparams:to-string-verifier", version.ref = "toStringVerifier" }
 yvette = { module = "com.opencastsoftware:yvette", version.ref = "yvette" }
 
@@ -73,3 +75,4 @@ gradleBuildInfo = { id = "com.opencastsoftware.gradle.buildinfo", version.ref = 
 gradleNode = { id = "com.github.node-gradle.node", version.ref = "gradleNode" }
 gradleVersions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersions" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufGradle" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
