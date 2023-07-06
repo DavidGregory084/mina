@@ -1,8 +1,12 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.main;
 
-import java.util.function.Function;
-
 import reactor.core.publisher.Mono;
+
+import java.util.function.Function;
 
 public sealed interface Phase<A> permits GraphPhase, ParallelPhase {
     Mono<A> runPhase();

@@ -1,15 +1,19 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm;
 
-import java.util.Optional;
-
-import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.syntax.PatternNodeFolder;
 import org.mina_lang.syntax.QualifiedIdNode;
+
+import java.util.Optional;
 
 public class PatternVariablesFolder implements PatternNodeFolder<Attributes, ImmutableSet<Name>> {
 

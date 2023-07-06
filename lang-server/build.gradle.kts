@@ -11,9 +11,7 @@ dependencies {
     // We must use a pom type dependency here, because Gradle's platform()
     // doesn't actually resolve the transitive dependencies so they would
     // have to be added separately
-    implementation("${libs.junixSocket.get()}@pom") {
-        isTransitive = true
-    }
+    implementation("${libs.junixSocket.get()}@pom") { isTransitive = true }
 
     // Language Server Protocol
     implementation(libs.lsp4j)
@@ -26,6 +24,4 @@ dependencies {
     runtimeOnly(libs.logback)
 }
 
-application {
-    mainClass.set("org.mina_lang.langserver.MinaServerLauncher")
-}
+application { mainClass.set("org.mina_lang.langserver.MinaServerLauncher") }

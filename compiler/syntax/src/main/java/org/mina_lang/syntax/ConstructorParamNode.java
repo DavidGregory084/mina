@@ -1,8 +1,12 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.FieldName;
-import org.mina_lang.common.Meta;
 
 public record ConstructorParamNode<A> (Meta<A> meta, String name, TypeNode<A> typeAnnotation)
         implements MetaNode<A> {

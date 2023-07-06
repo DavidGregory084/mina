@@ -1,7 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;

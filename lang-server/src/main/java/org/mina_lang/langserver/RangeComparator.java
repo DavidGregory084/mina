@@ -1,9 +1,13 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
-
-import java.util.Comparator;
 
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+
+import java.util.Comparator;
 
 public class RangeComparator implements Comparator<Range> {
 

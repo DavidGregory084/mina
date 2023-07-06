@@ -1,9 +1,13 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
-
-import static org.mina_lang.syntax.SyntaxNodes.*;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public interface TypeNodeMetaTransformer<A, B> extends MetaTransformer<A, B>, TypeNodeTransformer<A, B> {
 

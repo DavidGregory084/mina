@@ -1,11 +1,15 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
-
-import java.util.Optional;
 
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
+
+import java.util.Optional;
 
 public record LetNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> type, ExprNode<A> expr)
         implements DeclarationNode<A> {

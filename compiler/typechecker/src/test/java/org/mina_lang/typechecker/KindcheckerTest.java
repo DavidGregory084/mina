@@ -1,20 +1,17 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.typechecker;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
+import com.opencastsoftware.yvette.Range;
+import net.jqwik.api.*;
 import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import com.opencastsoftware.yvette.Range;
-import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
+import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.Nameless;
@@ -25,7 +22,13 @@ import org.mina_lang.syntax.TypeNode;
 import org.mina_lang.typechecker.scopes.BuiltInTypingScope;
 import org.mina_lang.typechecker.scopes.ImportedTypesScope;
 
-import net.jqwik.api.*;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class KindcheckerTest {
     void testSuccessfulKindcheck(

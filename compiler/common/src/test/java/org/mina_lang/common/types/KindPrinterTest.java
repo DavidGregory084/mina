@@ -1,11 +1,15 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.common.types;
+
+import org.eclipse.collections.impl.factory.Lists;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-
-import org.eclipse.collections.impl.factory.Lists;
-import org.junit.jupiter.api.Test;
 
 public class KindPrinterTest {
     KindPrinter printer = new KindPrinter();

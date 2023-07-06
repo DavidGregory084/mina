@@ -1,8 +1,12 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.common.types;
 
-import java.util.Optional;
-
 import org.eclipse.collections.api.map.ImmutableMap;
+
+import java.util.Optional;
 
 public class TypeInstantiationTransformer implements TypeTransformer {
 

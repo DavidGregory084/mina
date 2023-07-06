@@ -1,6 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.main;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
@@ -13,8 +15,9 @@ import org.mina_lang.typechecker.TypeEnvironment;
 import org.mina_lang.typechecker.Typechecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TypecheckingPhase extends GraphPhase<Name, Attributes> {
     private static final Logger logger = LoggerFactory.getLogger(TypecheckingPhase.class);

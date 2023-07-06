@@ -1,14 +1,17 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.common.diagnostics;
+
+import com.opencastsoftware.yvette.Severity;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Location;
 
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.Location;
-
-import com.opencastsoftware.yvette.Severity;
 
 public class ForwardingDiagnosticCollector implements ScopedDiagnosticCollector {
 

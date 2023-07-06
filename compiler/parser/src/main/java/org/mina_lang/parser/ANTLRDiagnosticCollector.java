@@ -1,8 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.parser;
 
-import java.net.URI;
-import java.util.BitSet;
-
+import com.opencastsoftware.yvette.Position;
+import com.opencastsoftware.yvette.Range;
 import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.RecognitionException;
@@ -13,8 +16,8 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 
-import com.opencastsoftware.yvette.Position;
-import com.opencastsoftware.yvette.Range;
+import java.net.URI;
+import java.util.BitSet;
 
 public class ANTLRDiagnosticCollector extends ForwardingDiagnosticCollector implements ANTLRErrorListener {
 

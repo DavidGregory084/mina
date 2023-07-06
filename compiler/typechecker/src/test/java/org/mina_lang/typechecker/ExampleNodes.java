@@ -1,8 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.typechecker;
-
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.util.Optional;
 
 import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
@@ -10,6 +10,10 @@ import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
+
+import java.util.Optional;
+
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class ExampleNodes {
     public static NamespaceName TYPECHECKER_NAMESPACE = new NamespaceName(

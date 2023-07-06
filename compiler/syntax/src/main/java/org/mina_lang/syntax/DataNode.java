@@ -1,8 +1,12 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
 import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
 

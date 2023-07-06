@@ -7,7 +7,9 @@ suite("Mina Language Extension", () => {
   });
 
   test("should activate successfully", async () => {
-    await vscode.extensions.getExtension("mina-lang.mina-lang-vscode")?.activate();
+    await vscode.extensions
+      .getExtension("mina-lang.mina-lang-vscode")
+      ?.activate();
     return assert.ok(true);
   }).timeout(60000);
 });

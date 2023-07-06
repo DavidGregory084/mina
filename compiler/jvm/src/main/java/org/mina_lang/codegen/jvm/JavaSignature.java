@@ -1,7 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm;
 
-import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.api.set.MutableSet;
+import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;

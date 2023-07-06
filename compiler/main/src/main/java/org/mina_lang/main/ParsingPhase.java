@@ -1,7 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.main;
-
-import java.net.URI;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.antlr.v4.runtime.CharStream;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
@@ -11,8 +12,10 @@ import org.mina_lang.parser.Parser;
 import org.mina_lang.syntax.NamespaceNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import reactor.core.publisher.ParallelFlux;
+
+import java.net.URI;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ParsingPhase implements ParallelPhase<CharStream, ConcurrentHashMap<NamespaceName, NamespaceNode<Void>>> {
     private static final Logger logger = LoggerFactory.getLogger(ParsingPhase.class);

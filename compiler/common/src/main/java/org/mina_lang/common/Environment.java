@@ -1,11 +1,15 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.common;
-
-import java.util.Optional;
-import java.util.function.BiConsumer;
 
 import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.names.ConstructorName;
+
+import java.util.Optional;
+import java.util.function.BiConsumer;
 
 /**
  * Represents a name or type environment as a stack of scopes,

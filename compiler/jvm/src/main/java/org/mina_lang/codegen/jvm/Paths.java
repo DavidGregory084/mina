@@ -1,10 +1,14 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm;
-
-import java.nio.file.Path;
 
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.NamespaceName;
+
+import java.nio.file.Path;
 
 
 public class Paths {

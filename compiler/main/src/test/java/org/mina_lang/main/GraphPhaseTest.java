@@ -1,18 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.main;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.net.URI;
-import java.time.Duration;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
-
+import com.opencastsoftware.yvette.Range;
+import net.jqwik.api.*;
 import org.eclipse.collections.api.factory.Lists;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
@@ -23,12 +16,20 @@ import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticCollector;
 import org.mina_lang.syntax.NamespaceNode;
-
-import com.opencastsoftware.yvette.Range;
-
-import net.jqwik.api.*;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import java.net.URI;
+import java.time.Duration;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class GraphPhaseTest {
     private Random random = new Random();

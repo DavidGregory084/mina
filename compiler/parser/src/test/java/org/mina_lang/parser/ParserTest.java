@@ -1,15 +1,10 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.parser;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.math.BigDecimal;
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
+import com.opencastsoftware.yvette.Range;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.eclipse.collections.impl.factory.Lists;
@@ -18,7 +13,15 @@ import org.mina_lang.parser.Parser.Visitor;
 import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.syntax.SyntaxNode;
 
-import com.opencastsoftware.yvette.Range;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class ParserTest {
 

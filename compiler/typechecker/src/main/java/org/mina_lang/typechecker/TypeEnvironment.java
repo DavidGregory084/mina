@@ -1,14 +1,18 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.typechecker;
 
-import java.util.Optional;
-
-import org.eclipse.collections.impl.factory.Stacks;
 import org.eclipse.collections.api.stack.MutableStack;
+import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.types.*;
 import org.mina_lang.typechecker.scopes.*;
+
+import java.util.Optional;
 
 public record TypeEnvironment(
         MutableStack<TypingScope> scopes,

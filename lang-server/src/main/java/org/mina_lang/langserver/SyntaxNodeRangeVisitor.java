@@ -1,11 +1,14 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
 
-import org.eclipse.collections.impl.factory.SortedMaps;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.api.map.sorted.MutableSortedMap;
+import org.eclipse.collections.impl.factory.SortedMaps;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.SyntaxNode;
 import org.mina_lang.syntax.SyntaxNodeVisitor;
 

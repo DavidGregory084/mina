@@ -1,10 +1,14 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.typechecker;
 
-import java.util.Comparator;
-
-import org.eclipse.collections.impl.factory.SortedSets;
 import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
+import org.eclipse.collections.impl.factory.SortedSets;
 import org.mina_lang.common.types.*;
+
+import java.util.Comparator;
 
 public class FreeUnsolvedVariablesFolder implements TypeFolder<ImmutableSortedSet<UnsolvedType>> {
 

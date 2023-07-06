@@ -1,15 +1,19 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm;
 
-import java.util.Optional;
-
-import org.eclipse.collections.impl.factory.Stacks;
 import org.eclipse.collections.api.stack.MutableStack;
+import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.codegen.jvm.scopes.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Label;
+
+import java.util.Optional;
 
 public record CodegenEnvironment(MutableStack<CodegenScope> scopes) implements Environment<Attributes, CodegenScope> {
 

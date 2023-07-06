@@ -1,10 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.gradle;
-
-import static org.gradle.api.internal.lambdas.SerializableLambdas.spec;
-
-import java.util.concurrent.Callable;
-
-import javax.inject.Inject;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -27,6 +25,11 @@ import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.internal.Cast;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
+
+import javax.inject.Inject;
+import java.util.concurrent.Callable;
+
+import static org.gradle.api.internal.lambdas.SerializableLambdas.spec;
 
 public class MinaBasePlugin implements Plugin<Project> {
     private final ObjectFactory objectFactory;

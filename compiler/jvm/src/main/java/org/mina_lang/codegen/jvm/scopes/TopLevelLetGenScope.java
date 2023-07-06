@@ -1,13 +1,13 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm.scopes;
 
-import static org.objectweb.asm.Opcodes.*;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.tuple.Pair;
+import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.impl.tuple.Tuples;
 import org.mina_lang.codegen.jvm.*;
 import org.mina_lang.common.Attributes;
@@ -22,6 +22,10 @@ import org.mina_lang.syntax.LetNode;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.objectweb.asm.Opcodes.*;
 
 public record TopLevelLetGenScope(
         GeneratorAdapter methodWriter,

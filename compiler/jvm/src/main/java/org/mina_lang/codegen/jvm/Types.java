@@ -1,6 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm;
-
-import java.util.Arrays;
 
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;
@@ -15,6 +17,8 @@ import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
+
+import java.util.Arrays;
 
 public class Types {
     public static Type OBJECT_TYPE = Type.getType(Object.class);

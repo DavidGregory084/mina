@@ -1,14 +1,17 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
-
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.util.Ranges;
-import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.SyntaxNode;
+
+import java.util.concurrent.CompletableFuture;
 
 public class MinaHoverRanges {
     private final ConcurrentHashMap<String, CompletableFuture<ImmutableSortedMap<Range, SyntaxNode>>> hoverRanges = new ConcurrentHashMap<>();

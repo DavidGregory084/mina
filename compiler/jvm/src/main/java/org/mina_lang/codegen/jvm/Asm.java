@@ -1,12 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm;
 
-import static org.objectweb.asm.Opcodes.*;
-
-import java.lang.invoke.*;
-import java.lang.runtime.ObjectMethods;
-
-import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.LetName;
@@ -20,6 +19,11 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
+
+import java.lang.invoke.*;
+import java.lang.runtime.ObjectMethods;
+
+import static org.objectweb.asm.Opcodes.*;
 
 public class Asm {
     private static String METAFACTORY_DESCRIPTOR = MethodType

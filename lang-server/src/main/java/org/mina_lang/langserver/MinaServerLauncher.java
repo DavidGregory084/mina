@@ -1,3 +1,7 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
 
 import org.eclipse.lsp4j.launch.LSPLauncher;

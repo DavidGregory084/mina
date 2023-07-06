@@ -1,10 +1,13 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.Meta;
-
 import com.opencastsoftware.yvette.Range;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.impl.factory.Lists;
+import org.mina_lang.common.Meta;
 
 import java.util.Optional;
 

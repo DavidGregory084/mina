@@ -1,25 +1,28 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.renamer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-
+import com.opencastsoftware.yvette.Range;
 import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
+import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.names.*;
 import org.mina_lang.renamer.scopes.ImportedNamesScope;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.NamespaceNode;
 
-import com.opencastsoftware.yvette.Range;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class RenamerTest {
 

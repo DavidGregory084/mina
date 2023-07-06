@@ -1,10 +1,14 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
-import java.util.List;
-
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.api.list.MutableList;
 import com.opencastsoftware.yvette.Range;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.impl.factory.Lists;
+
+import java.util.List;
 
 public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
     private MutableList<Entry> entries = Lists.mutable.empty();

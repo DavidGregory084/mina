@@ -1,12 +1,16 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
-import java.util.Optional;
-
 import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
+
+import java.util.Optional;
 
 public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<A>> typeParams,
         ImmutableList<ParamNode<A>> valueParams, Optional<TypeNode<A>> returnType, ExprNode<A> expr)

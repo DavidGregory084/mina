@@ -1,24 +1,25 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.cli;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.Callable;
-
-import org.apache.commons.lang3.function.Failable;
-import org.mina_lang.BuildInfo;
-import org.mina_lang.main.Main;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.opencastsoftware.yvette.BasicDiagnostic;
 import com.opencastsoftware.yvette.handlers.ReportHandler;
 import com.opencastsoftware.yvette.handlers.graphical.GraphicalReportHandler;
 import com.opencastsoftware.yvette.handlers.graphical.RgbColours;
-
+import org.apache.commons.lang3.function.Failable;
+import org.mina_lang.BuildInfo;
+import org.mina_lang.main.Main;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.*;
-import picocli.CommandLine.Model.CommandSpec;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.Callable;
 
 @Command(name = "minac", description = "The command line interface for the Mina compiler.", version = BuildInfo.version, mixinStandardHelpOptions = true, usageHelpAutoWidth = true)
 public class MinaCommandLine implements Callable<Integer> {

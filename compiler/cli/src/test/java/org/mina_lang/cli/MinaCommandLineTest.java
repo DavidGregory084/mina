@@ -1,20 +1,22 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.cli;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.nio.file.Paths;
-
-import org.junit.jupiter.api.Test;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import org.mina_lang.main.Main;
-
 import com.opencastsoftware.yvette.handlers.ToStringReportHandler;
-
+import org.junit.jupiter.api.Test;
+import org.mina_lang.main.Main;
 import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.MissingParameterException;
+
+import java.nio.file.Paths;
+
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MinaCommandLineTest {
     @Test

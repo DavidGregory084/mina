@@ -5,11 +5,7 @@ plugins {
 }
 
 // Workaround for https://github.com/gradle/gradle/issues/820
-configurations {
-    api {
-        setExtendsFrom(extendsFrom.filterNot { it == antlr.get() })
-    }
-}
+configurations { api { setExtendsFrom(extendsFrom.filterNot { it == antlr.get() }) } }
 
 spotless {
     antlr4 {
@@ -19,7 +15,8 @@ spotless {
              * SPDX-FileCopyrightText:  © ${"$"}YEAR David Gregory
              * SPDX-License-Identifier: Apache-2.0
              */
-            """.trimIndent()
+            """
+                .trimIndent()
         )
         antlr4Formatter()
     }
@@ -45,10 +42,15 @@ tasks.generateGrammarSource {
     val outputDir = file("build/generated-src/antlr/main/org/mina_lang/parser")
     // the directory must exist or ANTLR bails
     doFirst { outputDir.mkdirs() }
-    arguments.addAll(listOf(
-        "-visitor",
-        "-no-listener",
-        // the lexer tokens file can't be found by the parser without this
-        "-lib", outputDir.absolutePath,
-        "-package", "org.mina_lang.parser"))
+    arguments.addAll(
+        listOf(
+            "-visitor",
+            "-no-listener",
+            // the lexer tokens file can't be found by the parser without this
+            "-lib",
+            outputDir.absolutePath,
+            "-package",
+            "org.mina_lang.parser"
+        )
+    )
 }

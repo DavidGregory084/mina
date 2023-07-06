@@ -1,6 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.main;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
@@ -12,8 +14,9 @@ import org.mina_lang.renamer.Renamer;
 import org.mina_lang.syntax.NamespaceNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RenamingPhase extends GraphPhase<Void, Name> {
     private static final Logger logger = LoggerFactory.getLogger(RenamingPhase.class);

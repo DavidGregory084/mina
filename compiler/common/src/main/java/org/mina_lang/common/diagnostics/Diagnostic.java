@@ -1,18 +1,20 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.common.diagnostics;
-
-import org.eclipse.collections.impl.factory.Lists;
-
-import java.net.URI;
-import java.util.Collection;
-import java.util.Collections;
-
-import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.Location;
 
 import com.opencastsoftware.yvette.LabelledRange;
 import com.opencastsoftware.yvette.Severity;
 import com.opencastsoftware.yvette.SourceCode;
 import com.opencastsoftware.yvette.URISourceCode;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.impl.factory.Lists;
+import org.mina_lang.common.Location;
+
+import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
 
 public class Diagnostic extends com.opencastsoftware.yvette.Diagnostic {
     private final Location location;

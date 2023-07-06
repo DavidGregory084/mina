@@ -1,14 +1,14 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.typechecker;
 
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.util.Optional;
-import java.util.function.Supplier;
-
+import com.opencastsoftware.prettier4j.Doc;
+import com.opencastsoftware.yvette.Range;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import com.opencastsoftware.yvette.Range;
 import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
@@ -17,7 +17,10 @@ import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 import org.mina_lang.typechecker.scopes.*;
 
-import com.opencastsoftware.prettier4j.Doc;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Kindchecker {
     private ScopedDiagnosticCollector diagnostics;

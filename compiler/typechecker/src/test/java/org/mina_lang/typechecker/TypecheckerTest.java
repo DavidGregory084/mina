@@ -1,29 +1,32 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.typechecker;
 
-import static com.spotify.hamcrest.optional.OptionalMatchers.optionalWithValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-
+import com.opencastsoftware.yvette.Range;
+import net.jqwik.api.*;
+import net.jqwik.api.Tuple.Tuple2;
+import net.jqwik.api.Tuple.Tuple3;
 import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import com.opencastsoftware.yvette.Range;
-import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.diagnostics.Diagnostic;
+import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
-import net.jqwik.api.*;
-import net.jqwik.api.Tuple.Tuple2;
-import net.jqwik.api.Tuple.Tuple3;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+
+import static com.spotify.hamcrest.optional.OptionalMatchers.optionalWithValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class TypecheckerTest {
     void testSuccessfulTypecheck(

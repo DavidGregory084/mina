@@ -1,9 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
@@ -21,6 +20,11 @@ import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.syntax.SyntaxNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public class MinaTextDocumentService implements TextDocumentService {
     private static Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);

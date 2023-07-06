@@ -1,9 +1,13 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
-import java.util.Optional;
-
-import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.LocalName;
+
+import java.util.Optional;
 
 public record ParamNode<A> (Meta<A> meta, String name, Optional<TypeNode<A>> typeAnnotation) implements MetaNode<A> {
 

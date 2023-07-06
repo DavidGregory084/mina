@@ -1,8 +1,12 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.common.types;
 
 import net.jqwik.api.*;
-import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.api.tuple.Twin;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.tuple.Tuples;
 
 import java.util.List;

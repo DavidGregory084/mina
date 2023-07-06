@@ -1,8 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
-
 import com.opencastsoftware.yvette.Range;
+import org.eclipse.collections.api.list.ImmutableList;
 
 public record ImportNode(Range range, NamespaceIdNode namespace, ImmutableList<ImportSymbolNode> symbols)
         implements SyntaxNode {

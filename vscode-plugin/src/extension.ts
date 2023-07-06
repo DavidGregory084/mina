@@ -8,14 +8,14 @@ import {
   ProgressLocation,
   Uri,
   window,
-  workspace
+  workspace,
 } from "vscode";
 
 import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
-  TransportKind
+  TransportKind,
 } from "vscode-languageclient/node";
 
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
@@ -81,10 +81,10 @@ export async function activate(context: ExtensionContext) {
 
     // As per [https://access.redhat.com/documentation/en-us/openjdk/11/html/using_shenandoah_garbage_collector_with_openjdk_11/shenandoah-gc-basic-configuration]
     const gcOptions = [
-        "-XX:+UseShenandoahGC",
-        "-XX:+AlwaysPreTouch",
-        "-XX:+UseNUMA",
-        "-XX:+DisableExplicitGC",
+      "-XX:+UseShenandoahGC",
+      "-XX:+AlwaysPreTouch",
+      "-XX:+UseNUMA",
+      "-XX:+DisableExplicitGC",
     ];
 
     if (os.type() === "Linux") {
@@ -111,7 +111,7 @@ export async function activate(context: ExtensionContext) {
         "-cp",
         getServerClasspath.stdout.trim(),
         "org.mina_lang.langserver.MinaServerLauncher",
-      ]
+      ],
     };
 
     const clientOptions: LanguageClientOptions = {

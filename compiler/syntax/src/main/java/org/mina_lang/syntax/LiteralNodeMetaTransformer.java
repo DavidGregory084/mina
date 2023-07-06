@@ -1,6 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
+
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public interface LiteralNodeMetaTransformer<A, B> extends MetaTransformer<A, B>, LiteralNodeTransformer<A, B> {

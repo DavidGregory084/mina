@@ -1,4 +1,11 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.gradle;
+
+import org.gradle.internal.UncheckedException;
+import org.gradle.workers.WorkAction;
 
 import java.io.File;
 import java.lang.invoke.MethodHandle;
@@ -7,9 +14,6 @@ import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
-
-import org.gradle.internal.UncheckedException;
-import org.gradle.workers.WorkAction;
 
 public abstract class MinaCompileAction implements WorkAction<MinaCompileParameters> {
     private static final MethodType getCallableMethodType = MethodType.methodType(Callable.class, String[].class);

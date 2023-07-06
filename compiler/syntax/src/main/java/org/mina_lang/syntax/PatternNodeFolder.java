@@ -1,9 +1,13 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
-
-import java.util.Optional;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+
+import java.util.Optional;
 
 public interface PatternNodeFolder<A, B> extends LiteralNodeFolder<A, B> {
     default B visitPattern(PatternNode<A> pat) {

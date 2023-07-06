@@ -1,9 +1,12 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.cli.logging;
-
-import org.mina_lang.cli.ColourSupport;
 
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.core.pattern.IdentityCompositeConverter;
+import org.mina_lang.cli.ColourSupport;
 
 public class ColourSupportCheckingPatternLayout extends PatternLayout {
     static {

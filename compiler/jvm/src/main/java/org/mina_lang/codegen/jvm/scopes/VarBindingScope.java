@@ -1,6 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm.scopes;
-
-import java.util.Optional;
 
 import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.codegen.jvm.JavaSignature;
@@ -12,6 +14,8 @@ import org.mina_lang.common.names.Named;
 import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
+
+import java.util.Optional;
 
 public interface VarBindingScope extends CodegenScope {
     GeneratorAdapter methodWriter();

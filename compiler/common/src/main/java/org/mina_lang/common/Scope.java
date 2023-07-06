@@ -1,12 +1,16 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.common;
+
+import org.eclipse.collections.api.block.function.Function3;
+import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.impl.factory.Maps;
+import org.mina_lang.common.names.ConstructorName;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
-
-import org.eclipse.collections.api.block.function.Function3;
-import org.eclipse.collections.impl.factory.Maps;
-import org.eclipse.collections.api.map.MutableMap;
-import org.mina_lang.common.names.ConstructorName;
 
 public interface Scope<A> {
     MutableMap<String, Meta<A>> values();

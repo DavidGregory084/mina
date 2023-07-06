@@ -1,19 +1,22 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.syntax;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.util.Optional;
-import java.util.stream.Stream;
-
+import com.opencastsoftware.yvette.Range;
 import org.eclipse.collections.impl.factory.Lists;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mina_lang.syntax.TracingSyntaxNodeVisitor.Entry;
 
-import com.opencastsoftware.yvette.Range;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class SyntaxNodeVisitorTest {
 

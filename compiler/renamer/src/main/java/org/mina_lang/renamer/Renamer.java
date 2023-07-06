@@ -1,10 +1,8 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.renamer;
-
-import static org.mina_lang.syntax.SyntaxNodes.*;
-
-import java.net.URI;
-import java.util.Comparator;
-import java.util.Optional;
 
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.collector.Collectors2;
@@ -24,6 +22,11 @@ import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
 import org.mina_lang.common.names.*;
 import org.mina_lang.renamer.scopes.*;
 import org.mina_lang.syntax.*;
+
+import java.util.Comparator;
+import java.util.Optional;
+
+import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Renamer {
 

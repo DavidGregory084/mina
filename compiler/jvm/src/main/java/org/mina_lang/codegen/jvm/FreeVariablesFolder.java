@@ -1,17 +1,21 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.codegen.jvm;
 
-import static org.mina_lang.syntax.SyntaxNodes.refNode;
-
-import java.util.Optional;
-
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.set.MutableSet;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.syntax.*;
+
+import java.util.Optional;
+
+import static org.mina_lang.syntax.SyntaxNodes.refNode;
 
 public class FreeVariablesFolder implements MetaNodeFolder<Attributes, ImmutableList<ReferenceNode<Attributes>>> {
     MutableSet<Name> boundVariables = Sets.mutable.empty();

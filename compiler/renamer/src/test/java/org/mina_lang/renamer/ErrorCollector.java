@@ -1,9 +1,13 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.renamer;
+
+import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 
 public class ErrorCollector extends BaseDiagnosticCollector {
     public List<String> getErrors() {
@@ -12,4 +16,3 @@ public class ErrorCollector extends BaseDiagnosticCollector {
             .collect(Collectors.toList());
     }
 }
-

@@ -1,17 +1,20 @@
+/*
+ * SPDX-FileCopyrightText:  © 2022 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-
-import java.util.Comparator;
-
-import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.Range;
 
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.IntRange;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
+
+import java.util.Comparator;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 public class RangeComparatorTest {
     Comparator<Range> comparator = new RangeComparator();
