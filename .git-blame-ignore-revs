@@ -2,3 +2,5 @@
 9d08e1c1b53266afafb8e57031ca2076da087651
 # Format buildSrc/ Gradle Kotlin files
 dc0fd795246205d395d28c326563fc29f4e50580
+# Stop spotless having a tantrum about copyright dates in its own headers
+214ec6ee75cf20c9e6b560e29a659cbdf64e590f
