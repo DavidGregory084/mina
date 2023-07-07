@@ -12,11 +12,10 @@ plugins {
     id("com.diffplug.spotless")
 }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
 group = "org.mina-lang"
+
 version = "0.1.0-SNAPSHOT"
 
 dependencies {
@@ -27,15 +26,11 @@ dependencies {
     testImplementation(libs.equalsVerifier)
     testImplementation(libs.toStringVerifier)
     constraints {
-        implementation("org.apache.commons:commons-text:[1.10.0,)") {
-            because("CVE-2022-42889")
-        }
+        implementation("org.apache.commons:commons-text:[1.10.0,)") { because("CVE-2022-42889") }
     }
 }
 
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
-}
+java { toolchain.languageVersion.set(JavaLanguageVersion.of(17)) }
 
 spotless {
     ratchetFrom("origin/main")
@@ -49,7 +44,8 @@ spotless {
              * SPDX-FileCopyrightText:  © ${"$"}YEAR David Gregory
              * SPDX-License-Identifier: Apache-2.0
              */
-            """.trimIndent()
+            """
+                .trimIndent()
         )
         formatAnnotations()
         importOrder("", "javax|java", "\\#") // IntelliJ import order
@@ -78,11 +74,13 @@ tasks.withType<Javadoc> {
         this as StandardJavadocDocletOptions
         addBooleanOption("Xdoclint:none", true)
         addBooleanOption("-allow-script-in-comments", true)
-        header("""
+        header(
+        """
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
         <script>MathJax = {chtml:{displayAlign:'left'}};</script>
         <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-        """)
+        """
+        )
     }
 }
 
@@ -96,28 +94,16 @@ tasks.named<Test>("test") {
     enableAssertions = true
 }
 
-jacoco {
-    toolVersion = libs.versions.jacoco.get()
-}
+jacoco { toolVersion = libs.versions.jacoco.get() }
 
-tasks.jacocoTestReport {
-    reports {
-        xml.required.set(true)
-    }
-}
+tasks.jacocoTestReport { reports { xml.required.set(true) } }
 
-tasks.test {
-    finalizedBy(tasks.jacocoTestReport)
-}
+tasks.test { finalizedBy(tasks.jacocoTestReport) }
 
 publishing {
     publications {
-        create<IvyPublication>("ivy") {
-            from(components["java"])
-        }
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
+        create<IvyPublication>("ivy") { from(components["java"]) }
+        create<MavenPublication>("maven") { from(components["java"]) }
     }
     repositories {
         ivy {

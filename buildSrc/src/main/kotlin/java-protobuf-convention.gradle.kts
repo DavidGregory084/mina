@@ -9,16 +9,8 @@ plugins {
     id("com.google.protobuf")
 }
 
-repositories {
-    maven("https://maven-central.storage-download.googleapis.com/maven2/")
-}
+repositories { maven("https://maven-central.storage-download.googleapis.com/maven2/") }
 
-dependencies {
-    implementation(libs.protobufJava)
-}
+dependencies { implementation(libs.protobufJava) }
 
-protobuf {
-    protoc {
-        artifact = libs.protoc.get().toString()
-    }
-}
+protobuf { protoc { artifact = libs.protoc.get().toString() } }
