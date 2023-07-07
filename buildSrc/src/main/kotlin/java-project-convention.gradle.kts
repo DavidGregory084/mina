@@ -19,6 +19,7 @@ group = "org.mina-lang"
 version = "0.1.0-SNAPSHOT"
 
 dependencies {
+    testRuntimeOnly(libs.junitPlatformLauncher)
     testImplementation(libs.junitJupiter)
     testImplementation(libs.hamcrest)
     testImplementation(libs.hamcrestOptional)
