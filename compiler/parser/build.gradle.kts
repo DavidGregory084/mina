@@ -9,6 +9,7 @@ configurations { api { setExtendsFrom(extendsFrom.filterNot { it == antlr.get() 
 
 spotless {
     antlr4 {
+        target("src/**/*.g4")
         licenseHeader(
             """
             /*
@@ -18,7 +19,6 @@ spotless {
             """
                 .trimIndent()
         )
-        antlr4Formatter()
     }
 }
 

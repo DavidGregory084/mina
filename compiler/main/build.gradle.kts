@@ -16,7 +16,7 @@ dependencies {
     implementation(project(":compiler:mina-compiler-parser"))
 
     // CharStream appears in the public API
-    api(libs.antlr)
+    api(libs.antlrRuntime)
 
     // Renamer
     implementation(project(":compiler:mina-compiler-renamer"))
