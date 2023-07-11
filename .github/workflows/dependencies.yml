@@ -20,7 +20,7 @@ jobs:
           java-version: 17
 
       - name: Submit Gradle Dependencies
-        uses: mikepenz/gradle-dependency-submission@v0.8.4
+        uses: mikepenz/gradle-dependency-submission@v0.8.6
         with:
           gradle-build-module: |-
             :compiler:mina-compiler-common
