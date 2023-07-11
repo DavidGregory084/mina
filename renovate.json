@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["gitea>mina-lang/renovate-config"],
+  "extends": ["local>mina-lang/renovate-config"],
   "packageRules": [
     {
       "matchPackageNames": "@types/node",
