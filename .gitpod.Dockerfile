@@ -1,4 +1,4 @@
-FROM gitpod/workspace-full
+FROM gitpod/workspace-full@sha256:f3646e7e5c63b6d9cb0d7c76b24cdd55e4900fd3f790d280a9d78953ddc6c843
 
 RUN bash -c ". /home/gitpod/.sdkman/bin/sdkman-init.sh && \
 	sed -i -e 's/sdkman_auto_answer=false/sdkman_auto_answer=true/g' /home/gitpod/.sdkman/etc/config && \

@@ -1,6 +1,6 @@
 pipeline:
   renovate:
-    image: renovate/renovate:slim
+    image: renovate/renovate:slim@sha256:1e68e9096d869f3717938cda93ab1ce23d648e1b4db161da52326f72c8c48e57
     environment:
       - LOG_LEVEL=debug
       - RENOVATE_AUTODISCOVER=true
