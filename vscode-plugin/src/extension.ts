@@ -21,6 +21,7 @@ import {
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { findRuntimes } from "jdk-utils";
 
+const COURSIER_DOWNLOAD_TIMEOUT_MS = 120000;
 const COURSIER_LAUNCHER_URI = Uri.parse(
   "https://github.com/coursier/launchers/raw/master/coursier.jar"
 );
@@ -42,7 +43,8 @@ async function downloadCoursierJar(
         context,
         cancellationToken,
         (_downloadedBytes, _totalBytes) =>
-          progress.report({ message: "Downloading coursier JAR" })
+          progress.report({ message: "Downloading coursier JAR" }),
+        { timeoutInMs: COURSIER_DOWNLOAD_TIMEOUT_MS }
       );
     }
   );
