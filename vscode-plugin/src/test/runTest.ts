@@ -21,7 +21,11 @@ async function main() {
     const testOptions: TestOptions = {
       extensionDevelopmentPath,
       extensionTestsPath,
-      launchArgs: ["--no-sandbox", "--disable-gpu-sandbox"],
+      launchArgs: [
+        "--no-sandbox",
+        "--disable-gpu-sandbox",
+        "--disable-workspace-trust",
+      ],
     };
 
     const vscodeExecutablePath = await downloadAndUnzipVSCode(testOptions);

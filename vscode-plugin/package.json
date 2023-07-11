@@ -17,7 +17,7 @@
     "format": "prettier --write src",
     "format-check": "npx prettier --check src",
     "pretest": "npm run compile",
-    "test": "node ./out/test/runTest.js",
+    "test": "NODE_DEBUG=http node ./out/test/runTest.js",
     "test-linux": "xvfb-run -a npm run test"
   },
   "dependencies": {
@@ -63,25 +63,78 @@
     "rules": {}
   },
   "main": "./out/extension",
-  "activationEvents": [
-    "onLanguage:mina"
-  ],
   "contributes": {
-    "configuration": {
-      "title": "Mina",
-      "properties": {
-        "mina.serverJarPath": {
-          "type": "string",
-          "markdownDescription": "The path to the server JAR file. Used for testing the language server locally."
+    "configuration": [
+      {
+        "title": "Mina",
+        "properties": {
+          "mina.languageServer.jvmOptions": {
+            "type": "array",
+            "default": [],
+            "title": "JVM Options",
+            "description": "Additional JVM options to be provided to the language server process.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "title": "Remote Debug",
+        "properties": {
+          "mina.languageServer.remoteDebug.enabled": {
+            "type": "boolean",
+            "default": false,
+            "order": 0,
+            "description": "Enable language server remote debug using JDWP."
+          },
+          "mina.languageServer.remoteDebug.suspend": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to suspend and await debug attachment during language server remote debug."
+          },
+          "mina.languageServer.remoteDebug.address": {
+            "type": "string",
+            "default": "127.0.0.1",
+            "format": "hostname",
+            "description": "The address to use for language server remote debug, e.g. 127.0.0.1"
+          },
+          "mina.languageServer.remoteDebug.port": {
+            "type": "number",
+            "default": 5005,
+            "minimum": 1024,
+            "maximum": 65535,
+            "description": "The port to use for language server remote debug, e.g. 5005"
+          }
+        }
+      },
+      {
+        "title": "Profiling",
+        "properties": {
+          "mina.languageServer.profiling.enabled": {
+            "type": "boolean",
+            "default": false,
+            "order": 0,
+            "description": "Enable language server continuous profiling using Pyroscope."
+          },
+          "mina.languageServer.profiling.applicationName": {
+            "type": "string",
+            "default": "mina-lang-server",
+            "description": "The application name to use for continuous profiling."
+          },
+          "mina.languageServer.profiling.serverAddress": {
+            "type": "string",
+            "default": "http://localhost:4040",
+            "description": "The server address to use for continuous profiling."
+          }
         }
       }
-    },
+    ],
     "languages": [
       {
         "id": "mina",
         "aliases": [
-          "Mina",
-          "mina"
+          "Mina"
         ],
         "extensions": [
           ".mina"
