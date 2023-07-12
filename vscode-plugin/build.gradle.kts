@@ -24,9 +24,11 @@ spotless {
         target("package.json")
         // This should preferably be done using a JSON patch
         val numericId = """(0|[1-9]\d*)"""
-        val alphaNum = """(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"""
+        val idChar = """[0-9a-zA-Z-]"""
+        val nonDigit = """[a-zA-Z-]"""
+        val alphaNum = """(?:0|[1-9]\d*|\d*${nonDigit}${idChar}*)"""
         val preRelease = """(?:-(${alphaNum}(?:\.${alphaNum})*))"""
-        val buildId = """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))"""
+        val buildId = """(?:\+(${idChar}+(?:\.${idChar}+)*))"""
         val semVer = """${numericId}\.${numericId}\.${numericId}${preRelease}?${buildId}?"""
         replaceRegex(
             "package-version",
