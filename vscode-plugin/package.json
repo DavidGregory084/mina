@@ -101,7 +101,7 @@
           "mina.languageServer.remoteDebug.address": {
             "type": "string",
             "default": "127.0.0.1",
-            "format": "hostname",
+            "format": "ipv4",
             "description": "The address to use for language server remote debug, e.g. 127.0.0.1"
           },
           "mina.languageServer.remoteDebug.port": {
@@ -130,6 +130,7 @@
           "mina.languageServer.profiling.serverAddress": {
             "type": "string",
             "default": "http://localhost:4040",
+            "format": "uri",
             "description": "The server address to use for continuous profiling."
           }
         }
