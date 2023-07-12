@@ -5,6 +5,7 @@ import * as util from "util";
 
 import {
   ExtensionContext,
+  OutputChannel,
   ProgressLocation,
   Uri,
   window,
@@ -112,13 +113,13 @@ function getRemoteDebugOptions(): string[] {
   }
 
   const jdwpOptions = [
-    "jdwp=transport=dt_socket",
+    "transport=dt_socket",
     "server=y",
     `suspend=${remoteDebugSuspend}`,
     `address=${remoteDebugAddress}:${remoteDebugPort}`,
   ].join(",");
 
-  return [`-agentlib:${jdwpOptions}`];
+  return [`-agentlib:jdwp=${jdwpOptions}`];
 }
 
 async function getProfilingOptions(
@@ -168,7 +169,7 @@ async function getProfilingAgentClasspath(
   ).stdout.trim();
 }
 
-export async function activate(context: ExtensionContext) {
+async function start(context: ExtensionContext, outputChannel: OutputChannel) {
   const runtimes = await findRuntimes({ withVersion: true, withTags: true });
   const javaHomeRuntime = runtimes.find((runtime) => runtime.isJavaHomeEnv);
   const serverConfiguration = workspace.getConfiguration("mina.languageServer");
@@ -208,6 +209,7 @@ export async function activate(context: ExtensionContext) {
     };
 
     const clientOptions: LanguageClientOptions = {
+      outputChannel,
       documentSelector: [
         { scheme: "file", language: "mina" },
         { scheme: "jar", language: "mina" },
@@ -232,10 +234,40 @@ export async function activate(context: ExtensionContext) {
   }
 }
 
-export async function deactivate() {
+async function stop() {
   if (!client) {
     return;
   } else {
     return await client.stop();
   }
+}
+
+async function restart(
+  context: ExtensionContext,
+  outputChannel: OutputChannel
+) {
+  await stop();
+  await start(context, outputChannel);
+}
+
+export async function activate(context: ExtensionContext) {
+  const outputChannel = window.createOutputChannel("Mina Language Server");
+
+  await start(context, outputChannel);
+
+  context.subscriptions.push(
+    workspace.onDidChangeConfiguration(async (event) => {
+      // Restart when configuration that affects server process args is changed
+      if (
+        event.affectsConfiguration("mina.languageServer.remoteDebug") ||
+        event.affectsConfiguration("mina.languageServer.profiling")
+      ) {
+        await restart(context, outputChannel);
+      }
+    })
+  );
+}
+
+export async function deactivate() {
+  await stop();
 }
