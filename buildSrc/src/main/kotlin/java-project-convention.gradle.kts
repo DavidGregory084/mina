@@ -4,19 +4,12 @@ import org.gradle.accessors.dm.LibrariesForLibs
 val libs = the<LibrariesForLibs>()
 
 plugins {
+    id("base-project-convention")
     java
     `ivy-publish`
     `maven-publish`
     jacoco
-    id("com.github.ben-manes.versions")
-    id("com.diffplug.spotless")
 }
-
-repositories { mavenCentral() }
-
-group = "org.mina-lang"
-
-version = "0.1.0-SNAPSHOT"
 
 dependencies {
     testRuntimeOnly(libs.junitPlatformLauncher)
@@ -34,8 +27,6 @@ dependencies {
 java { toolchain.languageVersion.set(JavaLanguageVersion.of(17)) }
 
 spotless {
-    ratchetFrom("origin/main")
-
     java {
         encoding("UTF-8")
         targetExclude("build/**")
@@ -51,15 +42,6 @@ spotless {
         formatAnnotations()
         importOrder("", "javax|java", "\\#") // IntelliJ import order
         removeUnusedImports()
-        indentWithSpaces()
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-
-    kotlinGradle {
-        encoding("UTF-8")
-        target("**/*.gradle.kts")
-        ktfmt().kotlinlangStyle()
         indentWithSpaces()
         trimTrailingWhitespace()
         endWithNewline()

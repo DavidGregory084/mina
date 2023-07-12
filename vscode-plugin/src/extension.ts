@@ -8,6 +8,7 @@ import {
   OutputChannel,
   ProgressLocation,
   Uri,
+  WorkspaceConfiguration,
   window,
   workspace,
 } from "vscode";
@@ -63,8 +64,11 @@ async function fetchCoursierJar(
 
 async function getServerClasspath(
   javaExecutable: string,
-  coursierJar: Uri
+  coursierJar: Uri,
+  serverConfiguration: WorkspaceConfiguration
 ): Promise<string> {
+  const serverVersion = serverConfiguration.get<number>("version");
+
   return (
     await util.promisify(child_process.execFile)(
       javaExecutable,
@@ -73,7 +77,7 @@ async function getServerClasspath(
         `"${coursierJar.fsPath}"`,
         "fetch",
         "--classpath",
-        "org.mina-lang:mina-lang-server:0.1.0-SNAPSHOT",
+        `org.mina-lang:mina-lang-server:${serverVersion}`,
       ],
       { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
     )
@@ -189,7 +193,8 @@ async function start(context: ExtensionContext, outputChannel: OutputChannel) {
 
     const serverClasspath = await getServerClasspath(
       javaExecutable,
-      coursierJar
+      coursierJar,
+      serverConfiguration
     );
 
     const serverOptions: ServerOptions = {
@@ -257,8 +262,9 @@ export async function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     workspace.onDidChangeConfiguration(async (event) => {
-      // Restart when configuration that affects server process args is changed
+      // Restart when configuration that affects server artifact or process args is changed
       if (
+        event.affectsConfiguration("mina.languageServer.version") ||
         event.affectsConfiguration("mina.languageServer.remoteDebug") ||
         event.affectsConfiguration("mina.languageServer.profiling")
       ) {

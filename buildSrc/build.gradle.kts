@@ -13,7 +13,7 @@ spotless {
 
     kotlinGradle {
         encoding("UTF-8")
-        target("**/*.gradle.kts")
+        target("src/**/*.gradle.kts")
         ktfmt().kotlinlangStyle()
         indentWithSpaces()
         trimTrailingWhitespace()
