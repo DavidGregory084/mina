@@ -3,7 +3,7 @@
   "displayName": "Mina",
   "description": "The VS Code language extension for Mina",
   "publisher": "mina-lang",
-  "version": "0.1.0-SNAPSHOT",
+  "version": "0.0.1-SNAPSHOT",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -75,7 +75,7 @@
         "properties": {
           "mina.languageServer.version": {
             "type": "string",
-            "default": "0.1.0-SNAPSHOT",
+            "default": "0.0.1-SNAPSHOT",
             "title": "Version",
             "order": 0,
             "description": "The language server version to use."
