@@ -1,9 +1,19 @@
 {
   "name": "mina-lang-vscode",
-  "displayName": "Mina",
   "description": "The VS Code language extension for Mina",
+  "version": "0.0.1",
+  "license": "Apache-2.0",
+  "displayName": "Mina",
   "publisher": "mina-lang",
-  "version": "0.0.1-SNAPSHOT",
+  "author": "David Gregory",
+  "homepage": "https://codeberg.org/mina-lang/mina/src/branch/main/vscode-plugin",
+  "repository": {
+    "type": "git",
+    "url": "https://codeberg.org/mina-lang/mina.git"
+  },
+  "bugs": {
+    "url": "https://codeberg.org/mina-lang/mina/issues"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },

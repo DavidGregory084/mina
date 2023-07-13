@@ -7,6 +7,10 @@ plugins {
     alias(libs.plugins.gradleNode)
 }
 
+// VS Code Marketplace does not support semver pre-release tags:
+// https://code.visualstudio.com/api/working-with-extensions/publishing-extension#prerelease-extensions
+version = "0.0.1"
+
 node { download.set(false) }
 
 spotless {
