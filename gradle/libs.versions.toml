@@ -25,6 +25,7 @@ picocli = "4.7.4"
 prettier4j = "0.1.1"
 protobuf = "3.23.4"
 protobufGradle = "0.9.3"
+pyroscopeAgent = "0.11.5"
 reactorCore = "3.5.8"
 slf4j = "2.0.7"
 spotless = "6.19.0"
@@ -62,6 +63,7 @@ prettier4j = { module = "com.opencastsoftware:prettier4j", version.ref = "pretti
 protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 protobufJava = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protobufPlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobufGradle" }
+pyroscopeAgent = { module = "io.pyroscope:agent", version.ref = "pyroscopeAgent" }
 reactorCore = { module = "io.projectreactor:reactor-core", version.ref = "reactorCore" }
 reactorTest = { module = "io.projectreactor:reactor-test", version.ref = "reactorCore" }
 slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }

@@ -136,14 +136,16 @@ async function getProfilingOptions(
   const profilingEnabled = profilingConfig.get<boolean>("enabled");
   const profilingAppName = profilingConfig.get<string>("applicationName");
   const profilingServerAddress = profilingConfig.get<string>("serverAddress");
+  const profilingAgentVersion = profilingConfig.get<string>("agentVersion");
 
-  if (!profilingEnabled) {
+  if (!profilingEnabled || !profilingAgentVersion) {
     return [];
   }
 
   const profilingAgentClasspath = await getProfilingAgentClasspath(
     javaExecutable,
-    coursierJar
+    coursierJar,
+    profilingAgentVersion
   );
 
   return [
@@ -156,7 +158,8 @@ async function getProfilingOptions(
 
 async function getProfilingAgentClasspath(
   javaExecutable: string,
-  coursierJar: Uri
+  coursierJar: Uri,
+  agentVersion: string
 ): Promise<string> {
   return (
     await util.promisify(child_process.execFile)(
@@ -166,7 +169,7 @@ async function getProfilingAgentClasspath(
         `"${coursierJar.fsPath}"`,
         "fetch",
         "--classpath",
-        "io.pyroscope:agent:0.11.5",
+        `io.pyroscope:agent:${agentVersion}`,
       ],
       { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
     )

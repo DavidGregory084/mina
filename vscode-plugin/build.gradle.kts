@@ -7,6 +7,28 @@ plugins {
     alias(libs.plugins.gradleNode)
 }
 
+// npm requires strictly increasing snapshot build identifiers
+val majorVersion = "\${describe.tag.version.major:-0}"
+val minorVersion = "\${describe.tag.version.minor:-0}"
+val patchVersion = "\${describe.tag.version.patch.next:-0}"
+val describeDistance = "\${describe.distance:-0}"
+val branchVersionFormat =
+    "${majorVersion}.${minorVersion}.${patchVersion}-snapshot.${describeDistance}"
+
+gitVersioning.apply {
+    refs {
+        branch(".+") {
+            describeTagPattern = "v(?<version>.+)"
+            version = branchVersionFormat
+        }
+        tag("v(?<version>.+)") { version = "\${ref.version}" }
+    }
+    rev {
+        describeTagPattern = "v(?<version>.+)"
+        version = branchVersionFormat
+    }
+}
+
 node { download.set(false) }
 
 spotless {
@@ -22,24 +44,33 @@ spotless {
 
     format("packageJson", JsonExtension::class.java) {
         target("package.json")
-        // This should preferably be done using a JSON patch
-        val numericId = """(0|[1-9]\d*)"""
-        val idChar = """[0-9a-zA-Z-]"""
-        val nonDigit = """[a-zA-Z-]"""
-        val alphaNum = """(?:0|[1-9]\d*|\d*${nonDigit}${idChar}*)"""
-        val preRelease = """(?:-(${alphaNum}(?:\.${alphaNum})*))"""
-        val buildId = """(?:\+(${idChar}+(?:\.${idChar}+)*))"""
-        val semVer = """${numericId}\.${numericId}\.${numericId}${preRelease}?${buildId}?"""
-        replaceRegex(
-            "package-version",
-            """(?<="version": ")${semVer}(?=",)""",
-            project.version.toString()
-        )
-        replaceRegex(
-            "server-version",
-            """(?<="default": ")${semVer}(?=",)""",
-            project.version.toString()
-        )
+
+        val languageServerVersionPath =
+            "/contributes/configuration/0/properties/mina.languageServer.version/default"
+        val profilingAgentVersionPath =
+            "/contributes/configuration/2/properties/mina.languageServer.profiling.agentVersion/default"
+
+        // Pending https://github.com/diffplug/spotless/pull/1753
+        //
+        // applyJsonPatch(
+        //     listOf(
+        //         // Replace package.json version
+        //         mapOf("op" to "replace", "path" to "/version", "value" to version.toString()),
+        //         // Replace VS code default configuration for language server version
+        //         mapOf(
+        //             "op" to "replace",
+        //             "path" to languageServerVersionPath,
+        //             "value" to rootProject.project("mina-lang-server").version.toString()
+        //         ),
+        //         // Replace VS code default configuration for profiling agent version
+        //         mapOf(
+        //             "op" to "replace",
+        //             "path" to profilingAgentVersionPath,
+        //             "value" to libs.versions.pyroscopeAgent.get()
+        //         )
+        //     )
+        // )
+
         prettier()
     }
 }

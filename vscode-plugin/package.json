@@ -139,6 +139,11 @@
             "default": "http://localhost:4040",
             "format": "uri",
             "description": "The server address to use for continuous profiling."
+          },
+          "mina.languageServer.profiling.agentVersion": {
+            "type": "string",
+            "default": "0.11.5",
+            "description": "The version of the Pyroscope agent to use."
           }
         }
       }
