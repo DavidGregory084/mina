@@ -7,28 +7,6 @@ plugins {
     alias(libs.plugins.gradleNode)
 }
 
-// npm requires strictly increasing snapshot build identifiers
-val majorVersion = "\${describe.tag.version.major:-0}"
-val minorVersion = "\${describe.tag.version.minor:-0}"
-val patchVersion = "\${describe.tag.version.patch.next:-0}"
-val describeDistance = "\${describe.distance:-0}"
-val branchVersionFormat =
-    "${majorVersion}.${minorVersion}.${patchVersion}-snapshot.${describeDistance}"
-
-gitVersioning.apply {
-    refs {
-        branch(".+") {
-            describeTagPattern = "v(?<version>.+)"
-            version = branchVersionFormat
-        }
-        tag("v(?<version>.+)") { version = "\${ref.version}" }
-    }
-    rev {
-        describeTagPattern = "v(?<version>.+)"
-        version = branchVersionFormat
-    }
-}
-
 node { download.set(false) }
 
 spotless {
@@ -76,7 +54,14 @@ spotless {
 val npmVersion by
     tasks.registering(NpmTask::class) {
         dependsOn(tasks.npmInstall)
-        npmCommand.set(listOf("version", "--no-git-tag-version", project.version.toString()))
+        npmCommand.set(
+            listOf(
+                "version",
+                "--no-git-tag-version",
+                "--allow-same-version",
+                project.version.toString()
+            )
+        )
     }
 
 val npmBuild by

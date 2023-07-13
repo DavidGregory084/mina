@@ -1,4 +1,10 @@
+.gradle/**
 .vscode/**
 .vscode-test/**
+build/**
+node_modules/**
+src/**
+**/*.ts
+**/*.kts
 .gitignore
-vsc-extension-quickstart.md
+tsconfig.json
