@@ -54,8 +54,6 @@ spotless {
         //
         // applyJsonPatch(
         //     listOf(
-        //         // Replace package.json version
-        //         mapOf("op" to "replace", "path" to "/version", "value" to version.toString()),
         //         // Replace VS code default configuration for language server version
         //         mapOf(
         //             "op" to "replace",
@@ -74,6 +72,12 @@ spotless {
         prettier()
     }
 }
+
+val npmVersion by
+    tasks.registering(NpmTask::class) {
+        dependsOn(tasks.npmInstall)
+        npmCommand.set(listOf("version", "--no-git-tag-version", project.version.toString()))
+    }
 
 val npmBuild by
     tasks.registering(NpmTask::class) {
