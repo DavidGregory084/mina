@@ -18,7 +18,7 @@ steps:
           save: file
       - docker#v5.8.0:
           image: "timbru31/java-node:17-jdk-16"
-          memory: 1g
+          memory: 2g
 
   - wait: ~
     continue_on_failure: true
