@@ -3,6 +3,19 @@ steps:
     command: "./.buildkite/ci.sh"
     artifact_paths: "**/build/test-results/*/TEST-*.xml"
     plugins:
+      - cache#v0.5.0:
+          backend: s3
+          compression: tgz
+          path: .gradle
+          restore: branch
+          save: branch
+      - cache#v0.5.0:
+          backend: s3
+          compression: tgz
+          path: vscode-plugin/node_modules
+          manifest: vscode-plugin/package-lock.json
+          restore: file
+          save: file
       - docker#v5.8.0:
           image: "timbru31/java-node:17-jdk-16"
 
