@@ -7,6 +7,10 @@
       "allowedVersions": "<17"
     },
     {
+      "matchPackageNames": ["vscode", "@types/vscode"],
+      "allowedVersions": "<1.68"
+    },
+    {
       "matchManagers": "npm",
       "rangeStrategy": "bump"
     }
