@@ -7,7 +7,11 @@
       "allowedVersions": "<17"
     },
     {
-      "matchPackageNames": ["vscode", "@types/vscode"],
+      "matchPackageNames": "vscode",
+      "allowedVersions": "<=1.67.0"
+    }
+    {
+      "matchPackageNames": ["@types/vscode"],
       "allowedVersions": "<1.68"
     },
     {
