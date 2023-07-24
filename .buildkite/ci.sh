@@ -14,5 +14,4 @@ apt-get -qq update && apt-get -y install code xvfb
 ./gradlew \
   --gradle-user-home /workdir/.gradle \
   --build-cache \
-  --no-daemon \
-  build --debug
+  build --info
