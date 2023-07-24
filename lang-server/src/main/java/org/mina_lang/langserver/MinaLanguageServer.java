@@ -82,9 +82,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
     public <A> CompletableFuture<A> ifInitialized(Function<CancelChecker, A> action) {
         if (isInitialized() && !isShutdown()) {
-            return CompletableFutures.computeAsync(executor, cancelToken -> {
-                return action.apply(cancelToken);
-            });
+            return CompletableFutures.computeAsync(executor, action);
         } else {
             var error = isShutdown()
                 ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
