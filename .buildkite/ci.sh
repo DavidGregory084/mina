@@ -2,6 +2,7 @@
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
+export GRADLE_OPTS='"-XX:InitialRAMPercentage=25.0" "-XX:MaxRAMPercentage=50.0"'
 
 # Install VS Code so that we can test the VS Code plugin
 curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o packages.microsoft.gpg
@@ -10,4 +11,9 @@ sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.
 apt-get -qq update && apt-get -y install code xvfb
 
 # Run the Gradle build
-./gradlew --gradle-user-home /workdir/.gradle --build-cache build --info
+./gradlew \
+  -Dorg.gradle.daemon=false \
+  -Dorg.gradle.parallel=false \
+  --gradle-user-home /workdir/.gradle \
+  --build-cache \
+  build --info
