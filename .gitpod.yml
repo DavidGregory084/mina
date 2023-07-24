@@ -1,6 +1,5 @@
 tasks:
-  - before: (cd lang-server && ./gradlew publish)
-  - init: (cd vscode-plugin && npm i && npm run compile)
+  - init: ./gradlew build
 
 image:
   file: .gitpod.Dockerfile
@@ -12,7 +11,6 @@ vscode:
     - vscjava.vscode-gradle
     - zxh404.vscode-proto3
     - mindaro-dev.file-downloader
-    - daohong-emilio.yash
     - mike-lischke.vscode-antlr4
     - esbenp.prettier-vscode
     - karlito40.fix-irregular-whitespace
