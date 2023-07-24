@@ -10,7 +10,7 @@
       "matchPackageNames": "vscode",
       "matchDepTypes": "engines",
       "allowedVersions": "<=1.67.0"
-    }
+    },
     {
       "matchPackageNames": "@types/vscode",
       "allowedVersions": "<1.68"
