@@ -147,9 +147,7 @@ public class Main {
                 .allowingSelfLoops(false)
                 .buildGraph();
 
-        namespaceNodes.keySet().forEach(namespaceName -> {
-            namespaceGraph.addVertex(namespaceName);
-        });
+        namespaceNodes.keySet().forEach(namespaceGraph::addVertex);
 
         namespaceGraph.vertexSet()
                 .forEach(namespaceName -> {

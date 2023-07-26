@@ -15,6 +15,7 @@ import org.mina_lang.BuildInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +36,8 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private AtomicBoolean shutdown = new AtomicBoolean(false);
     private AtomicReference<String> traceValue = new AtomicReference<>(TraceValue.Off);
     private AtomicReference<ClientCapabilities> clientCapabilities = new AtomicReference<>();
+
+    private AtomicReference<List<WorkspaceFolder>> workspaceFolders = new AtomicReference<>();
 
     private ThreadFactory threadFactory = new ThreadFactory() {
         private final AtomicLong count = new AtomicLong(0);
@@ -109,6 +112,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             cancelToken.checkCanceled();
 
             clientCapabilities.set(params.getCapabilities());
+            workspaceFolders.set(params.getWorkspaceFolders());
 
             var serverCapabilities = new ServerCapabilities();
 
@@ -124,7 +128,15 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
             serverCapabilities.setHoverProvider(hoverOptions);
 
-            cancelToken.checkCanceled();
+            var workspaceCapabilities = new WorkspaceServerCapabilities();
+
+            var workspaceFoldersOptions = new WorkspaceFoldersOptions();
+            workspaceFoldersOptions.setSupported(true);
+            workspaceFoldersOptions.setChangeNotifications(false);
+
+            workspaceCapabilities.setWorkspaceFolders(workspaceFoldersOptions);
+
+            serverCapabilities.setWorkspace(workspaceCapabilities);
 
             Optional.ofNullable(params.getProcessId())
                 .flatMap(ProcessHandle::of)

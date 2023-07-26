@@ -4,12 +4,15 @@ apacheCommonsLang = "3.13.0"
 apacheCommonsText = "1.10.0"
 asciiDoctorGradle = "4.0.0-alpha.1"
 asm = "9.5"
+bsp4j = "2.1.0-M5"
+directories = "26"
 eclipseCollections = "11.1.0"
 equalsVerifier = "3.15.1"
 gradleBuildInfo = "0.3.1"
 gradleNode = "7.0.0"
 gradleVersions = "0.47.0"
 gradleGitVersioning = "6.4.2"
+gson = "2.10.1"
 hamcrest = "2.2"
 hamcrestOptional = "1.3.2"
 jacoco = "0.8.8"
@@ -40,11 +43,14 @@ apacheCommonsText = { module = "org.apache.commons:commons-text", version.ref = 
 asm = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 asmCommons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 asmUtil = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+bsp4j = { module = "ch.epfl.scala:bsp4j", version.ref = "bsp4j" }
+directories = { module = "dev.dirs:directories", version.ref = "directories" }
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipseCollections" }
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipseCollections" }
 equalsVerifier = { module = "nl.jqno.equalsverifier:equalsverifier", version.ref = "equalsVerifier" }
-gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }
 gitVersioningPlugin = { module = "me.qoomon:gradle-git-versioning-plugin", version.ref = "gradleGitVersioning" }
+gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }
+gson = { module = "com.google.code.json:gson", version.ref = "gson" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "hamcrestOptional" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }

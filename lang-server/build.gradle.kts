@@ -16,6 +16,15 @@ dependencies {
     // Language Server Protocol
     implementation(libs.lsp4j)
 
+    // Build Server Protocol
+    implementation(libs.bsp4j)
+
+    // Platform-specific Directories
+    implementation(libs.directories)
+
+    // Failable Streams
+    implementation(libs.apacheCommonsLang)
+
     // Compiler Main
     implementation(project(":compiler:mina-compiler-main"))
 

@@ -47,7 +47,7 @@ public class MinaTextDocumentService implements TextDocumentService {
             server.getClient().publishDiagnostics(
                 new PublishDiagnosticsParams(
                     document.getUri(),
-                    diagnostics.getLSPDiagnostics(document.getUri()),
+                    diagnostics.getLSPDiagnostics(),
                     document.getVersion()));
             return result;
         });
