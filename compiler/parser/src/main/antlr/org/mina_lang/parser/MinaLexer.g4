@@ -14,6 +14,13 @@ import java.text.Normalizer;
 import java.text.Normalizer.Form;
 }
 
+@lexer::members {
+public MinaLexer(CharStream input, ThreadLocal<DFA[]> decisionToDFA, ThreadLocal<PredictionContextCache> contextCache) {
+    super(input);
+    _interp = new LexerATNSimulator(this, _ATN, decisionToDFA.get(), contextCache.get());
+}
+}
+
 WHITESPACE: WS+ -> channel(WHITESPACE_CHANNEL);
 DOC_COMMENT: '///' ~[\r\n]* -> channel(COMMENTS_CHANNEL);
 LINE_COMMENT: '//' ~[\r\n]* -> channel(COMMENTS_CHANNEL);

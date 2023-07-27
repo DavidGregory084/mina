@@ -7,8 +7,6 @@ package org.mina_lang.parser;
 import com.opencastsoftware.yvette.Position;
 import com.opencastsoftware.yvette.Range;
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.LexerATNSimulator;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
 import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -52,7 +50,7 @@ public class Parser {
     private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
     private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
 
-    private static final ThreadLocal<DFA[]> lexerDfa = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<DFA[]> lexerDFA = ThreadLocal.withInitial(() -> {
         var atn = MinaLexer._ATN;
         return IntStream.range(0, atn.getNumberOfDecisions())
             .mapToObj(i -> new DFA(atn.getDecisionState(i), i))
@@ -153,17 +151,15 @@ public class Parser {
             CharStream charStream,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
-        var lexer = new MinaLexer(charStream);
-        lexer.setInterpreter(new LexerATNSimulator(lexer, MinaLexer._ATN, lexerDfa.get(), lexerCache.get()));
+        var lexer = new MinaLexer(charStream, lexerDFA, lexerCache);
         lexer.removeErrorListeners();
         lexer.addErrorListener(diagnostics);
 
         var tokenStream = new CommonTokenStream(lexer);
-        var parser = new MinaParser(tokenStream);
+        var parser = new MinaParser(tokenStream, parserDFA, parserCache);
 
         // Try parsing using SLL(*) first, as it's faster
-        var interpreter = new ParserATNSimulator(parser, MinaParser._ATN, parserDFA.get(), parserCache.get());
-        parser.setInterpreter(interpreter);
+        var interpreter = parser.getInterpreter();
         interpreter.setPredictionMode(PredictionMode.SLL);
 
         // Don't report diagnostics on the first pass
