@@ -1,12 +1,20 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
 
 import ch.epfl.scala.bsp4j.*;
 import org.eclipse.lsp4j.services.LanguageClient;
 
+import java.util.concurrent.Future;
+
 public class MinaBuildClient implements BuildClient {
     private MinaLanguageServer languageServer;
     private LanguageClient languageClient;
     private BuildServer buildServer;
+    private Process buildServerProcess;
+    private Future<Void> listenerFuture;
 
     public MinaBuildClient(MinaLanguageServer languageServer) {
         this.languageServer = languageServer;
@@ -45,12 +53,7 @@ public class MinaBuildClient implements BuildClient {
 
     @Override
     public void onBuildPublishDiagnostics(PublishDiagnosticsParams params) {
-        org.eclipse.lsp4j.PublishDiagnosticsParams lspDiagnosticsParams =
-            new org.eclipse.lsp4j.PublishDiagnosticsParams(
-                params.getTextDocument().getUri(),
-                params.getDiagnostics().stream().map(Conversions::toLspDiagnostic).toList());
-
-        languageClient.publishDiagnostics(lspDiagnosticsParams);
+        languageClient.publishDiagnostics(Conversions.toLspPublishDiagnostics(params));
     }
 
     @Override
@@ -62,5 +65,17 @@ public class MinaBuildClient implements BuildClient {
     @Override
     public void onConnectWithServer(BuildServer server) {
         this.buildServer = server;
+    }
+
+    public void onStartProcess(Process buildServerProcess) {
+        this.buildServerProcess = buildServerProcess;
+    }
+
+    public void onStartListening(Future<Void> listenerFuture) {
+        this.listenerFuture = listenerFuture;
+    }
+
+    public void disconnect() {
+        this.listenerFuture.cancel(true);
     }
 }

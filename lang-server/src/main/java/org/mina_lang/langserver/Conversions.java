@@ -1,13 +1,15 @@
+/*
+ * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.langserver;
 
 import com.opencastsoftware.yvette.Severity;
 import org.eclipse.lsp4j.*;
 
-import java.util.List;
-
 public class Conversions {
     public static DiagnosticSeverity toLspSeverity(ch.epfl.scala.bsp4j.DiagnosticSeverity bspSeverity) {
-       return DiagnosticSeverity.forValue(bspSeverity.getValue());
+        return DiagnosticSeverity.forValue(bspSeverity.getValue());
     }
 
     public static DiagnosticSeverity toLspSeverity(Severity minaSeverity) {
@@ -54,10 +56,11 @@ public class Conversions {
         diagnostic.setRange(toLspRange(bspDiagnostic.getRange()));
         diagnostic.setSeverity(toLspSeverity(bspDiagnostic.getSeverity()));
         diagnostic.setMessage(bspDiagnostic.getMessage());
-        diagnostic.setRelatedInformation(bspDiagnostic.getRelatedInformation()
-            .stream()
-            .map(Conversions::toLspRelatedInformation)
-            .toList());
+        diagnostic.setRelatedInformation(
+            bspDiagnostic.getRelatedInformation()
+                .stream()
+                .map(Conversions::toLspRelatedInformation)
+                .toList());
         return diagnostic;
     }
 
@@ -68,10 +71,18 @@ public class Conversions {
         diagnostic.setRange(toLspRange(minaDiagnostic.location().range()));
         diagnostic.setSeverity(toLspSeverity(minaDiagnostic.severity()));
         diagnostic.setMessage(minaDiagnostic.getMessage());
-        diagnostic.setRelatedInformation(minaDiagnostic.relatedInformation()
-            .stream()
-            .map(Conversions::toLspRelatedInformation)
-            .toList());
+        diagnostic.setRelatedInformation(
+            minaDiagnostic.relatedInformation()
+                .stream()
+                .map(Conversions::toLspRelatedInformation)
+                .toList());
         return diagnostic;
+    }
+
+    public static PublishDiagnosticsParams toLspPublishDiagnostics(ch.epfl.scala.bsp4j.PublishDiagnosticsParams bspPublishDiagnostics) {
+        return new PublishDiagnosticsParams(
+            bspPublishDiagnostics.getTextDocument().getUri(),
+            bspPublishDiagnostics.getDiagnostics().stream().map(Conversions::toLspDiagnostic).toList()
+        );
     }
 }

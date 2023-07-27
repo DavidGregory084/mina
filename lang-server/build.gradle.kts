@@ -1,6 +1,7 @@
 plugins {
     application
     `java-project-convention`
+    alias(libs.plugins.gradleBuildInfo)
 }
 
 dependencies {
@@ -34,3 +35,10 @@ dependencies {
 }
 
 application { mainClass.set("org.mina_lang.langserver.MinaServerLauncher") }
+
+buildInfo {
+    packageName.set("org.mina_lang.langserver")
+    properties.set(
+        mapOf("version" to project.version.toString(), "bspVersion" to libs.versions.bsp4j.get())
+    )
+}

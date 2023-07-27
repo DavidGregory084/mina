@@ -4,6 +4,7 @@
  */
 package org.mina_lang.langserver;
 
+import ch.epfl.scala.bsp4j.BspConnectionDetails;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
@@ -14,14 +15,22 @@ import org.eclipse.lsp4j.services.*;
 import org.mina_lang.BuildInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private static Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
@@ -38,6 +47,8 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private AtomicReference<ClientCapabilities> clientCapabilities = new AtomicReference<>();
 
     private AtomicReference<List<WorkspaceFolder>> workspaceFolders = new AtomicReference<>();
+    private ConcurrentHashMap<WorkspaceFolder, BspConnectionDetails> bspConnectionDetails = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<WorkspaceFolder, MinaBuildClient> bspConnections = new ConcurrentHashMap<>();
 
     private ThreadFactory threadFactory = new ThreadFactory() {
         private final AtomicLong count = new AtomicLong(0);
@@ -56,6 +67,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     };
 
     private ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
+    private Scheduler scheduler = Schedulers.fromExecutor(executor);
 
     public MinaLanguageServer() {
         this.documentService = new MinaTextDocumentService(this);
@@ -112,7 +124,20 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             cancelToken.checkCanceled();
 
             clientCapabilities.set(params.getCapabilities());
-            workspaceFolders.set(params.getWorkspaceFolders());
+
+            // Absolutely every intermediate value here can be null
+            var hasWorkspaceCapabilities = params.getCapabilities().getWorkspace() != null;
+            var hasWorkspaceFolderCapabilities = hasWorkspaceCapabilities && params.getCapabilities().getWorkspace().getWorkspaceFolders() != null;
+            var supportsWorkspaceFolders = hasWorkspaceFolderCapabilities && params.getCapabilities().getWorkspace().getWorkspaceFolders();
+            var hasWorkspaceFolders = params.getWorkspaceFolders() != null;
+
+            if (supportsWorkspaceFolders && hasWorkspaceFolders) {
+                workspaceFolders.set(params.getWorkspaceFolders());
+            } else if (params.getRootUri() != null) {
+                workspaceFolders.set(List.of(new WorkspaceFolder(params.getRootUri())));
+            } else {
+                workspaceFolders.set(List.of());
+            }
 
             var serverCapabilities = new ServerCapabilities();
 
@@ -147,28 +172,98 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
             var serverInfo = new ServerInfo("Mina Language Server", BuildInfo.version);
 
-            return new InitializeResult(serverCapabilities, serverInfo);
-        });
+            return configureBsp().thenApply(v -> {
+                return new InitializeResult(serverCapabilities, serverInfo);
+            });
+        }).thenCompose(result -> result);
+    }
+
+    CompletableFuture<Void> configureBsp() {
+        return Flux.fromIterable(workspaceFolders.get())
+            .flatMap(folder -> {
+                return MinaBuildServer
+                    .discover(folder)
+                    .collectList()
+                    .flatMap(connectionDetails -> {
+                        return configureBspConnection(folder, connectionDetails);
+                    });
+            }).then().toFuture();
+    }
+
+    Mono<Void> configureBspConnection(WorkspaceFolder folder, List<BspConnectionDetails> connectionDetails) {
+        if (connectionDetails.isEmpty()) {
+            client.showMessage(new MessageParams(MessageType.Warning, "No build server connection details were found for workspace folder '" + folder.getName() + "'"));
+            return Mono.empty();
+        } else if (connectionDetails.size() > 1) {
+            // Check which connection config the user wants to use
+            var connectionOptions = createConnectionOptions(connectionDetails);
+            var bspConnectionMessage = chooseBspConnectionMessage(folder, connectionOptions);
+            return Mono.fromFuture(client.showMessageRequest(bspConnectionMessage)).flatMap(actionItem -> {
+                var chosenConnection = connectionOptions.get(actionItem);
+                return connectToBuildServer(folder, chosenConnection);
+            });
+        } else {
+            // There's only one connection file that we can use
+            var chosenConnection = connectionDetails.get(0);
+            return connectToBuildServer(folder, chosenConnection);
+        }
+    }
+
+    Map<MessageActionItem, BspConnectionDetails> createConnectionOptions(List<BspConnectionDetails> connectionDetails) {
+        return connectionDetails.stream()
+            .map(details -> new AbstractMap.SimpleEntry<>(new MessageActionItem("%s (%s)".formatted(details.getName(), details.getVersion())), details))
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue
+            ));
+    }
+
+    ShowMessageRequestParams chooseBspConnectionMessage(WorkspaceFolder folder, Map<MessageActionItem, BspConnectionDetails> connectionOptions) {
+        var connectionActionItems = connectionOptions.keySet().stream().toList();
+
+        var messageParams = new ShowMessageRequestParams();
+        messageParams.setActions(connectionActionItems);
+        messageParams.setType(MessageType.Info);
+        messageParams.setMessage("Multiple build server connection details were found. Which one do you wish to use for workspace folder '" + folder.getName() + "'?");
+
+        return messageParams;
+    }
+
+    Mono<Void> connectToBuildServer(WorkspaceFolder folder, BspConnectionDetails chosenConnection) {
+        bspConnectionDetails.put(folder, chosenConnection);
+        try {
+            var buildClient = MinaBuildServer.connect(this, folder, chosenConnection);
+            bspConnections.put(folder, buildClient);
+            return Mono.empty();
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
     }
 
     @Override
     public void initialized(InitializedParams params) {
         initialized.set(true);
+
     }
 
     @Override
     public CompletableFuture<Object> shutdown() {
         return ifInitialized(cancelToken -> {
-            cancelToken.checkCanceled();
+            performShutdown();
             shutdown.set(true);
             return null;
         });
+    }
+
+    void performShutdown() {
+        bspConnections.values().forEach(MinaBuildClient::disconnect);
     }
 
     @Override
     public void exit() {
         try {
             if (!isShutdown()) {
+                performShutdown();
                 logger.error("Server exit request received before shutdown request");
                 exitCode = 1;
             }
