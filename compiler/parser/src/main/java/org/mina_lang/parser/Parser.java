@@ -7,7 +7,9 @@ package org.mina_lang.parser;
 import com.opencastsoftware.yvette.Position;
 import com.opencastsoftware.yvette.Range;
 import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -23,6 +25,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
@@ -46,6 +49,26 @@ public class Parser {
     private PatternVisitor patternVisitor = new PatternVisitor();
     private FieldPatternVisitor fieldPatternVisitor = new FieldPatternVisitor();
     private QualifiedIdVisitor qualifiedIdVisitor = new QualifiedIdVisitor();
+
+    private static final ThreadLocal<DFA[]> lexerDFA = ThreadLocal.withInitial(() -> {
+        var atn = MinaLexer._ATN;
+        return IntStream.range(0, atn.getNumberOfDecisions())
+            .mapToObj(i -> new DFA(atn.getDecisionState(i), i))
+            .toArray(DFA[]::new);
+    });
+
+    private static final ThreadLocal<PredictionContextCache> lexerCache =
+        ThreadLocal.withInitial(PredictionContextCache::new);
+
+    private static final ThreadLocal<DFA[]> parserDFA = ThreadLocal.withInitial(() -> {
+        var atn = MinaParser._ATN;
+        return IntStream.range(0, atn.getNumberOfDecisions())
+            .mapToObj(i -> new DFA(atn.getDecisionState(i), i))
+            .toArray(DFA[]::new);
+    });
+
+    private static final ThreadLocal<PredictionContextCache> parserCache =
+        ThreadLocal.withInitial(PredictionContextCache::new);
 
     public Parser(ANTLRDiagnosticCollector diagnostics) {
         this.diagnostics = diagnostics;
@@ -128,12 +151,12 @@ public class Parser {
             CharStream charStream,
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule) {
-        var lexer = new MinaLexer(charStream);
+        var lexer = new MinaLexer(charStream, lexerDFA, lexerCache);
         lexer.removeErrorListeners();
         lexer.addErrorListener(diagnostics);
 
         var tokenStream = new CommonTokenStream(lexer);
-        var parser = new MinaParser(tokenStream);
+        var parser = new MinaParser(tokenStream, parserDFA, parserCache);
 
         // Try parsing using SLL(*) first, as it's faster
         var interpreter = parser.getInterpreter();

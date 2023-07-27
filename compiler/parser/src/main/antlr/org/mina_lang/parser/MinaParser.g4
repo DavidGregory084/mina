@@ -9,6 +9,13 @@ options {
     tokenVocab=MinaLexer;
 }
 
+@parser::members {
+public MinaParser(TokenStream input, ThreadLocal<DFA[]> decisionToDFA, ThreadLocal<PredictionContextCache> contextCache) {
+    super(input);
+    _interp = new ParserATNSimulator(this, _ATN, decisionToDFA.get(), contextCache.get());
+}
+}
+
 // Namespaces
 namespace: NAMESPACE namespaceId LBRACE importDeclaration* declaration* RBRACE EOF;
 
