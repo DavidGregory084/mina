@@ -12,6 +12,7 @@ import java.util.concurrent.Future;
 public class MinaBuildClient implements BuildClient {
     private MinaLanguageServer languageServer;
     private LanguageClient languageClient;
+
     private BuildServer buildServer;
     private Process buildServerProcess;
     private Future<Void> listenerFuture;
@@ -19,6 +20,15 @@ public class MinaBuildClient implements BuildClient {
     public MinaBuildClient(MinaLanguageServer languageServer) {
         this.languageServer = languageServer;
         this.languageClient = languageServer.getClient();
+    }
+
+    public MinaBuildClient(MinaLanguageServer languageServer, Process buildServerProcess) {
+        this(languageServer);
+        this.buildServerProcess = buildServerProcess;
+    }
+
+    public BuildServer buildServer() {
+        return buildServer;
     }
 
     @Override

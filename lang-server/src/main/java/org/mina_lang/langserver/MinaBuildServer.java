@@ -15,7 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,9 +115,26 @@ public class MinaBuildServer {
 
         processBuilder.environment().putAll(System.getenv());
 
+        var logFolder = System.getProperty("LOG_FOLDER");
+
+        if (logFolder != null) {
+            processBuilder.environment().put("LOG_FOLDER", logFolder);
+        }
+
+        var separator = System.lineSeparator();
+        var argvString = String.join(separator, details.getArgv());
+        logger.debug("Launching build server process with arguments: {}{}", separator, argvString);
+
         var buildServerProcess = processBuilder.start();
 
-        var buildClient = new MinaBuildClient(languageServer);
+        languageServer.getExecutor().submit(() -> {
+            // Forward build server's stderr to ours
+            var errorStream = buildServerProcess.getErrorStream();
+            var reader = new BufferedReader(new InputStreamReader(errorStream));
+            reader.lines().forEach(System.err::println);
+        });
+
+        var buildClient = new MinaBuildClient(languageServer, buildServerProcess);
 
         var launcher = new Launcher.Builder<BuildServer>()
             .setLocalService(buildClient)
@@ -122,9 +142,10 @@ public class MinaBuildServer {
             .setInput(buildServerProcess.getInputStream())
             .setOutput(buildServerProcess.getOutputStream())
             .setExecutorService(languageServer.getExecutor())
+            .traceMessages(new PrintWriter(System.err))
+            .validateMessages(true)
             .create();
 
-        buildClient.onStartProcess(buildServerProcess);
         buildClient.onStartListening(launcher.startListening());
         buildClient.onConnectWithServer(launcher.getRemoteProxy());
 
