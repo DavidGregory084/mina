@@ -126,7 +126,7 @@ public class MinaTextDocumentService implements TextDocumentService {
     }
 
     private Hover formatNode(Range range, SyntaxNode node) {
-        if (node instanceof MetaNode metaNode &&
+        if (node instanceof MetaNode<?> metaNode &&
             metaNode.meta().meta() instanceof Attributes attrs) {
             String nameString;
 

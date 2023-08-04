@@ -18,7 +18,7 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-public class MinaBuildServerTest {
+public class BuildServerDiscoveryTest {
     private final String DATA_LOCAL_DIR = "dataLocal";
     private final String DATA_DIR = "data";
 
@@ -36,7 +36,7 @@ public class MinaBuildServerTest {
         Files.write(bspDir.resolve("foo.json.txt"), List.of(""));
         Files.write(bspDir.resolve("bar.png"), List.of(""));
 
-        List<BspConnectionDetails> discovered = MinaBuildServer
+        List<BspConnectionDetails> discovered = BuildServerDiscovery
             .discover(workspaceFolder, baseDirectories(tmpDir))
             .collectList()
             .block();
@@ -63,7 +63,7 @@ public class MinaBuildServerTest {
         Files.write(bspDir.resolve("foo.json.txt"), List.of(""));
         Files.write(bspDir.resolve("bar.png"), List.of(""));
 
-        List<BspConnectionDetails> discovered = MinaBuildServer
+        List<BspConnectionDetails> discovered = BuildServerDiscovery
             .discover(workspaceFolder, baseDirectories(tmpDir))
             .collectList()
             .block();
@@ -90,7 +90,7 @@ public class MinaBuildServerTest {
         Files.write(bspDir.resolve("foo.json.txt"), List.of(""));
         Files.write(bspDir.resolve("bar.png"), List.of(""));
 
-        List<BspConnectionDetails> discovered = MinaBuildServer
+        List<BspConnectionDetails> discovered = BuildServerDiscovery
             .discover(workspaceFolder, baseDirectories(tmpDir))
             .collectList()
             .block();
@@ -115,7 +115,7 @@ public class MinaBuildServerTest {
         Files.createDirectories(dataBspDir);
         Files.write(dataBspDir.resolve("sbt.json"), List.of(connectionFile("sbt", "1.9.3")));
 
-        List<BspConnectionDetails> discovered = MinaBuildServer
+        List<BspConnectionDetails> discovered = BuildServerDiscovery
             .discover(workspaceFolder, baseDirectories(tmpDir))
             .collectList()
             .block();

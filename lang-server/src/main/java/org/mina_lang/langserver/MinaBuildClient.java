@@ -47,6 +47,7 @@ public class MinaBuildClient implements BuildClient {
     public void onBuildTaskStart(TaskStartParams params) {
         // TODO Auto-generated method stub
 
+
     }
 
     @Override
