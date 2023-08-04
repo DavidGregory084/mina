@@ -5,6 +5,7 @@
 package org.mina_lang.langserver;
 
 import ch.epfl.scala.bsp4j.*;
+import dev.dirs.BaseDirectories;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -17,8 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.AbstractMap;
@@ -50,6 +49,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private ConcurrentHashMap<WorkspaceFolder, BspConnectionDetails> bspConnectionDetails = new ConcurrentHashMap<>();
     private ConcurrentHashMap<WorkspaceFolder, MinaBuildClient> bspConnections = new ConcurrentHashMap<>();
     private ConcurrentHashMap<WorkspaceFolder, BuildServerCapabilities> buildServerCapabilities = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<WorkspaceFolder, List<BuildTarget>> bspBuildTargets = new ConcurrentHashMap<>();
 
     private ThreadFactory threadFactory = new ThreadFactory() {
         private final AtomicLong count = new AtomicLong(0);
@@ -68,7 +68,6 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     };
 
     private ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
-    private Scheduler scheduler = Schedulers.fromExecutor(executor);
 
     public MinaLanguageServer() {
         this.documentService = new MinaTextDocumentService(this);
@@ -183,11 +182,17 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         return Flux.fromIterable(workspaceFolders.get())
             .flatMap(folder -> {
                 return MinaBuildServer
-                    .discover(folder)
+                    .discover(folder, BaseDirectories.get())
                     .collectList()
                     .flatMap(connectionDetails -> {
-                        return configureBspConnection(folder, connectionDetails).doOnNext(res -> {
+                        return configureBspConnection(folder, connectionDetails).flatMap(res -> {
+                            var folderConnection = bspConnections.get(folder);
                             buildServerCapabilities.put(folder, res.getCapabilities());
+                            folderConnection.buildServer().onBuildInitialized();
+                            return Mono.fromFuture(folderConnection.buildServer().workspaceBuildTargets()).doOnNext(buildTargets -> {
+                                logger.info("Build targets for workspace folder '{}': {}", folder.getName(), buildTargets.getTargets());
+                                bspBuildTargets.put(folder, buildTargets.getTargets());
+                            });
                         });
                     });
             }).then().toFuture();
@@ -253,7 +258,6 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     @Override
     public void initialized(InitializedParams params) {
         initialized.set(true);
-
     }
 
     @Override
@@ -266,15 +270,18 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     void performShutdown() {
-        bspConnections.values().forEach(MinaBuildClient::disconnect);
+        Flux.fromIterable(bspConnections.values())
+                .parallel()
+                .flatMap(client -> Mono.fromFuture(client.disconnect()))
+                .then().block();
     }
 
     @Override
     public void exit() {
         try {
             if (!isShutdown()) {
-                performShutdown();
                 logger.error("Server exit request received before shutdown request");
+                performShutdown();
                 exitCode = 1;
             }
 

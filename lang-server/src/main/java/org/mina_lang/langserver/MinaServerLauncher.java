@@ -5,6 +5,7 @@
 package org.mina_lang.langserver;
 
 import org.eclipse.lsp4j.launch.LSPLauncher;
+import org.eclipse.lsp4j.services.LanguageClient;
 import org.mina_lang.BuildInfo;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
@@ -46,12 +47,24 @@ public class MinaServerLauncher implements Callable<Integer> {
 
     private int listenOn(InputStream in, OutputStream out) throws InterruptedException, ExecutionException {
         var server = new MinaLanguageServer();
-        var errWriter = new PrintWriter(System.err);
-        var launcher = LSPLauncher.createServerLauncher(server, in, out, true, errWriter);
+
+        var launcher = new LSPLauncher.Builder<LanguageClient>()
+            .setLocalService(server)
+            .setRemoteInterface(LanguageClient.class)
+            .setInput(in)
+            .setOutput(out)
+            .validateMessages(true)
+            .traceMessages(new PrintWriter(System.err))
+            .create();
+
         server.connect(launcher.getRemoteProxy());
+
         launcher.startListening().get();
+
         var exitCode = server.getExitCode();
+
         logger.info("Server exiting with exit code {}", exitCode);
+
         return exitCode;
     }
 

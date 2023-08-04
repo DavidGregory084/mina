@@ -4,6 +4,7 @@
  */
 package org.mina_lang.langserver;
 
+import ch.epfl.scala.bsp4j.ShowMessageParams;
 import com.opencastsoftware.yvette.Severity;
 import org.eclipse.lsp4j.*;
 
@@ -83,6 +84,17 @@ public class Conversions {
         return new PublishDiagnosticsParams(
             bspPublishDiagnostics.getTextDocument().getUri(),
             bspPublishDiagnostics.getDiagnostics().stream().map(Conversions::toLspDiagnostic).toList()
+        );
+    }
+
+    public static MessageType toLspMessageType(ch.epfl.scala.bsp4j.MessageType bspMessageType) {
+        return MessageType.forValue(bspMessageType.getValue());
+    }
+
+    public static MessageParams toLspMessageParams(ShowMessageParams bspShowMessage) {
+        return new MessageParams(
+            toLspMessageType(bspShowMessage.getType()),
+            bspShowMessage.getMessage()
         );
     }
 }

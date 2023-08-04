@@ -37,7 +37,7 @@ public class MinaBuildServer {
         return fileName.endsWith(".json") && attrs.isRegularFile();
     };
 
-    public static Flux<BspConnectionDetails> discover(WorkspaceFolder folder) {
+    public static Flux<BspConnectionDetails> discover(WorkspaceFolder folder, BaseDirectories baseDirs) {
         Path workspacePath = Paths.get(URI.create(folder.getUri()));
         Path workspaceBspFolder = workspacePath.resolve(".bsp");
 
@@ -48,11 +48,11 @@ public class MinaBuildServer {
             .flatMapMany(workspaceConnectionFiles -> {
                 if (workspaceConnectionFiles.isEmpty()) {
                     // Try user data directory
-                    Path dataLocalDirPath = Paths.get(BaseDirectories.get().dataLocalDir);
+                    Path dataLocalDirPath = Paths.get(baseDirs.dataLocalDir);
                     Path dataLocalDirBspFolder = dataLocalDirPath.resolve("bsp");
 
                     // On Windows there are both Local and Roaming user data directories
-                    Path dataDirPath = Paths.get(BaseDirectories.get().dataDir);
+                    Path dataDirPath = Paths.get(baseDirs.dataDir);
                     Path dataDirBspFolder = dataDirPath.resolve("bsp");
 
                     Flux<BspConnectionDetails> dataDirConnectionFlux = Flux.concat(
@@ -89,7 +89,8 @@ public class MinaBuildServer {
 
         return connectionFiles.flatMap(connectionFile -> {
             try {
-                var connectionDetails = gson.fromJson(Files.readString(connectionFile), BspConnectionDetails.class);
+                var connectionFileString = Files.readString(connectionFile);
+                var connectionDetails = gson.fromJson(connectionFileString, BspConnectionDetails.class);
                 if (connectionDetails != null) {
                    return Flux.just(connectionDetails);
                 } else {
@@ -146,8 +147,8 @@ public class MinaBuildServer {
             .validateMessages(true)
             .create();
 
-        buildClient.onStartListening(launcher.startListening());
         buildClient.onConnectWithServer(launcher.getRemoteProxy());
+        buildClient.onStartListening(launcher.startListening());
 
         return buildClient;
     }

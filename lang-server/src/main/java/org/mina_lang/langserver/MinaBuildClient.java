@@ -7,6 +7,7 @@ package org.mina_lang.langserver;
 import ch.epfl.scala.bsp4j.*;
 import org.eclipse.lsp4j.services.LanguageClient;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public class MinaBuildClient implements BuildClient {
@@ -33,8 +34,7 @@ public class MinaBuildClient implements BuildClient {
 
     @Override
     public void onBuildShowMessage(ShowMessageParams params) {
-        // TODO Auto-generated method stub
-
+        languageClient.showMessage(Conversions.toLspMessageParams(params));
     }
 
     @Override
@@ -85,7 +85,8 @@ public class MinaBuildClient implements BuildClient {
         this.listenerFuture = listenerFuture;
     }
 
-    public void disconnect() {
-        this.listenerFuture.cancel(true);
+    public CompletableFuture<Void> disconnect() {
+        return buildServer.buildShutdown()
+            .thenRun(buildServer::onBuildExit);
     }
 }
