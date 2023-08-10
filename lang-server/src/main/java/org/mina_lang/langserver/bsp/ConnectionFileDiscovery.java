@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText:  © 2023 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.mina_lang.langserver;
+package org.mina_lang.langserver.bsp;
 
 import ch.epfl.scala.bsp4j.BspConnectionDetails;
 import com.google.gson.Gson;
@@ -19,11 +19,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
-public class BuildServerDiscovery {
-    private static final Logger logger = LoggerFactory.getLogger(MinaBuildServers.class);
+public class ConnectionFileDiscovery implements BuildServerDiscovery {
+    private static final Logger logger = LoggerFactory.getLogger(BuildServerConnector.class);
 
     private static final Gson gson = new Gson();
 
@@ -32,7 +33,13 @@ public class BuildServerDiscovery {
         return fileName.endsWith(".json") && attrs.isRegularFile();
     };
 
-    public static Flux<BspConnectionDetails> discover(WorkspaceFolder folder, BaseDirectories baseDirs) {
+    BaseDirectories baseDirs;
+
+    public ConnectionFileDiscovery(BaseDirectories baseDirs) {
+        this.baseDirs = baseDirs;
+    }
+
+    public Flux<BspConnectionDetails> discover(WorkspaceFolder folder) {
         Path workspacePath = Paths.get(URI.create(folder.getUri()));
         Path workspaceBspFolder = workspacePath.resolve(".bsp");
 
@@ -41,8 +48,10 @@ public class BuildServerDiscovery {
 
         return workspaceConnectionFlux.collectList()
             .flatMapMany(workspaceConnectionFiles -> {
-                if (workspaceConnectionFiles.isEmpty()) {
-                    // Try user data directory
+                if (!workspaceConnectionFiles.isEmpty()) {
+                    return Flux.fromIterable(workspaceConnectionFiles);
+                } else {
+                    // Try <user data directory>/bsp
                     Path dataLocalDirPath = Paths.get(baseDirs.dataLocalDir);
                     Path dataLocalDirBspFolder = dataLocalDirPath.resolve("bsp");
 
@@ -57,21 +66,18 @@ public class BuildServerDiscovery {
 
                     return dataDirConnectionFlux.collectList()
                         .flatMapMany(dataDirConnectionFiles -> {
-                            if (dataDirConnectionFiles.isEmpty()) {
+                            if (!dataDirConnectionFiles.isEmpty()) {
+                                return Flux.fromIterable(dataDirConnectionFiles);
+                            } else {
                                 // TODO: Try system-level directories to follow the BSP spec
                                 return Flux.empty();
-                            } else {
-                                return Flux.fromIterable(dataDirConnectionFiles);
                             }
-
                         });
-                } else {
-                    return Flux.fromIterable(workspaceConnectionFiles);
                 }
             });
     }
 
-    public static Flux<BspConnectionDetails> discover(Path bspFolder) {
+    Flux<BspConnectionDetails> discover(Path bspFolder) {
         if (Files.notExists(bspFolder)) {
             return Flux.empty();
         }
@@ -87,7 +93,11 @@ public class BuildServerDiscovery {
                 var connectionFileString = Files.readString(connectionFile);
                 var connectionDetails = gson.fromJson(connectionFileString, BspConnectionDetails.class);
                 if (connectionDetails != null) {
-                    return Flux.just(connectionDetails);
+                    if (connectionDetails.getLanguages().contains("mina")) {
+                        return Flux.just(connectionDetails);
+                    } else {
+                        return Flux.empty();
+                    }
                 } else {
                     // Frustratingly Gson returns null if the JSON file is empty instead of throwing
                     logger.error("Error reading connection file {}", connectionFile);
@@ -100,4 +110,23 @@ public class BuildServerDiscovery {
         });
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConnectionFileDiscovery that = (ConnectionFileDiscovery) o;
+        return Objects.equals(baseDirs, that.baseDirs);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(baseDirs);
+    }
+
+    @Override
+    public String toString() {
+        return "ConnectionFileDiscovery[" +
+                "baseDirs=" + baseDirs +
+                ']';
+    }
 }

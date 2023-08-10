@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText:  © 2023 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.mina_lang.langserver;
+package org.mina_lang.langserver.util;
 
 import ch.epfl.scala.bsp4j.ShowMessageParams;
 import com.opencastsoftware.yvette.Severity;

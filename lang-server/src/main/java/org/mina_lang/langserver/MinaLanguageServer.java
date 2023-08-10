@@ -11,6 +11,10 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.*;
+import org.mina_lang.langserver.documents.MinaTextDocumentService;
+import org.mina_lang.langserver.notebooks.MinaNotebookDocumentService;
+import org.mina_lang.langserver.util.DaemonThreadFactory;
+import org.mina_lang.langserver.workspace.MinaWorkspaceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +22,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -30,30 +33,13 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private MinaTextDocumentService documentService;
     private MinaWorkspaceService workspaceService;
     private NotebookDocumentService notebookDocumentService;
-    private MinaBuildServers buildServers;
 
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
     private AtomicReference<String> traceValue = new AtomicReference<>(TraceValue.Off);
     private AtomicReference<ClientCapabilities> clientCapabilities = new AtomicReference<>();
 
-    private AtomicReference<List<WorkspaceFolder>> workspaceFolders = new AtomicReference<>();
-
-    private ThreadFactory threadFactory = new ThreadFactory() {
-        private final AtomicLong count = new AtomicLong(0);
-        private final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = (t, ex) -> {
-            logger.error("Uncaught exception in thread {}", t.getName(), ex);
-        };
-
-        @Override
-        public Thread newThread(Runnable runnable) {
-            var thread = Executors.defaultThreadFactory().newThread(runnable);
-            thread.setDaemon(true);
-            thread.setName(String.format("mina-langserver-%d", count.getAndIncrement()));
-            thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
-            return thread;
-        }
-    };
+    private ThreadFactory threadFactory = DaemonThreadFactory.create(logger, "mina-langserver-%d");
 
     private ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
 
@@ -61,7 +47,6 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         this.documentService = new MinaTextDocumentService(this);
         this.workspaceService = new MinaWorkspaceService(this);
         this.notebookDocumentService = new MinaNotebookDocumentService(this);
-        this.buildServers = new MinaBuildServers(this);
     }
 
     public boolean isInitialized() {
@@ -84,17 +69,13 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         return exitCode;
     }
 
-    public AtomicReference<List<WorkspaceFolder>> getWorkspaceFolders() {
-        return workspaceFolders;
-    }
-
     public <A> CompletableFuture<A> ifInitialized(Function<CancelChecker, A> action) {
         if (isInitialized() && !isShutdown()) {
             return CompletableFutures.computeAsync(executor, action);
         } else {
             var error = isShutdown()
-                ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
-                : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
+                    ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
+                    : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
             var result = new CompletableFuture<A>();
             result.completeExceptionally(new ResponseErrorException(error));
             return result;
@@ -111,69 +92,83 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         }
     }
 
-    @Override
-    public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-        return CompletableFutures.computeAsync(executor, cancelToken -> {
-            cancelToken.checkCanceled();
+    boolean supportsWorkspaceFolders(ClientCapabilities capabilities) {
+        // Absolutely every intermediate value here can be null
+        var clientWorkspaceCapabilities = capabilities.getWorkspace();
+        var hasWorkspaceCapabilities = clientWorkspaceCapabilities != null;
+        var hasWorkspaceFolderCapabilities = hasWorkspaceCapabilities && clientWorkspaceCapabilities.getWorkspaceFolders() != null;
+        var supportsWorkspaceFolders = hasWorkspaceFolderCapabilities && clientWorkspaceCapabilities.getWorkspaceFolders();
+        return hasWorkspaceCapabilities && clientWorkspaceCapabilities.getWorkspaceFolders();
+    }
 
-            clientCapabilities.set(params.getCapabilities());
+    void setWorkspaceFolders(InitializeParams params) {
+        var supportsWorkspaceFolders = supportsWorkspaceFolders(params.getCapabilities());
+        var hasWorkspaceFolders = params.getWorkspaceFolders() != null;
+        var hasWorkspaceRoot = params.getRootUri() != null;
 
-            // Absolutely every intermediate value here can be null
-            var hasWorkspaceCapabilities = params.getCapabilities().getWorkspace() != null;
-            var hasWorkspaceFolderCapabilities = hasWorkspaceCapabilities && params.getCapabilities().getWorkspace().getWorkspaceFolders() != null;
-            var supportsWorkspaceFolders = hasWorkspaceFolderCapabilities && params.getCapabilities().getWorkspace().getWorkspaceFolders();
-            var hasWorkspaceFolders = params.getWorkspaceFolders() != null;
+        if (supportsWorkspaceFolders && hasWorkspaceFolders) {
+            workspaceService.setWorkspaceFolders(params.getWorkspaceFolders());
+        } else if (hasWorkspaceRoot) {
+            var workspaceRoot = new WorkspaceFolder(params.getRootUri());
+            workspaceService.setWorkspaceFolders(List.of(workspaceRoot));
+        } else {
+            workspaceService.setWorkspaceFolders(List.of());
+        }
+    }
 
-            if (supportsWorkspaceFolders && hasWorkspaceFolders) {
-                workspaceFolders.set(params.getWorkspaceFolders());
-            } else if (params.getRootUri() != null) {
-                workspaceFolders.set(List.of(new WorkspaceFolder(params.getRootUri())));
-            } else {
-                workspaceFolders.set(List.of());
-            }
+    ServerCapabilities getServerCapabilities(InitializeParams params) {
+        clientCapabilities.set(params.getCapabilities());
 
-            var serverCapabilities = new ServerCapabilities();
+        var serverCapabilities = new ServerCapabilities();
 
-            var textDocumentSyncOptions = new TextDocumentSyncOptions();
-            textDocumentSyncOptions.setOpenClose(true);
-            textDocumentSyncOptions.setChange(TextDocumentSyncKind.Incremental);
-            textDocumentSyncOptions.setSave(true);
+        var textDocumentSyncOptions = new TextDocumentSyncOptions();
+        textDocumentSyncOptions.setChange(TextDocumentSyncKind.Incremental);
+        textDocumentSyncOptions.setOpenClose(Boolean.TRUE);
+        textDocumentSyncOptions.setSave(Boolean.TRUE);
 
-            serverCapabilities.setTextDocumentSync(textDocumentSyncOptions);
+        serverCapabilities.setTextDocumentSync(textDocumentSyncOptions);
 
-            var hoverOptions = new HoverOptions();
-            hoverOptions.setWorkDoneProgress(false);
+        var workspaceCapabilities = new WorkspaceServerCapabilities();
 
-            serverCapabilities.setHoverProvider(hoverOptions);
+        var workspaceFoldersOptions = new WorkspaceFoldersOptions();
+        workspaceFoldersOptions.setSupported(Boolean.TRUE);
+        workspaceFoldersOptions.setChangeNotifications(Boolean.TRUE);
 
-            var workspaceCapabilities = new WorkspaceServerCapabilities();
+        workspaceCapabilities.setWorkspaceFolders(workspaceFoldersOptions);
 
-            var workspaceFoldersOptions = new WorkspaceFoldersOptions();
-            workspaceFoldersOptions.setSupported(true);
-            workspaceFoldersOptions.setChangeNotifications(false);
+        serverCapabilities.setWorkspace(workspaceCapabilities);
 
-            workspaceCapabilities.setWorkspaceFolders(workspaceFoldersOptions);
+        return serverCapabilities;
+    }
 
-            serverCapabilities.setWorkspace(workspaceCapabilities);
-
-            Optional.ofNullable(params.getProcessId())
+    void monitorParentProcess(InitializeParams params) {
+        Optional.ofNullable(params.getProcessId())
                 .flatMap(ProcessHandle::of)
                 .ifPresent(processHandle -> {
                     logger.info("Monitoring termination of parent process {}", processHandle.pid());
                     processHandle.onExit().thenRun(this::exit);
                 });
+    }
+
+    @Override
+    public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
+        return CompletableFutures.computeAsync(executor, cancelToken -> {
+            cancelToken.checkCanceled();
+
+            setWorkspaceFolders(params);
+            monitorParentProcess(params);
 
             var serverInfo = new ServerInfo("Mina Language Server", BuildInfo.version);
+            var serverCapabilities = getServerCapabilities(params);
 
-            return buildServers.initialiseBuildServers().thenApply(v -> {
-                return new InitializeResult(serverCapabilities, serverInfo);
-            });
-        }).thenCompose(result -> result);
+            return new InitializeResult(serverCapabilities, serverInfo);
+        });
     }
 
     @Override
     public void initialized(InitializedParams params) {
         initialized.set(true);
+        workspaceService.initialiseBuildServers();
     }
 
     @Override
@@ -187,7 +182,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     CompletableFuture<Void> performShutdown() {
-        return buildServers.disconnect();
+        return workspaceService.disconnectBuildServers();
     }
 
     @Override
@@ -195,7 +190,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         try {
             if (!isShutdown()) {
                 logger.error("Server exit request received before shutdown request");
-                performShutdown();
+                performShutdown().get();
                 exitCode = 1;
             }
 
@@ -204,7 +199,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
                 exitCode = 1;
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ExecutionException e) {
             exitCode = 1;
         }
     }

@@ -4,6 +4,11 @@ plugins {
     alias(libs.plugins.gradleBuildInfo)
 }
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
 gradlePlugin {
     plugins.create("mina") {
         id = "org.mina-lang.gradle"
@@ -15,6 +20,8 @@ buildInfo {
     packageName.set("org.mina_lang.gradle")
     properties.set(mapOf("version" to project.version.toString()))
 }
+
+dependencies { implementation(libs.gradleBspPlugin) }
 
 testing {
     suites {

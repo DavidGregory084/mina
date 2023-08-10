@@ -212,7 +212,7 @@ async function start(context: ExtensionContext, outputChannel: OutputChannel) {
         ...profilingOptions,
         "-cp",
         serverClasspath,
-        "org.mina_lang.langserver.MinaServerLauncher",
+        "org.mina_lang.langserver.MinaLanguageServerLauncher",
       ],
     };
 
