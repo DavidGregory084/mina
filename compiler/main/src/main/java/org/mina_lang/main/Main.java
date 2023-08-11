@@ -14,16 +14,10 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
-import org.mina_lang.codegen.jvm.CodeGenerator;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticCollector;
-import org.mina_lang.parser.Parser;
-import org.mina_lang.renamer.NameEnvironment;
-import org.mina_lang.renamer.Renamer;
 import org.mina_lang.syntax.NamespaceNode;
-import org.mina_lang.typechecker.TypeEnvironment;
-import org.mina_lang.typechecker.Typechecker;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +27,6 @@ import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
@@ -209,33 +202,5 @@ public class Main {
                 return Phase.runMono(codegenPhase);
             }
         }).then().toFuture();
-    }
-
-    public CompletableFuture<NamespaceNode<?>> compileNamespace(
-            Path destination,
-            CharStream source) {
-        return Mono.fromSupplier(() -> {
-            var documentUri = URI.create(source.getSourceName());
-            var scopedCollector = new ANTLRDiagnosticCollector(mainCollector, documentUri);
-            var parser = new Parser(scopedCollector);
-            var parsed = parser.parse(source);
-            if (!mainCollector.hasErrors()) {
-                var renamer = new Renamer(scopedCollector, NameEnvironment.withBuiltInNames());
-                var renamed = renamer.rename(parsed);
-                if (!mainCollector.hasErrors()) {
-                    var typechecker = new Typechecker(scopedCollector, TypeEnvironment.withBuiltInTypes());
-                    var typed = typechecker.typecheck(renamed);
-                    if (!mainCollector.hasErrors()) {
-                        var codegen = new CodeGenerator();
-                        codegen.generate(destination, typed);
-                    }
-                    return typed;
-                } else {
-                    return renamed;
-                }
-            } else {
-                return parsed;
-            }
-        }).subscribeOn(Schedulers.parallel()).toFuture();
     }
 }

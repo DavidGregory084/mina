@@ -6,6 +6,7 @@ package org.mina_lang.gradle;
 
 import com.opencastsoftware.gradle.bsp.BspLanguageModelBuilder;
 import org.gradle.api.Project;
+import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,15 +19,8 @@ public class BspMinaLanguageModelBuilder extends BspLanguageModelBuilder {
     }
 
     @Override
-    public boolean isEnabledFor(SourceSet sourceSet) {
-        return sourceSet.getExtensions().findByType(MinaSourceDirectorySet.class) != null;
-    }
-
-    @Nullable @Override
-    protected String getDisplayNameFor(Project project, SourceSet sourceSet) {
-        return sourceSet.getExtensions()
-                .getByType(MinaSourceDirectorySet.class)
-                .getDisplayName();
+    protected SourceDirectorySet getSourceDirectorySetFor(SourceSet sourceSet) {
+        return sourceSet.getExtensions().findByType(MinaSourceDirectorySet.class);
     }
 
     @Nullable @Override

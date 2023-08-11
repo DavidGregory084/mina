@@ -17,6 +17,7 @@ import org.mina_lang.langserver.util.DaemonThreadFactory;
 import org.mina_lang.langserver.workspace.MinaWorkspaceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine.ExitCode;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +29,7 @@ import java.util.function.Function;
 public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private static Logger logger = LoggerFactory.getLogger(MinaLanguageServer.class);
 
-    private int exitCode = 0;
+    private int exitCode = ExitCode.OK;
     private LanguageClient client;
     private MinaTextDocumentService documentService;
     private MinaWorkspaceService workspaceService;
@@ -40,7 +41,6 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     private AtomicReference<ClientCapabilities> clientCapabilities = new AtomicReference<>();
 
     private ThreadFactory threadFactory = DaemonThreadFactory.create(logger, "mina-langserver-%d");
-
     private ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
 
     public MinaLanguageServer() {
@@ -191,16 +191,16 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             if (!isShutdown()) {
                 logger.error("Server exit request received before shutdown request");
                 performShutdown().get();
-                exitCode = 1;
+                exitCode = ExitCode.SOFTWARE;
             }
 
             executor.shutdown();
 
             if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
-                exitCode = 1;
+                exitCode = ExitCode.SOFTWARE;
             }
         } catch (InterruptedException | ExecutionException e) {
-            exitCode = 1;
+            exitCode = ExitCode.SOFTWARE;
         }
     }
 
