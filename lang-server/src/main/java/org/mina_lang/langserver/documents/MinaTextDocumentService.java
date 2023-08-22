@@ -10,6 +10,8 @@ import org.mina_lang.langserver.MinaLanguageServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
+
 
 public class MinaTextDocumentService implements TextDocumentService {
     private static Logger logger = LoggerFactory.getLogger(MinaTextDocumentService.class);
@@ -44,5 +46,9 @@ public class MinaTextDocumentService implements TextDocumentService {
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
+    }
+
+    public Set<TextDocumentItem> getAllDocuments() {
+        return documents.getAllDocuments();
     }
 }

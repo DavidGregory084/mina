@@ -5,6 +5,7 @@
 package org.mina_lang.langserver.bsp;
 
 import ch.epfl.scala.bsp4j.*;
+import ch.epfl.scala.bsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
@@ -12,6 +13,7 @@ import org.mina_lang.langserver.BuildInfo;
 import org.mina_lang.langserver.MinaLanguageServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.*;
@@ -46,9 +48,9 @@ public class BuildServerConnector {
 
     public CompletableFuture<Void> initialise() {
         return discovery.discover(workspaceFolder)
-                .collectList()
-                .flatMap(this::initialise)
-                .then().toFuture();
+            .collectList()
+            .flatMap(this::initialise)
+            .then().toFuture();
     }
 
     Mono<Void> initialise(List<BspConnectionDetails> connectionDetails) {
@@ -60,13 +62,23 @@ public class BuildServerConnector {
                 logger.info("Build targets for workspace folder '{}': {}", workspaceFolder.getName(), buildTargets.getTargets());
                 this.buildTargets.addAll(buildTargets.getTargets());
             }).flatMap(buildTargets -> {
-                var targetIds = buildTargets.getTargets().stream()
-                        .map(BuildTarget::getId)
-                        .collect(Collectors.toList());
+                return getOpenDocumentBuildTargets();
+            }).flatMap(targetIds -> {
                 var compileParams = new CompileParams(targetIds);
                 return Mono.fromFuture(client.buildServer().buildTargetCompile(compileParams));
             }).then();
         });
+    }
+
+    Mono<List<BuildTargetIdentifier>> getOpenDocumentBuildTargets() {
+        return Flux
+            .fromIterable(languageServer.getTextDocumentService().getAllDocuments())
+            .flatMap(document -> {
+                var inverseSourcesParams = new InverseSourcesParams(new TextDocumentIdentifier(document.getUri()));
+                return Mono.fromFuture(buildClient.get().buildServer().buildTargetInverseSources(inverseSourcesParams));
+            }).flatMap(inverseSources -> {
+                return Flux.fromIterable(inverseSources.getTargets());
+            }).collectList();
     }
 
     Mono<InitializeBuildResult> configureBspConnection(List<BspConnectionDetails> connectionDetails) {
@@ -90,11 +102,11 @@ public class BuildServerConnector {
 
     Map<MessageActionItem, BspConnectionDetails> createConnectionOptions(List<BspConnectionDetails> connectionDetails) {
         return connectionDetails.stream()
-                .map(this::createConnectionOption)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue
-                ));
+            .map(this::createConnectionOption)
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue
+            ));
     }
 
     Map.Entry<MessageActionItem, BspConnectionDetails> createConnectionOption(BspConnectionDetails details) {
@@ -133,11 +145,11 @@ public class BuildServerConnector {
     InitializeBuildParams initializeBuildParams(WorkspaceFolder folder) {
         var capabilities = new BuildClientCapabilities(List.of("mina"));
         return new InitializeBuildParams(
-                "Mina Language Server",
-                BuildInfo.version,
-                BuildInfo.bspVersion,
-                folder.getUri(),
-                capabilities);
+            "Mina Language Server",
+            BuildInfo.version,
+            BuildInfo.bspVersion,
+            folder.getUri(),
+            capabilities);
     }
 
     public CompletableFuture<Void> disconnect() {
@@ -154,14 +166,14 @@ public class BuildServerConnector {
         var buildClient = new MinaBuildClient(languageServer);
 
         var launcher = new Launcher.Builder<BuildServer>()
-                .setLocalService(buildClient)
-                .setRemoteInterface(BuildServer.class)
-                .setInput(in)
-                .setOutput(out)
-                .setExecutorService(languageServer.getExecutor())
-                .traceMessages(new PrintWriter(System.err))
-                .validateMessages(true)
-                .create();
+            .setLocalService(buildClient)
+            .setRemoteInterface(BuildServer.class)
+            .setInput(in)
+            .setOutput(out)
+            .setExecutorService(languageServer.getExecutor())
+            .traceMessages(new PrintWriter(System.err))
+            .validateMessages(true)
+            .create();
 
         buildClient.onConnectWithServer(launcher.getRemoteProxy());
         buildClient.onStartListening(launcher.startListening());
@@ -185,14 +197,14 @@ public class BuildServerConnector {
     @Override
     public String toString() {
         return "BuildServerConnector[" +
-                "languageServer=" + languageServer +
-                ", workspaceFolder=" + workspaceFolder +
-                ", discovery=" + discovery +
-                ", launcher=" + launcher +
-                ", connectionDetails=" + connectionDetails +
-                ", buildClient=" + buildClient +
-                ", buildServerCapabilities=" + buildServerCapabilities +
-                ", buildTargets=" + buildTargets +
-                ']';
+            "languageServer=" + languageServer +
+            ", workspaceFolder=" + workspaceFolder +
+            ", discovery=" + discovery +
+            ", launcher=" + launcher +
+            ", connectionDetails=" + connectionDetails +
+            ", buildClient=" + buildClient +
+            ", buildServerCapabilities=" + buildServerCapabilities +
+            ", buildTargets=" + buildTargets +
+            ']';
     }
 }

@@ -212,7 +212,7 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     @Override
-    public TextDocumentService getTextDocumentService() {
+    public MinaTextDocumentService getTextDocumentService() {
         return documentService;
     }
 

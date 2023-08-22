@@ -10,6 +10,9 @@ import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.TextDocumentItem;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class MinaTextDocuments {
     private final ConcurrentHashMap<String, TextDocumentItem> documents = new ConcurrentHashMap<>();
 
@@ -32,5 +35,9 @@ public class MinaTextDocuments {
         return documents.computeIfPresent(newDocument.getUri(), (uri, existingDocument) -> {
             return TextDocument.applyChanges(existingDocument, params);
         });
+    }
+
+    public Set<TextDocumentItem> getAllDocuments() {
+        return new HashSet<>(documents.values());
     }
 }
