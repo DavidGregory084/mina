@@ -295,9 +295,11 @@ public class CodeGenerator {
             withScope(TopLevelLetGenScope.open(let, namespaceWriter), letScope -> {
                 generateExpr(let.expr());
 
-                letScope.methodParams().forEachWithIndex((param, index) -> {
-                    letScope.methodWriter().loadArg(index);
-                });
+                letScope.methodParams()
+                    .toSortedListBy(LocalVar::index)
+                    .forEach(param -> {
+                        letScope.methodWriter().loadArg(param.index());
+                    });
 
                 letScope.methodWriter().invokeInterface(
                         Types.asmType(let),
