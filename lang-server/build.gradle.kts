@@ -26,6 +26,9 @@ dependencies {
     // Failable Streams
     implementation(libs.apacheCommonsLang)
 
+    // JSON Parsing
+    implementation(libs.gson)
+
     // Compiler Main
     implementation(project(":compiler:mina-compiler-main"))
 
