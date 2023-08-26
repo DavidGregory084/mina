@@ -23,27 +23,35 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class BuildServerConnector {
     private static final Logger logger = LoggerFactory.getLogger(BuildServerConnector.class);
 
+    private ExecutorService executor;
     private MinaLanguageServer languageServer;
     private WorkspaceFolder workspaceFolder;
     private BuildServerDiscovery discovery;
     private BuildServerLauncher launcher;
 
     private AtomicReference<BspConnectionDetails> connectionDetails = new AtomicReference<>();
+
     private AtomicReference<MinaBuildClient> buildClient = new AtomicReference<>();
     private AtomicReference<BuildServerCapabilities> buildServerCapabilities = new AtomicReference<>();
     private ConcurrentLinkedQueue<BuildTarget> buildTargets = new ConcurrentLinkedQueue<>();
 
-    public BuildServerConnector(MinaLanguageServer languageServer, WorkspaceFolder workspaceFolder, BuildServerDiscovery discovery, BuildServerLauncher launcher) {
+    public BuildServerConnector(ExecutorService executor, MinaLanguageServer languageServer, WorkspaceFolder workspaceFolder, BuildServerDiscovery discovery, BuildServerLauncher launcher) {
+        this.executor = executor;
         this.languageServer = languageServer;
         this.workspaceFolder = workspaceFolder;
         this.discovery = discovery;
         this.launcher = launcher;
+    }
+
+    public MinaBuildClient getBuildClient() {
+        return buildClient.get();
     }
 
     public CompletableFuture<Void> initialise() {
@@ -170,7 +178,7 @@ public class BuildServerConnector {
             .setRemoteInterface(BuildServer.class)
             .setInput(in)
             .setOutput(out)
-            .setExecutorService(languageServer.getExecutor())
+            .setExecutorService(executor)
             .traceMessages(new PrintWriter(System.err))
             .validateMessages(true)
             .create();

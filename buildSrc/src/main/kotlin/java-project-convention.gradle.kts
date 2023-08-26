@@ -15,6 +15,7 @@ dependencies {
     testRuntimeOnly(libs.junitPlatformLauncher)
     testImplementation(libs.junitJupiter)
     testImplementation(libs.hamcrest)
+    testImplementation(libs.hamcrestFuture)
     testImplementation(libs.hamcrestOptional)
     testImplementation(libs.jqwik)
     testImplementation(libs.equalsVerifier)

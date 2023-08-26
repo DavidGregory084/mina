@@ -32,11 +32,15 @@ public class MinaWorkspaceService implements WorkspaceService {
     private ConcurrentLinkedQueue<WorkspaceFolder> workspaceFolders = new ConcurrentLinkedQueue<>();
     private ConcurrentHashMap<WorkspaceFolder, BuildServerConnector> buildServers = new ConcurrentHashMap<>();
 
+    private ExecutorService listenerExecutor;
+
     public MinaWorkspaceService(MinaLanguageServer server) {
         this.server = server;
-        var threadFactory = DaemonThreadFactory.create(logger, "mina-bsp-err-forwarder-%d");
-        this.launcher = new BuildServerProcessLauncher(Executors.newCachedThreadPool(threadFactory));
+        var forwarderThreadFactory = DaemonThreadFactory.create(logger, "mina-buildserver-err-forwarder-%d");
+        this.launcher = new BuildServerProcessLauncher(Executors.newCachedThreadPool(forwarderThreadFactory));
         this.discovery = new ConnectionFileDiscovery(BaseDirectories.get());
+        var listenerThreadFactory = DaemonThreadFactory.create(logger, "mina-buildserver-listener-%d");
+        this.listenerExecutor = Executors.newCachedThreadPool(listenerThreadFactory);
     }
 
     @Override
@@ -64,7 +68,7 @@ public class MinaWorkspaceService implements WorkspaceService {
         }
 
         for (var folder : changeEvent.getAdded()) {
-            var buildServer = new BuildServerConnector(server, folder, discovery, launcher);
+            var buildServer = new BuildServerConnector(listenerExecutor, server, folder, discovery, launcher);
             buildServers.put(folder, buildServer);
             workspaceFolders.add(folder);
             buildServer.initialise();
@@ -78,7 +82,7 @@ public class MinaWorkspaceService implements WorkspaceService {
 
     public CompletableFuture<Void> initialiseBuildServers() {
         return Flux.fromIterable(workspaceFolders).flatMap(folder -> {
-            var buildServer = new BuildServerConnector(server, folder, discovery, launcher);
+            var buildServer = new BuildServerConnector(listenerExecutor, server, folder, discovery, launcher);
             buildServers.put(folder, buildServer);
             return Mono.fromFuture(buildServer.initialise());
         }).then().toFuture();

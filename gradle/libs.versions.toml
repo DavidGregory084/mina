@@ -15,7 +15,6 @@ gradleVersions = "0.47.0"
 gradleGitVersioning = "6.4.2"
 gson = "2.10.1"
 hamcrest = "2.2"
-hamcrestOptional = "1.3.2"
 jacoco = "0.8.8"
 jansi = "2.4.0"
 jgrapht = "1.5.2"
@@ -33,6 +32,7 @@ pyroscopeAgent = "0.11.5"
 reactorCore = "3.5.9"
 slf4j = "2.0.7"
 spotless = "6.20.0"
+spotifyHamcrest = "1.3.2"
 toStringVerifier = "1.4.8"
 yvette = "0.1.0"
 
@@ -52,9 +52,10 @@ equalsVerifier = { module = "nl.jqno.equalsverifier:equalsverifier", version.ref
 gitVersioningPlugin = { module = "me.qoomon:gradle-git-versioning-plugin", version.ref = "gradleGitVersioning" }
 gradleBspPlugin = { module = "com.opencastsoftware.gradle:gradle-bsp-plugin", version.ref = "gradleBsp" }
 gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }
-gson = { module = "com.google.code.json:gson", version.ref = "gson" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
-hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "hamcrestOptional" }
+hamcrestFuture = { module = "com.spotify:hamcrest-future", version.ref = "spotifyHamcrest" }
+hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "spotifyHamcrest" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jgrapht = { module = "org.jgrapht:jgrapht-core", version.ref = "jgrapht" }
 jgraphtIo = { module = "org.jgrapht:jgrapht-io", version.ref = "jgrapht" }
