@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.mina_lang.langserver;
+package org.mina_lang.langserver.documents;
 
 import org.eclipse.lsp4j.*;
 import org.junit.jupiter.api.Test;

@@ -4,14 +4,17 @@ apacheCommonsLang = "3.13.0"
 apacheCommonsText = "1.10.0"
 asciiDoctorGradle = "4.0.0-alpha.1"
 asm = "9.5"
+bsp4j = "2.1.0-M5"
+directories = "26"
 eclipseCollections = "11.1.0"
 equalsVerifier = "3.15.1"
+gradleBsp = "0.0.0-52-67b1a9a-SNAPSHOT"
 gradleBuildInfo = "0.3.1"
 gradleNode = "7.0.0"
 gradleVersions = "0.47.0"
 gradleGitVersioning = "6.4.2"
+gson = "2.10.1"
 hamcrest = "2.2"
-hamcrestOptional = "1.3.2"
 jacoco = "0.8.8"
 jansi = "2.4.0"
 jgrapht = "1.5.2"
@@ -29,6 +32,7 @@ pyroscopeAgent = "0.11.5"
 reactorCore = "3.5.9"
 slf4j = "2.0.7"
 spotless = "6.20.0"
+spotifyHamcrest = "1.3.2"
 toStringVerifier = "1.4.8"
 yvette = "0.1.0"
 
@@ -40,13 +44,18 @@ apacheCommonsText = { module = "org.apache.commons:commons-text", version.ref = 
 asm = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 asmCommons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 asmUtil = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+bsp4j = { module = "ch.epfl.scala:bsp4j", version.ref = "bsp4j" }
+directories = { module = "dev.dirs:directories", version.ref = "directories" }
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipseCollections" }
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipseCollections" }
 equalsVerifier = { module = "nl.jqno.equalsverifier:equalsverifier", version.ref = "equalsVerifier" }
-gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }
 gitVersioningPlugin = { module = "me.qoomon:gradle-git-versioning-plugin", version.ref = "gradleGitVersioning" }
+gradleBspPlugin = { module = "com.opencastsoftware.gradle:gradle-bsp-plugin", version.ref = "gradleBsp" }
+gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
-hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "hamcrestOptional" }
+hamcrestFuture = { module = "com.spotify:hamcrest-future", version.ref = "spotifyHamcrest" }
+hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "spotifyHamcrest" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jgrapht = { module = "org.jgrapht:jgrapht-core", version.ref = "jgrapht" }
 jgraphtIo = { module = "org.jgrapht:jgrapht-io", version.ref = "jgrapht" }

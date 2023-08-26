@@ -4,6 +4,12 @@ plugins {
     alias(libs.plugins.gradleBuildInfo)
 }
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
+}
+
 gradlePlugin {
     plugins.create("mina") {
         id = "org.mina-lang.gradle"
@@ -15,6 +21,8 @@ buildInfo {
     packageName.set("org.mina_lang.gradle")
     properties.set(mapOf("version" to project.version.toString()))
 }
+
+dependencies { implementation(libs.gradleBspPlugin) }
 
 testing {
     suites {

@@ -2,13 +2,14 @@
  * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.mina_lang.langserver;
+package org.mina_lang.langserver.notebooks;
 
 import org.eclipse.lsp4j.DidChangeNotebookDocumentParams;
 import org.eclipse.lsp4j.DidCloseNotebookDocumentParams;
 import org.eclipse.lsp4j.DidOpenNotebookDocumentParams;
 import org.eclipse.lsp4j.DidSaveNotebookDocumentParams;
 import org.eclipse.lsp4j.services.NotebookDocumentService;
+import org.mina_lang.langserver.MinaLanguageServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

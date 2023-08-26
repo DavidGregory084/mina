@@ -60,9 +60,11 @@ public class MinaBasePlugin implements Plugin<Project> {
         minacConfiguration.setCanBeConsumed(false);
         minacConfiguration.setCanBeResolved(true);
         jvmEcosystemUtilities.configureAsRuntimeClasspath(minacConfiguration);
-        minacConfiguration.getDependencies().addLater(minaExtension.getMinaVersion().map(version -> {
-            return new DefaultExternalModuleDependency("org.mina-lang", "mina-compiler", version);
-        }));
+        minacConfiguration.defaultDependencies(dependencies -> {
+           dependencies.addLater(minaExtension.getMinaVersion().map(version -> {
+               return new DefaultExternalModuleDependency("org.mina-lang", "mina-compiler", version);
+           }));
+        });
     }
 
     private void configureCompileDefaults(Project project) {

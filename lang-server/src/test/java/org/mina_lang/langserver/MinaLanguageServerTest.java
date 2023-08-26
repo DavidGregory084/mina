@@ -102,7 +102,7 @@ public class MinaLanguageServerTest {
     static CompletableFuture<Integer> withUnixSocket(BiConsumer<TestClient, LanguageServer> testFunction)
             throws IOException {
         try (var serverSocket = AFUNIXServerSocket.bindOn(socketFile, false)) {
-            var launcher = new CommandLine(new MinaServerLauncher());
+            var launcher = new CommandLine(new MinaLanguageServerLauncher());
             var exitCode = CompletableFuture.supplyAsync(() -> {
                 return launcher.execute(new String[] { "--pipe", socketFile.toString() });
             });
@@ -116,7 +116,7 @@ public class MinaLanguageServerTest {
     static CompletableFuture<Integer> withTcpSocket(BiConsumer<TestClient, LanguageServer> testFunction)
             throws IOException {
         try (var serverSocket = new ServerSocket(0)) {
-            var launcher = new CommandLine(new MinaServerLauncher());
+            var launcher = new CommandLine(new MinaLanguageServerLauncher());
             var exitCode = CompletableFuture.supplyAsync(() -> {
                 return launcher.execute(new String[] { "--socket", String.valueOf(serverSocket.getLocalPort()) });
             });
@@ -143,7 +143,7 @@ public class MinaLanguageServerTest {
         System.setIn(serverIn);
         System.setOut(new PrintStream(serverOut));
 
-        var launcher = new CommandLine(new MinaServerLauncher());
+        var launcher = new CommandLine(new MinaLanguageServerLauncher());
         var exitCode = CompletableFuture.supplyAsync(() -> {
             return launcher.execute(new String[] { "--stdio" });
         });

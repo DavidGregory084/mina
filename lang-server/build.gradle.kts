@@ -1,6 +1,7 @@
 plugins {
     application
     `java-project-convention`
+    alias(libs.plugins.gradleBuildInfo)
 }
 
 dependencies {
@@ -16,6 +17,18 @@ dependencies {
     // Language Server Protocol
     implementation(libs.lsp4j)
 
+    // Build Server Protocol
+    implementation(libs.bsp4j)
+
+    // Platform-specific Directories
+    implementation(libs.directories)
+
+    // Failable Streams
+    implementation(libs.apacheCommonsLang)
+
+    // JSON Parsing
+    implementation(libs.gson)
+
     // Compiler Main
     implementation(project(":compiler:mina-compiler-main"))
 
@@ -25,3 +38,10 @@ dependencies {
 }
 
 application { mainClass.set("org.mina_lang.langserver.MinaServerLauncher") }
+
+buildInfo {
+    packageName.set("org.mina_lang.langserver")
+    properties.set(
+        mapOf("version" to project.version.toString(), "bspVersion" to libs.versions.bsp4j.get())
+    )
+}
