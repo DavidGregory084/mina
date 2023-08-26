@@ -72,8 +72,12 @@ public class BuildServerConnector {
             }).flatMap(buildTargets -> {
                 return getOpenDocumentBuildTargets();
             }).flatMap(targetIds -> {
-                var compileParams = new CompileParams(targetIds);
-                return Mono.fromFuture(client.buildServer().buildTargetCompile(compileParams));
+                if (targetIds.isEmpty())  {
+                    return Mono.empty();
+                } else {
+                    var compileParams = new CompileParams(targetIds);
+                    return Mono.fromFuture(client.buildServer().buildTargetCompile(compileParams));
+                }
             }).then();
         });
     }
