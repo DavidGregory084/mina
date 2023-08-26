@@ -70,7 +70,6 @@ public class MinaBuildClient implements BuildClient {
                 var progressReport = new WorkDoneProgressBegin();
                 progressReport.setTitle("Gradle BSP");
                 progressReport.setMessage(params.getMessage());
-                progressReport.setPercentage(0);
                 var progressReportEither = Either.forLeft((WorkDoneProgressNotification) progressReport);
                 var progressParams = new ProgressParams(progressToken, progressReportEither);
                 languageClient.notifyProgress(progressParams);
