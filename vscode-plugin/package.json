@@ -34,7 +34,7 @@
     "test-linux": "xvfb-run -a npm run test"
   },
   "dependencies": {
-    "jdk-utils": "^0.5.0",
+    "jdk-utils": "^0.5.1",
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
