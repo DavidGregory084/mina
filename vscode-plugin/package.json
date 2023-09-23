@@ -40,7 +40,7 @@
   "devDependencies": {
     "@microsoft/vscode-file-downloader-api": "^1.0.1",
     "@tsconfig/node16": "^16.1.1",
-    "@tsconfig/recommended": "^1.0.2",
+    "@tsconfig/recommended": "^1.0.3",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^16.18.53",
