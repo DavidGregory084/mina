@@ -16,7 +16,7 @@ steps:
           manifest: vscode-plugin/package-lock.json
           restore: file
           save: file
-      - docker#v5.8.0:
+      - docker#v5.9.0:
           image: "timbru31/java-node:17-jdk-16"
           memory: 3g
 
