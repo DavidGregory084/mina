@@ -50,7 +50,7 @@
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.22.0",
     "esbuild": "^0.19.9",
-    "eslint": "^8.50.0",
+    "eslint": "^8.56.0",
     "glob": "^10.3.10",
     "mocha": "^10.2.0",
     "mocha-junit-reporter": "^2.2.1",
