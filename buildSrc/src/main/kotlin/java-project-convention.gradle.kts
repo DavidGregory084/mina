@@ -22,6 +22,8 @@ dependencies {
     testImplementation(libs.toStringVerifier)
     constraints {
         implementation("org.apache.commons:commons-text:[1.10.0,)") { because("CVE-2022-42889") }
+        implementation("com.google.code.gson:gson:[2.8.9,)") { because("CVE-2022-25647") }
+        implementation(libs.protobufJava) { because("multiple CVEs") }
     }
 }
 

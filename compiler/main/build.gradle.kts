@@ -24,6 +24,9 @@ dependencies {
     // Typechecker
     implementation(project(":compiler:mina-compiler-typechecker"))
 
+    // SCIP Indexing
+    implementation(project(":compiler:mina-compiler-indexer"))
+
     // JVM Bytecode Generation
     implementation(project(":compiler:mina-compiler-jvm"))
 

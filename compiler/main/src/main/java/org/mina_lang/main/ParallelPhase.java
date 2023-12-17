@@ -19,9 +19,13 @@ public non-sealed interface ParallelPhase<A, B> extends Phase<B> {
                 .then(Mono.defer(() -> {
                     // Mono is not allowed to contain null,
                     // so this is the only way to deal with Mono<Void>
-                    return transformedData() == null
+                    try {
+                        return transformedData() == null
                             ? Mono.empty()
                             : Mono.just(transformedData());
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
                 }));
     }
 }

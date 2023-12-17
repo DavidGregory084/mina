@@ -37,6 +37,10 @@ project(":compiler:intermediate").name = "mina-compiler-intermediate"
 include("compiler:jvm")
 project(":compiler:jvm").name = "mina-compiler-jvm"
 
+// Indexer
+include("compiler:indexer")
+project(":compiler:indexer").name = "mina-compiler-indexer"
+
 // Language server
 include("lang-server")
 project(":lang-server").name = "mina-lang-server"

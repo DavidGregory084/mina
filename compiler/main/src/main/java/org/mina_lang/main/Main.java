@@ -54,7 +54,7 @@ public class Main {
         this.namespaceNodes = new ConcurrentHashMap<>();
         this.scopedDiagnostics = new ConcurrentHashMap<>();
         dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
-                "label", DefaultAttribute.createAttribute(nsName.canonicalName())));
+            "label", DefaultAttribute.createAttribute(nsName.canonicalName())));
     }
 
     public BaseDiagnosticCollector getMainCollector() {
@@ -62,7 +62,7 @@ public class Main {
     }
 
     void cyclicFileDependency(ANTLRDiagnosticCollector collector, Range range, NamespaceName startNamespace,
-            List<NamespaceName> cycle) {
+                              List<NamespaceName> cycle) {
         var cycleMessage = new StringBuilder();
 
         cycle.forEach(namespaceName -> {
@@ -72,9 +72,9 @@ public class Main {
                 cycleMessage.append(namespaceName.canonicalName());
             } else {
                 cycleMessage.append(
-                        ", which imports" +
-                                System.lineSeparator() +
-                                namespaceName.canonicalName());
+                    ", which imports" +
+                        System.lineSeparator() +
+                        namespaceName.canonicalName());
             }
         });
 
@@ -88,10 +88,10 @@ public class Main {
 
     Stream<Path> findMinaFiles(Path startPath) throws IOException {
         return Files.find(
-                startPath,
-                Integer.MAX_VALUE,
-                this::matchRegularMinaFile,
-                FileVisitOption.FOLLOW_LINKS);
+            startPath,
+            Integer.MAX_VALUE,
+            this::matchRegularMinaFile,
+            FileVisitOption.FOLLOW_LINKS);
     }
 
     Publisher<Path> createPathStream(Path startPath) {
@@ -99,85 +99,85 @@ public class Main {
                 () -> findMinaFiles(startPath),
                 Flux::fromStream,
                 Stream::close)
-                .subscribeOn(Schedulers.boundedElastic());
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
     Flux<Path> pathStreamFrom(Path... sourcePaths) {
         return Flux.just(sourcePaths)
-                .flatMap(this::createPathStream);
+            .flatMap(this::createPathStream);
     }
 
     CharStream readFileContent(Path filePath) throws IOException {
-        logger.info("Reading {}", filePath.toUri().toString());
+        logger.info("Reading {}", filePath.toUri());
         try (var channel = Files.newByteChannel(filePath)) {
             return CharStreams.fromChannel(
-                    channel,
-                    StandardCharsets.UTF_8,
-                    4096,
-                    CodingErrorAction.REPORT,
-                    filePath.toUri().toString(),
-                    Files.size(filePath));
+                channel,
+                StandardCharsets.UTF_8,
+                4096,
+                CodingErrorAction.REPORT,
+                filePath.toUri().toString(),
+                Files.size(filePath));
         }
     }
 
     public ParallelFlux<CharStream> readSourceData(Path... sourcePaths) {
         return pathStreamFrom(sourcePaths)
-                .parallel()
-                .runOn(Schedulers.boundedElastic())
-                .flatMap(filePath -> {
-                    return Mono
-                            .fromCallable(() -> readFileContent(filePath))
-                            .subscribeOn(Schedulers.boundedElastic());
-                })
-                .runOn(Schedulers.parallel());
+            .parallel()
+            .runOn(Schedulers.boundedElastic())
+            .flatMap(filePath -> {
+                return Mono
+                    .fromCallable(() -> readFileContent(filePath))
+                    .subscribeOn(Schedulers.boundedElastic());
+            })
+            .runOn(Schedulers.parallel());
     }
 
     public Graph<NamespaceName, DefaultEdge> constructNamespaceGraph(
-            ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes) {
+        ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes) {
         var namespaceGraph = GraphTypeBuilder.<NamespaceName, DefaultEdge>directed()
-                .edgeClass(DefaultEdge.class)
-                .allowingMultipleEdges(false)
-                .allowingSelfLoops(false)
-                .buildGraph();
+            .edgeClass(DefaultEdge.class)
+            .allowingMultipleEdges(false)
+            .allowingSelfLoops(false)
+            .buildGraph();
 
         namespaceNodes.keySet().forEach(namespaceGraph::addVertex);
 
         namespaceGraph.vertexSet()
-                .forEach(namespaceName -> {
-                    namespaceNodes.get(namespaceName)
-                            .imports()
-                            .forEach(imp -> {
-                                var importName = imp.namespace().getName();
-                                if (namespaceGraph.containsVertex(importName)) {
-                                    namespaceGraph.addVertex(importName);
-                                    namespaceGraph.addEdge(importName, namespaceName);
-                                } else {
-                                    // TODO: find the namespace on the classpath
-                                    // or produce an "unknown namespace" error
-                                }
-                            });
-                });
+            .forEach(namespaceName -> {
+                namespaceNodes.get(namespaceName)
+                    .imports()
+                    .forEach(imp -> {
+                        var importName = imp.namespace().getName();
+                        if (namespaceGraph.containsVertex(importName)) {
+                            namespaceGraph.addVertex(importName);
+                            namespaceGraph.addEdge(importName, namespaceName);
+                        } else {
+                            // TODO: find the namespace on the classpath
+                            // or produce an "unknown namespace" error
+                        }
+                    });
+            });
 
         // TODO: Figure out why JohnsonSimpleCycles throws exception
         new HawickJamesSimpleCycles<>(namespaceGraph)
-                .findSimpleCycles()
-                .forEach(cycle -> {
-                    Collections.reverse(cycle);
-                    var cycleStart = cycle.get(0);
-                    cycle.add(cycleStart);
-                    var cycleStartNs = namespaceNodes.get(cycleStart);
-                    var collector = scopedDiagnostics.get(cycleStart);
-                    var cyclicImport = cycleStartNs.imports().detect(imp -> {
-                        var cycleNext = cycle.get(1);
-                        return imp.namespace().getName().equals(cycleNext);
-                    });
-                    cyclicFileDependency(collector, cyclicImport.range(), cycleStart, cycle);
+            .findSimpleCycles()
+            .forEach(cycle -> {
+                Collections.reverse(cycle);
+                var cycleStart = cycle.get(0);
+                cycle.add(cycleStart);
+                var cycleStartNs = namespaceNodes.get(cycleStart);
+                var collector = scopedDiagnostics.get(cycleStart);
+                var cyclicImport = cycleStartNs.imports().detect(imp -> {
+                    var cycleNext = cycle.get(1);
+                    return imp.namespace().getName().equals(cycleNext);
                 });
+                cyclicFileDependency(collector, cyclicImport.range(), cycleStart, cycle);
+            });
 
         return namespaceGraph;
     }
 
-    public CompletableFuture<Void> compileSourcePaths(Path destinationPath, Path... sourcePaths) throws IOException {
+    public CompletableFuture<Void> compileSourcePaths(Path destinationPath, Path... sourcePaths) {
         var sourceData = readSourceData(sourcePaths);
 
         var parsingPhase = new ParsingPhase(sourceData, scopedDiagnostics, namespaceNodes, mainCollector);
@@ -191,15 +191,15 @@ public class Main {
             } else {
                 var renamingPhase = new RenamingPhase(namespaceGraph, parsedNodes, scopedDiagnostics);
 
-                var typecheckingPhase = Phase.andThen(renamingPhase, renamedNodes -> {
-                    return new TypecheckingPhase(namespaceGraph, renamedNodes, scopedDiagnostics);
-                });
+                return renamingPhase.runPhase().flatMap(renamedNodes -> {
+                    var typecheckingPhase = new TypecheckingPhase(namespaceGraph, renamedNodes, scopedDiagnostics);
 
-                var codegenPhase = Phase.andThen(typecheckingPhase, typecheckedNodes -> {
-                    return new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                    return typecheckingPhase.runPhase().flatMap(typecheckedNodes -> {
+                        var codegenPhase = new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                        var indexerPhase = new IndexerPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                        return Mono.when(codegenPhase.runPhase(), indexerPhase.runPhase());
+                    });
                 });
-
-                return Phase.runMono(codegenPhase);
             }
         }).then().toFuture();
     }
