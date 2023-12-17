@@ -45,6 +45,7 @@ testing {
                             dependsOn(":compiler:mina-compiler-renamer:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-typechecker:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-jvm:publishToMavenLocal")
+                            dependsOn(":compiler:mina-compiler-indexer:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-main:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler:publishToMavenLocal")
                         }
