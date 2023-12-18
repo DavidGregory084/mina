@@ -32,24 +32,22 @@ spotless {
         val profilingAgentVersionPath =
             "/contributes/configuration/2/properties/mina.languageServer.profiling.agentVersion/default"
 
-        // Pending https://github.com/diffplug/spotless/pull/1753
-        //
-        // applyJsonPatch(
-        //     listOf(
-        //         // Replace VS code default configuration for language server version
-        //         mapOf(
-        //             "op" to "replace",
-        //             "path" to languageServerVersionPath,
-        //             "value" to rootProject.project("mina-lang-server").version.toString()
-        //         ),
-        //         // Replace VS code default configuration for profiling agent version
-        //         mapOf(
-        //             "op" to "replace",
-        //             "path" to profilingAgentVersionPath,
-        //             "value" to libs.versions.pyroscopeAgent.get()
-        //         )
-        //     )
-        // )
+        jsonPatch(
+            listOf(
+                // Replace VS code default configuration for language server version
+                mapOf(
+                    "op" to "replace",
+                    "path" to languageServerVersionPath,
+                    "value" to rootProject.project("mina-lang-server").version.toString()
+                ),
+                // Replace VS code default configuration for profiling agent version
+                mapOf(
+                    "op" to "replace",
+                    "path" to profilingAgentVersionPath,
+                    "value" to libs.versions.pyroscopeAgent.get()
+                )
+            )
+        )
 
         prettier()
     }
