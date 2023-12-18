@@ -30,7 +30,6 @@ protobuf = "3.25.1"
 protobufGradle = "0.9.4"
 pyroscopeAgent = "0.12.2"
 reactorCore = "3.6.1"
-scipJava = "0.9.5"
 slf4j = "2.0.9"
 spotless = "6.23.3"
 spotifyHamcrest = "1.3.2"
@@ -76,7 +75,6 @@ protobufPlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", versio
 pyroscopeAgent = { module = "io.pyroscope:agent", version.ref = "pyroscopeAgent" }
 reactorCore = { module = "io.projectreactor:reactor-core", version.ref = "reactorCore" }
 reactorTest = { module = "io.projectreactor:reactor-test", version.ref = "reactorCore" }
-scipJavaProto = { module = "com.sourcegraph:scip-java-proto", version.ref = "scipJava" }
 slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 spotlessGradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 toStringVerifier = { module = "com.jparams:to-string-verifier", version.ref = "toStringVerifier" }
