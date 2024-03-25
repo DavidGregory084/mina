@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.gradle;
@@ -17,7 +17,8 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
-import org.gradle.api.plugins.jvm.internal.JvmEcosystemUtilities;
+import org.gradle.api.plugins.jvm.internal.JvmLanguageUtilities;
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
@@ -33,14 +34,16 @@ import static org.gradle.api.internal.lambdas.SerializableLambdas.spec;
 
 public class MinaBasePlugin implements Plugin<Project> {
     private final ObjectFactory objectFactory;
-    private final JvmEcosystemUtilities jvmEcosystemUtilities;
+    private final JvmPluginServices jvmPluginServices;
+    private final JvmLanguageUtilities jvmEcosystemUtilities;
 
     public static final String MINAC_CONFIGURATION_NAME = "minac";
     public static final String MINA_EXTENSION_NAME = "mina";
 
     @Inject
-    public MinaBasePlugin(ObjectFactory objectFactory, JvmEcosystemUtilities jvmEcosystemUtilities) {
+    public MinaBasePlugin(ObjectFactory objectFactory, JvmPluginServices jvmPluginServices, JvmLanguageUtilities jvmEcosystemUtilities) {
         this.objectFactory = objectFactory;
+        this.jvmPluginServices = jvmPluginServices;
         this.jvmEcosystemUtilities = jvmEcosystemUtilities;
     }
 
@@ -59,7 +62,7 @@ public class MinaBasePlugin implements Plugin<Project> {
         Configuration minacConfiguration = project.getConfigurations().create(MINAC_CONFIGURATION_NAME);
         minacConfiguration.setCanBeConsumed(false);
         minacConfiguration.setCanBeResolved(true);
-        jvmEcosystemUtilities.configureAsRuntimeClasspath(minacConfiguration);
+        jvmPluginServices.configureAsRuntimeClasspath(minacConfiguration);
         minacConfiguration.defaultDependencies(dependencies -> {
            dependencies.addLater(minaExtension.getMinaVersion().map(version -> {
                return new DefaultExternalModuleDependency("org.mina-lang", "mina-compiler", version);
@@ -81,7 +84,7 @@ public class MinaBasePlugin implements Plugin<Project> {
             sourceSet.getExtensions().add(MinaSourceDirectorySet.class, "mina", minaSource);
             minaSource.srcDir(project.file("src/" + sourceSet.getName() + "/mina"));
 
-            FileCollection minaSourceFiles = minaSource;
+            final FileCollection minaSourceFiles = minaSource;
             sourceSet.getResources().getFilter().exclude(
                     spec(element -> minaSourceFiles.contains(element.getFile())));
             sourceSet.getAllSource().source(minaSource);
