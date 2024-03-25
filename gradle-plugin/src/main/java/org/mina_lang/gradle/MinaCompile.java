@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.gradle;
@@ -12,7 +12,6 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.plugins.jvm.internal.JvmEcosystemUtilities;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.compile.AbstractCompile;
@@ -32,7 +31,7 @@ public abstract class MinaCompile extends AbstractCompile implements HasCompileO
     private ConfigurableFileCollection minaCompilerClasspath;
 
     @Inject
-    public MinaCompile(Project project, JvmEcosystemUtilities jvmEcosystemUtilities) {
+    public MinaCompile(Project project) {
         this.compileOptions = getObjectFactory().newInstance(CompileOptions.class);
         Configuration minacConfig = project.getConfigurations().getByName(MinaBasePlugin.MINAC_CONFIGURATION_NAME);
         this.minaCompilerClasspath = getObjectFactory().fileCollection().from(minacConfig.getAsFileTree());
