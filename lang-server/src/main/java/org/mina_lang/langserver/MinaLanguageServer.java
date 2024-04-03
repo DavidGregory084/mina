@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.langserver;
@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine.ExitCode;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -74,8 +75,8 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
             return CompletableFutures.computeAsync(executor, action);
         } else {
             var error = isShutdown()
-                    ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
-                    : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
+                ? new ResponseError(ResponseErrorCode.InvalidRequest, "Server has been shut down", null)
+                : new ResponseError(ResponseErrorCode.ServerNotInitialized, "Server was not initialized", null);
             var result = new CompletableFuture<A>();
             result.completeExceptionally(new ResponseErrorException(error));
             return result;
@@ -109,7 +110,10 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
         if (supportsWorkspaceFolders && hasWorkspaceFolders) {
             workspaceService.setWorkspaceFolders(params.getWorkspaceFolders());
         } else if (hasWorkspaceRoot) {
-            var workspaceRoot = new WorkspaceFolder(params.getRootUri());
+            var rootUri = params.getRootUri();
+            var workspacePathSegments = URI.create(rootUri).getPath().split("/");
+            var workspaceName = workspacePathSegments[workspacePathSegments.length - 1];
+            var workspaceRoot = new WorkspaceFolder(rootUri, workspaceName);
             workspaceService.setWorkspaceFolders(List.of(workspaceRoot));
         } else {
             workspaceService.setWorkspaceFolders(List.of());
@@ -143,11 +147,11 @@ public class MinaLanguageServer implements LanguageServer, LanguageClientAware {
 
     void monitorParentProcess(InitializeParams params) {
         Optional.ofNullable(params.getProcessId())
-                .flatMap(ProcessHandle::of)
-                .ifPresent(processHandle -> {
-                    logger.info("Monitoring termination of parent process {}", processHandle.pid());
-                    processHandle.onExit().thenRun(this::exit);
-                });
+            .flatMap(ProcessHandle::of)
+            .ifPresent(processHandle -> {
+                logger.info("Monitoring termination of parent process {}", processHandle.pid());
+                processHandle.onExit().thenRun(this::exit);
+            });
     }
 
     @Override

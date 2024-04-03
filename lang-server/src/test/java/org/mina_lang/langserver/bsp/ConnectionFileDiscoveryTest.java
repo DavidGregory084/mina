@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.langserver.bsp;
@@ -26,7 +26,7 @@ public class ConnectionFileDiscoveryTest {
 
     @Test
     void discoversConnectionFilesInWorkspace(@TempDir Path tmpDir) throws IOException, NoSuchFieldException, IllegalAccessException {
-        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString());
+        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString(), "tmp");
 
         var bspDir = tmpDir.resolve(".bsp");
 
@@ -55,7 +55,7 @@ public class ConnectionFileDiscoveryTest {
 
     @Test
     void onlyReturnsMinaSupportingConnections(@TempDir Path tmpDir) throws IOException, NoSuchFieldException, IllegalAccessException {
-        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString());
+        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString(), "tmp");
 
         var bspDir = tmpDir.resolve(".bsp");
 
@@ -81,7 +81,7 @@ public class ConnectionFileDiscoveryTest {
 
     @Test
     void discoversConnectionFilesInDataLocalDir(@TempDir Path tmpDir) throws IOException, NoSuchFieldException, IllegalAccessException {
-        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString());
+        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString(), "tmp");
 
         var bspDir = tmpDir.resolve(DATA_LOCAL_DIR).resolve("bsp");
 
@@ -110,7 +110,7 @@ public class ConnectionFileDiscoveryTest {
 
     @Test
     void discoversConnectionFilesInDataDir(@TempDir Path tmpDir) throws IOException, NoSuchFieldException, IllegalAccessException {
-        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString());
+        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString(), "tmp");
 
         var bspDir = tmpDir.resolve(DATA_DIR).resolve("bsp");
 
@@ -139,7 +139,7 @@ public class ConnectionFileDiscoveryTest {
 
     @Test
     void prefersWorkspaceConnectionFiles(@TempDir Path tmpDir) throws IOException, NoSuchFieldException, IllegalAccessException {
-        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString());
+        var workspaceFolder = new WorkspaceFolder(tmpDir.toUri().toString(), "tmp");
 
         var workspaceBspDir = tmpDir.resolve(".bsp");
         Files.createDirectories(workspaceBspDir);
