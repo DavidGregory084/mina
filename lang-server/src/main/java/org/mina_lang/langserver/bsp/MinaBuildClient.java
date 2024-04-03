@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.langserver.bsp;
@@ -52,7 +52,7 @@ public class MinaBuildClient implements BuildClient {
             logger.error(params.getMessage());
         } else if (params.getType().equals(MessageType.WARNING)) {
             logger.warn(params.getMessage());
-        } else if (params.getType().equals(MessageType.INFORMATION)) {
+        } else if (params.getType().equals(MessageType.INFO)) {
             logger.info(params.getMessage());
         } else if (params.getType().equals(MessageType.LOG)) {
             logger.debug(params.getMessage());
@@ -133,7 +133,6 @@ public class MinaBuildClient implements BuildClient {
 
     }
 
-    @Override
     public void onConnectWithServer(BuildServer server) {
         this.buildServer = server;
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.langserver.bsp;
@@ -309,7 +309,7 @@ public class BuildServerConnectorTest {
 
         @Override
         public CompletableFuture<CleanCacheResult> buildTargetCleanCache(CleanCacheParams params) {
-            return CompletableFuture.completedFuture(new CleanCacheResult(null, true));
+            return CompletableFuture.completedFuture(new CleanCacheResult(true));
         }
 
         @Override
