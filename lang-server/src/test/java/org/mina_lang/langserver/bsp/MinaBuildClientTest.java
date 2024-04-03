@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.langserver.bsp;
@@ -27,7 +27,7 @@ public class MinaBuildClientTest {
     @Test
     void forwardsBuildMessagesToClient() {
         withBuildAndLanguageClient(((buildClient, langClient) -> {
-            buildClient.onBuildShowMessage(new ShowMessageParams(MessageType.INFORMATION, "Hello!"));
+            buildClient.onBuildShowMessage(new ShowMessageParams(MessageType.INFO, "Hello!"));
 
             assertThat(langClient.getMessageReceived(), stageWillCompleteWithValueThat(allOf(
                     hasProperty("type", equalTo(org.eclipse.lsp4j.MessageType.Info)),
