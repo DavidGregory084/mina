@@ -3,6 +3,10 @@
   "extends": ["local>mina-lang/renovate-config"],
   "packageRules": [
     {
+      "matchPackageNames": "node",
+      "allowedVersions": "<19"
+    },
+    {
       "matchPackageNames": "@types/node",
       "allowedVersions": "<19"
     },
