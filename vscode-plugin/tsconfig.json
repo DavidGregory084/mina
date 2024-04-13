@@ -1,5 +1,5 @@
 {
-  "extends": ["@tsconfig/recommended", "@tsconfig/node16"],
+  "extends": ["@tsconfig/recommended", "@tsconfig/node18"],
   "compilerOptions": {
     "outDir": "out",
     "rootDir": "src",
