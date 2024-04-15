@@ -1,6 +1,6 @@
 plugins {
     `java-gradle-plugin`
-    `java-project-convention`
+    id("java-project-convention")
     alias(libs.plugins.gradleBuildInfo)
 }
 
