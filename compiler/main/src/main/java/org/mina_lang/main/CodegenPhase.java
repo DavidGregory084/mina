@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.main;
@@ -7,7 +7,7 @@ package org.mina_lang.main;
 import org.mina_lang.codegen.jvm.CodeGenerator;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +23,11 @@ public class CodegenPhase implements ParallelPhase<NamespaceNode<Attributes>, Vo
 
     private final Path destinationPath;
     private final ConcurrentHashMap<NamespaceName, NamespaceNode<Attributes>> namespaceNodes;
-    private final ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
+    private final ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics;
 
     public CodegenPhase(Path destinationPath,
             ConcurrentHashMap<NamespaceName, NamespaceNode<Attributes>> namespaceNodes,
-            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics) {
+            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         this.destinationPath = destinationPath;
         this.namespaceNodes = namespaceNodes;
         this.scopedDiagnostics = scopedDiagnostics;

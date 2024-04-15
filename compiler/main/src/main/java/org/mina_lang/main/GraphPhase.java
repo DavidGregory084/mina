@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.main;
@@ -10,7 +10,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -32,7 +32,7 @@ public non-sealed abstract class GraphPhase<A, B>
     protected ConcurrentHashMap<NamespaceName, NamespaceNode<A>> inputNodes;
     protected ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedNodes;
 
-    protected ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
+    protected ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics;
 
     private final Set<NamespaceName> rootNodes;
     private final Map<NamespaceName, AtomicInteger> namespaceDependencies;
@@ -40,7 +40,7 @@ public non-sealed abstract class GraphPhase<A, B>
     GraphPhase(
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
             ConcurrentHashMap<NamespaceName, NamespaceNode<A>> namespaceNodes,
-            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics) {
+            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         this.namespaceGraph = namespaceGraph;
         this.inputNodes = namespaceNodes;
         this.scopedDiagnostics = scopedDiagnostics;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.parser;
@@ -14,14 +14,14 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
-import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
+import org.mina_lang.common.diagnostics.NamespaceDiagnosticReporter;
 
 import java.net.URI;
 import java.util.BitSet;
 
-public class ANTLRDiagnosticCollector extends ForwardingDiagnosticCollector implements ANTLRErrorListener {
+public class ANTLRDiagnosticReporter extends NamespaceDiagnosticReporter implements ANTLRErrorListener {
 
-    public ANTLRDiagnosticCollector(BaseDiagnosticCollector parent, URI sourceUri) {
+    public ANTLRDiagnosticReporter(BaseDiagnosticCollector parent, URI sourceUri) {
         super(parent, sourceUri);
     }
 

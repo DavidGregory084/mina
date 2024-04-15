@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.parser;
@@ -32,7 +32,7 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Parser {
 
-    private ANTLRDiagnosticCollector diagnostics;
+    private ANTLRDiagnosticReporter diagnostics;
 
     private NamespaceIdVisitor namespaceIdVisitor = new NamespaceIdVisitor();
     private NamespaceVisitor namespaceVisitor = new NamespaceVisitor();
@@ -70,7 +70,7 @@ public class Parser {
     private static final ThreadLocal<PredictionContextCache> parserCache =
         ThreadLocal.withInitial(PredictionContextCache::new);
 
-    public Parser(ANTLRDiagnosticCollector diagnostics) {
+    public Parser(ANTLRDiagnosticReporter diagnostics) {
         this.diagnostics = diagnostics;
     }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.main;
@@ -9,7 +9,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.typechecker.TypeEnvironment;
 import org.mina_lang.typechecker.Typechecker;
@@ -25,7 +25,7 @@ public class TypecheckingPhase extends GraphPhase<Name, Attributes> {
     public TypecheckingPhase(
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
             ConcurrentHashMap<NamespaceName, NamespaceNode<Name>> namespaceNodes,
-            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics) {
+            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         super(namespaceGraph, namespaceNodes, scopedDiagnostics);
     }
 

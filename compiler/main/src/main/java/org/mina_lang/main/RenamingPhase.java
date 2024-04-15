@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.main;
@@ -8,7 +8,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.renamer.NameEnvironment;
 import org.mina_lang.renamer.Renamer;
 import org.mina_lang.syntax.NamespaceNode;
@@ -24,7 +24,7 @@ public class RenamingPhase extends GraphPhase<Void, Name> {
     public RenamingPhase(
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
             ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes,
-            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics) {
+            ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         super(namespaceGraph, namespaceNodes, scopedDiagnostics);
     }
 

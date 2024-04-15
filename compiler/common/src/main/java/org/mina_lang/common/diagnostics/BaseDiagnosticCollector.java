@@ -1,18 +1,18 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.diagnostics;
 
 import com.opencastsoftware.yvette.Severity;
 import org.eclipse.collections.api.list.ImmutableList;
-import org.mina_lang.common.*;
+import org.mina_lang.common.Location;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class BaseDiagnosticCollector implements DiagnosticCollector {
+public abstract class BaseDiagnosticCollector implements DiagnosticCollector, DiagnosticReporter, DiagnosticEnumerator {
     ConcurrentLinkedQueue<Diagnostic> diagnostics = new ConcurrentLinkedQueue<>();
     AtomicInteger errorCount = new AtomicInteger(0);
     AtomicInteger warningCount = new AtomicInteger(0);

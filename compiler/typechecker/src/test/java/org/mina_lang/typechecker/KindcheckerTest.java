@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.typechecker;
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.Diagnostic;
-import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
+import org.mina_lang.common.diagnostics.NamespaceDiagnosticReporter;
 import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.common.names.Nameless;
@@ -40,7 +40,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
             environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         var kindDefaultingTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(),
@@ -60,7 +60,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         var kindcheckedNode = kindchecker.kindcheck(originalNode);
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -75,7 +75,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = baseCollector.getErrors();
@@ -91,7 +91,7 @@ public class KindcheckerTest {
         var sortTransformer = new SortSubstitutionTransformer(
                 environment.typeSubstitution(), environment.kindSubstitution());
         var dummyUri = URI.create("file:///Mina/Test/Kindchecker.mina");
-        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var kindchecker = new Kindchecker(scopedCollector, environment, varSupply, sortTransformer);
         kindchecker.kindcheck(originalNode);
         var errors = baseCollector.getErrors();

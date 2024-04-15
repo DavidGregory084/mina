@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.renamer;
@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.Diagnostic;
-import org.mina_lang.common.diagnostics.ForwardingDiagnosticCollector;
+import org.mina_lang.common.diagnostics.NamespaceDiagnosticReporter;
 import org.mina_lang.common.names.*;
 import org.mina_lang.renamer.scopes.ImportedNamesScope;
 import org.mina_lang.syntax.MetaNode;
@@ -32,7 +32,7 @@ public class RenamerTest {
             NamespaceNode<Name> expectedNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
-        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var renamer = new Renamer(scopedCollector, environment);
         var renamedNode = renamer.rename(originalNode);
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -45,7 +45,7 @@ public class RenamerTest {
             MetaNode<A> expectedNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
-        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var renamer = new Renamer(scopedCollector, environment);
         var renamedNode = renamer.rename(originalNode);
         assertThat(baseCollector.getDiagnostics(), is(empty()));
@@ -57,7 +57,7 @@ public class RenamerTest {
             MetaNode<Void> originalNode) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
-        var scopedCollector = new ForwardingDiagnosticCollector(baseCollector, dummyUri);
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var renamer = new Renamer(scopedCollector, environment);
         renamer.rename(originalNode);
         var errors = baseCollector.getErrors();
