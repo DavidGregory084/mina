@@ -3,7 +3,7 @@ import com.github.gradle.node.npm.task.NpmTask
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-    `base-project-convention`
+    id("base-project-convention")
     alias(libs.plugins.gradleNode)
 }
 

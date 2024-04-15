@@ -2,7 +2,7 @@ import org.asciidoctor.gradle.jvm.AsciidoctorTask
 
 plugins {
     application
-    `java-project-convention`
+    id("java-project-convention")
     alias(libs.plugins.asciiDoctor)
 }
 
