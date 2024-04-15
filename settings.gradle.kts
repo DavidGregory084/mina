@@ -1,3 +1,12 @@
+pluginManagement {
+    includeBuild("build-logic")
+
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = "mina"
 
 // Inexplicably, the recommended way to configure artifact names in Gradle
@@ -47,10 +56,3 @@ project(":runtime").name = "mina-runtime"
 
 // VS Code plugin
 include("vscode-plugin")
-
-pluginManagement {
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
