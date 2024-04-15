@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.typechecker;
@@ -13,7 +13,7 @@ import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
-import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
+import org.mina_lang.common.diagnostics.LocalDiagnosticReporter;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Typechecker {
-    private ScopedDiagnosticCollector diagnostics;
+    private LocalDiagnosticReporter diagnostics;
     private TypeEnvironment environment;
     private UnsolvedVariableSupply varSupply;
     private Kindchecker kindchecker;
@@ -35,7 +35,7 @@ public class Typechecker {
     private SortSubstitutionTransformer sortTransformer;
     private SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
 
-    public Typechecker(ScopedDiagnosticCollector diagnostics, TypeEnvironment environment) {
+    public Typechecker(LocalDiagnosticReporter diagnostics, TypeEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.main;
@@ -14,7 +14,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -41,7 +41,7 @@ public class GraphPhaseTest {
     void graphTraversalIsTopological(@ForAll("namespaceGraph") DirectedAcyclicGraph<NamespaceName, DefaultEdge> graph) {
         var visited = new ConcurrentLinkedQueue<NamespaceName>();
         var namespaceNodes = new ConcurrentHashMap<NamespaceName, NamespaceNode<Void>>();
-        var scopedDiagnostics = new ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector>();
+        var scopedDiagnostics = new ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter>();
 
         graph.vertexSet().forEach(nsName -> {
             var sourceURI = URI.create("Mina/Test/Main/" + nsName.name() + ".mina");
@@ -53,7 +53,7 @@ public class GraphPhaseTest {
             });
             scopedDiagnostics.put(
                     nsName,
-                    new ANTLRDiagnosticCollector(baseCollector, sourceURI));
+                    new ANTLRDiagnosticReporter(baseCollector, sourceURI));
             namespaceNodes.put(
                     nsName,
                     namespaceNode(

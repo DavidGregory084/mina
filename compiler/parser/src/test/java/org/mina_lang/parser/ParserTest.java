@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.parser;
@@ -30,7 +30,7 @@ public class ParserTest {
             NamespaceNode<Void> expected) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        var parsingCollector = new ANTLRDiagnosticReporter(baseCollector, dummyUri);
         var actual = new Parser(parsingCollector).parse(source);
         assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
         assertThat("The result syntax node should not be null", actual, notNullValue());
@@ -40,7 +40,7 @@ public class ParserTest {
     List<String> testFailedParse(String source) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        var parsingCollector = new ANTLRDiagnosticReporter(baseCollector, dummyUri);
         new Parser(parsingCollector).parse(source);
         var errors = baseCollector.getErrors();
         assertThat("There should be parsing errors", errors, not(empty()));
@@ -54,7 +54,7 @@ public class ParserTest {
             B expected) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        var parsingCollector = new ANTLRDiagnosticReporter(baseCollector, dummyUri);
         var parser = new Parser(parsingCollector);
         var input = CharStreams.fromString(source);
         var actual = parser.parse(input, visitor, startRule);
@@ -70,7 +70,7 @@ public class ParserTest {
             Function<MinaParser, A> startRule) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
-        var parsingCollector = new ANTLRDiagnosticCollector(baseCollector, dummyUri);
+        var parsingCollector = new ANTLRDiagnosticReporter(baseCollector, dummyUri);
         var parser = new Parser(parsingCollector);
         var input = CharStreams.fromString(source);
         parser.parse(input, visitor, startRule);

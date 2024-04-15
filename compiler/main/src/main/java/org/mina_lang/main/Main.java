@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.main;
@@ -16,7 +16,7 @@ import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
-import org.mina_lang.parser.ANTLRDiagnosticCollector;
+import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public class Main {
     private BaseDiagnosticCollector mainCollector;
 
     private ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes;
-    private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticCollector> scopedDiagnostics;
+    private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics;
 
     private DOTExporter<NamespaceName, DefaultEdge> dotExporter = new DOTExporter<>();
 
@@ -61,8 +61,8 @@ public class Main {
         return mainCollector;
     }
 
-    void cyclicFileDependency(ANTLRDiagnosticCollector collector, Range range, NamespaceName startNamespace,
-            List<NamespaceName> cycle) {
+    void cyclicFileDependency(ANTLRDiagnosticReporter collector, Range range, NamespaceName startNamespace,
+                              List<NamespaceName> cycle) {
         var cycleMessage = new StringBuilder();
 
         cycle.forEach(namespaceName -> {

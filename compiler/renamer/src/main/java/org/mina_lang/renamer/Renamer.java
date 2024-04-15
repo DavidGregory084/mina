@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.renamer;
@@ -18,7 +18,7 @@ import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.common.Location;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
-import org.mina_lang.common.diagnostics.ScopedDiagnosticCollector;
+import org.mina_lang.common.diagnostics.LocalDiagnosticReporter;
 import org.mina_lang.common.names.*;
 import org.mina_lang.renamer.scopes.*;
 import org.mina_lang.syntax.*;
@@ -30,7 +30,7 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Renamer {
 
-    private ScopedDiagnosticCollector diagnostics;
+    private LocalDiagnosticReporter diagnostics;
     private NameEnvironment environment;
 
     private Graph<DeclarationName, DefaultEdge> declarationGraph = GraphTypeBuilder
@@ -43,7 +43,7 @@ public class Renamer {
 
     private int localVarIndex = 0;
 
-    public Renamer(ScopedDiagnosticCollector diagnostics, NameEnvironment environment) {
+    public Renamer(LocalDiagnosticReporter diagnostics, NameEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
         dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
