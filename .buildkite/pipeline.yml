@@ -3,13 +3,13 @@ steps:
     command: "./.buildkite/ci.sh"
     artifact_paths: "**/build/test-results/*/TEST-*.xml"
     plugins:
-      - opencastsoftware/cache#custom-s3-endpoint-fix-s3-sync:
+      - cache#v1.0.0:
           backend: s3
           compression: tgz
           path: .gradle
           restore: branch
           save: branch
-      - opencastsoftware/cache#custom-s3-endpoint-fix-s3-sync:
+      - cache#v1.0.0:
           backend: s3
           compression: tgz
           path: vscode-plugin/node_modules
