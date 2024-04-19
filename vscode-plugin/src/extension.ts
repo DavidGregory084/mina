@@ -21,8 +21,12 @@ import {
 } from "vscode-languageclient/node";
 
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
-import { findRuntimes } from "jdk-utils";
+import { findRuntimes, JAVA_FILENAME } from "jdk-utils";
 
+const isLinux = os.platform() === "linux";
+const isWindows = os.platform() === "win32";
+
+const execFile = util.promisify(child_process.execFile);
 const COURSIER_DOWNLOAD_TIMEOUT_MS = 120000;
 const COURSIER_LAUNCHER_URI = Uri.parse(
   "https://github.com/coursier/launchers/raw/master/coursier.jar"
@@ -70,16 +74,16 @@ async function getServerClasspath(
   const serverVersion = serverConfiguration.get<number>("version");
 
   return (
-    await util.promisify(child_process.execFile)(
+    await execFile(
       javaExecutable,
       [
         "-jar",
-        `"${coursierJar.fsPath}"`,
+        coursierJar.fsPath,
         "fetch",
         "--classpath",
         `org.mina-lang:mina-lang-server:${serverVersion}`,
       ],
-      { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
+      { env: { COURSIER_NO_TERM: "true", ...process.env } }
     )
   ).stdout.trim();
 }
@@ -93,7 +97,7 @@ function getGcOptions(): string[] {
     "-XX:+DisableExplicitGC",
   ];
 
-  if (os.type() === "Linux") {
+  if (isLinux) {
     gcOptions.push("-XX:+UseLargePages");
     gcOptions.push("-XX:+UseTransparentHugePages");
   }
@@ -162,16 +166,16 @@ async function getProfilingAgentClasspath(
   agentVersion: string
 ): Promise<string> {
   return (
-    await util.promisify(child_process.execFile)(
+    await execFile(
       javaExecutable,
       [
         "-jar",
-        `"${coursierJar.fsPath}"`,
+        coursierJar.fsPath,
         "fetch",
         "--classpath",
         `io.pyroscope:agent:${agentVersion}`,
       ],
-      { shell: true, env: { COURSIER_NO_TERM: "true", ...process.env } }
+      { env: { COURSIER_NO_TERM: "true", ...process.env } }
     )
   ).stdout.trim();
 }
@@ -184,7 +188,12 @@ async function start(context: ExtensionContext, outputChannel: OutputChannel) {
   if (javaHomeRuntime) {
     const fileDownloader: FileDownloader = await getApi();
     const coursierJar = await fetchCoursierJar(context, fileDownloader);
-    const javaExecutable = path.join(javaHomeRuntime.homedir, "bin", "java");
+
+    const javaExecutable = path.join(
+      javaHomeRuntime.homedir,
+      "bin",
+      JAVA_FILENAME
+    );
 
     const gcOptions = getGcOptions();
     const remoteDebugOptions = getRemoteDebugOptions();
@@ -201,7 +210,9 @@ async function start(context: ExtensionContext, outputChannel: OutputChannel) {
     );
 
     const serverOptions: ServerOptions = {
-      transport: TransportKind.pipe,
+      transport: isWindows
+        ? { kind: TransportKind.socket, port: 8084 }
+        : TransportKind.pipe,
       command: javaExecutable,
       args: [
         `-DSTORAGE_FOLDER=${context.globalStorageUri.fsPath}`,

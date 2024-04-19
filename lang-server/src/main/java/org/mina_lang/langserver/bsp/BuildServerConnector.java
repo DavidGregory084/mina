@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.langserver.bsp;
@@ -72,7 +72,7 @@ public class BuildServerConnector {
             }).flatMap(buildTargets -> {
                 return getOpenDocumentBuildTargets();
             }).flatMap(targetIds -> {
-                if (targetIds.isEmpty())  {
+                if (targetIds.isEmpty()) {
                     return Mono.empty();
                 } else {
                     var compileParams = new CompileParams(targetIds);
@@ -165,7 +165,12 @@ public class BuildServerConnector {
     }
 
     public CompletableFuture<Void> disconnect() {
-        return buildClient.get().disconnect();
+        var client = buildClient.get();
+        if (client != null) {
+            return client.disconnect();
+        } else {
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
     MinaBuildClient connect(BspConnectionDetails details) throws IOException {
