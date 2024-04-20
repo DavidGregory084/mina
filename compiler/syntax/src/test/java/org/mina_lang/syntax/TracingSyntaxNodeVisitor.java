@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -34,7 +34,7 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
 
     // Imports
     @Override
-    public void visitImportSymbol(ImportSymbolNode sym) {
+    public void visitImportee(ImporteeNode sym) {
         entries.add(new Entry(sym.getClass(), sym.range()));
     }
 

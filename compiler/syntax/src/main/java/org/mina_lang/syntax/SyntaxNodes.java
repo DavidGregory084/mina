@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -29,32 +29,46 @@ public class SyntaxNodes {
         return new NamespaceNode<>(meta, id, imports, Lists.immutable.of(declarations));
     }
 
-    public static ImportNode importNode(
-            Range range,
-            NamespaceIdNode namespace) {
-        return new ImportNode(range, namespace, Lists.immutable.empty());
+    public static ImportQualifiedNode importQualifiedNode(
+        Range range,
+        NamespaceIdNode namespace) {
+        return new ImportQualifiedNode(range, namespace, Optional.empty());
     }
 
-    public static ImportNode importNode(
+    public static ImportQualifiedNode importQualifiedNode(
+        Range range,
+        NamespaceIdNode namespace,
+        Optional<String> alias) {
+        return new ImportQualifiedNode(range, namespace, alias);
+    }
+
+    public static ImportQualifiedNode importQualifiedNode(
+        Range range,
+        NamespaceIdNode namespace,
+        String alias) {
+        return new ImportQualifiedNode(range, namespace, Optional.of(alias));
+    }
+
+    public static ImportSymbolsNode importSymbolsNode(
             Range range,
             NamespaceIdNode namespace,
-            ImportSymbolNode symbol) {
-        return new ImportNode(range, namespace, Lists.immutable.of(symbol));
+            ImporteeNode symbol) {
+        return new ImportSymbolsNode(range, namespace, Lists.immutable.of(symbol));
     }
 
-    public static ImportNode importNode(
+    public static ImportNode importSymbolsNode(
             Range range,
             NamespaceIdNode namespace,
-            ImmutableList<ImportSymbolNode> symbols) {
-        return new ImportNode(range, namespace, symbols);
+            ImmutableList<ImporteeNode> symbols) {
+        return new ImportSymbolsNode(range, namespace, symbols);
     }
 
-    public static ImportSymbolNode importSymbolNode(Range range, String symbol) {
-        return new ImportSymbolNode(range, symbol, Optional.empty());
+    public static ImporteeNode importeeNode(Range range, String symbol) {
+        return new ImporteeNode(range, symbol, Optional.empty());
     }
 
-    public static ImportSymbolNode importSymbolNode(Range range, String symbol, Optional<String> alias) {
-        return new ImportSymbolNode(range, symbol, alias);
+    public static ImporteeNode importeeNode(Range range, String symbol, Optional<String> alias) {
+        return new ImporteeNode(range, symbol, alias);
     }
 
     // Top level declarations

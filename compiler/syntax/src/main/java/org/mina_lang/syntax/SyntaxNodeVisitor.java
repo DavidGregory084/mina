@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -15,10 +15,18 @@ public interface SyntaxNodeVisitor {
 
     // Imports
     default void visitImport(ImportNode imp) {
-        visit(imp);
+        imp.accept(this);
     }
 
-    default void visitImportSymbol(ImportSymbolNode sym) {
+    default void visitImportQualified(ImportQualifiedNode qual) {
+        visit(qual);
+    }
+
+    default void visitImportSymbols(ImportSymbolsNode syms) {
+        visit(syms);
+    }
+
+    default void visitImportee(ImporteeNode sym) {
         visit(sym);
     }
 
