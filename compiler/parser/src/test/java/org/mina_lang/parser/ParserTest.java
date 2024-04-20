@@ -129,7 +129,7 @@ public class ParserTest {
     void parseImportNamespaceOnly() {
         testSuccessfulParse("import Mina/Test/Parser", Parser::getImportVisitor,
                 MinaParser::importDeclaration,
-                importNode(
+                importQualifiedNode(
                         new Range(0, 0, 0, 23),
                         nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser")));
     }
@@ -137,7 +137,7 @@ public class ParserTest {
     @Test
     void parseImportEmptyPackageNamespaceOnly() {
         testSuccessfulParse("import Parser", Parser::getImportVisitor, MinaParser::importDeclaration,
-                importNode(
+                importQualifiedNode(
                         new Range(0, 0, 0, 13),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser")));
     }
@@ -147,12 +147,12 @@ public class ParserTest {
         testSuccessfulParse("import Mina/Test/Parser.{compilationUnit, importDeclaration}",
                 Parser::getImportVisitor,
                 MinaParser::importDeclaration,
-                importNode(
+                importSymbolsNode(
                         new Range(0, 0, 0, 60),
                         nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
                         Lists.immutable.of(
-                            importSymbolNode(new Range(0, 25, 0, 40) ,"compilationUnit"),
-                            importSymbolNode(new Range(0, 42, 0, 59), "importDeclaration"))));
+                            importeeNode(new Range(0, 25, 0, 40) ,"compilationUnit"),
+                            importeeNode(new Range(0, 42, 0, 59), "importDeclaration"))));
     }
 
     @Test
@@ -160,38 +160,38 @@ public class ParserTest {
         testSuccessfulParse("import Parser.{compilationUnit, importDeclaration}",
                 Parser::getImportVisitor,
                 MinaParser::importDeclaration,
-                importNode(
+                importSymbolsNode(
                         new Range(0, 0, 0, 50),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
                         Lists.immutable.of(
-                            importSymbolNode(new Range(0, 15, 0, 30) ,"compilationUnit"),
-                            importSymbolNode(new Range(0, 32, 0, 49), "importDeclaration"))));
+                            importeeNode(new Range(0, 15, 0, 30) ,"compilationUnit"),
+                            importeeNode(new Range(0, 32, 0, 49), "importDeclaration"))));
     }
 
     @Test
     void parseImportSingleSymbol() {
         testSuccessfulParse("import Mina/Test/Parser.ifExpr", Parser::getImportVisitor,
                 MinaParser::importDeclaration,
-                importNode(
+                importSymbolsNode(
                         new Range(0, 0, 0, 30),
                         nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.of(importSymbolNode(new Range(0, 24, 0, 30), "ifExpr"))));
+                        Lists.immutable.of(importeeNode(new Range(0, 24, 0, 30), "ifExpr"))));
     }
 
     @Test
     void parseImportEmptyPackageSingleSymbol() {
         testSuccessfulParse("import Parser.ifExpr", Parser::getImportVisitor,
                 MinaParser::importDeclaration,
-                importNode(
+                importSymbolsNode(
                         new Range(0, 0, 0, 20),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
-                        Lists.immutable.of(importSymbolNode(new Range(0, 14, 0, 20), "ifExpr"))));
+                        Lists.immutable.of(importeeNode(new Range(0, 14, 0, 20), "ifExpr"))));
     }
 
     @Test
     void parseImportNoSelector() {
         var errors = testFailedParse("import", Parser::getImportVisitor, MinaParser::importDeclaration);
-        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting ID"));
+        assertThat(errors.get(0), startsWith("no viable alternative at input 'import'"));
     }
 
     // Types

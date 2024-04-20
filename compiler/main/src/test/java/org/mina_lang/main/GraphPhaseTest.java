@@ -15,6 +15,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticReporter;
+import org.mina_lang.syntax.ImportNode;
 import org.mina_lang.syntax.NamespaceNode;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -49,7 +50,7 @@ public class GraphPhaseTest {
             // Technically pointless, but let's create imports mirroring our namespace graph
             var imports = Lists.immutable.ofAll(predecessors).collect(importedNs -> {
                 var importIdNode = nsIdNode(Range.EMPTY, importedNs.pkg(), importedNs.name());
-                return importNode(Range.EMPTY, importIdNode);
+                return (ImportNode) importQualifiedNode(Range.EMPTY, importIdNode);
             });
             scopedDiagnostics.put(
                     nsName,

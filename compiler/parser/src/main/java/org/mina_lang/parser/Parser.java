@@ -270,36 +270,41 @@ public class Parser {
 
         @Override
         public ImportNode visitImportDeclaration(ImportDeclarationContext ctx) {
-            var selector = Optional.ofNullable(ctx.importSelector());
+            return visitAlternatives(ctx.importQualified(), ctx.importSymbols());
+        }
 
-            var ns = selector
-                    .map(ImportSelectorContext::namespaceId)
-                    .map(namespaceIdVisitor::visitNullable)
-                    .orElse(null);
+        @Override
+        public ImportNode visitImportQualified(ImportQualifiedContext ctx) {
+            var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
+            var alias = Optional.ofNullable(ctx.alias).map(Token::getText);
+            return importQualifiedNode(contextRange(ctx), ns, alias);
+        }
 
-            var singleImportee = selector
-                    .map(s -> s.id)
-                    .map(id -> importSymbolNode(tokenRange(id), id.getText()))
-                    .map(Lists.immutable::of);
+        @Override
+        public ImportNode visitImportSymbols(ImportSymbolsContext ctx) {
+            var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
 
-            var multiImportees = selector
-                .map(ImportSelectorContext::importee)
+            var singleImportee = Optional.ofNullable(ctx.id)
+                .map(id -> importeeNode(tokenRange(id), id.getText()))
+                .map(Lists.immutable::of);
+
+            var multiImportees = Optional.ofNullable(ctx.importee())
                 .map(importees -> visitRepeated(importees, importeeVisitor));
 
-            return importNode(
-                    contextRange(ctx), ns,
-                    singleImportee
-                            .or(() -> multiImportees)
-                            .orElseGet(Lists.immutable::empty));
+            return importSymbolsNode(
+                contextRange(ctx), ns,
+                singleImportee
+                    .or(() -> multiImportees)
+                    .orElseGet(Lists.immutable::empty));
         }
     }
 
-    class ImporteeVisitor extends Visitor<ImporteeContext, ImportSymbolNode> {
+    class ImporteeVisitor extends Visitor<ImporteeContext, ImporteeNode> {
         @Override
-        public ImportSymbolNode visitImportee(ImporteeContext ctx) {
+        public ImporteeNode visitImportee(ImporteeContext ctx) {
             var id = Optional.ofNullable(ctx.id).map(Token::getText).orElse(null);
             var alias = Optional.ofNullable(ctx.alias).map(Token::getText);
-            return importSymbolNode(contextRange(ctx), id, alias);
+            return importeeNode(contextRange(ctx), id, alias);
         }
     }
 

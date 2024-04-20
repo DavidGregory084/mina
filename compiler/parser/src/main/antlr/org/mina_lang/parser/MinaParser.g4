@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 parser grammar MinaParser;
@@ -20,11 +20,14 @@ public MinaParser(TokenStream input, ThreadLocal<DFA[]> decisionToDFA, ThreadLoc
 namespace: NAMESPACE namespaceId LBRACE importDeclaration* declaration* RBRACE EOF;
 
 // Imports
-importDeclaration: IMPORT importSelector;
+importDeclaration: importQualified | importSymbols;
 
-importSelector:
-    namespaceId (DOT id = ID)?
-    | namespaceId DOT LBRACE importee (COMMA importee)* RBRACE;
+importQualified:
+    IMPORT namespaceId (AS alias = ID)?;
+
+importSymbols:
+    IMPORT namespaceId DOT id = ID
+    | IMPORT namespaceId DOT LBRACE importee (COMMA importee)* RBRACE;
 
 importee:
     id = ID (AS alias = ID)?;

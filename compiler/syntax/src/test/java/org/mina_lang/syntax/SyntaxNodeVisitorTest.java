@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -48,12 +48,12 @@ public class SyntaxNodeVisitorTest {
                         new Range(0, 7, 0, 24),
                         Lists.immutable.of("Mina", "Test"), "Visitor"),
                 Lists.immutable.of(
-                        importNode(
+                        importSymbolsNode(
                                 new Range(1, 4, 1, 29),
                                 nsIdNode(
                                         new Range(1, 11, 1, 27),
                                         Lists.immutable.of("Mina", "Test"), "Parser"),
-                                Lists.immutable.of(importSymbolNode(new Range(1, 28, 1, 29), "y")))),
+                                Lists.immutable.of(importeeNode(new Range(1, 28, 1, 29), "y")))),
                 Lists.immutable.of(
                         letNode(
                                 new Range(2, 4, 2, 13),
@@ -65,8 +65,8 @@ public class SyntaxNodeVisitorTest {
         var expected = contains(
                 new Entry(NamespaceIdNode.class, new Range(0, 7, 0, 24)),
                 new Entry(NamespaceIdNode.class, new Range(1, 11, 1, 27)),
-                new Entry(ImportSymbolNode.class, new Range(1, 28, 1, 29)),
-                new Entry(ImportNode.class, new Range(1, 4, 1, 29)),
+                new Entry(ImporteeNode.class, new Range(1, 28, 1, 29)),
+                new Entry(ImportSymbolsNode.class, new Range(1, 4, 1, 29)),
                 new Entry(QualifiedIdNode.class, new Range(2, 12, 2, 13)),
                 new Entry(ReferenceNode.class, new Range(2, 12, 2, 13)),
                 new Entry(LetNode.class, new Range(2, 4, 2, 13)),
