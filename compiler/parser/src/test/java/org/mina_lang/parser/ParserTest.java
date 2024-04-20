@@ -135,11 +135,30 @@ public class ParserTest {
     }
 
     @Test
+    void parseImportNamespaceWithAlias() {
+        testSuccessfulParse("import Mina/Test/Parser as P", Parser::getImportVisitor,
+            MinaParser::importDeclaration,
+            importQualifiedNode(
+                new Range(0, 0, 0, 28),
+                nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
+                "P"));
+    }
+
+    @Test
     void parseImportEmptyPackageNamespaceOnly() {
         testSuccessfulParse("import Parser", Parser::getImportVisitor, MinaParser::importDeclaration,
                 importQualifiedNode(
                         new Range(0, 0, 0, 13),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser")));
+    }
+
+    @Test
+    void parseImportEmptyPackageNamespaceWithAlias() {
+        testSuccessfulParse("import Parser as P", Parser::getImportVisitor, MinaParser::importDeclaration,
+            importQualifiedNode(
+                new Range(0, 0, 0, 18),
+                nsIdNode(new Range(0, 7, 0, 13), "Parser"),
+                "P"));
     }
 
     @Test
