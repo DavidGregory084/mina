@@ -162,6 +162,19 @@ public class ParserTest {
     }
 
     @Test
+    void parseImportSymbolWithAlias() {
+        testSuccessfulParse("import Mina/Test/Parser.{compilationUnit, importDeclaration as impDecl}",
+            Parser::getImportVisitor,
+            MinaParser::importDeclaration,
+            importSymbolsNode(
+                new Range(0, 0, 0, 71),
+                nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
+                Lists.immutable.of(
+                    importeeNode(new Range(0, 25, 0, 40) ,"compilationUnit"),
+                    importeeNode(new Range(0, 42, 0, 70), "importDeclaration", Optional.of("impDecl")))));
+    }
+
+    @Test
     void parseImportMultipleSymbols() {
         testSuccessfulParse("import Mina/Test/Parser.{compilationUnit, importDeclaration}",
                 Parser::getImportVisitor,
