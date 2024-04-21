@@ -94,17 +94,17 @@ public class TypePrinterTest {
         var forAllVarB = new ForAllVar("B", TypeKind.INSTANCE);
         var existsVarC = new ExistsVar("?C", TypeKind.INSTANCE);
 
-        var unaryLam = new QuantifiedType(Lists.immutable.of(forAllVarA), forAllVarA, TypeKind.INSTANCE);
-        assertThat(unaryLam.accept(printer).render(80), is(equalTo("A => A")));
-        assertThat(unaryLam.accept(printer).render(4), is(equalTo(String.format("A =>%n  A"))));
+        var unaryQuant = new QuantifiedType(Lists.immutable.of(forAllVarA), forAllVarA, TypeKind.INSTANCE);
+        assertThat(unaryQuant.accept(printer).render(80), is(equalTo("[A] { A }")));
+        assertThat(unaryQuant.accept(printer).render(4), is(equalTo(String.format("[A] {%n  A%n}"))));
 
-        var binaryLam = new QuantifiedType(Lists.immutable.of(forAllVarA, forAllVarB), forAllVarA, TypeKind.INSTANCE);
-        assertThat(binaryLam.accept(printer).render(80), is(equalTo("[A, B] => A")));
-        assertThat(binaryLam.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  B%n] =>%n  A"))));
+        var binaryQuant = new QuantifiedType(Lists.immutable.of(forAllVarA, forAllVarB), forAllVarA, TypeKind.INSTANCE);
+        assertThat(binaryQuant.accept(printer).render(80), is(equalTo("[A, B] { A }")));
+        assertThat(binaryQuant.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  B%n] {%n  A%n}"))));
 
-        var mixedLam = new QuantifiedType(Lists.immutable.of(forAllVarA, existsVarC), forAllVarA, TypeKind.INSTANCE);
-        assertThat(mixedLam.accept(printer).render(80), is(equalTo("[A, ?C] => A")));
-        assertThat(mixedLam.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  ?C%n] =>%n  A"))));
+        var mixedQuant = new QuantifiedType(Lists.immutable.of(forAllVarA, existsVarC), forAllVarA, TypeKind.INSTANCE);
+        assertThat(mixedQuant.accept(printer).render(80), is(equalTo("[A, ?C] { A }")));
+        assertThat(mixedQuant.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  ?C%n] {%n  A%n}"))));
     }
 
     @Property

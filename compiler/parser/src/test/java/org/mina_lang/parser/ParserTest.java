@@ -229,61 +229,56 @@ public class ParserTest {
     // Types
     @Test
     void parseQuantifiedType() {
-        testSuccessfulParse("A => A", Parser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("[A] { A }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
-                        new Range(0, 0, 0, 6),
-                        Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
-                        typeRefNode(new Range(0, 5, 0, 6), "A")));
-
-    }
-
-    @Test
-    void parseParenthesizedQuantifiedType() {
-        testSuccessfulParse("[A] => A", Parser::getTypeVisitor, MinaParser::type,
-                quantifiedTypeNode(
-                        new Range(0, 0, 0, 8),
+                        new Range(0, 0, 0, 9),
                         Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
-                        typeRefNode(new Range(0, 7, 0, 8), "A")));
+                        typeRefNode(new Range(0, 6, 0, 7), "A")));
 
     }
 
     @Test
-    void parseQuantifiedTypeWithGroupingParens() {
-        testSuccessfulParse("[B => [A => A]]", Parser::getTypeVisitor, MinaParser::type,
+    void parseNestedQuantifiedType() {
+        testSuccessfulParse("[A] { [S] { ST[S, A] } }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
-                        new Range(0, 1, 0, 14),
-                        Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "B")),
+                        new Range(0, 0, 0, 24),
+                        Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
                         quantifiedTypeNode(
-                                new Range(0, 7, 0, 13), Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
-                                typeRefNode(new Range(0, 12, 0, 13), "A"))));
+                                new Range(0, 6, 0, 22), Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "S")),
+                                typeApplyNode(
+                                    new Range(0, 12, 0, 20),
+                                    typeRefNode(new Range(0, 12, 0, 14), "ST"),
+                                    Lists.immutable.of(
+                                        typeRefNode(new Range(0, 15, 0, 16), "S"),
+                                        typeRefNode(new Range(0, 18, 0, 19), "A"))))));
     }
 
     @Test
     void parseMultiArgQuantifiedType() {
-        testSuccessfulParse("[A, B] => A", Parser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("[A, B] { A }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
-                        new Range(0, 0, 0, 11),
+                        new Range(0, 0, 0, 12),
                         Lists.immutable.of(
                                 forAllVarNode(new Range(0, 1, 0, 2), "A"),
                                 forAllVarNode(new Range(0, 4, 0, 5), "B")),
-                        typeRefNode(new Range(0, 10, 0, 11), "A")));
+                        typeRefNode(new Range(0, 9, 0, 10), "A")));
 
     }
 
     @Test
     void parseExistentiallyQuantifiedType() {
-        testSuccessfulParse("?A => ?A", Parser::getTypeVisitor, MinaParser::type,
+        testSuccessfulParse("[?A] { ?A }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
-                        new Range(0, 0, 0, 8),
-                        Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "?A")),
-                        typeRefNode(new Range(0, 6, 0, 8), "?A")));
+                        new Range(0, 0, 0, 11),
+                        Lists.immutable.of(existsVarNode(new Range(0, 1, 0, 3), "?A")),
+                        typeRefNode(new Range(0, 7, 0, 9), "?A")));
     }
 
     @Test
     void parseQuantifiedTypeMissingBody() {
-        var errors = testFailedParse("A =>", Parser::getTypeVisitor, MinaParser::type);
+        var errors = testFailedParse("[A] {}", Parser::getTypeVisitor, MinaParser::type);
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
+        assertThat(errors.get(0), startsWith("no viable alternative at input '[A] {}'"));
     }
 
     @Test

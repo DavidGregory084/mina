@@ -677,7 +677,7 @@ public class RenamerTest {
 
         /*-
          * namespace Mina/Test/Renamer {
-         *   let id: A => A -> A = a -> a
+         *   let id: [A] { A -> A } = a -> a
          * }
          */
         var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
@@ -993,7 +993,7 @@ public class RenamerTest {
         var typeVarAName = new ForAllVarName("A");
         var typeVarBName = new ForAllVarName("B");
 
-        /*- [A, B] => A */
+        /*- [A, B] { A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
@@ -1016,7 +1016,7 @@ public class RenamerTest {
         var typeVarAName = new ExistsVarName("?A");
         var typeVarBName = new ExistsVarName("?B");
 
-        /*- [?A, ?B] => ?A */
+        /*- [?A, ?B] { ?A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
@@ -1039,7 +1039,7 @@ public class RenamerTest {
         var originalTypeVarRange = new Range(0, 1, 0, 2);
         var duplicateTypeVarRange = new Range(0, 4, 0, 5);
 
-        /*- [A, A] => A */
+        /*- [A, A] { A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
@@ -1059,7 +1059,7 @@ public class RenamerTest {
         var typeVarAName = new ForAllVarName("A");
         var typeVarBName = new ForAllVarName("B");
 
-        /*- [A, B] => (A, B) -> A */
+        /*- [A, B] { (A, B) -> A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
@@ -1091,7 +1091,7 @@ public class RenamerTest {
     void renameFunTypeUnknownTypeVar() {
         var unknownTypeVarRange = new Range(0, 17, 0, 18);
 
-        /*- [A] => (A, B) -> A */
+        /*- [A] { (A, B) -> A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
@@ -1115,7 +1115,7 @@ public class RenamerTest {
         var typeVarFName = new ForAllVarName("F");
         var typeVarAName = new ForAllVarName("A");
 
-        /*- [F, A] => F[A] */
+        /*- [F, A] { F[A] } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
@@ -1143,7 +1143,7 @@ public class RenamerTest {
     void renameTypeApplyUnknownTypeVar() {
         var unknownTypeVarRange = new Range(0, 9, 0, 10);
 
-        /*- [F] => F[A] */
+        /*- [F] { F[A] } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(forAllVarNode(Range.EMPTY, "F")),

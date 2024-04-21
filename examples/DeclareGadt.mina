@@ -1,3 +1,5 @@
+// This example is aspirational;
+// it's possible to parse this code but the GADT types don't affect typechecking
 namespace Mina/Examples/DeclareGadt {
     data Expr[A] {
         case Num(i: Int): Expr[Int]
