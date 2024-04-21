@@ -56,11 +56,11 @@ typeAnnotation: COLON type;
 
 type: quantifiedType | funType | applicableType;
 
-quantifiedType: (typeVar | typeParams) FATARROW type;
+quantifiedType: typeParams LBRACE type RBRACE;
 
 typeParams: LSQUARE typeVar (COMMA typeVar)* RSQUARE;
 
-funType: (applicableType | funTypeParams) ARROW type;
+funType: (quantifiedType | applicableType | funTypeParams) ARROW type;
 
 funTypeParams: LPAREN RPAREN | LPAREN type (COMMA type)* RPAREN;
 

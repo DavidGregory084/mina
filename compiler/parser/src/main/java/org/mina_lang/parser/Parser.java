@@ -381,13 +381,8 @@ public class Parser {
         }
 
         @Override
-        public QuantifiedTypeNode<Void> visitQuantifiedType(QuantifiedTypeContext ctx) {
-            var singleParam = Optional.ofNullable(ctx.typeVar())
-                    .map(this::visitTypeVar)
-                    .map(Lists.immutable::of);
-
-            var typeParams = singleParam.orElse(
-                    visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar, this::visitTypeVar));
+        public TypeNode<Void> visitQuantifiedType(QuantifiedTypeContext ctx) {
+            var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar, this::visitTypeVar);
 
             var bodyNode = visitNullable(ctx.type());
 
@@ -396,11 +391,17 @@ public class Parser {
 
         @Override
         public FunTypeNode<Void> visitFunType(FunTypeContext ctx) {
-            var paramTypeNode = Optional.ofNullable(ctx.applicableType())
+            var quantifiedTypeNode = Optional.ofNullable(ctx.quantifiedType())
+                .map(this::visitQuantifiedType)
+                .map(Lists.immutable::of);
+
+            var applicableTypeNode = Optional.ofNullable(ctx.applicableType())
                     .map(this::visitApplicableType)
                     .map(Lists.immutable::of);
 
-            var paramTypeNodes = paramTypeNode.orElse(
+            var paramTypeNodes = quantifiedTypeNode
+                .or(() -> applicableTypeNode)
+                .orElse(
                     visitNullableRepeated(ctx.funTypeParams(), FunTypeParamsContext::type, this));
 
             var returnTypeNode = visitNullable(ctx.type());

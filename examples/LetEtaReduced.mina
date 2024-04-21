@@ -4,7 +4,7 @@ namespace Mina/Examples/LetEtaReduced {
         case None()
     }
 
-    let some: A => A -> Option[A] = Some
+    let some: [A] { A -> Option[A] } = Some
 
     let someOne = some(1)
 }

@@ -79,7 +79,7 @@ public class SyntaxNodeVisitorTest {
     @ParameterizedTest
     @MethodSource("visitor")
     void testVisitQuantifiedType(TracingSyntaxNodeVisitor visitor) {
-        /* A => A */
+        /* [A] { A } */
         var quant = quantifiedTypeNode(
                 new Range(0, 0, 0, 6),
                 Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
@@ -97,7 +97,7 @@ public class SyntaxNodeVisitorTest {
     @ParameterizedTest
     @MethodSource("visitor")
     void testVisitExistentiallyQuantifiedType(TracingSyntaxNodeVisitor visitor) {
-        /* ?A => ?A */
+        /* [?A] { ?A } */
         var quant = quantifiedTypeNode(
                 new Range(0, 0, 0, 8),
                 Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "A")),

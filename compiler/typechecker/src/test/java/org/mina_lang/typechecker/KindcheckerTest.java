@@ -311,7 +311,7 @@ public class KindcheckerTest {
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
-        // [F, A] => F[A]
+        // [F, A] { F[A] }
         var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
@@ -353,7 +353,7 @@ public class KindcheckerTest {
         var typeVarGMeta = Meta.of(new Attributes(typeVarGName, typeVarGKind));
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
-        // [F, G, A] => F[G[A]]
+        // [F, G, A] { F[G[A]] }
         var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
@@ -408,7 +408,7 @@ public class KindcheckerTest {
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
         var typeVarBMeta = Meta.of(new Attributes(typeVarBName, typeVarBKind));
 
-        // [F, G, A, B] => F[G, A] -> F[G, B] -> G[B]
+        // [F, G, A, B] { F[G, A] -> F[G, B] -> G[B] }
         var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
@@ -507,7 +507,7 @@ public class KindcheckerTest {
         var typeVarFName = new ForAllVarName("F");
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
-        // F => Functor[F]
+        // [F] { Functor[F] }
         var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(forAllVarNode(Meta.of(typeVarFName), "F")),
@@ -539,7 +539,7 @@ public class KindcheckerTest {
         var typeVarFName = new ForAllVarName("F");
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
-        // F => F[Functor]
+        // F { F[Functor] }
         var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(forAllVarNode(Meta.of(typeVarFName), "F")),

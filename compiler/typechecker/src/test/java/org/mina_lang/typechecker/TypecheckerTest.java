@@ -618,7 +618,7 @@ public class TypecheckerTest {
 
         var letMeta = Meta.of(new Attributes(letName, letType));
 
-        /*- let id: A => A -> A = a -> a  */
+        /*- let id: [A] { A -> A } = a -> a  */
         var originalNode = letNode(
                 Meta.of(letName),
                 "id",
@@ -672,7 +672,7 @@ public class TypecheckerTest {
 
         var letMeta = Meta.of(new Attributes(letName, letType));
 
-        /*- let const: [A, B] => (A, B) -> A = (a, b) -> a  */
+        /*- let const: [A, B] { (A, B) -> A } = (a, b) -> a  */
         var originalNode = letNode(
                 Meta.of(letName),
                 "const",
@@ -1049,7 +1049,7 @@ public class TypecheckerTest {
 
         var idMeta = Meta.of(new Attributes(idName, idType));
 
-        /*- id: A => A -> A  */
+        /*- id: [A] { A -> A }  */
         environment.putValue("id", idMeta);
 
         /*- id(1) */
@@ -1083,7 +1083,7 @@ public class TypecheckerTest {
 
         var constMeta = Meta.of(new Attributes(constName, constType));
 
-        /*- const: [A, B] => (A, B) -> A  */
+        /*- const: [A, B] { (A, B) -> A } */
         environment.putValue("const", constMeta);
 
         /*- const(const(1, 'a'), "b") */

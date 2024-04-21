@@ -10,17 +10,14 @@ public class TypePrinter implements TypeFolder<Doc> {
 
     @Override
     public Doc visitQuantifiedType(QuantifiedType quant) {
-        var argDoc = quant.args().size() == 1
-                ? visitType(quant.args().get(0))
-                : Doc.intersperse(
-                        Doc.text(",").append(Doc.lineOrSpace()),
-                        quant.args().stream().map(this::visitType))
-                        .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
+        var argDoc = Doc.intersperse(
+                Doc.text(",").append(Doc.lineOrSpace()),
+                quant.args().stream().map(this::visitType))
+                .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
 
-        return Doc.group(
-                argDoc
-                        .appendSpace(Doc.text("=>"))
-                        .append(Doc.lineOrSpace().append(visitType(quant.body())).indent(2)));
+        return argDoc.appendSpace(
+                    visitType(quant.body())
+                        .bracket(2, Doc.text("{"), Doc.text("}")));
     }
 
     @Override

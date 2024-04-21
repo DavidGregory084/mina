@@ -11,7 +11,7 @@ namespace Mina/Examples/DeclareList {
         case Nil()
     }
 
-    let headOption: A => List[A] -> Option[A] = list -> match list with {
+    let headOption: [A] { List[A] -> Option[A] } = list -> match list with {
         case Nil {} -> None()
         case Cons { head } -> Some(head)
     }
