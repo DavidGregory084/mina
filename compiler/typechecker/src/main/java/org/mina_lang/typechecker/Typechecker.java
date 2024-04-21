@@ -207,10 +207,10 @@ public class Typechecker {
         diagnostics.reportError(range, message);
     }
 
-    TypeInstantiationTransformer subTypeInstantiation(TypeLambda tyLam) {
+    TypeInstantiationTransformer subTypeInstantiation(QuantifiedType quant) {
         var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
 
-        tyLam.args().forEach(tyParam -> {
+        quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
                 instantiated.put(forall, newUnsolvedType(typeVarKind));
@@ -225,14 +225,14 @@ public class Typechecker {
         return new TypeInstantiationTransformer(instantiated.toImmutable());
     }
 
-    Type instantiateAsSubType(TypeLambda tyLam) {
-        return tyLam.body().accept(subTypeInstantiation(tyLam));
+    Type instantiateAsSubType(QuantifiedType quant) {
+        return quant.body().accept(subTypeInstantiation(quant));
     }
 
-    TypeInstantiationTransformer superTypeInstantiation(TypeLambda tyLam) {
+    TypeInstantiationTransformer superTypeInstantiation(QuantifiedType quant) {
         var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
 
-        tyLam.args().forEach(tyParam -> {
+        quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
                 var typeVarName = new ForAllVarName(forall.name());
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
@@ -247,8 +247,8 @@ public class Typechecker {
         return new TypeInstantiationTransformer(instantiated.toImmutable());
     }
 
-    Type instantiateAsSuperType(TypeLambda tyLam) {
-        return tyLam.body().accept(superTypeInstantiation(tyLam));
+    Type instantiateAsSuperType(QuantifiedType quant) {
+        return quant.body().accept(superTypeInstantiation(quant));
     }
 
     void instantiateAsSubType(UnsolvedType unsolved, Type superType) {
@@ -314,9 +314,9 @@ public class Typechecker {
                                     pair.getOne(),
                                     pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
-            } else if (superType instanceof TypeLambda tyLam) {
+            } else if (superType instanceof QuantifiedType quant) {
                 // Complete and Easy's InstLAllR rule
-                instantiateAsSubType(unsolved, tyLam.body().accept(superTypeInstantiation(tyLam)));
+                instantiateAsSubType(unsolved, quant.body().accept(superTypeInstantiation(quant)));
             }
         });
     }
@@ -384,9 +384,9 @@ public class Typechecker {
                                     pair.getOne(),
                                     pair.getTwo().accept(sortTransformer.getTypeTransformer()));
                         });
-            } else if (subType instanceof TypeLambda tyLam) {
+            } else if (subType instanceof QuantifiedType quant) {
                 // Complete and Easy's InstRAllL rule
-                instantiateAsSuperType(unsolved, tyLam.body().accept(subTypeInstantiation(tyLam)));
+                instantiateAsSuperType(unsolved, quant.body().accept(subTypeInstantiation(quant)));
             }
         });
     }
@@ -462,13 +462,13 @@ public class Typechecker {
                         });
 
                 return tyConSubTyped && tyArgsSubTyped;
-            } else if (solvedSuperType instanceof TypeLambda tyLam) {
+            } else if (solvedSuperType instanceof QuantifiedType quant) {
                 // Complete and Easy's <:ForallR rule
-                return checkSubType(solvedSubType, instantiateAsSuperType(tyLam));
+                return checkSubType(solvedSubType, instantiateAsSuperType(quant));
 
-            } else if (solvedSubType instanceof TypeLambda tyLam) {
+            } else if (solvedSubType instanceof QuantifiedType quant) {
                 // Complete and Easy's <:ForallL rule
-                return checkSubType(instantiateAsSubType(tyLam), solvedSuperType);
+                return checkSubType(instantiateAsSubType(quant), solvedSuperType);
 
             } else {
                 return false;
@@ -555,7 +555,7 @@ public class Typechecker {
         if (typeParamTypes.isEmpty()) {
             return functionType;
         } else {
-            return new TypeLambda(
+            return new QuantifiedType(
                     typeParamTypes,
                     functionType,
                     new HigherKind(typeParamTypes.collect(param -> param.kind()), TypeKind.INSTANCE));
@@ -570,7 +570,7 @@ public class Typechecker {
         if (tyParams.isEmpty()) {
             return fn.apply(Lists.immutable.empty(), Lists.immutable.empty());
         } else {
-            return withScope(new TypeLambdaTypingScope(), () -> {
+            return withScope(new QuantifiedTypingScope(), () -> {
                 var kindedTyParams = tyParams
                         .collect(tyParam -> (TypeVarNode<Attributes>) kindchecker.inferType(tyParam));
                 var tyParamTypes = kindedTyParams
@@ -582,10 +582,10 @@ public class Typechecker {
     }
 
     <A> A withPolyInstantiation(Type inferredType, Function<Type, A> fn) {
-        if (inferredType instanceof TypeLambda tyLam) {
+        if (inferredType instanceof QuantifiedType quant) {
             return withScope(new InstantiateTypeScope(), () -> {
                 // Keep instantiating binders until we have something else
-                return withPolyInstantiation(instantiateAsSubType(tyLam), fn);
+                return withPolyInstantiation(instantiateAsSubType(quant), fn);
             });
         } else {
             return fn.apply(inferredType);
@@ -667,7 +667,7 @@ public class Typechecker {
                         var dataTyCon = new TypeConstructor(dataName.name(), getKind(kindedData));
 
                         var dataType = typeParamTypes.isEmpty() ? dataTyCon
-                                : instantiateAsSubType(new TypeLambda(
+                                : instantiateAsSubType(new QuantifiedType(
                                         typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
                                         new TypeApply(dataTyCon, typeParamTypes, TypeKind.INSTANCE),
                                         TypeKind.INSTANCE));
@@ -936,12 +936,12 @@ public class Typechecker {
             var constrType = (Type) constrMeta.meta().sort();
 
             // We need to keep this instantiation to use with our field patterns
-            var instantiator = (constrType instanceof TypeLambda tyLam)
-                    ? Optional.of(subTypeInstantiation(tyLam))
+            var instantiator = (constrType instanceof QuantifiedType quant)
+                    ? Optional.of(subTypeInstantiation(quant))
                     : Optional.<TypeInstantiationTransformer>empty();
 
-            if (constrType instanceof TypeLambda tyLam) {
-                constrType = tyLam.body().accept(instantiator.get());
+            if (constrType instanceof QuantifiedType quant) {
+                constrType = quant.body().accept(instantiator.get());
             }
 
             if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
@@ -1006,9 +1006,9 @@ public class Typechecker {
     }
 
     ExprNode<Attributes> checkExpr(ExprNode<Name> expr, Type expectedType) {
-        if (expectedType instanceof TypeLambda tyLam) {
+        if (expectedType instanceof QuantifiedType quant) {
             return withScope(new InstantiateTypeScope(), () -> {
-                return checkExpr(expr, instantiateAsSuperType(tyLam));
+                return checkExpr(expr, instantiateAsSuperType(quant));
             });
         } else if (expr instanceof BlockNode<Name> block) {
             return withScope(new BlockTypingScope(), () -> {
@@ -1113,9 +1113,9 @@ public class Typechecker {
     }
 
     PatternNode<Attributes> checkPattern(PatternNode<Name> pattern, Type expectedType) {
-        if (expectedType instanceof TypeLambda tyLam) {
+        if (expectedType instanceof QuantifiedType quant) {
             return withScope(new InstantiateTypeScope(), () -> {
-                return checkPattern(pattern, instantiateAsSuperType(tyLam));
+                return checkPattern(pattern, instantiateAsSuperType(quant));
             });
         } else {
             var enclosingCase = environment.enclosingCase().get();
@@ -1145,12 +1145,12 @@ public class Typechecker {
                 var constrType = (Type) constrMeta.meta().sort();
 
                 // We need to keep this instantiation to use with our field patterns
-                var instantiator = (constrType instanceof TypeLambda tyLam)
-                        ? Optional.of(subTypeInstantiation(tyLam))
+                var instantiator = (constrType instanceof QuantifiedType quant)
+                        ? Optional.of(subTypeInstantiation(quant))
                         : Optional.<TypeInstantiationTransformer>empty();
 
-                if (constrType instanceof TypeLambda tyLam) {
-                    constrType = tyLam.body().accept(instantiator.get());
+                if (constrType instanceof QuantifiedType quant) {
+                    constrType = quant.body().accept(instantiator.get());
                 }
 
                 if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {

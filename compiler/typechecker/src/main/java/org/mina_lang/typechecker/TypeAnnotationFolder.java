@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.typechecker;
@@ -13,9 +13,9 @@ import org.mina_lang.common.names.ForAllVarName;
 import org.mina_lang.common.names.TypeName;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.QualifiedIdNode;
-import org.mina_lang.syntax.TypeLambdaNode;
+import org.mina_lang.syntax.QuantifiedTypeNode;
 import org.mina_lang.syntax.TypeNodeFolder;
-import org.mina_lang.typechecker.scopes.TypeLambdaTypingScope;
+import org.mina_lang.typechecker.scopes.QuantifiedTypingScope;
 
 public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
@@ -59,21 +59,21 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
     }
 
     @Override
-    public void preVisitTypeLambda(TypeLambdaNode<Attributes> tyLam) {
-        environment.pushScope(new TypeLambdaTypingScope());
+    public void preVisitQuantifiedType(QuantifiedTypeNode<Attributes> quant) {
+        environment.pushScope(new QuantifiedTypingScope());
     }
 
     @Override
-    public TypeLambda visitTypeLambda(Meta<Attributes> meta, ImmutableList<Type> args, Type body) {
-        return new TypeLambda(
+    public QuantifiedType visitQuantifiedType(Meta<Attributes> meta, ImmutableList<Type> args, Type body) {
+        return new QuantifiedType(
                 args.collect(tyArg -> (TypeVar) tyArg),
                 body,
                 (Kind) meta.meta().sort());
     }
 
     @Override
-    public void postVisitTypeLambda(Type tyLam) {
-        environment.popScope(TypeLambdaTypingScope.class);
+    public void postVisitQuantifiedType(Type quant) {
+        environment.popScope(QuantifiedTypingScope.class);
     }
 
     @Override

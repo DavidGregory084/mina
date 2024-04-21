@@ -45,7 +45,7 @@ public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
 
     // Types
     @Override
-    public void visitTypeLambda(TypeLambdaNode<?> lam) {
+    public void visitQuantifiedType(QuantifiedTypeNode<?> lam) {
         entries.add(new Entry(lam.getClass(), lam.range()));
     }
 

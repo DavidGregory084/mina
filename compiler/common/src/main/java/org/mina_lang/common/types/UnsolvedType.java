@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -30,8 +30,8 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
     public boolean isFreeIn(Type type) {
         return type.accept(new TypeFolder<Boolean>() {
             @Override
-            public Boolean visitTypeLambda(TypeLambda tyLam) {
-                return tyLam.body().accept(this);
+            public Boolean visitQuantifiedType(QuantifiedType quant) {
+                return quant.body().accept(this);
             }
 
             @Override

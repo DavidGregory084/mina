@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -32,8 +32,8 @@ public class SortPrinter implements SortFolder<Doc> {
     }
 
     @Override
-    public Doc visitTypeLambda(TypeLambda tyLam) {
-        return typePrint.visitTypeLambda(tyLam);
+    public Doc visitQuantifiedType(QuantifiedType quant) {
+        return typePrint.visitQuantifiedType(quant);
     }
 
     @Override

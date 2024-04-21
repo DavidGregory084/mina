@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -7,39 +7,39 @@ package org.mina_lang.syntax;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record TypeLambdaNode<A> (Meta<A> meta, ImmutableList<TypeVarNode<A>> args, TypeNode<A> body)
+public record QuantifiedTypeNode<A> (Meta<A> meta, ImmutableList<TypeVarNode<A>> args, TypeNode<A> body)
         implements TypeNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         args.forEach(arg -> arg.accept(visitor));
         body.accept(visitor);
-        visitor.visitTypeLambda(this);
+        visitor.visitQuantifiedType(this);
     }
 
     @Override
     public <B> B accept(TypeNodeFolder<A, B> visitor) {
-        visitor.preVisitTypeLambda(this);
+        visitor.preVisitQuantifiedType(this);
 
-        var result = visitor.visitTypeLambda(
+        var result = visitor.visitQuantifiedType(
                 meta(),
                 args().collect(visitor::visitTypeVar),
                 visitor.visitType(body()));
 
-        visitor.postVisitTypeLambda(result);
+        visitor.postVisitQuantifiedType(result);
 
         return result;
     }
 
     @Override
-    public <B> TypeLambdaNode<B> accept(TypeNodeTransformer<A, B> visitor) {
-        visitor.preVisitTypeLambda(this);
+    public <B> QuantifiedTypeNode<B> accept(TypeNodeTransformer<A, B> visitor) {
+        visitor.preVisitQuantifiedType(this);
 
-        var result = visitor.visitTypeLambda(
+        var result = visitor.visitQuantifiedType(
                 meta(),
                 args().collect(visitor::visitTypeVar),
                 visitor.visitType(body()));
 
-        visitor.postVisitTypeLambda(result);
+        visitor.postVisitQuantifiedType(result);
 
         return result;
     }

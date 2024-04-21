@@ -683,7 +683,7 @@ public class RenamerTest {
         var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
                 Lists.immutable.of(
                         letNode(Range.EMPTY, "id",
-                                typeLambdaNode(
+                                quantifiedTypeNode(
                                         Range.EMPTY,
                                         Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
                                         funTypeNode(Range.EMPTY,
@@ -697,7 +697,7 @@ public class RenamerTest {
         var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
                 Lists.immutable.of(
                         letNode(Meta.of(letName), "id",
-                                typeLambdaNode(
+                                quantifiedTypeNode(
                                         Meta.of(Nameless.INSTANCE),
                                         Lists.immutable.of(forAllVarNode(Meta.of(typeVarAName), "A")),
                                         funTypeNode(Meta.of(Nameless.INSTANCE),
@@ -989,19 +989,19 @@ public class RenamerTest {
 
     // Types
     @Test
-    void renameTypeLambda() {
+    void renameQuantifiedType() {
         var typeVarAName = new ForAllVarName("A");
         var typeVarBName = new ForAllVarName("B");
 
         /*- [A, B] => A */
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
                         forAllVarNode(Range.EMPTY, "A"),
                         forAllVarNode(Range.EMPTY, "B")),
                 typeRefNode(Range.EMPTY, "A"));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarAName), "A"),
@@ -1012,19 +1012,19 @@ public class RenamerTest {
     }
 
     @Test
-    void renameTypeLambdaExistsVar() {
+    void renameQuantifiedTypeWithExistsVar() {
         var typeVarAName = new ExistsVarName("?A");
         var typeVarBName = new ExistsVarName("?B");
 
         /*- [?A, ?B] => ?A */
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
                         existsVarNode(Range.EMPTY, "?A"),
                         existsVarNode(Range.EMPTY, "?B")),
                 typeRefNode(Range.EMPTY, "?A"));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
                 Lists.immutable.of(
                         existsVarNode(Meta.of(typeVarAName), "?A"),
@@ -1035,12 +1035,12 @@ public class RenamerTest {
     }
 
     @Test
-    void renameTypeLambdaDuplicateTypeVar() {
+    void renameQuantifiedTypeWithDuplicateTypeVar() {
         var originalTypeVarRange = new Range(0, 1, 0, 2);
         var duplicateTypeVarRange = new Range(0, 4, 0, 5);
 
         /*- [A, A] => A */
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
                         forAllVarNode(originalTypeVarRange, "A"),
@@ -1060,7 +1060,7 @@ public class RenamerTest {
         var typeVarBName = new ForAllVarName("B");
 
         /*- [A, B] => (A, B) -> A */
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
                         forAllVarNode(Range.EMPTY, "A"),
@@ -1072,7 +1072,7 @@ public class RenamerTest {
                                 typeRefNode(Range.EMPTY, "B")),
                         typeRefNode(Range.EMPTY, "A")));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarAName), "A"),
@@ -1092,7 +1092,7 @@ public class RenamerTest {
         var unknownTypeVarRange = new Range(0, 17, 0, 18);
 
         /*- [A] => (A, B) -> A */
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
                 funTypeNode(
@@ -1116,7 +1116,7 @@ public class RenamerTest {
         var typeVarAName = new ForAllVarName("A");
 
         /*- [F, A] => F[A] */
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(
                         forAllVarNode(Range.EMPTY, "F"),
@@ -1126,7 +1126,7 @@ public class RenamerTest {
                         typeRefNode(Range.EMPTY, "F"),
                         Lists.immutable.of(typeRefNode(Range.EMPTY, "A"))));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
@@ -1144,7 +1144,7 @@ public class RenamerTest {
         var unknownTypeVarRange = new Range(0, 9, 0, 10);
 
         /*- [F] => F[A] */
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
                 Lists.immutable.of(forAllVarNode(Range.EMPTY, "F")),
                 typeApplyNode(

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.typechecker.scopes;
@@ -14,7 +14,7 @@ import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.types.UnsolvedKind;
 import org.mina_lang.common.types.UnsolvedType;
 
-public record TypeLambdaTypingScope(
+public record QuantifiedTypingScope(
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,
         MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
@@ -22,7 +22,7 @@ public record TypeLambdaTypingScope(
         MutableSet<UnsolvedType> unsolvedTypes)
         implements TypingScope {
 
-    public TypeLambdaTypingScope() {
+    public QuantifiedTypingScope() {
         this(
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),

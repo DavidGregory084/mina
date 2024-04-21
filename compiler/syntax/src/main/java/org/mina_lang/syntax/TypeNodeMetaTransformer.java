@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -12,9 +12,9 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 public interface TypeNodeMetaTransformer<A, B> extends MetaTransformer<A, B>, TypeNodeTransformer<A, B> {
 
     @Override
-    default public TypeLambdaNode<B> visitTypeLambda(Meta<A> meta,
-            ImmutableList<TypeVarNode<B>> args, TypeNode<B> body) {
-        return typeLambdaNode(updateMeta(meta), args, body);
+    default public QuantifiedTypeNode<B> visitQuantifiedType(Meta<A> meta,
+                                                             ImmutableList<TypeVarNode<B>> args, TypeNode<B> body) {
+        return quantifiedTypeNode(updateMeta(meta), args, body);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -13,7 +13,7 @@ public interface TypeVisitor {
         poly.accept(this);
     }
 
-    void visitTypeLambda(TypeLambda tyLam);
+    void visitQuantifiedType(QuantifiedType quant);
 
     void visitPropositionType(PropositionType propType);
 

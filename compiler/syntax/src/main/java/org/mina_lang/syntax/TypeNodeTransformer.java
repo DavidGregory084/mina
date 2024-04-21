@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -13,11 +13,11 @@ public interface TypeNodeTransformer<A, B> {
         return typ.accept(this);
     }
 
-    default void preVisitTypeLambda(TypeLambdaNode<A> tyLam) {}
+    default void preVisitQuantifiedType(QuantifiedTypeNode<A> quant) {}
 
-    TypeLambdaNode<B> visitTypeLambda(Meta<A> meta, ImmutableList<TypeVarNode<B>> args, TypeNode<B> body);
+    QuantifiedTypeNode<B> visitQuantifiedType(Meta<A> meta, ImmutableList<TypeVarNode<B>> args, TypeNode<B> body);
 
-    default void postVisitTypeLambda(TypeLambdaNode<B> tyLam) {}
+    default void postVisitQuantifiedType(QuantifiedTypeNode<B> quant) {}
 
 
     default void preVisitFunType(FunTypeNode<A> funTyp) {}

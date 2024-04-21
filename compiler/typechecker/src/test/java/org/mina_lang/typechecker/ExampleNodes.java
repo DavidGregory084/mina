@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.typechecker;
@@ -305,7 +305,7 @@ public class ExampleNodes {
                 Lists.immutable.of(List.TYPE_VAR_A_TYPE),
                 TypeKind.INSTANCE);
 
-        public static Type TYPE = new TypeLambda(
+        public static Type TYPE = new QuantifiedType(
                 Lists.immutable.of(List.TYPE_VAR_A_TYPE),
                 Type.function(
                         HEAD_TYPE,
@@ -368,7 +368,7 @@ public class ExampleNodes {
 
         public static Kind KIND = List.KIND;
 
-        public static Type TYPE = new TypeLambda(
+        public static Type TYPE = new QuantifiedType(
                 Lists.immutable.of(List.TYPE_VAR_A_TYPE),
                 Type.function(
                         new TypeApply(
@@ -474,7 +474,7 @@ public class ExampleNodes {
                                 TypeKind.INSTANCE)),
                 TypeKind.INSTANCE);
 
-        public static Type TYPE = new TypeLambda(
+        public static Type TYPE = new QuantifiedType(
                 Lists.immutable.of(Fix.TYPE_VAR_F_TYPE),
                 Type.function(
                         UNFIX_TYPE,

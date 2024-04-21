@@ -78,9 +78,9 @@ public class SyntaxNodeVisitorTest {
     // Types
     @ParameterizedTest
     @MethodSource("visitor")
-    void testVisitTypeLambda(TracingSyntaxNodeVisitor visitor) {
+    void testVisitQuantifiedType(TracingSyntaxNodeVisitor visitor) {
         /* A => A */
-        var tyLam = typeLambdaNode(
+        var quant = quantifiedTypeNode(
                 new Range(0, 0, 0, 6),
                 Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
                 typeRefNode(new Range(0, 5, 0, 6), "A"));
@@ -89,16 +89,16 @@ public class SyntaxNodeVisitorTest {
                 new Entry(ForAllVarNode.class, new Range(0, 0, 0, 1)),
                 new Entry(QualifiedIdNode.class, new Range(0, 5, 0, 6)),
                 new Entry(TypeReferenceNode.class, new Range(0, 5, 0, 6)),
-                new Entry(TypeLambdaNode.class, new Range(0, 0, 0, 6)));
+                new Entry(QuantifiedTypeNode.class, new Range(0, 0, 0, 6)));
 
-        expectEntries(visitor, tyLam, expected);
+        expectEntries(visitor, quant, expected);
     }
 
     @ParameterizedTest
     @MethodSource("visitor")
-    void testVisitExistsTypeLambda(TracingSyntaxNodeVisitor visitor) {
+    void testVisitExistentiallyQuantifiedType(TracingSyntaxNodeVisitor visitor) {
         /* ?A => ?A */
-        var tyLam = typeLambdaNode(
+        var quant = quantifiedTypeNode(
                 new Range(0, 0, 0, 8),
                 Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "A")),
                 typeRefNode(new Range(0, 6, 0, 8), "?A"));
@@ -107,9 +107,9 @@ public class SyntaxNodeVisitorTest {
                 new Entry(ExistsVarNode.class, new Range(0, 0, 0, 2)),
                 new Entry(QualifiedIdNode.class, new Range(0, 6, 0, 8)),
                 new Entry(TypeReferenceNode.class, new Range(0, 6, 0, 8)),
-                new Entry(TypeLambdaNode.class, new Range(0, 0, 0, 8)));
+                new Entry(QuantifiedTypeNode.class, new Range(0, 0, 0, 8)));
 
-        expectEntries(visitor, tyLam, expected);
+        expectEntries(visitor, quant, expected);
     }
 
     @ParameterizedTest

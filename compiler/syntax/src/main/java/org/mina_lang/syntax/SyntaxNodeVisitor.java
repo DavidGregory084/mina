@@ -72,7 +72,7 @@ public interface SyntaxNodeVisitor {
         visit(tyApp);
     }
 
-    default void visitTypeLambda(TypeLambdaNode<?> lam) {
+    default void visitQuantifiedType(QuantifiedTypeNode<?> lam) {
         visit(lam);
     }
 

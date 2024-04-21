@@ -611,7 +611,7 @@ public class TypecheckerTest {
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
-        var letType = new TypeLambda(
+        var letType = new QuantifiedType(
                 Lists.immutable.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 TypeKind.INSTANCE);
@@ -622,7 +622,7 @@ public class TypecheckerTest {
         var originalNode = letNode(
                 Meta.of(letName),
                 "id",
-                typeLambdaNode(
+                quantifiedTypeNode(
                         ExampleNodes.namelessMeta(),
                         Lists.immutable.of(forAllVarNode(Meta.of(tyVarAName), "A")),
                         funTypeNode(
@@ -637,7 +637,7 @@ public class TypecheckerTest {
         var expectedNode = letNode(
                 letMeta,
                 "id",
-                typeLambdaNode(
+                quantifiedTypeNode(
                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         Lists.immutable.of(forAllVarNode(tyVarAMeta, "A")),
                         funTypeNode(
@@ -665,7 +665,7 @@ public class TypecheckerTest {
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
-        var letType = new TypeLambda(
+        var letType = new QuantifiedType(
                 Lists.immutable.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
                 TypeKind.INSTANCE);
@@ -676,7 +676,7 @@ public class TypecheckerTest {
         var originalNode = letNode(
                 Meta.of(letName),
                 "const",
-                typeLambdaNode(
+                quantifiedTypeNode(
                         ExampleNodes.namelessMeta(),
                         Lists.immutable.of(
                                 forAllVarNode(Meta.of(tyVarAName), "A"),
@@ -697,7 +697,7 @@ public class TypecheckerTest {
         var expectedNode = letNode(
                 letMeta,
                 "const",
-                typeLambdaNode(
+                quantifiedTypeNode(
                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                         Lists.immutable.of(
                                 forAllVarNode(tyVarAMeta, "A"),
@@ -759,7 +759,7 @@ public class TypecheckerTest {
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
-        var letType = new TypeLambda(
+        var letType = new QuantifiedType(
                 Lists.immutable.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
@@ -799,7 +799,7 @@ public class TypecheckerTest {
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
-        var letType = new TypeLambda(
+        var letType = new QuantifiedType(
                 Lists.immutable.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
@@ -1042,7 +1042,7 @@ public class TypecheckerTest {
 
         var idName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
-        var idType = new TypeLambda(
+        var idType = new QuantifiedType(
                 Lists.immutable.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
@@ -1076,7 +1076,7 @@ public class TypecheckerTest {
 
         var constName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
-        var constType = new TypeLambda(
+        var constType = new QuantifiedType(
                 Lists.immutable.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
@@ -1204,7 +1204,7 @@ public class TypecheckerTest {
 
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
 
-        var idPoly = new TypeLambda(
+        var idPoly = new QuantifiedType(
                 Lists.immutable.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
@@ -1224,7 +1224,7 @@ public class TypecheckerTest {
 
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
 
-        var idPoly = new TypeLambda(
+        var idPoly = new QuantifiedType(
                 Lists.immutable.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
