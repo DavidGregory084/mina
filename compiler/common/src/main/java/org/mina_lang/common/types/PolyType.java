@@ -4,7 +4,7 @@
  */
 package org.mina_lang.common.types;
 
-public sealed interface PolyType extends Type permits QuantifiedType, PropositionType, ImplicationType {
+public sealed interface PolyType extends Type permits QuantifiedType {
     @Override
     PolyType accept(TypeTransformer visitor);
 }

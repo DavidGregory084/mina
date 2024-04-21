@@ -24,18 +24,6 @@ public class TypePrinter implements TypeFolder<Doc> {
     }
 
     @Override
-    public Doc visitPropositionType(PropositionType propType) {
-        // Don't tell users about propositional types
-        return visitType(propType.type());
-    }
-
-    @Override
-    public Doc visitImplicationType(ImplicationType implType) {
-        // Don't tell users about implication types
-        return visitType(implType.impliedType());
-    }
-
-    @Override
     public Doc visitTypeConstructor(TypeConstructor tyCon) {
         // TODO: Disambiguate names properly by accepting import environment in
         // constructor

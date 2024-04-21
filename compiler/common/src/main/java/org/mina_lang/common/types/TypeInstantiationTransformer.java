@@ -41,20 +41,6 @@ public class TypeInstantiationTransformer implements TypeTransformer {
     }
 
     @Override
-    public PropositionType visitPropositionType(PropositionType propType) {
-        return new PropositionType(
-                propType.type().accept(this),
-                propType.property());
-    }
-
-    @Override
-    public ImplicationType visitImplicationType(ImplicationType implType) {
-        return new ImplicationType(
-                implType.property(),
-                implType.impliedType().accept(this));
-    }
-
-    @Override
     public TypeConstructor visitTypeConstructor(TypeConstructor tyCon) {
         return tyCon;
     }

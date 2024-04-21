@@ -26,16 +26,6 @@ public class FreeUnsolvedVariablesFolder implements TypeFolder<ImmutableSortedSe
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitPropositionType(PropositionType propType) {
-        return propType.type().accept(this);
-    }
-
-    @Override
-    public ImmutableSortedSet<UnsolvedType> visitImplicationType(ImplicationType implType) {
-        return implType.impliedType().accept(this);
-    }
-
-    @Override
     public ImmutableSortedSet<UnsolvedType> visitTypeConstructor(TypeConstructor tyCon) {
         return SortedSets.immutable.empty(COMPARATOR);
     }

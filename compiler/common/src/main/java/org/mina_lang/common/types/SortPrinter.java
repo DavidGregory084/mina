@@ -37,16 +37,6 @@ public class SortPrinter implements SortFolder<Doc> {
     }
 
     @Override
-    public Doc visitPropositionType(PropositionType propType) {
-        return typePrint.visitPropositionType(propType);
-    }
-
-    @Override
-    public Doc visitImplicationType(ImplicationType implType) {
-        return typePrint.visitImplicationType(implType);
-    }
-
-    @Override
     public Doc visitTypeConstructor(TypeConstructor tyCon) {
         return typePrint.visitTypeConstructor(tyCon);
     }

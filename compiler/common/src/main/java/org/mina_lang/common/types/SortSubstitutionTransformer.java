@@ -49,16 +49,6 @@ public class SortSubstitutionTransformer implements SortFolder<Sort> {
     }
 
     @Override
-    public Sort visitPropositionType(PropositionType propType) {
-        return propType.accept(typeTransformer);
-    }
-
-    @Override
-    public Sort visitImplicationType(ImplicationType implType) {
-        return implType.accept(typeTransformer);
-    }
-
-    @Override
     public Sort visitTypeConstructor(TypeConstructor tyCon) {
         return tyCon.accept(typeTransformer);
     }

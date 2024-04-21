@@ -15,10 +15,6 @@ public interface TypeVisitor {
 
     void visitQuantifiedType(QuantifiedType quant);
 
-    void visitPropositionType(PropositionType propType);
-
-    void visitImplicationType(ImplicationType implType);
-
     default void visitMonoType(MonoType mono) {
         mono.accept(this);
     }

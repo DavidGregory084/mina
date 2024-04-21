@@ -15,10 +15,6 @@ public interface TypeTransformer {
 
     QuantifiedType visitQuantifiedType(QuantifiedType quant);
 
-    PropositionType visitPropositionType(PropositionType propType);
-
-    ImplicationType visitImplicationType(ImplicationType implType);
-
     default MonoType visitMonoType(MonoType mono) {
         return mono.accept(this);
     }

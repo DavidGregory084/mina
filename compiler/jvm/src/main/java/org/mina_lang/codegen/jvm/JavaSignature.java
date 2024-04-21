@@ -8,7 +8,9 @@ import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.types.*;
-import org.mina_lang.syntax.*;
+import org.mina_lang.syntax.ConstructorNode;
+import org.mina_lang.syntax.DataNode;
+import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
@@ -187,16 +189,6 @@ public class JavaSignature {
             boundVars.addAllIterable(quant.args());
             quant.body().accept(this);
             boundVars.removeAllIterable(quant.args());
-        }
-
-        @Override
-        public void visitPropositionType(PropositionType propType) {
-            propType.type().accept(this);
-        }
-
-        @Override
-        public void visitImplicationType(ImplicationType implType) {
-            implType.impliedType().accept(this);
         }
 
         @Override

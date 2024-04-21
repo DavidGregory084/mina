@@ -35,16 +35,6 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
             }
 
             @Override
-            public Boolean visitPropositionType(PropositionType propType) {
-                return propType.type().accept(this);
-            }
-
-            @Override
-            public Boolean visitImplicationType(ImplicationType implType) {
-                return implType.impliedType().accept(this);
-            }
-
-            @Override
             public Boolean visitTypeConstructor(TypeConstructor tyCon) {
                 return false;
             }

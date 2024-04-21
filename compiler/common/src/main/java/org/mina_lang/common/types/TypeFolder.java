@@ -15,10 +15,6 @@ public interface TypeFolder<A> {
 
     A visitQuantifiedType(QuantifiedType quant);
 
-    A visitPropositionType(PropositionType propType);
-
-    A visitImplicationType(ImplicationType implType);
-
     default A visitMonoType(MonoType mono) {
         return mono.accept(this);
     }
