@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -9,18 +9,18 @@ import com.opencastsoftware.prettier4j.Doc;
 public class TypePrinter implements TypeFolder<Doc> {
 
     @Override
-    public Doc visitTypeLambda(TypeLambda tyLam) {
-        var argDoc = tyLam.args().size() == 1
-                ? visitType(tyLam.args().get(0))
+    public Doc visitQuantifiedType(QuantifiedType quant) {
+        var argDoc = quant.args().size() == 1
+                ? visitType(quant.args().get(0))
                 : Doc.intersperse(
                         Doc.text(",").append(Doc.lineOrSpace()),
-                        tyLam.args().stream().map(this::visitType))
+                        quant.args().stream().map(this::visitType))
                         .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
 
         return Doc.group(
                 argDoc
                         .appendSpace(Doc.text("=>"))
-                        .append(Doc.lineOrSpace().append(visitType(tyLam.body())).indent(2)));
+                        .append(Doc.lineOrSpace().append(visitType(quant.body())).indent(2)));
     }
 
     @Override

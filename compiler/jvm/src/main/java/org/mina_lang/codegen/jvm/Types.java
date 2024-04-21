@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm;
@@ -9,8 +9,8 @@ import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.types.Kind;
+import org.mina_lang.common.types.QuantifiedType;
 import org.mina_lang.common.types.TypeApply;
-import org.mina_lang.common.types.TypeLambda;
 import org.mina_lang.syntax.ConstructorNode;
 import org.mina_lang.syntax.DataNode;
 import org.mina_lang.syntax.MetaNode;
@@ -70,8 +70,8 @@ public class Types {
     }
 
     public static org.mina_lang.common.types.Type getUnderlyingType(org.mina_lang.common.types.Type type) {
-        while (type instanceof TypeLambda tyLam) {
-            type = tyLam.body();
+        while (type instanceof QuantifiedType quant) {
+            type = quant.body();
         }
         return type;
     }
@@ -102,8 +102,8 @@ public class Types {
             return asmType(tyApp.type());
         } else if (minaType instanceof org.mina_lang.common.types.TypeConstructor tyCon) {
             return Type.getType(Names.getDescriptor(tyCon.name()));
-        } else if (minaType instanceof org.mina_lang.common.types.TypeLambda tyLam) {
-            return asmType(tyLam.body());
+        } else if (minaType instanceof QuantifiedType quant) {
+            return asmType(quant.body());
         } else if (minaType instanceof org.mina_lang.common.types.UnsolvedType unsolved) {
             return Types.OBJECT_TYPE;
         }
@@ -142,8 +142,8 @@ public class Types {
             return boxedAsmType(tyApp.type());
         } else if (minaType instanceof org.mina_lang.common.types.TypeConstructor tyCon) {
             return Type.getType(Names.getDescriptor(tyCon.name()));
-        } else if (minaType instanceof org.mina_lang.common.types.TypeLambda tyLam) {
-            return boxedAsmType(tyLam.body());
+        } else if (minaType instanceof QuantifiedType quant) {
+            return boxedAsmType(quant.body());
         } else if (minaType instanceof org.mina_lang.common.types.UnsolvedType unsolved) {
             return Types.OBJECT_TYPE;
         }

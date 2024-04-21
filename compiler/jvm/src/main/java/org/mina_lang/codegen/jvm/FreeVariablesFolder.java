@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm;
@@ -41,9 +41,9 @@ public class FreeVariablesFolder implements MetaNodeFolder<Attributes, Immutable
     }
 
     @Override
-    public ImmutableList<ReferenceNode<Attributes>> visitTypeLambda(Meta<Attributes> meta,
-            ImmutableList<ImmutableList<ReferenceNode<Attributes>>> args,
-            ImmutableList<ReferenceNode<Attributes>> body) {
+    public ImmutableList<ReferenceNode<Attributes>> visitQuantifiedType(Meta<Attributes> meta,
+                                                                        ImmutableList<ImmutableList<ReferenceNode<Attributes>>> args,
+                                                                        ImmutableList<ReferenceNode<Attributes>> body) {
         return Lists.immutable.empty();
     }
 

@@ -105,7 +105,7 @@ public class Kindchecker {
         if (typeParamTypes.isEmpty()) {
             return constrFnType;
         } else {
-            return new TypeLambda(
+            return new QuantifiedType(
                     typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
                     constrFnType,
                     dataKind);
@@ -328,16 +328,16 @@ public class Kindchecker {
     }
 
     TypeNode<Attributes> inferType(TypeNode<Name> typ) {
-        if (typ instanceof TypeLambdaNode<Name> tyLam) {
-            return withScope(new TypeLambdaTypingScope(), () -> {
-                var inferredArgs = tyLam.args()
+        if (typ instanceof QuantifiedTypeNode<Name> quant) {
+            return withScope(new QuantifiedTypingScope(), () -> {
+                var inferredArgs = quant.args()
                         .collect(tyArg -> (TypeVarNode<Attributes>) inferType(tyArg));
 
-                var checkedReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
+                var checkedReturn = checkType(quant.body(), TypeKind.INSTANCE);
 
-                var updatedMeta = updateMetaWith(tyLam.meta(), TypeKind.INSTANCE);
+                var updatedMeta = updateMetaWith(quant.meta(), TypeKind.INSTANCE);
 
-                return typeLambdaNode(updatedMeta, inferredArgs, checkedReturn);
+                return quantifiedTypeNode(updatedMeta, inferredArgs, checkedReturn);
             });
         } else if (typ instanceof TypeApplyNode<Name> tyApp) {
             var inferredType = inferType(tyApp.type());
@@ -423,11 +423,11 @@ public class Kindchecker {
     }
 
     TypeNode<Attributes> checkType(TypeNode<Name> typ, Kind expectedKind) {
-        if (typ instanceof TypeLambdaNode<Name> tyLam &&
+        if (typ instanceof QuantifiedTypeNode<Name> quant &&
                 expectedKind instanceof HigherKind hk &&
-                tyLam.args().size() == hk.argKinds().size()) {
-            return withScope(new TypeLambdaTypingScope(), () -> {
-                var knownArgs = tyLam.args()
+                quant.args().size() == hk.argKinds().size()) {
+            return withScope(new QuantifiedTypingScope(), () -> {
+                var knownArgs = quant.args()
                         .zip(hk.argKinds())
                         .collect(pair -> {
                             var tyArg = pair.getOne();
@@ -440,15 +440,15 @@ public class Kindchecker {
                             }
                         });
 
-                var inferredReturn = checkType(tyLam.body(), TypeKind.INSTANCE);
+                var inferredReturn = checkType(quant.body(), TypeKind.INSTANCE);
 
                 if (!checkSubKind(TypeKind.INSTANCE, expectedKind)) {
-                    mismatchedKind(tyLam.range(), TypeKind.INSTANCE, expectedKind);
+                    mismatchedKind(quant.range(), TypeKind.INSTANCE, expectedKind);
                 }
 
-                var updatedMeta = updateMetaWith(tyLam.meta(), TypeKind.INSTANCE);
+                var updatedMeta = updateMetaWith(quant.meta(), TypeKind.INSTANCE);
 
-                return typeLambdaNode(updatedMeta, knownArgs, inferredReturn);
+                return quantifiedTypeNode(updatedMeta, knownArgs, inferredReturn);
             });
         } else {
             var inferredType = inferType(typ);

@@ -258,18 +258,18 @@ public class SyntaxNodes {
     }
 
     // Types
-    public static TypeLambdaNode<Void> typeLambdaNode(
+    public static QuantifiedTypeNode<Void> quantifiedTypeNode(
             Range range,
             ImmutableList<TypeVarNode<Void>> args,
             TypeNode<Void> body) {
-        return new TypeLambdaNode<>(Meta.of(range), args, body);
+        return new QuantifiedTypeNode<>(Meta.of(range), args, body);
     }
 
-    public static <A> TypeLambdaNode<A> typeLambdaNode(
+    public static <A> QuantifiedTypeNode<A> quantifiedTypeNode(
             Meta<A> meta,
             ImmutableList<TypeVarNode<A>> args,
             TypeNode<A> body) {
-        return new TypeLambdaNode<>(meta, args, body);
+        return new QuantifiedTypeNode<>(meta, args, body);
     }
 
     public static FunTypeNode<Void> funTypeNode(

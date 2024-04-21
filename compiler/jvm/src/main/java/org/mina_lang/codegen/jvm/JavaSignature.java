@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm;
@@ -39,7 +39,7 @@ public class JavaSignature {
 
         var constrType = Types.getType(constr);
 
-        if (constrType instanceof TypeLambda tyLam) {
+        if (constrType instanceof QuantifiedType quant) {
             var funType = (TypeApply) Types.getUnderlyingType(constr);
             var returnType = (TypeApply) funType.typeArguments().getLast();
             returnType.typeArguments().forEach(tyArg -> {
@@ -59,7 +59,7 @@ public class JavaSignature {
         var interfaceVisitor = visitor.visitInterface();
         interfaceVisitor.visitClassType(Names.getInternalName(data));
 
-        if (constrType instanceof TypeLambda tyLam) {
+        if (constrType instanceof QuantifiedType quant) {
             var funType = (TypeApply) Types.getUnderlyingType(constr);
             var returnType = (TypeApply) funType.typeArguments().getLast();
             returnType.typeArguments().forEach(returnTyArg -> {
@@ -79,7 +79,7 @@ public class JavaSignature {
         var constrType = Types.getType(constr);
         var funType = (TypeApply) Types.getUnderlyingType(constr);
 
-        if (constrType instanceof TypeLambda tyLam) {
+        if (constrType instanceof QuantifiedType quant) {
             var returnType = (TypeApply) funType.typeArguments().getLast();
             returnType.typeArguments().forEach(tyArg -> {
                 if (tyArg instanceof TypeVar tyVar) {
@@ -111,7 +111,7 @@ public class JavaSignature {
 
         visitor.visitClassType(Types.getConstructorAsmType(constr).getInternalName());
 
-        if (constrType instanceof TypeLambda tyLam) {
+        if (constrType instanceof QuantifiedType quant) {
             var funType = (TypeApply) Types.getUnderlyingType(constr);
             var returnType = (TypeApply) funType.typeArguments().getLast();
             returnType.typeArguments().forEach(returnTyArg -> {
@@ -140,8 +140,8 @@ public class JavaSignature {
         var visitor = new SignatureWriter();
         var type = Types.getType(node);
 
-        if (type instanceof TypeLambda tyLam) {
-            tyLam.args().forEach(tyArg -> {
+        if (type instanceof QuantifiedType quant) {
+            quant.args().forEach(tyArg -> {
                 visitor.visitFormalTypeParameter(tyArg.name());
                 var boundVisitor = visitor.visitClassBound();
                 boundVisitor.visitClassType(OBJECT_NAME);
@@ -183,10 +183,10 @@ public class JavaSignature {
         }
 
         @Override
-        public void visitTypeLambda(TypeLambda tyLam) {
-            boundVars.addAllIterable(tyLam.args());
-            tyLam.body().accept(this);
-            boundVars.removeAllIterable(tyLam.args());
+        public void visitQuantifiedType(QuantifiedType quant) {
+            boundVars.addAllIterable(quant.args());
+            quant.body().accept(this);
+            boundVars.removeAllIterable(quant.args());
         }
 
         @Override

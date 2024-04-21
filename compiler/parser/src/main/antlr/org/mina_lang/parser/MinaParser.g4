@@ -54,9 +54,9 @@ constructorParam: ID typeAnnotation;
 // Types
 typeAnnotation: COLON type;
 
-type: typeLambda | funType | applicableType;
+type: quantifiedType | funType | applicableType;
 
-typeLambda: (typeVar | typeParams) FATARROW type;
+quantifiedType: (typeVar | typeParams) FATARROW type;
 
 typeParams: LSQUARE typeVar (COMMA typeVar)* RSQUARE;
 

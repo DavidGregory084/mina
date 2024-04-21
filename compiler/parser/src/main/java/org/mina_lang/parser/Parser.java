@@ -377,11 +377,11 @@ public class Parser {
 
         @Override
         public TypeNode<Void> visitType(TypeContext ctx) {
-            return visitAlternatives(ctx.typeLambda(), ctx.funType(), ctx.applicableType());
+            return visitAlternatives(ctx.quantifiedType(), ctx.funType(), ctx.applicableType());
         }
 
         @Override
-        public TypeLambdaNode<Void> visitTypeLambda(TypeLambdaContext ctx) {
+        public QuantifiedTypeNode<Void> visitQuantifiedType(QuantifiedTypeContext ctx) {
             var singleParam = Optional.ofNullable(ctx.typeVar())
                     .map(this::visitTypeVar)
                     .map(Lists.immutable::of);
@@ -391,7 +391,7 @@ public class Parser {
 
             var bodyNode = visitNullable(ctx.type());
 
-            return typeLambdaNode(contextRange(ctx), typeParams, bodyNode);
+            return quantifiedTypeNode(contextRange(ctx), typeParams, bodyNode);
         }
 
         @Override

@@ -1,11 +1,11 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
 
 sealed public interface TypeNode<A>
-        extends MetaNode<A>permits TypeLambdaNode, FunTypeNode, TypeApplyNode, TypeVarNode, TypeReferenceNode {
+        extends MetaNode<A>permits QuantifiedTypeNode, FunTypeNode, TypeApplyNode, TypeVarNode, TypeReferenceNode {
 
     <B> B accept(TypeNodeFolder<A, B> visitor);
 

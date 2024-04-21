@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -32,12 +32,12 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
     }
 
     @Override
-    public TypeLambda visitTypeLambda(TypeLambda tyLam) {
-        return new TypeLambda(
+    public QuantifiedType visitQuantifiedType(QuantifiedType quant) {
+        return new QuantifiedType(
                 // Safe to cast, since do not manipulate type variables here
-                tyLam.args().collect(tyArg -> (TypeVar) tyArg.accept(this)),
-                tyLam.body().accept(this),
-                tyLam.kind().accept(kindTransformer));
+                quant.args().collect(tyArg -> (TypeVar) tyArg.accept(this)),
+                quant.body().accept(this),
+                quant.kind().accept(kindTransformer));
     }
 
     @Override

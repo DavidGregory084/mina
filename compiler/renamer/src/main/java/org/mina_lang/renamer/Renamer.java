@@ -373,26 +373,26 @@ public class Renamer {
         }
 
         @Override
-        public void preVisitTypeLambda(TypeLambdaNode<Void> tyLam) {
-            var typeLambdaScope = new TypeLambdaNamingScope();
+        public void preVisitQuantifiedType(QuantifiedTypeNode<Void> quant) {
+            var quantifiedTypeScope = new QuantifiedTypeNamingScope();
 
-            environment.pushScope(typeLambdaScope);
+            environment.pushScope(quantifiedTypeScope);
 
-            tyLam.args().forEach(tyParam -> {
+            quant.args().forEach(tyParam -> {
                 var tyParamMeta = new Meta<Name>(tyParam.range(), tyParam.getName());
                 environment.putTypeIfAbsentOrElse(tyParam.name(), tyParamMeta, Renamer.this::duplicateTypeDefinition);
             });
         }
 
         @Override
-        public TypeLambdaNode<Name> visitTypeLambda(Meta<Void> meta, ImmutableList<TypeVarNode<Name>> args,
-                TypeNode<Name> body) {
-            return typeLambdaNode(new Meta<>(meta.range(), Nameless.INSTANCE), args, body);
+        public QuantifiedTypeNode<Name> visitQuantifiedType(Meta<Void> meta, ImmutableList<TypeVarNode<Name>> args,
+                                                            TypeNode<Name> body) {
+            return quantifiedTypeNode(new Meta<>(meta.range(), Nameless.INSTANCE), args, body);
         }
 
         @Override
-        public void postVisitTypeLambda(TypeLambdaNode<Name> tyLam) {
-            environment.popScope(TypeLambdaNamingScope.class);
+        public void postVisitQuantifiedType(QuantifiedTypeNode<Name> quant) {
+            environment.popScope(QuantifiedTypeNamingScope.class);
         }
 
         @Override

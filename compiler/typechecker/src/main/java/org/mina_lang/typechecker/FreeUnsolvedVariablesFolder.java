@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.typechecker;
@@ -21,8 +21,8 @@ public class FreeUnsolvedVariablesFolder implements TypeFolder<ImmutableSortedSe
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitTypeLambda(TypeLambda tyLam) {
-        return tyLam.body().accept(this);
+    public ImmutableSortedSet<UnsolvedType> visitQuantifiedType(QuantifiedType quant) {
+        return quant.body().accept(this);
     }
 
     @Override

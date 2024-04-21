@@ -299,7 +299,7 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindcheckTypeLambda() {
+    void kindcheckQuantifiedType() {
         var typeVarFName = new ForAllVarName("F");
         var typeVarAName = new ForAllVarName("A");
 
@@ -312,7 +312,7 @@ public class KindcheckerTest {
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
         // [F, A] => F[A]
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
@@ -323,7 +323,7 @@ public class KindcheckerTest {
                         Lists.immutable.of(
                                 typeRefNode(Meta.of(typeVarAName), "A"))));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                 Lists.immutable.of(
                         forAllVarNode(typeVarFMeta, "F"),
@@ -337,7 +337,7 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindcheckComplexTypeLambda() {
+    void kindcheckComplexQuantifiedType() {
         var typeVarFName = new ForAllVarName("F");
         var typeVarGName = new ForAllVarName("G");
         var typeVarAName = new ForAllVarName("A");
@@ -354,7 +354,7 @@ public class KindcheckerTest {
         var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
 
         // [F, G, A] => F[G[A]]
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
@@ -369,7 +369,7 @@ public class KindcheckerTest {
                                         typeRefNode(Meta.of(typeVarGName), "G"),
                                         Lists.immutable.of(typeRefNode(Meta.of(typeVarAName), "A"))))));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                 Lists.immutable.of(
                         forAllVarNode(typeVarFMeta, "F"),
@@ -388,7 +388,7 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindcheckTypeLambdaWithComplexFunctionType() {
+    void kindcheckComplexQuantifiedFunctionType() {
         var typeVarFName = new ForAllVarName("F");
         var typeVarGName = new ForAllVarName("G");
         var typeVarAName = new ForAllVarName("A");
@@ -409,7 +409,7 @@ public class KindcheckerTest {
         var typeVarBMeta = Meta.of(new Attributes(typeVarBName, typeVarBKind));
 
         // [F, G, A, B] => F[G, A] -> F[G, B] -> G[B]
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
@@ -439,7 +439,7 @@ public class KindcheckerTest {
                                         typeRefNode(Meta.of(typeVarGName), "G"),
                                         Lists.immutable.of(typeRefNode(Meta.of(typeVarBName), "B"))))));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                 Lists.immutable.of(
                         forAllVarNode(typeVarFMeta, "F"),
@@ -508,7 +508,7 @@ public class KindcheckerTest {
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
         // F => Functor[F]
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(forAllVarNode(Meta.of(typeVarFName), "F")),
                 typeApplyNode(
@@ -516,7 +516,7 @@ public class KindcheckerTest {
                         ExampleNodes.Functor.NAMED_TYPE_NODE,
                         Lists.immutable.of(typeRefNode(Meta.of(typeVarFName), "F"))));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                 Lists.immutable.of(forAllVarNode(typeVarFMeta, "F")),
                 typeApplyNode(
@@ -528,7 +528,7 @@ public class KindcheckerTest {
     }
 
     @Test
-    void kindcheckHigherTyConTypeLambda() {
+    void kindcheckQuantifiedHigherKindedTypeConstructorType() {
         var environment = TypeEnvironment.withBuiltInTypes();
         environment.pushScope(new ImportedTypesScope());
         environment.putType(ExampleNodes.Functor.NAME.localName(), ExampleNodes.Functor.KINDED_META);
@@ -540,7 +540,7 @@ public class KindcheckerTest {
         var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
 
         // F => F[Functor]
-        var originalNode = typeLambdaNode(
+        var originalNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(),
                 Lists.immutable.of(forAllVarNode(Meta.of(typeVarFName), "F")),
                 typeApplyNode(
@@ -548,7 +548,7 @@ public class KindcheckerTest {
                         typeRefNode(Meta.of(typeVarFName), "F"),
                         Lists.immutable.of(ExampleNodes.Functor.NAMED_TYPE_NODE)));
 
-        var expectedNode = typeLambdaNode(
+        var expectedNode = quantifiedTypeNode(
                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
                 Lists.immutable.of(forAllVarNode(typeVarFMeta, "F")),
                 typeApplyNode(

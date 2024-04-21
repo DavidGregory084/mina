@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -44,8 +44,8 @@ public class SortSubstitutionTransformer implements SortFolder<Sort> {
     }
 
     @Override
-    public Sort visitTypeLambda(TypeLambda tyLam) {
-        return tyLam.accept(typeTransformer);
+    public Sort visitQuantifiedType(QuantifiedType quant) {
+        return quant.accept(typeTransformer);
     }
 
     @Override

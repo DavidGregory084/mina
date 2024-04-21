@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -89,20 +89,20 @@ public class TypePrinterTest {
     }
 
     @Test
-    void testTypeLambdaPrinting() {
+    void testQuantifiedTypePrinting() {
         var forAllVarA = new ForAllVar("A", TypeKind.INSTANCE);
         var forAllVarB = new ForAllVar("B", TypeKind.INSTANCE);
         var existsVarC = new ExistsVar("?C", TypeKind.INSTANCE);
 
-        var unaryLam = new TypeLambda(Lists.immutable.of(forAllVarA), forAllVarA, TypeKind.INSTANCE);
+        var unaryLam = new QuantifiedType(Lists.immutable.of(forAllVarA), forAllVarA, TypeKind.INSTANCE);
         assertThat(unaryLam.accept(printer).render(80), is(equalTo("A => A")));
         assertThat(unaryLam.accept(printer).render(4), is(equalTo(String.format("A =>%n  A"))));
 
-        var binaryLam = new TypeLambda(Lists.immutable.of(forAllVarA, forAllVarB), forAllVarA, TypeKind.INSTANCE);
+        var binaryLam = new QuantifiedType(Lists.immutable.of(forAllVarA, forAllVarB), forAllVarA, TypeKind.INSTANCE);
         assertThat(binaryLam.accept(printer).render(80), is(equalTo("[A, B] => A")));
         assertThat(binaryLam.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  B%n] =>%n  A"))));
 
-        var mixedLam = new TypeLambda(Lists.immutable.of(forAllVarA, existsVarC), forAllVarA, TypeKind.INSTANCE);
+        var mixedLam = new QuantifiedType(Lists.immutable.of(forAllVarA, existsVarC), forAllVarA, TypeKind.INSTANCE);
         assertThat(mixedLam.accept(printer).render(80), is(equalTo("[A, ?C] => A")));
         assertThat(mixedLam.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  ?C%n] =>%n  A"))));
     }

@@ -228,9 +228,9 @@ public class ParserTest {
 
     // Types
     @Test
-    void parseIdTypeLambda() {
+    void parseQuantifiedType() {
         testSuccessfulParse("A => A", Parser::getTypeVisitor, MinaParser::type,
-                typeLambdaNode(
+                quantifiedTypeNode(
                         new Range(0, 0, 0, 6),
                         Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
                         typeRefNode(new Range(0, 5, 0, 6), "A")));
@@ -238,9 +238,9 @@ public class ParserTest {
     }
 
     @Test
-    void parseParenthesizedIdTypeLambda() {
+    void parseParenthesizedQuantifiedType() {
         testSuccessfulParse("[A] => A", Parser::getTypeVisitor, MinaParser::type,
-                typeLambdaNode(
+                quantifiedTypeNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
                         typeRefNode(new Range(0, 7, 0, 8), "A")));
@@ -248,20 +248,20 @@ public class ParserTest {
     }
 
     @Test
-    void parseTypeLambdaWithGroupingParens() {
+    void parseQuantifiedTypeWithGroupingParens() {
         testSuccessfulParse("[B => [A => A]]", Parser::getTypeVisitor, MinaParser::type,
-                typeLambdaNode(
+                quantifiedTypeNode(
                         new Range(0, 1, 0, 14),
                         Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "B")),
-                        typeLambdaNode(
+                        quantifiedTypeNode(
                                 new Range(0, 7, 0, 13), Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
                                 typeRefNode(new Range(0, 12, 0, 13), "A"))));
     }
 
     @Test
-    void parseMultiArgTypeLambda() {
+    void parseMultiArgQuantifiedType() {
         testSuccessfulParse("[A, B] => A", Parser::getTypeVisitor, MinaParser::type,
-                typeLambdaNode(
+                quantifiedTypeNode(
                         new Range(0, 0, 0, 11),
                         Lists.immutable.of(
                                 forAllVarNode(new Range(0, 1, 0, 2), "A"),
@@ -271,16 +271,16 @@ public class ParserTest {
     }
 
     @Test
-    void parseExistsIdTypeLambda() {
+    void parseExistentiallyQuantifiedType() {
         testSuccessfulParse("?A => ?A", Parser::getTypeVisitor, MinaParser::type,
-                typeLambdaNode(
+                quantifiedTypeNode(
                         new Range(0, 0, 0, 8),
                         Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "?A")),
                         typeRefNode(new Range(0, 6, 0, 8), "?A")));
     }
 
     @Test
-    void parseTypeLambdaMissingBody() {
+    void parseQuantifiedTypeMissingBody() {
         var errors = testFailedParse("A =>", Parser::getTypeVisitor, MinaParser::type);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
