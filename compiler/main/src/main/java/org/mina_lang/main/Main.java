@@ -132,6 +132,31 @@ public class Main {
                 .runOn(Schedulers.parallel());
     }
 
+    public void checkForImportCycles(Graph<NamespaceName, DefaultEdge> namespaceGraph) {
+        // TODO: Figure out why JohnsonSimpleCycles throws exception
+        var cycleDetector = new HawickJamesSimpleCycles<>(namespaceGraph);
+
+        cycleDetector.findSimpleCycles().forEach(importCycle -> {
+            Collections.reverse(importCycle);
+
+            // Add the initial namespace to the end to illustrate the cycle
+            var startNs = importCycle.get(0);
+            importCycle.add(startNs);
+
+            // Find the import statement that triggers the cycle
+            var startNsNode = namespaceNodes.get(startNs);
+            var cyclicImport = startNsNode.imports().detect(imp -> {
+                var nextNs = importCycle.get(1);
+                var importedNs = imp.namespace().getName();
+                return importedNs.equals(nextNs);
+            });
+
+            // Report the import cycle at the appropriate location
+            var startNsCollector = scopedDiagnostics.get(startNs);
+            cyclicFileDependency(startNsCollector, cyclicImport.range(), startNs, importCycle);
+        });
+    }
+
     public Graph<NamespaceName, DefaultEdge> constructNamespaceGraph(
             ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes) {
         var namespaceGraph = GraphTypeBuilder.<NamespaceName, DefaultEdge>directed()
@@ -142,37 +167,22 @@ public class Main {
 
         namespaceNodes.keySet().forEach(namespaceGraph::addVertex);
 
-        namespaceGraph.vertexSet()
-                .forEach(namespaceName -> {
-                    namespaceNodes.get(namespaceName)
-                            .imports()
-                            .forEach(imp -> {
-                                var importName = imp.namespace().getName();
-                                if (namespaceGraph.containsVertex(importName)) {
-                                    namespaceGraph.addVertex(importName);
-                                    namespaceGraph.addEdge(importName, namespaceName);
-                                } else {
-                                    // TODO: find the namespace on the classpath
-                                    // or produce an "unknown namespace" error
-                                }
-                            });
+        namespaceNodes.forEach((namespaceName, namespaceNode) -> {
+            namespaceNode
+                .imports()
+                .forEach(imp -> {
+                    var importName = imp.namespace().getName();
+                    if (namespaceGraph.containsVertex(importName)) {
+                        namespaceGraph.addVertex(importName);
+                        namespaceGraph.addEdge(importName, namespaceName);
+                    } else {
+                        // TODO: find the namespace on the classpath
+                        // or produce an "unknown namespace" error
+                    }
                 });
+        });
 
-        // TODO: Figure out why JohnsonSimpleCycles throws exception
-        new HawickJamesSimpleCycles<>(namespaceGraph)
-                .findSimpleCycles()
-                .forEach(cycle -> {
-                    Collections.reverse(cycle);
-                    var cycleStart = cycle.get(0);
-                    cycle.add(cycleStart);
-                    var cycleStartNs = namespaceNodes.get(cycleStart);
-                    var collector = scopedDiagnostics.get(cycleStart);
-                    var cyclicImport = cycleStartNs.imports().detect(imp -> {
-                        var cycleNext = cycle.get(1);
-                        return imp.namespace().getName().equals(cycleNext);
-                    });
-                    cyclicFileDependency(collector, cyclicImport.range(), cycleStart, cycle);
-                });
+        checkForImportCycles(namespaceGraph);
 
         return namespaceGraph;
     }
