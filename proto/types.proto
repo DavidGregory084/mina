@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package mina.types;
+option java_package = "org.mina_lang.proto.types";
+
+message Sort {
+  oneof sort {
+    // Kinds
+    TypeKind typeKind = 1;
+    HigherKind higherKind = 2;
+    // Types
+  }
+}
+
+message TypeKind {}
+
+message HigherKind {
+
+}

@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package mina.names;
+option java_package = "org.mina_lang.proto.names";
+
+message QualifiedName {
+  NamespaceName namespace = 1;
+  string name = 2;
+}
+
+message Nameless {}
+
+message NamespaceName {
+  repeated string pkg = 1;
+  string name = 2;
+}
+
+message BuiltInName {
+  string name = 1;
+}
+
+message LetName {
+  QualifiedName name = 1;
+}
+
+message DataName {
+  QualifiedName name = 2;
+}
+
+message ConstructorName {
+  DataName enclosing = 1;
+  QualifiedName name = 2;
+}
+
+message FieldName {
+  ConstructorName constr = 1;
+  string name = 2;
+}
+
+message ForAllVarName {
+  string name = 1;
+}
+
+message ExistsVarName {
+  string name = 1;
+}
+
+message Name {
+  oneof name {
+    Nameless nameless = 1;
+    NamespaceName namespace = 2;
+    BuiltInName builtIn = 3;
+    LetName let = 4;
+    DataName data = 5;
+    ConstructorName constr = 6;
+    FieldName field = 7;
+    ForAllVarName forall = 8;
+    ExistsVarName exists = 9;
+  }
+}
+
