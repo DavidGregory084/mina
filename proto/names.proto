@@ -3,6 +3,8 @@ syntax = "proto3";
 package mina.names;
 option java_package = "org.mina_lang.proto.names";
 
+option java_multiple_files = true;
+
 message QualifiedName {
   NamespaceName namespace = 1;
   string name = 2;

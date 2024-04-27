@@ -1,19 +1,80 @@
 syntax = "proto3";
 
+import "names.proto";
+
 package mina.types;
 option java_package = "org.mina_lang.proto.types";
 
+option java_multiple_files = true;
+
 message Sort {
   oneof sort {
-    // Kinds
+    Kind kind = 1;
+    Type typ = 2;
+  }
+}
+
+// Kinds
+message Kind {
+  oneof kind {
     TypeKind typeKind = 1;
     HigherKind higherKind = 2;
-    // Types
   }
 }
 
 message TypeKind {}
 
 message HigherKind {
+  repeated Kind args = 1;
+  Kind result = 2;
+}
 
+// Types
+message Type {
+  oneof typ {
+    QuantifiedType quantTy = 1;
+    TypeConstructor tyCon = 2;
+    BuiltInType builtIn = 3;
+    TypeApply tyApp = 4;
+    TypeVar tyVar = 5;
+  }
+}
+
+message QuantifiedType {
+  repeated TypeVar args = 1;
+  Type body = 2;
+  Kind kind = 3;
+}
+
+message TypeConstructor {
+  mina.names.QualifiedName name = 1;
+  Kind kind = 2;
+}
+
+message BuiltInType {
+  string name = 1;
+  Kind kind = 2;
+}
+
+message TypeApply {
+  Type typ = 1;
+  repeated Type args = 2;
+  Kind kind = 3;
+}
+
+message TypeVar {
+  oneof tyVar {
+    ForAllVar forall = 1;
+    ExistsVar exists = 2;
+  }
+}
+
+message ForAllVar {
+  string name = 1;
+  Kind kind = 2;
+}
+
+message ExistsVar {
+  string name = 1;
+  Kind kind = 2;
 }
