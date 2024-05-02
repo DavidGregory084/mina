@@ -118,8 +118,9 @@ fieldPatterns: fieldPattern (COMMA fieldPattern)*;
 fieldPattern: ID (COLON pattern)?;
 
 applicableExpr:
-    parenExpr
-    | qualifiedId
+    id = ID
+    | parenExpr
+    | applicableExpr DOT selection = ID
     | applicableExpr application;
 
 application: LPAREN RPAREN | LPAREN expr (COMMA expr)* RPAREN;

@@ -85,6 +85,13 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
     default void postVisitApply(ApplyNode<B> apply) {}
 
 
+    default void preVisitSelect(SelectNode<A> select) {}
+
+    SelectNode<B> visitSelect(Meta<A> meta, ExprNode<B> receiver, ReferenceNode<B> selection);
+
+    default void postVisitSelect(SelectNode<B> select) {}
+
+
     default void preVisitReference(ReferenceNode<A> ref) {}
 
     ReferenceNode<B> visitReference(Meta<A> meta, QualifiedIdNode id);

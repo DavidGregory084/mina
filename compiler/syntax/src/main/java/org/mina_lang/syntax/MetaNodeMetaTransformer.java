@@ -65,6 +65,11 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
     }
 
     @Override
+    default SelectNode<B> visitSelect(Meta<A> meta, ExprNode<B> receiver, ReferenceNode<B> selection) {
+        return selectNode(updateMeta(meta), receiver, selection);
+    };
+
+    @Override
     default ReferenceNode<B> visitReference(Meta<A> meta, QualifiedIdNode id) {
         return refNode(updateMeta(meta), id);
     }

@@ -506,17 +506,36 @@ public class Parser {
 
         @Override
         public ExprNode<Void> visitApplicableExpr(ApplicableExprContext ctx) {
-            var exprNode = visitAlternatives(ctx.parenExpr(), ctx.qualifiedId());
+            var id = ctx.id;
 
-            if (exprNode != null) {
-                return exprNode;
+            if (id != null) {
+                return refNode(tokenRange(id), id.getText());
+            }
+
+            var parenExpr = visitNullable(ctx.parenExpr());
+
+            if (parenExpr != null) {
+                return parenExpr;
             }
 
             var applicableExprNode = visitNullable(ctx.applicableExpr());
 
             if (applicableExprNode != null) {
-                var args = visitNullableRepeated(ctx.application(), ApplicationContext::expr, this);
-                return applyNode(contextRange(ctx), applicableExprNode, args);
+                var application = ctx.application();
+
+                if (application != null) {
+                    var args = visitNullableRepeated(ctx.application(), ApplicationContext::expr, this);
+                    return applyNode(contextRange(ctx), applicableExprNode, args);
+                }
+
+                var selection = ctx.selection;
+
+                if (selection != null) {
+                    return selectNode(
+                        contextRange(ctx),
+                        applicableExprNode,
+                        refNode(tokenRange(selection), selection.getText()));
+                }
             }
 
             return null;

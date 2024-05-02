@@ -468,6 +468,20 @@ public class SyntaxNodes {
         return new ApplyNode<>(meta, expr, args);
     }
 
+    public static SelectNode<Void> selectNode(
+        Range range,
+        ExprNode<Void> receiver,
+        ReferenceNode<Void> selection) {
+        return new SelectNode<>(Meta.of(range), receiver, selection);
+    }
+
+    public static <A> SelectNode<A> selectNode(
+        Meta<A> meta,
+        ExprNode<A> receiver,
+        ReferenceNode<A> selection) {
+        return new SelectNode<>(meta, receiver, selection);
+    }
+
     // Atomic expressions
     public static BooleanNode<Void> boolNode(
             Range range,

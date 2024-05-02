@@ -85,6 +85,13 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeF
     default void postVisitApply(ApplyNode<A> apply) {}
 
 
+    default void preVisitSelect(SelectNode<A> select) {}
+
+    B visitSelect(Meta<A> meta, B receiver, B selection);
+
+    default void postVisitSelect(SelectNode<A> select) {}
+
+
     default void preVisitReference(ReferenceNode<A> ref) {}
 
     B visitReference(Meta<A> meta, QualifiedIdNode id);

@@ -483,6 +483,11 @@ public class Renamer {
         }
 
         @Override
+        public SelectNode<Name> visitSelect(Meta<Void> meta, ExprNode<Name> receiver, ReferenceNode<Name> selection) {
+            return selectNode(new Meta<>(meta.range(), Nameless.INSTANCE), receiver, selection);
+        }
+
+        @Override
         public ReferenceNode<Name> visitReference(Meta<Void> meta, QualifiedIdNode id) {
             var lookupMeta = environment
                     .lookupValueOrElse(id.canonicalName(), meta, Renamer.this::undefinedValue)

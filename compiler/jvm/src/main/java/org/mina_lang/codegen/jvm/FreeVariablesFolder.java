@@ -185,6 +185,13 @@ public class FreeVariablesFolder implements MetaNodeFolder<Attributes, Immutable
     }
 
     @Override
+    public ImmutableList<ReferenceNode<Attributes>> visitSelect(Meta<Attributes> meta,
+           ImmutableList<ReferenceNode<Attributes>> receiver,
+           ImmutableList<ReferenceNode<Attributes>> selection) {
+        return receiver.newWithAll(selection);
+    }
+
+    @Override
     public ImmutableList<ReferenceNode<Attributes>> visitReference(Meta<Attributes> meta, QualifiedIdNode id) {
         return Lists.immutable.of(refNode(meta, id));
     }
