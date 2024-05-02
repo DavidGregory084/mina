@@ -1154,8 +1154,12 @@ public class ParserTest {
 
     @Test
     void parseQualifiedId() {
-        testSuccessfulParse("Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
-                refNode(new Range(0, 0, 0, 22), nsIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
+        testSuccessfulParse(
+            "Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
+                selectNode(
+                    new Range(0, 0, 0, 22),
+                    refNode(new Range(0, 0, 0, 6), "Parser"),
+                    refNode(new Range(0, 7, 0, 22), "compilationUnit")));
     }
 
     @Test
