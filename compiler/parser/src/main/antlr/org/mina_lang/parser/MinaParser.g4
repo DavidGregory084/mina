@@ -74,9 +74,13 @@ typeApplication:
 
 parenType: LSQUARE type RSQUARE;
 
-typeReference: qualifiedId | typeVar;
+typeReference: qualifiedId | existsVar;
 
-typeVar: QUESTION? ID | QUESTION;
+typeVar: forAllVar | existsVar;
+
+forAllVar: ID;
+
+existsVar: QUESTION ID?;
 
 // Expressions
 expr:

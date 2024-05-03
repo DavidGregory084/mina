@@ -437,22 +437,24 @@ public class Parser {
 
         @Override
         public TypeReferenceNode<Void> visitTypeReference(TypeReferenceContext ctx) {
-            var qualifiedIdNode = Optional.ofNullable(qualifiedIdVisitor.visitNullable(ctx.qualifiedId()));
+            var qualifiedIdNode = qualifiedIdVisitor.visitNullable(ctx.qualifiedId());
+            if (qualifiedIdNode != null) {
+                return typeRefNode(contextRange(ctx), qualifiedIdNode);
+            }
 
-            var varNode = Optional.ofNullable(ctx.typeVar()).flatMap(tv -> {
-                return Optional.ofNullable(visitTypeVar(tv))
-                        .map(tvNode -> idNode(contextRange(tv), tvNode.name()));
-            });
+            var existsVar = ctx.existsVar();
+            if (existsVar != null)  {
+                return typeRefNode(contextRange(ctx), existsVar.getText());
+            }
 
-            var idNode = qualifiedIdNode.or(() -> varNode).orElse(null);
-
-            return typeRefNode(contextRange(ctx), idNode);
+            return null;
         }
 
         @Override
         public TypeVarNode<Void> visitTypeVar(TypeVarContext ctx) {
-            return ctx.QUESTION() == null ? forAllVarNode(contextRange(ctx), ctx.getText())
-                    : existsVarNode(contextRange(ctx), ctx.getText());
+            return ctx.existsVar() == null
+                ? forAllVarNode(contextRange(ctx), ctx.getText())
+                : existsVarNode(contextRange(ctx), ctx.getText());
         }
     }
 
