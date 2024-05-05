@@ -22,8 +22,10 @@ import org.mina_lang.syntax.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -267,6 +269,7 @@ public class Parser {
     }
 
     class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode> {
+        Set<String> qualifiedNamespaces = new HashSet<>();
 
         @Override
         public ImportNode visitImportDeclaration(ImportDeclarationContext ctx) {
@@ -276,7 +279,15 @@ public class Parser {
         @Override
         public ImportNode visitImportQualified(ImportQualifiedContext ctx) {
             var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
+
             var alias = Optional.ofNullable(ctx.alias).map(Token::getText);
+
+            if (ctx.alias != null) {
+                qualifiedNamespaces.add(ctx.alias.getText());
+            } else {
+                qualifiedNamespaces.add(ns.ns());
+            }
+
             return importQualifiedNode(contextRange(ctx), ns, alias);
         }
 
@@ -533,10 +544,22 @@ public class Parser {
                 var selection = ctx.selection;
 
                 if (selection != null) {
-                    return selectNode(
-                        contextRange(ctx),
-                        applicableExprNode,
-                        refNode(tokenRange(selection), selection.getText()));
+                    // This is horrible, but it means that we don't need to transform the AST in the renamer
+                    var receiver = ctx.applicableExpr().id;
+
+                    // If the receiver is one of our imported namespaces, produce a qualified ID
+                    if (receiver != null && importVisitor.qualifiedNamespaces.contains(receiver.getText())) {
+                        return refNode(
+                            contextRange(ctx),
+                            nsIdNode(contextRange(ctx.applicableExpr()), receiver.getText()),
+                            selection.getText());
+                    } else {
+                        // Otherwise it's a normal selection
+                        return selectNode(
+                            contextRange(ctx),
+                            applicableExprNode,
+                            refNode(tokenRange(selection), selection.getText()));
+                    }
                 }
             }
 

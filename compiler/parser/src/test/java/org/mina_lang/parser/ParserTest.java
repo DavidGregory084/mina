@@ -15,8 +15,10 @@ import org.mina_lang.syntax.SyntaxNode;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,11 +54,21 @@ public class ParserTest {
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule,
             B expected) {
+        testSuccessfulParse(source, new HashSet<>(), visitor, startRule, expected);
+    }
+
+    <A extends ParserRuleContext, B extends SyntaxNode, C extends Visitor<A, B>> void testSuccessfulParse(
+        String source,
+        Set<String> importedNamespaces,
+        Function<Parser, C> visitor,
+        Function<MinaParser, A> startRule,
+        B expected) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticReporter(baseCollector, dummyUri);
         var parser = new Parser(parsingCollector);
         var input = CharStreams.fromString(source);
+        parser.getImportVisitor().qualifiedNamespaces = importedNamespaces;
         var actual = parser.parse(input, visitor, startRule);
         assertThat("The parser should consume the entire input", input.index(), is(equalTo(input.size())));
         assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
@@ -1153,7 +1165,7 @@ public class ParserTest {
     }
 
     @Test
-    void parseQualifiedId() {
+    void parseQualifiedIdAsSelectionWithoutNamespaceImport() {
         testSuccessfulParse(
             "Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
                 selectNode(
@@ -1163,10 +1175,10 @@ public class ParserTest {
     }
 
     @Test
-    void parseQNMissingId() {
-        var errors = testFailedParse("Parser.", Parser::getExprVisitor, MinaParser::expr);
-        assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
+    void parseQualifiedIdWithNamespaceImport() {
+        testSuccessfulParse(
+            "Parser.compilationUnit", Set.of("Parser"), Parser::getExprVisitor, MinaParser::expr,
+            refNode(new Range(0, 0, 0, 22), nsIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
     }
 
     @Test
