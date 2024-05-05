@@ -10,19 +10,24 @@ repositories {
     maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
 }
 
+val pluginId = "org.mina-lang.gradle"
+
 gradlePlugin {
     plugins.create("mina") {
-        id = "org.mina-lang.gradle"
+        id = pluginId
         implementationClass = "org.mina_lang.gradle.MinaPlugin"
     }
 }
 
 buildInfo {
     packageName.set("org.mina_lang.gradle")
-    properties.set(mapOf("version" to project.version.toString()))
+    properties.set(mapOf("version" to project.version.toString(), "pluginId" to pluginId))
 }
 
-dependencies { implementation(libs.gradleBspPlugin) }
+dependencies {
+    implementation(libs.gradleBspPlugin)
+    compileOnly(project(":compiler:mina-compiler-main"))
+}
 
 testing {
     suites {
