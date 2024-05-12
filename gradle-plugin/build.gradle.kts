@@ -27,6 +27,7 @@ buildInfo {
 dependencies {
     implementation(libs.gradleBspPlugin)
     compileOnly(project(":compiler:mina-compiler-main"))
+    compileOnly(libs.yvette)
 }
 
 testing {
