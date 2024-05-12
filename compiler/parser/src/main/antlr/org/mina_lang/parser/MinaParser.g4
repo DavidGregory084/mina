@@ -88,7 +88,6 @@ expr:
     | ifExpr
     | lambdaExpr
     | matchExpr
-    | literal
     | applicableExpr;
 
 blockExpr: LBRACE letDeclaration* expr? RBRACE;
@@ -123,6 +122,7 @@ fieldPattern: ID (COLON pattern)?;
 
 applicableExpr:
     id = ID
+    | literal
     | parenExpr
     | applicableExpr DOT selection = ID
     | applicableExpr application;

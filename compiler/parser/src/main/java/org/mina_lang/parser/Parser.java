@@ -473,8 +473,7 @@ public class Parser {
 
         @Override
         public ExprNode<Void> visitExpr(ExprContext ctx) {
-            return visitAlternatives(ctx.blockExpr(), ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.literal(),
-                    ctx.applicableExpr());
+            return visitAlternatives(ctx.blockExpr(), ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.applicableExpr());
         }
 
         @Override
@@ -523,6 +522,12 @@ public class Parser {
 
             if (id != null) {
                 return refNode(tokenRange(id), id.getText());
+            }
+
+            var literal = visitNullable(ctx.literal());
+
+            if (literal != null) {
+                return literal;
             }
 
             var parenExpr = visitNullable(ctx.parenExpr());

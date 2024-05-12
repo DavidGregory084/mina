@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 lexer grammar MinaLexer;
@@ -119,7 +119,11 @@ fragment DECIMAL_NUMERAL:
     | NON_ZERO_DIGIT UNDERSCORES DIGITS;
 
 fragment DECIMAL_FLOATING_LITERAL:
-    DIGITS DOT DIGITS? EXPONENT_PART? FLOAT_SUFFIX?
+    // This pattern diverges from the Java language specification:
+    // https://docs.oracle.com/javase/specs/jls/se17/html/jls-3.html#jls-DecimalFloatingPointLiteral
+    // To match the spec exactly, the DIGITS after the DOT in the first alternative should be optional.
+    // However, the syntax this allows is confusing (float f = 1.;) and would be ambiguous with member selection.
+    DIGITS DOT DIGITS EXPONENT_PART? FLOAT_SUFFIX?
     | DOT DIGITS EXPONENT_PART? FLOAT_SUFFIX?
     | DIGITS EXPONENT_PART FLOAT_SUFFIX?
     | DIGITS EXPONENT_PART? FLOAT_SUFFIX;
