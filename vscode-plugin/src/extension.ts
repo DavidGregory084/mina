@@ -29,7 +29,7 @@ const isWindows = os.platform() === "win32";
 const execFile = util.promisify(child_process.execFile);
 const COURSIER_DOWNLOAD_TIMEOUT_MS = 120000;
 const COURSIER_LAUNCHER_URI = Uri.parse(
-  "https://github.com/coursier/launchers/raw/master/coursier.jar"
+  "https://github.com/coursier/coursier/raw/gh-pages/coursier"
 );
 
 let client: LanguageClient;
