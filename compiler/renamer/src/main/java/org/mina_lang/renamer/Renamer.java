@@ -484,7 +484,7 @@ public class Renamer {
 
         @Override
         public SelectNode<Name> visitSelect(Meta<Void> meta, ExprNode<Name> receiver, ReferenceNode<Name> selection) {
-            return selectNode(new Meta<>(meta.range(), Nameless.INSTANCE), receiver, selection);
+            return selectNode(new Meta<>(meta.range(), selection.meta().meta()), receiver, selection);
         }
 
         @Override

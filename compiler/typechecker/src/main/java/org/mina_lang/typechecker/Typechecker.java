@@ -837,6 +837,33 @@ public class Typechecker {
 
         } else if (expr instanceof LiteralNode<Name> literal) {
             return inferLiteral(literal);
+        } else if (expr instanceof SelectNode<Name> select) {
+            var inferredSelection = (ReferenceNode<Attributes>) inferExpr(select.selection());
+
+            return withPolyInstantiation(getType(inferredSelection), inferredType -> {
+                if (Type.isFunction(inferredType) &&
+                    inferredType instanceof TypeApply funType &&
+                    funType.typeArguments().size() > 1) {
+
+                    var firstArgType = funType.typeArguments().getFirst();
+
+                    var checkedReceiver = checkExpr(select.receiver(), firstArgType);
+
+                    var remainingArgs = funType.typeArguments().drop(1);
+
+                    var adaptedFunctionType = Type.function(remainingArgs.toArray(new Type[remainingArgs.size()]));
+
+                    var updatedMeta = updateMetaWith(select.meta(), adaptedFunctionType);
+
+                    return selectNode(updatedMeta, checkedReceiver, inferredSelection);
+                } else {
+                    var inferredReceiver = (ReferenceNode<Attributes>) inferExpr(select.receiver());
+
+                    var updatedMeta = updateMetaWith(select.meta(), newUnsolvedType(TypeKind.INSTANCE));
+
+                    return selectNode(updatedMeta, inferredReceiver, inferredSelection);
+                }
+            });
         } else if (expr instanceof ApplyNode<Name> apply) {
             var inferredExpr = inferExpr(apply.expr());
 

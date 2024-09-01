@@ -65,7 +65,7 @@ public record StaticInitScope(
         var methodWriter = Asm.methodWriter(
                 ACC_STATIC + ACC_PRIVATE,
                 "init$" + let.name(),
-                Type.VOID_TYPE,
+                Types.asmType(let),
                 Lists.immutable.empty(),
                 null,
                 namespaceWriter);
@@ -86,8 +86,8 @@ public record StaticInitScope(
                 methodWriter().getName(),
                 methodWriter().getReturnType(),
                 methodWriter().getArgumentTypes());
-        methodWriter().putStatic(namespaceType, let.name(), Types.asmType(let));
         finaliseMethod();
         initWriter().invokeStatic(namespaceType, initMethod);
+        initWriter().putStatic(namespaceType, let.name(), Types.asmType(let));
     }
 }

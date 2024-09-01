@@ -4,6 +4,7 @@
  */
 package org.mina_lang.codegen.jvm;
 
+import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Maps;
@@ -406,7 +407,7 @@ public class CodeGenerator {
         } else if (expr instanceof MatchNode<Attributes> match) {
             withScope(MatchGenScope.open(method), matchScope -> {
                 var scrutineeLocal = method.methodWriter()
-                        .newLocal(Types.asmType(match.scrutinee()));
+                    .newLocal(Types.asmType(match.scrutinee()));
                 generateExpr(match.scrutinee());
                 method.methodWriter().storeLocal(scrutineeLocal);
                 match.cases().forEachWithIndex((cse, index) -> generateCase(cse, index, scrutineeLocal));
@@ -416,7 +417,13 @@ public class CodeGenerator {
             var appliedName = apply.expr().meta().meta().name();
             var applyType = Types.getType(apply);
 
-            var funType = (TypeApply) Types.getUnderlyingType(apply.expr());
+            TypeApply funType;
+            if (apply.expr() instanceof SelectNode<Attributes> select) {
+                funType = (TypeApply) Types.getUnderlyingType(select.selection());
+            } else {
+                funType = (TypeApply) Types.getUnderlyingType(apply.expr());
+            }
+
             var funReturnType = Types.asmType(funType.typeArguments().getLast());
             var funArgTypes = funType.typeArguments()
                     .take(funType.typeArguments().size() - 1)
@@ -427,8 +434,15 @@ public class CodeGenerator {
                 var namespaceName = letName.name().ns();
                 var declarationName = letName.name().name();
                 var ownerType = Types.getNamespaceAsmType(namespaceName);
+                ImmutableList<ExprNode<Attributes>> effectiveArgs;
 
-                apply.args()
+                if (apply.expr() instanceof SelectNode<Attributes> select) {
+                    effectiveArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
+                } else {
+                    effectiveArgs = apply.args();
+                }
+
+                effectiveArgs
                         .zip(funType.typeArguments())
                         .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
 
