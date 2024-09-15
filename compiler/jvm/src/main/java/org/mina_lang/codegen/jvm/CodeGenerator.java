@@ -30,6 +30,8 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.mina_lang.syntax.SyntaxNodes.*;
+import static org.mina_lang.syntax.SyntaxNodes.applyNode;
 import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 
 public class CodeGenerator {
@@ -296,17 +298,21 @@ public class CodeGenerator {
             withScope(TopLevelLetGenScope.open(let, namespaceWriter), letScope -> {
                 generateExpr(let.expr());
 
+                var funType = (TypeApply) Types.getUnderlyingType(let);
+
                 letScope.methodParams()
                     .toSortedListBy(LocalVar::index)
                     .forEach(param -> {
                         letScope.methodWriter().loadArg(param.index());
+                        var argType = funType.typeArguments().get(param.index());
+                        if (argType.isPrimitive()) {
+                            letScope.methodWriter().box(Types.asmType(argType));
+                        }
                     });
 
                 letScope.methodWriter().invokeInterface(
                         Types.asmType(let),
                         Types.erasedMethod("apply", letScope.methodParams().size()));
-
-                var funType = (TypeApply) Types.getUnderlyingType(let);
 
                 Asm.unboxReturnValue(letScope.methodWriter(), funType.typeArguments().getLast());
 
@@ -339,9 +345,7 @@ public class CodeGenerator {
                     method.methodWriter().storeLocal(localVar.index());
                 });
 
-                block.result().ifPresentOrElse(result -> {
-                    generateExpr(result);
-                }, () -> {
+                block.result().ifPresentOrElse(this::generateExpr, () -> {
                     method.methodWriter().getStatic(
                             Types.asmType(org.mina_lang.common.types.Type.UNIT),
                             "INSTANCE",
@@ -357,30 +361,28 @@ public class CodeGenerator {
 
             withScope(lambdaScope, scope -> {
                 generateExpr(lambda.body());
-                lambdaScope.finaliseLambda();
+                scope.finaliseLambda();
             });
 
             var funType = (TypeApply) Types.getUnderlyingType(lambda);
 
             var lambdaHandle = new Handle(
-                    H_INVOKESTATIC,
-                    Names.getInternalName(namespace.namespace()),
-                    lambdaScope.methodWriter().getName(),
-                    Type.getMethodDescriptor(
-                            lambdaScope.methodWriter().getReturnType(),
-                            lambdaScope.methodWriter().getArgumentTypes()),
-                    false);
+                H_INVOKESTATIC,
+                Names.getInternalName(namespace.namespace()),
+                lambdaScope.methodWriter().getName(),
+                Type.getMethodDescriptor(
+                    lambdaScope.methodWriter().getReturnType(),
+                    lambdaScope.methodWriter().getArgumentTypes()),
+                false);
 
             var freeVarTypes = lambdaScope
-                    .freeVariables()
-                    .collect(Types::asmType)
-                    .toArray(new Type[lambdaScope.freeVariables().size()]);
+                .freeVariables()
+                .collect(Types::asmType)
+                .toArray(new Type[lambdaScope.freeVariables().size()]);
 
             // Stack the free variables of the lambda so they can be captured by the
             // invokedynamic instruction
-            lambdaScope.freeVariables().forEach(freeVar -> {
-                generateExpr(freeVar);
-            });
+            lambdaScope.freeVariables().forEach(this::generateExpr);
 
             method.methodWriter().invokeDynamic(
                     "apply",
@@ -393,6 +395,44 @@ public class CodeGenerator {
                     lambdaHandle, // implMethodType
                     Types.boxedMethodType(funType) // instantiatedMethodType
             );
+
+        } else if (expr instanceof SelectNode<Attributes> select) {
+            // This case handles a selection that is not immediately applied.
+            // Code generation for ApplyNode handles the other case.
+            var selectMeta = select.meta();
+
+            // Create a lambda to represent the partial application of the selection
+            // receiver.selection ==> (..restArgs) => selection(receiver, ..restArgs)
+            // TODO: Investigate using a bootstrap method with MethodHandle#bind to simplify this
+            var funType = (TypeApply) Types.getUnderlyingType(select);
+
+            var lambdaAttrs = new Attributes(Nameless.INSTANCE, selectMeta.meta().sort());
+            var lambdaMeta = selectMeta.withMeta(lambdaAttrs);
+
+            var lambdaParams = funType.typeArguments()
+                .take(funType.typeArguments().size() - 1)
+                .collectWithIndex((paramTy, index) -> {
+                    var paramName = new LocalName("arg" +  index, 0);
+                    return paramNode(Meta.of(new Attributes(paramName, paramTy)), "arg" + index);
+                });
+
+            var applyAttrs = new Attributes(Nameless.INSTANCE, funType.typeArguments().getLast());
+            var applyMeta = selectMeta.withMeta(applyAttrs);
+
+            var appliedExprs = Lists.immutable.of(select.receiver())
+                .newWithAll(funType.typeArguments()
+                    .take(funType.typeArguments().size() - 1)
+                    .collectWithIndex((paramTy, index) -> {
+                        var paramName = new LocalName("arg" +  index, 0);
+                        return refNode(Meta.of(new Attributes(paramName, paramTy)), "arg" + index);
+                    }));
+
+            var lambda = lambdaNode(
+                lambdaMeta,
+                lambdaParams,
+                applyNode(applyMeta, select.selection(), appliedExprs));
+
+            generateExpr(lambda);
 
         } else if (expr instanceof IfNode<Attributes> ifExpr) {
             withScope(IfGenScope.open(), ifScope -> {
@@ -418,10 +458,13 @@ public class CodeGenerator {
             var applyType = Types.getType(apply);
 
             TypeApply funType;
+            ImmutableList<ExprNode<Attributes>> effectiveArgs;
             if (apply.expr() instanceof SelectNode<Attributes> select) {
                 funType = (TypeApply) Types.getUnderlyingType(select.selection());
+                effectiveArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
             } else {
                 funType = (TypeApply) Types.getUnderlyingType(apply.expr());
+                effectiveArgs = apply.args();
             }
 
             var funReturnType = Types.asmType(funType.typeArguments().getLast());
@@ -434,13 +477,6 @@ public class CodeGenerator {
                 var namespaceName = letName.name().ns();
                 var declarationName = letName.name().name();
                 var ownerType = Types.getNamespaceAsmType(namespaceName);
-                ImmutableList<ExprNode<Attributes>> effectiveArgs;
-
-                if (apply.expr() instanceof SelectNode<Attributes> select) {
-                    effectiveArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
-                } else {
-                    effectiveArgs = apply.args();
-                }
 
                 effectiveArgs
                         .zip(funType.typeArguments())
@@ -456,7 +492,7 @@ public class CodeGenerator {
                 method.methodWriter().newInstance(constrType);
                 method.methodWriter().dup();
 
-                apply.args()
+                effectiveArgs
                         .zip(funType.typeArguments())
                         .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
 
@@ -471,7 +507,7 @@ public class CodeGenerator {
             } else if (appliedName.equals(Nameless.INSTANCE) || appliedName instanceof LocalName) {
                 generateExpr(apply.expr());
 
-                apply.args()
+                effectiveArgs
                         .zip(funType.typeArguments())
                         .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
 

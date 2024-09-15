@@ -10,6 +10,7 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.syntax.*;
 
@@ -83,6 +84,15 @@ public class FreeVariablesFolder implements MetaNodeFolder<Attributes, Immutable
     }
 
     @Override
+    public void preVisitLet(LetNode<Attributes> let) {
+        // Local let bindings are scoped to a block and can shadow outer variables.
+        // They are only visible to later bindings.
+        if (let.meta().meta().name() instanceof LocalName localName) {
+            boundVariables.add(localName);
+        }
+    }
+
+    @Override
     public ImmutableList<ReferenceNode<Attributes>> visitLet(Meta<Attributes> meta, String name,
             Optional<ImmutableList<ReferenceNode<Attributes>>> type, ImmutableList<ReferenceNode<Attributes>> expr) {
         return expr;
@@ -116,12 +126,6 @@ public class FreeVariablesFolder implements MetaNodeFolder<Attributes, Immutable
     }
 
     @Override
-    public void preVisitBlock(BlockNode<Attributes> block) {
-        var declNames = block.declarations().collect(let -> let.meta().meta().name());
-        boundVariables.addAllIterable(declNames);
-    }
-
-    @Override
     public ImmutableList<ReferenceNode<Attributes>> visitBlock(Meta<Attributes> meta,
             ImmutableList<ImmutableList<ReferenceNode<Attributes>>> declarations,
             Optional<ImmutableList<ReferenceNode<Attributes>>> result) {
@@ -130,8 +134,8 @@ public class FreeVariablesFolder implements MetaNodeFolder<Attributes, Immutable
             .reject(decl -> boundVariables.contains(decl.meta().meta().name()));
 
         var freeInResult = result.map(res -> {
-                return res.reject(freeVar -> boundVariables.contains(freeVar.meta().meta().name()));
-            }).orElseGet(() -> Lists.immutable.empty());
+            return res.reject(freeVar -> boundVariables.contains(freeVar.meta().meta().name()));
+        }).orElseGet(Lists.immutable::empty);
 
         return freeInDecls.newWithAll(freeInResult);
     }

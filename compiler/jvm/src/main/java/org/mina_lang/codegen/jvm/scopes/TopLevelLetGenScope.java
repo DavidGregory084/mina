@@ -149,14 +149,14 @@ public record TopLevelLetGenScope(
         var argMinaTypes = funType.typeArguments()
                 .take(funType.typeArguments().size() - 1);
 
-        var returnType = Types.boxedAsmType(funType.typeArguments().getLast());
+        var returnType = Types.asmType(funType.typeArguments().getLast());
 
         // Top-level eta-reduced functions are adapted into static methods
         var methodWriter = Asm.methodWriter(
                 ACC_PUBLIC + ACC_STATIC,
                 let.name(),
                 returnType,
-                argMinaTypes.collect(Types::boxedAsmType),
+                argMinaTypes.collect(Types::asmType),
                 JavaSignature.forMethod(let),
                 namespaceWriter);
 

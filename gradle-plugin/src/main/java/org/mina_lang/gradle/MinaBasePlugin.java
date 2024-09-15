@@ -16,6 +16,7 @@ import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaBasePlugin;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.plugins.jvm.internal.JvmLanguageUtilities;
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices;
@@ -28,6 +29,7 @@ import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import static org.gradle.api.internal.lambdas.SerializableLambdas.spec;
@@ -59,10 +61,20 @@ public class MinaBasePlugin implements Plugin<Project> {
     }
 
     private void configureConfigurations(Project project, MinaExtension minaExtension) {
+        Configuration implConfiguration = project.getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+
+        implConfiguration.defaultDependencies(dependencies -> {
+            dependencies.addLater(minaExtension.getMinaVersion().map(version -> {
+                return new DefaultExternalModuleDependency("org.mina-lang", "mina-runtime", version);
+            }));
+        });
+
         Configuration minacConfiguration = project.getConfigurations().create(MINAC_CONFIGURATION_NAME);
         minacConfiguration.setCanBeConsumed(false);
         minacConfiguration.setCanBeResolved(true);
+
         jvmPluginServices.configureAsRuntimeClasspath(minacConfiguration);
+
         minacConfiguration.defaultDependencies(dependencies -> {
            dependencies.addLater(minaExtension.getMinaVersion().map(version -> {
                return new DefaultExternalModuleDependency("org.mina-lang", "mina-compiler", version);
