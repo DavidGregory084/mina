@@ -29,7 +29,6 @@ import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
 import javax.inject.Inject;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import static org.gradle.api.internal.lambdas.SerializableLambdas.spec;
