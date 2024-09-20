@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -63,6 +63,11 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
     default ApplyNode<B> visitApply(Meta<A> meta, ExprNode<B> expr, ImmutableList<ExprNode<B>> args) {
         return applyNode(updateMeta(meta), expr, args);
     }
+
+    @Override
+    default SelectNode<B> visitSelect(Meta<A> meta, ExprNode<B> receiver, ReferenceNode<B> selection) {
+        return selectNode(updateMeta(meta), receiver, selection);
+    };
 
     @Override
     default ReferenceNode<B> visitReference(Meta<A> meta, QualifiedIdNode id) {

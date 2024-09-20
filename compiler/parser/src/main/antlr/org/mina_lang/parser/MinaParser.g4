@@ -74,9 +74,13 @@ typeApplication:
 
 parenType: LSQUARE type RSQUARE;
 
-typeReference: qualifiedId | typeVar;
+typeReference: qualifiedId | existsVar;
 
-typeVar: QUESTION? ID | QUESTION;
+typeVar: forAllVar | existsVar;
+
+forAllVar: ID;
+
+existsVar: QUESTION ID?;
 
 // Expressions
 expr:
@@ -84,7 +88,6 @@ expr:
     | ifExpr
     | lambdaExpr
     | matchExpr
-    | literal
     | applicableExpr;
 
 blockExpr: LBRACE letDeclaration* expr? RBRACE;
@@ -118,8 +121,10 @@ fieldPatterns: fieldPattern (COMMA fieldPattern)*;
 fieldPattern: ID (COLON pattern)?;
 
 applicableExpr:
-    parenExpr
-    | qualifiedId
+    id = ID
+    | literal
+    | parenExpr
+    | applicableExpr DOT selection = ID
     | applicableExpr application;
 
 application: LPAREN RPAREN | LPAREN expr (COMMA expr)* RPAREN;

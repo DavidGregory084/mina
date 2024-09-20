@@ -15,8 +15,10 @@ import org.mina_lang.syntax.SyntaxNode;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,11 +54,21 @@ public class ParserTest {
             Function<Parser, C> visitor,
             Function<MinaParser, A> startRule,
             B expected) {
+        testSuccessfulParse(source, new HashSet<>(), visitor, startRule, expected);
+    }
+
+    <A extends ParserRuleContext, B extends SyntaxNode, C extends Visitor<A, B>> void testSuccessfulParse(
+        String source,
+        Set<String> importedNamespaces,
+        Function<Parser, C> visitor,
+        Function<MinaParser, A> startRule,
+        B expected) {
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Parser.mina");
         var parsingCollector = new ANTLRDiagnosticReporter(baseCollector, dummyUri);
         var parser = new Parser(parsingCollector);
         var input = CharStreams.fromString(source);
+        parser.getImportVisitor().qualifiedNamespaces = importedNamespaces;
         var actual = parser.parse(input, visitor, startRule);
         assertThat("The parser should consume the entire input", input.index(), is(equalTo(input.size())));
         assertThat("There should be no parsing errors", baseCollector.getErrors(), empty());
@@ -629,7 +641,7 @@ public class ParserTest {
     @Test
     void parseIfExpressionMissingAlternative() {
         var errors = testFailedParse("if false then 0", Parser::getExprVisitor, MinaParser::expr);
-        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting 'else'"));
+        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting {'else', '(', '.'}"));
     }
 
     // Function application
@@ -710,6 +722,97 @@ public class ParserTest {
                                 Lists.immutable.of(paramNode(new Range(0, 1, 0, 2), "x")),
                                 refNode(new Range(0, 6, 0, 7), "x")),
                         Lists.immutable.of(intNode(new Range(0, 9, 0, 10), 1))));
+    }
+
+    // Member selection
+    @Test
+    void parseSelect() {
+        testSuccessfulParse("a.x", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 3),
+                refNode(new Range(0, 0, 0, 1), "a"),
+                refNode(new Range(0, 2, 0, 3), "x")));
+    }
+
+    @Test
+    void parseIntLiteralSelect() {
+        testSuccessfulParse("1.x", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 3),
+                intNode(new Range(0, 0, 0, 1), 1),
+                refNode(new Range(0, 2, 0, 3), "x")));
+    }
+
+    @Test
+    void parseStringLiteralSelect() {
+        testSuccessfulParse("\"a\".x", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 5),
+                stringNode(new Range(0, 0, 0, 3), "a"),
+                refNode(new Range(0, 4, 0, 5), "x")));
+    }
+
+    @Test
+    void parseParenSelect() {
+        testSuccessfulParse("(a).x", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 1, 0, 2), "a"),
+                refNode(new Range(0, 4, 0, 5), "x")));
+    }
+
+    @Test
+    void parseSelectChain() {
+        testSuccessfulParse("a.x.y", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 5),
+                selectNode(
+                    new Range(0, 0, 0, 3),
+                    refNode(new Range(0, 0, 0, 1), "a"),
+                    refNode(new Range(0, 2, 0, 3), "x")),
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void parseApplyFromSelect() {
+        testSuccessfulParse("f.x(y)", Parser::getExprVisitor, MinaParser::expr,
+            applyNode(
+                new Range(0, 0, 0, 6),
+                selectNode(
+                    new Range(0, 0, 0, 3),
+                    refNode(new Range(0, 0, 0, 1), "f"),
+                    refNode(new Range(0, 2, 0, 3), "x")),
+                Lists.immutable.of(refNode(new Range(0, 4, 0, 5), "y"))));
+    }
+
+    @Test
+    void parseSelectFromApply() {
+        testSuccessfulParse("f(x).y", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 6),
+                applyNode(
+                    new Range(0, 0, 0, 4),
+                    refNode(new Range(0, 0, 0, 1), "f"),
+                    Lists.immutable.of(refNode(new Range(0, 2, 0, 3), "x"))),
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void parseSelectApplyChain() {
+        testSuccessfulParse("a.f(x).g(y)", Parser::getExprVisitor, MinaParser::expr,
+            applyNode(
+                new Range(0, 0, 0, 11),
+                selectNode(
+                    new Range(0, 0, 0, 8),
+                    applyNode(
+                        new Range(0, 0, 0, 6),
+                        selectNode(
+                            new Range(0, 0, 0, 3),
+                            refNode(new Range(0, 0, 0, 1), "a"),
+                            refNode(new Range(0, 2, 0, 3), "f")),
+                        Lists.immutable.of(refNode(new Range(0, 4, 0, 5), "x"))),
+                    refNode(new Range(0, 7, 0, 8), "g")),
+                Lists.immutable.of(refNode(new Range(0, 9, 0, 10), "y"))));
     }
 
     // Match expressions
@@ -1153,16 +1256,20 @@ public class ParserTest {
     }
 
     @Test
-    void parseQualifiedId() {
-        testSuccessfulParse("Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
-                refNode(new Range(0, 0, 0, 22), nsIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
+    void parseQualifiedIdAsSelectionWithoutNamespaceImport() {
+        testSuccessfulParse(
+            "Parser.compilationUnit", Parser::getExprVisitor, MinaParser::expr,
+                selectNode(
+                    new Range(0, 0, 0, 22),
+                    refNode(new Range(0, 0, 0, 6), "Parser"),
+                    refNode(new Range(0, 7, 0, 22), "compilationUnit")));
     }
 
     @Test
-    void parseQNMissingId() {
-        var errors = testFailedParse("Parser.", Parser::getExprVisitor, MinaParser::expr);
-        assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
+    void parseQualifiedIdWithNamespaceImport() {
+        testSuccessfulParse(
+            "Parser.compilationUnit", Set.of("Parser"), Parser::getExprVisitor, MinaParser::expr,
+            refNode(new Range(0, 0, 0, 22), nsIdNode(new Range(0, 0, 0, 6), "Parser"), "compilationUnit"));
     }
 
     @Test

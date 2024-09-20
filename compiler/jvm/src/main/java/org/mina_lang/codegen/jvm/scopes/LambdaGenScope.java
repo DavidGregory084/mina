@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm.scopes;
@@ -80,7 +80,7 @@ public record LambdaGenScope(
         var endLabel = new Label();
 
         var methodParams = allParams.collectWithIndex((param, index) -> {
-            var paramName= Names.getName(param);
+            var paramName = Names.getName(param);
             var paramType = Types.asmType(param);
             // Free variables prepended to the parameter list are marked synthetic
             var syntheticParam = index >= freeVariables.size() ? ACC_SYNTHETIC : 0;

@@ -117,6 +117,10 @@ public interface SyntaxNodeVisitor {
         visit(apply);
     }
 
+    default void visitSelect(SelectNode<?> select) {
+        visit(select);
+    }
+
     default void visitReference(ReferenceNode<?> ref) {
         visit(ref);
     }

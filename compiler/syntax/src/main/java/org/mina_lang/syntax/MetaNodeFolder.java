@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -83,6 +83,13 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeF
     B visitApply(Meta<A> meta, B expr, ImmutableList<B> args);
 
     default void postVisitApply(ApplyNode<A> apply) {}
+
+
+    default void preVisitSelect(SelectNode<A> select) {}
+
+    B visitSelect(Meta<A> meta, B receiver, B selection);
+
+    default void postVisitSelect(SelectNode<A> select) {}
 
 
     default void preVisitReference(ReferenceNode<A> ref) {}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm.scopes;
@@ -20,7 +20,6 @@ import org.mina_lang.common.names.Named;
 import org.mina_lang.syntax.LetNode;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
@@ -65,7 +64,7 @@ public record StaticInitScope(
         var methodWriter = Asm.methodWriter(
                 ACC_STATIC + ACC_PRIVATE,
                 "init$" + let.name(),
-                Type.VOID_TYPE,
+                Types.asmType(let),
                 Lists.immutable.empty(),
                 null,
                 namespaceWriter);
@@ -86,8 +85,8 @@ public record StaticInitScope(
                 methodWriter().getName(),
                 methodWriter().getReturnType(),
                 methodWriter().getArgumentTypes());
-        methodWriter().putStatic(namespaceType, let.name(), Types.asmType(let));
         finaliseMethod();
         initWriter().invokeStatic(namespaceType, initMethod);
+        initWriter().putStatic(namespaceType, let.name(), Types.asmType(let));
     }
 }

@@ -22,8 +22,10 @@ import org.mina_lang.syntax.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -267,6 +269,7 @@ public class Parser {
     }
 
     class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode> {
+        Set<String> qualifiedNamespaces = new HashSet<>();
 
         @Override
         public ImportNode visitImportDeclaration(ImportDeclarationContext ctx) {
@@ -276,7 +279,15 @@ public class Parser {
         @Override
         public ImportNode visitImportQualified(ImportQualifiedContext ctx) {
             var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
+
             var alias = Optional.ofNullable(ctx.alias).map(Token::getText);
+
+            if (ctx.alias != null) {
+                qualifiedNamespaces.add(ctx.alias.getText());
+            } else {
+                qualifiedNamespaces.add(ns.ns());
+            }
+
             return importQualifiedNode(contextRange(ctx), ns, alias);
         }
 
@@ -437,22 +448,24 @@ public class Parser {
 
         @Override
         public TypeReferenceNode<Void> visitTypeReference(TypeReferenceContext ctx) {
-            var qualifiedIdNode = Optional.ofNullable(qualifiedIdVisitor.visitNullable(ctx.qualifiedId()));
+            var qualifiedIdNode = qualifiedIdVisitor.visitNullable(ctx.qualifiedId());
+            if (qualifiedIdNode != null) {
+                return typeRefNode(contextRange(ctx), qualifiedIdNode);
+            }
 
-            var varNode = Optional.ofNullable(ctx.typeVar()).flatMap(tv -> {
-                return Optional.ofNullable(visitTypeVar(tv))
-                        .map(tvNode -> idNode(contextRange(tv), tvNode.name()));
-            });
+            var existsVar = ctx.existsVar();
+            if (existsVar != null)  {
+                return typeRefNode(contextRange(ctx), existsVar.getText());
+            }
 
-            var idNode = qualifiedIdNode.or(() -> varNode).orElse(null);
-
-            return typeRefNode(contextRange(ctx), idNode);
+            return null;
         }
 
         @Override
         public TypeVarNode<Void> visitTypeVar(TypeVarContext ctx) {
-            return ctx.QUESTION() == null ? forAllVarNode(contextRange(ctx), ctx.getText())
-                    : existsVarNode(contextRange(ctx), ctx.getText());
+            return ctx.existsVar() == null
+                ? forAllVarNode(contextRange(ctx), ctx.getText())
+                : existsVarNode(contextRange(ctx), ctx.getText());
         }
     }
 
@@ -460,8 +473,7 @@ public class Parser {
 
         @Override
         public ExprNode<Void> visitExpr(ExprContext ctx) {
-            return visitAlternatives(ctx.blockExpr(), ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.literal(),
-                    ctx.applicableExpr());
+            return visitAlternatives(ctx.blockExpr(), ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.applicableExpr());
         }
 
         @Override
@@ -506,17 +518,54 @@ public class Parser {
 
         @Override
         public ExprNode<Void> visitApplicableExpr(ApplicableExprContext ctx) {
-            var exprNode = visitAlternatives(ctx.parenExpr(), ctx.qualifiedId());
+            var id = ctx.id;
 
-            if (exprNode != null) {
-                return exprNode;
+            if (id != null) {
+                return refNode(tokenRange(id), id.getText());
+            }
+
+            var literal = visitNullable(ctx.literal());
+
+            if (literal != null) {
+                return literal;
+            }
+
+            var parenExpr = visitNullable(ctx.parenExpr());
+
+            if (parenExpr != null) {
+                return parenExpr;
             }
 
             var applicableExprNode = visitNullable(ctx.applicableExpr());
 
             if (applicableExprNode != null) {
-                var args = visitNullableRepeated(ctx.application(), ApplicationContext::expr, this);
-                return applyNode(contextRange(ctx), applicableExprNode, args);
+                var application = ctx.application();
+
+                if (application != null) {
+                    var args = visitNullableRepeated(ctx.application(), ApplicationContext::expr, this);
+                    return applyNode(contextRange(ctx), applicableExprNode, args);
+                }
+
+                var selection = ctx.selection;
+
+                if (selection != null) {
+                    // This is horrible, but it means that we don't need to transform the AST in the renamer
+                    var receiver = ctx.applicableExpr().id;
+
+                    // If the receiver is one of our imported namespaces, produce a qualified ID
+                    if (receiver != null && importVisitor.qualifiedNamespaces.contains(receiver.getText())) {
+                        return refNode(
+                            contextRange(ctx),
+                            nsIdNode(contextRange(ctx.applicableExpr()), receiver.getText()),
+                            selection.getText());
+                    } else {
+                        // Otherwise it's a normal selection
+                        return selectNode(
+                            contextRange(ctx),
+                            applicableExprNode,
+                            refNode(tokenRange(selection), selection.getText()));
+                    }
+                }
             }
 
             return null;
