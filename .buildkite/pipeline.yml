@@ -17,7 +17,7 @@ steps:
           restore: file
           save: file
       - docker#v5.11.0:
-          image: "timbru31/java-node:17-jdk-16"
+          image: "timbru31/java-node:17-jdk-18"
           memory: 3g
 
   - wait: ~
