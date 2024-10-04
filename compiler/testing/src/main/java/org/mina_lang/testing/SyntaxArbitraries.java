@@ -4,8 +4,11 @@
  */
 package org.mina_lang.testing;
 
+import com.ibm.icu.text.UnicodeSet;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
+import net.jqwik.api.Combinators;
+import net.jqwik.api.arbitraries.StringArbitrary;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.Nameless;
@@ -15,6 +18,29 @@ import org.mina_lang.syntax.*;
 public class SyntaxArbitraries {
     private SyntaxArbitraries() {
     }
+
+    private static final UnicodeSet nameBeginChars = new UnicodeSet("[\\p{XID_Start}&\\p{Identifier_Status=Allowed}]");
+    private static final Arbitrary<String> nameBeginArbitrary = unicodeStrings(nameBeginChars).ofLength(1);
+
+    private static final UnicodeSet nameContinueChars = new UnicodeSet("[\\p{XID_Continue}&\\p{Identifier_Status=Allowed}]");
+    private static final Arbitrary<String> nameContinueArbitrary = unicodeStrings(nameContinueChars).ofMaxLength(19);
+
+    private static StringArbitrary unicodeStrings(UnicodeSet unicodeSet) {
+        var strings = Arbitraries.strings();
+        for (var range : unicodeSet.ranges()) {
+            if (range.codepoint > Character.MAX_VALUE) { break; }
+            char rangeStart = (char) range.codepoint;
+            char rangeEnd = range.codepointEnd > Character.MAX_VALUE
+                ? Character.MAX_VALUE
+                : (char) range.codepointEnd;
+            strings = strings.withCharRange(rangeStart, rangeEnd);
+        }
+        return strings;
+    }
+
+    private static final Arbitrary<String> nameArbitrary = Combinators
+        .combine(nameBeginArbitrary, nameContinueArbitrary)
+        .as((begin, cont) -> begin + cont);
 
     private static final Arbitrary<Boolean> booleanArbitrary = Arbitraries.of(true, false);
 
@@ -46,6 +72,9 @@ public class SyntaxArbitraries {
         return SyntaxNodes.doubleNode(Meta.of(new Attributes(Nameless.INSTANCE, Type.DOUBLE)), d);
     });
 
-    Arbitrary<LiteralNode<Attributes>> literalNode = Arbitraries.oneOf(
+    public static Arbitrary<LiteralNode<Attributes>> literalNode = Arbitraries.oneOf(
         booleanNode, charNode, stringNode, intNode, longNode, floatNode, doubleNode);
+
+    public static Arbitrary<ExprNode<Attributes>> exprNode = Arbitraries.oneOf(
+        literalNode);
 }
