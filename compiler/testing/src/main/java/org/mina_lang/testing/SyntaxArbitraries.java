@@ -5,15 +5,18 @@
 package org.mina_lang.testing;
 
 import com.ibm.icu.text.UnicodeSet;
+import com.opencastsoftware.yvette.Range;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
 import net.jqwik.api.Tuple;
 import net.jqwik.api.arbitraries.StringArbitrary;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
-import org.mina_lang.common.names.Name;
-import org.mina_lang.common.names.Named;
+import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.Type;
 import org.mina_lang.syntax.*;
 
@@ -75,6 +78,7 @@ public class SyntaxArbitraries {
 
     private static final Arbitrary<Boolean> booleanArbitrary = Arbitraries.of(true, false);
 
+    // Literals
     public static Arbitrary<BooleanNode<Attributes>> booleanNode = booleanArbitrary.map(bool -> {
         return SyntaxNodes.boolNode(Meta.nameless(Type.BOOLEAN), bool);
     });
@@ -125,17 +129,7 @@ public class SyntaxArbitraries {
         return null;
     }
 
-    public static Arbitrary<? extends ExprNode<Attributes>>[] refWithType(GenEnvironment env, Type typ) {
-        Set<Meta<Attributes>> values = env.scopes().toList()
-            .toReversed().flatCollect(GenScope::values).toSet();
-        return values.stream()
-            .filter(meta -> meta.meta().name() instanceof Named && meta.meta().sort().equals(typ))
-            .map(meta -> {
-                Named name = (Named) meta.meta().name();
-                return Arbitraries.just(SyntaxNodes.refNode(meta, name.localName()));
-            }).toArray(Arbitrary[]::new);
-    }
-
+    // If expressions
     public static Arbitrary<IfNode<Attributes>> ifNode(GenEnvironment env) {
         return Combinators.combine(
             Arbitraries.oneOf(booleanNode, refWithType(env, Type.BOOLEAN)),
@@ -156,6 +150,7 @@ public class SyntaxArbitraries {
         });
     }
 
+    // Variable references
     public static Arbitrary<ReferenceNode<Attributes>> refNode(GenEnvironment env) {
         Set<Meta<Attributes>> values = env.scopes().toList()
             .toReversed().flatCollect(GenScope::values).toSet();
@@ -165,6 +160,17 @@ public class SyntaxArbitraries {
                 Named name = (Named) meta.meta().name();
                 return SyntaxNodes.refNode(meta, name.localName());
             });
+    }
+
+    public static Arbitrary<? extends ExprNode<Attributes>>[] refWithType(GenEnvironment env, Type typ) {
+        Set<Meta<Attributes>> values = env.scopes().toList()
+            .toReversed().flatCollect(GenScope::values).toSet();
+        return values.stream()
+            .filter(meta -> meta.meta().name() instanceof Named && meta.meta().sort().equals(typ))
+            .map(meta -> {
+                Named name = (Named) meta.meta().name();
+                return Arbitraries.just(SyntaxNodes.refNode(meta, name.localName()));
+            }).toArray(Arbitrary[]::new);
     }
 
     public static Arbitrary<? extends ExprNode<Attributes>> exprNode(GenEnvironment env) {
@@ -186,10 +192,45 @@ public class SyntaxArbitraries {
                 Tuple.of(7, Objects.requireNonNull(literalWithType(typ))),
                 Tuple.of(1, ifNodeWithType(env, typ))
             );
-            if (env.scopes().collectInt(scope -> scope.values().size()).sum() > 0) {
-                generators.addAll(Arrays.stream(refWithType(env, typ)).map(gen -> Tuple.of(1, gen)).toList());
-            }
+
+            generators.addAll(Arrays.stream(refWithType(env, typ)).map(gen -> Tuple.of(1, gen)).toList());
+
             return Arbitraries.frequencyOf(generators.toArray(new Tuple.Tuple2[0]));
         });
     }
+
+    public static Arbitrary<DeclarationNode<Attributes>> declarationNode(GenEnvironment env, NamespaceName nsName) {
+        return Combinators.combine(
+            nameArbitrary.filter(name -> env.lookupValue(name).isEmpty()),
+            exprNode(env)
+        ).as((name, expr) -> {
+            var letName = new LetName(new QualifiedName(nsName, name));
+            var letMeta = Meta.of(new Attributes(letName, expr.meta().meta().sort()));
+            env.putValue(name, letMeta);
+            return SyntaxNodes.letNode(letMeta, name, expr);
+        });
+    }
+
+    public static Arbitrary<ImmutableList<DeclarationNode<Attributes>>> declarations(GenEnvironment env, NamespaceName nsName, int depth) {
+        return Arbitraries.recursive(
+            () -> Arbitraries.just(Lists.immutable.empty()),
+            (existing) -> Combinators.combine(existing, declarationNode(env, nsName)).as(ImmutableList::newWith),
+            depth
+        );
+    }
+
+    public static Arbitrary<NamespaceNode<Attributes>> namespaceNode = Combinators.combine(
+        nameArbitrary,
+        Arbitraries.integers().between(0, 10)
+    ).flatAs((name, declCount) -> {
+        var pkg =  Lists.immutable.of("Mina", "Test");
+        var nsName = new NamespaceName(pkg, name);
+        return declarations(new GenEnvironment(Stacks.mutable.empty()), nsName, declCount).map(decls -> {
+            return SyntaxNodes.namespaceNode(
+                Meta.of(new Attributes(nsName, Type.NAMESPACE)),
+                SyntaxNodes.nsIdNode(Range.EMPTY, pkg, name),
+                Lists.immutable.empty(), decls
+            );
+        });
+    });
 }
