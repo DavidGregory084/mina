@@ -6,8 +6,6 @@ package org.mina_lang.codegen.jvm;
 
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
-import net.jqwik.api.lifecycle.AfterTry;
-import net.jqwik.api.lifecycle.BeforeContainer;
 import org.apache.commons.lang3.function.Failable;
 import org.junit.jupiter.api.Assertions;
 import org.mina_lang.common.Attributes;
@@ -21,36 +19,33 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 public class CodeGeneratorTest {
-    private static Path tempDir;
 
-    CodeGenerator codeGenerator = new CodeGenerator();
-
-    @BeforeContainer
-    static void createTempDir() throws IOException {
-        tempDir = Files.createTempDirectory("mina-codegen-test");
+    private Path createTempDir() throws IOException {
+        return Files.createTempDirectory("mina-codegen-test");
     }
 
-    @AfterTry
-    void clearTempDir() throws IOException {
+    private void clearTempDir(Path tempDir) throws IOException {
         try (var paths = Files.walk(tempDir)) {
             Failable
                 .stream(paths.sorted(Comparator.reverseOrder()))
-                .filter(path -> !path.equals(tempDir))
                 .forEach(Files::delete);
         }
     }
 
     @Property
     public void generatesArbitraryNamespaces(@ForAll NamespaceNode<Attributes> namespace) throws IOException {
-        var contextLoader = Thread.currentThread().getContextClassLoader();
-        try (var urlLoader = URLClassLoader.newInstance(new URL[] { tempDir.toUri().toURL() }, contextLoader)) {
+        var codeGenerator = new CodeGenerator();
+        var tempDir = createTempDir();
+        try (var urlLoader = URLClassLoader.newInstance(new URL[] { tempDir.toUri().toURL() }, null)) {
             var namespaceClassName = namespace.getName().canonicalName().replace('/', '.') + ".$namespace";
             codeGenerator.generate(tempDir, namespace);
             try {
                 Class.forName(namespaceClassName, true, urlLoader);
-            } catch (Exception e) {
+            } catch (ClassNotFoundException | NoClassDefFoundError e) {
                 Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
             }
+        } finally {
+            clearTempDir(tempDir);
         }
     }
 }
