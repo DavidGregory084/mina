@@ -41,7 +41,7 @@
     "@eslint/js": "^9.2.0",
     "@microsoft/vscode-file-downloader-api": "^1.0.1",
     "@tsconfig/node18": "^18.2.4",
-    "@tsconfig/recommended": "^1.0.7",
+    "@tsconfig/recommended": "^1.0.8",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.9",
     "@types/node": "^18.19.58",
