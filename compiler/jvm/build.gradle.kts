@@ -21,6 +21,9 @@ testing {
                     // Syntax Node Generators
                     implementation(project(":compiler:mina-compiler-testing"))
 
+                    // Runtime (needed to verify classes used in codegen)
+                    implementation(project(":mina-runtime"))
+
                     // Failable Streams
                     implementation(libs.apacheCommonsLang)
                 }

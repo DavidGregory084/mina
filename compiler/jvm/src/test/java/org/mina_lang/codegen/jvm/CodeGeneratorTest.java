@@ -9,6 +9,7 @@ import net.jqwik.api.Property;
 import org.apache.commons.lang3.function.Failable;
 import org.junit.jupiter.api.Assertions;
 import org.mina_lang.common.Attributes;
+import org.mina_lang.syntax.MetaNodePrinter;
 import org.mina_lang.syntax.NamespaceNode;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 public class CodeGeneratorTest {
+    private static final MetaNodePrinter<Attributes> printer = new MetaNodePrinter<>();
 
     private Path createTempDir() throws IOException {
         return Files.createTempDirectory("mina-codegen-test");
@@ -34,14 +36,16 @@ public class CodeGeneratorTest {
 
     @Property
     public void generatesArbitraryNamespaces(@ForAll NamespaceNode<Attributes> namespace) throws IOException {
+        var contextLoader = Thread.currentThread().getContextClassLoader();
         var codeGenerator = new CodeGenerator();
         var tempDir = createTempDir();
-        try (var urlLoader = URLClassLoader.newInstance(new URL[] { tempDir.toUri().toURL() }, null)) {
+        System.err.println(namespace.accept(printer).render(80));
+        try (var urlLoader = URLClassLoader.newInstance(new URL[] { tempDir.toUri().toURL() }, contextLoader)) {
             var namespaceClassName = namespace.getName().canonicalName().replace('/', '.') + ".$namespace";
             codeGenerator.generate(tempDir, namespace);
             try {
                 Class.forName(namespaceClassName, true, urlLoader);
-            } catch (ClassNotFoundException | NoClassDefFoundError e) {
+            } catch (ClassNotFoundException | LinkageError e) {
                 Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
             }
         } finally {

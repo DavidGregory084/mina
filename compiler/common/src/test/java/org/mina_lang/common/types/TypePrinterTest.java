@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class TypePrinterTest {
-    TypePrinter printer = new TypePrinter();
+    TypePrinter printer = new TypePrinter(2);
 
     @Test
     void testUnsolvedTypePrinting() {

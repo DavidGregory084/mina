@@ -7,17 +7,28 @@ package org.mina_lang.common.types;
 import com.opencastsoftware.prettier4j.Doc;
 
 public class TypePrinter implements TypeFolder<Doc> {
+    private static final int DEFAULT_INDENT = 3;
+
+    private final int indent;
+
+    public TypePrinter(int indent) {
+        this.indent = indent;
+    }
+
+    public TypePrinter() {
+        this(DEFAULT_INDENT);
+    }
 
     @Override
     public Doc visitQuantifiedType(QuantifiedType quant) {
         var argDoc = Doc.intersperse(
                 Doc.text(",").append(Doc.lineOrSpace()),
                 quant.args().stream().map(this::visitType))
-                .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
+                .bracket(this.indent, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
 
         return argDoc.appendSpace(
                     visitType(quant.body())
-                        .bracket(2, Doc.text("{"), Doc.text("}")));
+                        .bracket(this.indent, Doc.text("{"), Doc.text("}")));
     }
 
     @Override
@@ -40,24 +51,24 @@ public class TypePrinter implements TypeFolder<Doc> {
 
             var argDoc = argTypes.size() == 1
                     ? Type.isFunction(argTypes.get(0))
-                            ? visitType(argTypes.get(0)).bracket(2, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"))
+                            ? visitType(argTypes.get(0)).bracket(this.indent, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"))
                             : visitType(argTypes.get(0))
                     : Doc.intersperse(
                             Doc.text(",").append(Doc.lineOrSpace()),
                             argTypes.stream().map(this::visitType))
-                            .bracket(2, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"));
+                            .bracket(this.indent, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"));
 
             return Doc.group(
                     argDoc
                             .appendSpace(Doc.text("->"))
-                            .append(Doc.lineOrSpace().append(visitType(returnType)).indent(2)));
+                            .append(Doc.lineOrSpace().append(visitType(returnType)).indent(this.indent)));
         } else {
             var appliedType = tyApp.type().accept(this);
 
             Doc typeArgs = Doc.intersperse(
                     Doc.text(",").append(Doc.lineOrSpace()),
                     tyApp.typeArguments().stream().map(this::visitType))
-                    .bracket(2, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
+                    .bracket(this.indent, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
 
             return appliedType.append(typeArgs);
         }

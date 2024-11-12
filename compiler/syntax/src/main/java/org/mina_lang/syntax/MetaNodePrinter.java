@@ -1,0 +1,333 @@
+/*
+ * SPDX-FileCopyrightText:  © 2024 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package org.mina_lang.syntax;
+
+import com.opencastsoftware.prettier4j.Doc;
+import org.apache.commons.text.StringEscapeUtils;
+import org.eclipse.collections.api.collection.ImmutableCollection;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.types.TypePrinter;
+
+import java.util.Optional;
+import java.util.stream.Stream;
+
+public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
+    private static final int DEFAULT_INDENT = 3;
+    private static final Doc IMPORT = Doc.text("import");
+    private static final Doc RSLASH = Doc.text("/");
+    private static final Doc AS = Doc.text("as");
+    private static final Doc LET = Doc.text("let");
+    private static final Doc LSQUARE = Doc.text("[");
+    private static final Doc RSQUARE = Doc.text("]");
+    private static final Doc LPAREN = Doc.text("(");
+    private static final Doc RPAREN = Doc.text(")");
+    private static final Doc COMMA = Doc.text(",");
+    private static final Doc COLON = Doc.text(":");
+    private static final Doc EQUAL = Doc.text("=");
+    private static final Doc LBRACE = Doc.text("{");
+    private static final Doc RBRACE = Doc.text("}");
+    private static final Doc SEMI = Doc.text(";");
+    private static final Doc IF = Doc.text("if");
+    private static final Doc THEN = Doc.text("then");
+    private static final Doc ELSE = Doc.text("else");
+    private static final Doc ARROW = Doc.text("->");
+    private static final Doc MATCH = Doc.text("match");
+    private static final Doc WITH = Doc.text("with");
+    private static final Doc CASE = Doc.text("case");
+    private static final Doc DATA = Doc.text("data");
+    private static final Doc DOT = Doc.text(".");
+    private static final Doc AT = Doc.text("@");
+    private static final Doc SQUOTE = Doc.text("'");
+    private static final Doc DQUOTE = Doc.text("\"");
+    private static final Doc TRUE = Doc.text("true");
+    private static final Doc FALSE = Doc.text("false");
+
+    private final int indent;
+    private final TypePrinter typePrinter;
+
+    public MetaNodePrinter(int indent) {
+        this.indent = indent;
+        this.typePrinter = new TypePrinter(indent);
+    }
+
+    public MetaNodePrinter() {
+        this.indent = DEFAULT_INDENT;
+        this.typePrinter = new TypePrinter();
+    }
+
+    private Doc visitNamespaceId(NamespaceIdNode id) {
+        if (!id.pkg().isEmpty()) {
+            return Doc.intersperse(RSLASH, id.pkg().stream().map(Doc::text))
+                .append(RSLASH).append(Doc.text(id.ns()));
+        } else {
+            return Doc.text(id.ns());
+        }
+    }
+
+    private Doc visitTypeParams(Stream<Doc> typeParams) {
+        return Doc.intersperse(
+            COMMA.append(Doc.lineOrSpace()),
+            typeParams
+        ).bracket(this.indent, Doc.lineOrEmpty(), LSQUARE, RSQUARE);
+    }
+
+    private Doc visitValueParams(Stream<Doc> valueParams) {
+        return Doc.intersperse(
+            COMMA.append(Doc.lineOrSpace()),
+            valueParams
+        ).bracket(this.indent, Doc.lineOrEmpty(), LPAREN, RPAREN);
+    }
+
+    private Doc visitDeclarations(Stream<Doc> declarations) {
+        return Doc.intersperse(
+            Doc.lineOr(SEMI.append(Doc.text(" "))),
+            declarations
+        ).bracket(this.indent, Doc.lineOrEmpty(), LBRACE, RBRACE);
+    }
+
+    private Doc visitSymbols(Stream<Doc> symbols) {
+        return Doc.intersperse(
+            COMMA.append(Doc.lineOrSpace()),
+            symbols
+        ).bracket(this.indent, Doc.lineOrEmpty(), LBRACE, RBRACE);
+    }
+
+    private Doc visitImport(ImportNode imp) {
+        var nsDoc = visitNamespaceId(imp.namespace());
+        var impDoc = IMPORT.appendSpace(nsDoc);
+
+        if (imp instanceof ImportQualifiedNode qual) {
+            return qual.alias()
+                .map(alias -> impDoc.appendSpace(AS).appendSpace(Doc.text(alias)))
+                .orElse(impDoc);
+        } else if (imp instanceof ImportSymbolsNode sym) {
+            var hasMultiple = sym.symbols().size() > 1;
+            var hasAliases = sym.symbols().anySatisfy(it -> it.alias().isPresent());
+            var symbols = sym.symbols().collect(it -> {
+                return it.alias()
+                    .map(alias -> Doc.text(it.symbol()).appendSpace(AS).appendSpace(Doc.text(alias)))
+                    .orElseGet(() -> Doc.text(it.symbol()));
+            });
+            return hasMultiple || hasAliases
+                ? impDoc.append(DOT).append(visitSymbols(symbols.stream()))
+                : impDoc.append(DOT).append(symbols.get(0));
+        }
+        return Doc.empty();
+    }
+
+    @Override
+    public Doc visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports, ImmutableList<ImmutableList<Doc>> declarationGroups) {
+        var bodyDoc = visitDeclarations(
+            Stream.concat(
+                imports.stream().map(this::visitImport),
+                declarationGroups.stream().flatMap(ImmutableCollection::stream))
+        );
+
+        return Doc.text("namespace").appendSpace(visitNamespaceId(id)).appendSpace(bodyDoc);
+    }
+
+    @Override
+    public Doc visitLet(Meta<A> meta, String name, Optional<Doc> type, Doc expr) {
+        var nameDoc = LET.appendSpace(Doc.text(name));
+        var typeDoc = type.map(COLON::appendSpace);
+        var bodyDoc = Doc.group(EQUAL.append(Doc.lineOrSpace().append(expr).indent(this.indent)));
+        return typeDoc
+            .map(typ -> nameDoc.append(typ).appendSpace(bodyDoc))
+            .orElseGet(() -> nameDoc.appendSpace(bodyDoc));
+    }
+
+    @Override
+    public Doc visitLetFn(Meta<A> meta, String name, ImmutableList<Doc> typeParams, ImmutableList<Doc> valueParams, Optional<Doc> returnType, Doc expr) {
+        var nameDoc = LET.appendSpace(Doc.text(name));
+        var tpArgsDoc = typeParams.isEmpty() ? Doc.empty() : visitTypeParams(typeParams.stream());
+        var argsDoc = valueParams.isEmpty() ? Doc.empty() : visitValueParams(valueParams.stream());
+        var typeDoc = returnType.map(COLON::appendSpace);
+        var bodyDoc = Doc.group(EQUAL.append(Doc.lineOrSpace().append(expr).indent(this.indent)));
+        return typeDoc
+            .map(typ -> nameDoc.append(tpArgsDoc).append(argsDoc).append(typ).appendSpace(bodyDoc))
+            .orElseGet(() -> nameDoc.append(tpArgsDoc).append(argsDoc).appendSpace(bodyDoc));
+    }
+
+    @Override
+    public Doc visitParam(Meta<A> param, String name, Optional<Doc> typeAnnotation) {
+        return typeAnnotation
+            .map(tyAnn -> Doc.text(name).append(COLON).appendSpace(tyAnn))
+            .orElseGet(() -> Doc.text(name));
+    }
+
+    @Override
+    public Doc visitBlock(Meta<A> meta, ImmutableList<Doc> declarations, Optional<Doc> result) {
+        return visitDeclarations(Stream.concat(declarations.stream(), result.stream()));
+    }
+
+    @Override
+    public Doc visitIf(Meta<A> meta, Doc condition, Doc consequent, Doc alternative) {
+        return Doc.group(
+            IF.appendSpace(condition)
+            .appendLineOrSpace(THEN).appendSpace(consequent.indent(this.indent))
+            .appendLineOrSpace(ELSE).appendSpace(alternative.indent(this.indent)));
+    }
+
+    @Override
+    public Doc visitLambda(Meta<A> meta, ImmutableList<Doc> params, Doc body) {
+        var argsDoc = visitValueParams(params.stream());
+        var bodyDoc =  Doc.group(Doc.lineOrSpace().append(body).indent(this.indent));
+        return argsDoc
+            .appendSpace(ARROW)
+            .append(bodyDoc);
+    }
+
+    @Override
+    public Doc visitMatch(Meta<A> meta, Doc scrutinee, ImmutableList<Doc> cases) {
+        return MATCH
+            .appendSpace(scrutinee)
+            .appendSpace(WITH)
+            .appendSpace(visitDeclarations(cases.stream()));
+    }
+
+    @Override
+    public Doc visitApply(Meta<A> meta, Doc expr, ImmutableList<Doc> args) {
+        return expr.append(visitValueParams(args.stream()));
+    }
+
+    @Override
+    public Doc visitSelect(Meta<A> meta, Doc receiver, Doc selection) {
+        return receiver.appendLineOrEmpty(DOT.append(selection));
+    }
+
+    @Override
+    public Doc visitReference(Meta<A> meta, QualifiedIdNode id) {
+        return Doc.text(id.name());
+    }
+
+    @Override
+    public Doc visitCase(Meta<A> meta, Doc pattern, Doc consequent) {
+        return CASE
+            .appendSpace(pattern)
+            .appendSpace(ARROW)
+            .appendSpace(consequent.indent(this.indent));
+    }
+
+    @Override
+    public Doc visitData(Meta<A> meta, String name, ImmutableList<Doc> typeParams, ImmutableList<Doc> constructors) {
+        return DATA
+            .appendSpace(Doc.text(name))
+            .append(visitTypeParams(typeParams.stream()))
+            .append(visitDeclarations(constructors.stream()));
+    }
+
+    @Override
+    public Doc visitConstructor(Meta<A> meta, String name, ImmutableList<Doc> params, Optional<Doc> type) {
+        var constructor = CASE
+            .appendSpace(Doc.text(name))
+            .append(visitValueParams(params.stream()));
+        return type
+            .map(tp -> constructor.append(COLON.appendSpace(tp)))
+            .orElse(constructor);
+    }
+
+    @Override
+    public Doc visitConstructorParam(Meta<A> meta, String name, Doc typeAnnotation) {
+        return visitParam(meta, name, Optional.of(typeAnnotation));
+    }
+
+    @Override
+    public Doc visitAliasPattern(Meta<A> meta, String alias, Doc pattern) {
+        return Doc.text(alias).appendSpace(AT).appendSpace(pattern);
+    }
+
+    @Override
+    public Doc visitConstructorPattern(Meta<A> meta, QualifiedIdNode id, ImmutableList<Doc> fields) {
+        return Doc.text(id.name()).appendSpace(visitSymbols(fields.stream()));
+    }
+
+    @Override
+    public Doc visitFieldPattern(Meta<A> meta, String field, Optional<Doc> pattern) {
+        return pattern
+            .map(pat -> Doc.text(field).append(COLON).appendSpace(pat))
+            .orElseGet(() -> Doc.text(field));
+    }
+
+    @Override
+    public Doc visitIdPattern(Meta<A> meta, String name) {
+        return Doc.text(name);
+    }
+
+    @Override
+    public Doc visitLiteralPattern(Meta<A> meta, Doc literal) {
+        return literal;
+    }
+
+    @Override
+    public Doc visitBoolean(Meta<A> meta, boolean value) {
+        return value ? TRUE : FALSE;
+    }
+
+    @Override
+    public Doc visitChar(Meta<A> meta, char value) {
+        var escapedValue = StringEscapeUtils.escapeJava(String.valueOf(value));
+        return SQUOTE.append(Doc.text(escapedValue)).append(SQUOTE);
+    }
+
+    @Override
+    public Doc visitString(Meta<A> meta, String value) {
+        var escapedValue = StringEscapeUtils.escapeJava(value);
+        return DQUOTE.append(Doc.text(escapedValue)).append(DQUOTE);
+    }
+
+    @Override
+    public Doc visitInt(Meta<A> meta, int value) {
+        return Doc.text(Integer.toString(value));
+    }
+
+    @Override
+    public Doc visitLong(Meta<A> meta, long value) {
+        return Doc.text(Long.toString(value));
+    }
+
+    @Override
+    public Doc visitFloat(Meta<A> meta, float value) {
+        return Doc.text(Float.toString(value));
+    }
+
+    @Override
+    public Doc visitDouble(Meta<A> meta, double value) {
+        return Doc.text(Double.toString(value));
+    }
+
+    @Override
+    public Doc visitQuantifiedType(Meta<A> meta, ImmutableList<Doc> args, Doc body) {
+        return visitTypeParams(args.stream())
+            .appendSpace(body.bracket(this.indent, LBRACE, RBRACE));
+    }
+
+    @Override
+    public Doc visitFunType(Meta<A> meta, ImmutableList<Doc> argTypes, Doc returnType) {
+        return visitValueParams(argTypes.stream())
+            .appendSpace(ARROW)
+            .appendSpace(returnType);
+    }
+
+    @Override
+    public Doc visitTypeApply(Meta<A> meta, Doc type, ImmutableList<Doc> args) {
+        return type.append(visitTypeParams(args.stream()));
+    }
+
+    @Override
+    public Doc visitTypeReference(Meta<A> meta, QualifiedIdNode id) {
+        return Doc.text(id.name());
+    }
+
+    @Override
+    public Doc visitForAllVar(Meta<A> meta, String name) {
+        return Doc.text(name);
+    }
+
+    @Override
+    public Doc visitExistsVar(Meta<A> meta, String name) {
+        return Doc.text(name);
+    }
+}
