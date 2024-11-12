@@ -454,17 +454,19 @@ public class CodeGenerator {
                 matchScope.finaliseMatch();
             });
         } else if (expr instanceof ApplyNode<Attributes> apply) {
-            var appliedName = apply.expr().meta().meta().name();
             var applyType = Types.getType(apply);
 
+            Name appliedName;
             TypeApply funType;
             ImmutableList<ExprNode<Attributes>> effectiveArgs;
             if (apply.expr() instanceof SelectNode<Attributes> select) {
                 funType = (TypeApply) Types.getUnderlyingType(select.selection());
                 effectiveArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
+                appliedName = select.selection().meta().meta().name();
             } else {
                 funType = (TypeApply) Types.getUnderlyingType(apply.expr());
                 effectiveArgs = apply.args();
+                appliedName = apply.expr().meta().meta().name();
             }
 
             var funReturnType = Types.asmType(funType.typeArguments().getLast());
@@ -509,7 +511,7 @@ public class CodeGenerator {
 
                 effectiveArgs
                         .zip(funType.typeArguments())
-                        .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
+                        .forEach(pair -> generateBoxedArgExpr(pair.getOne(), pair.getTwo()));
 
                 method.methodWriter().invokeInterface(
                         Types.asmType(funType),
@@ -575,6 +577,13 @@ public class CodeGenerator {
         var appliedArgType = Types.getType(argExpr);
         generateExpr(argExpr);
         Asm.boxUnboxArgExpr(method.methodWriter(), funArgType, appliedArgType);
+    }
+
+    public void generateBoxedArgExpr(ExprNode<Attributes> argExpr, org.mina_lang.common.types.Type funArgType) {
+        var method = environment.enclosingJavaMethod().get();
+        var appliedArgType = Types.getType(argExpr);
+        generateExpr(argExpr);
+        method.methodWriter().box(Types.asmType(appliedArgType));
     }
 
     public void generateLiteral(LiteralNode<Attributes> literal) {

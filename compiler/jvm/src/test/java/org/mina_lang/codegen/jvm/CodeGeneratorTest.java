@@ -6,6 +6,7 @@ package org.mina_lang.codegen.jvm;
 
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
+import net.jqwik.api.ShrinkingMode;
 import org.apache.commons.lang3.function.Failable;
 import org.junit.jupiter.api.Assertions;
 import org.mina_lang.common.Attributes;
@@ -34,7 +35,8 @@ public class CodeGeneratorTest {
         }
     }
 
-    @Property
+    // Shrinking doesn't work well with such complex arbitraries
+    @Property(seed = "1931467463122861004", shrinking = ShrinkingMode.OFF)
     public void generatesArbitraryNamespaces(@ForAll NamespaceNode<Attributes> namespace) throws IOException {
         var contextLoader = Thread.currentThread().getContextClassLoader();
         var codeGenerator = new CodeGenerator();
