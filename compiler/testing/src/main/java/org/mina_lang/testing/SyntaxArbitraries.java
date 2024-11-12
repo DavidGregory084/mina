@@ -4,13 +4,11 @@
  */
 package org.mina_lang.testing;
 
-import com.ibm.icu.text.UnicodeSet;
 import com.opencastsoftware.yvette.Range;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
 import net.jqwik.api.Tuple;
-import net.jqwik.api.arbitraries.StringArbitrary;
 import org.eclipse.collections.api.block.predicate.Predicate;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.collector.Collectors2;
@@ -18,9 +16,7 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.types.BuiltInType;
-import org.mina_lang.common.types.Type;
-import org.mina_lang.common.types.TypeApply;
+import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
 import java.util.Arrays;
@@ -59,19 +55,6 @@ public class SyntaxArbitraries {
 
     private static final Arbitrary<String> nameBeginArbitrary = Arbitraries.strings().alpha().ofLength(1);
     private static final Arbitrary<String> nameContinueArbitrary = Arbitraries.strings().alpha().numeric().ofMaxLength(19);
-
-    private static StringArbitrary unicodeStrings(UnicodeSet unicodeSet) {
-        var strings = Arbitraries.strings();
-        for (var range : unicodeSet.ranges()) {
-            if (range.codepoint > Character.MAX_VALUE) { break; }
-            char rangeStart = (char) range.codepoint;
-            char rangeEnd = range.codepointEnd > Character.MAX_VALUE
-                ? Character.MAX_VALUE
-                : (char) range.codepointEnd;
-            strings = strings.withCharRange(rangeStart, rangeEnd);
-        }
-        return strings;
-    }
 
     private static final Set<String> reservedWords = Set.of(
         "namespace",
@@ -363,7 +346,66 @@ public class SyntaxArbitraries {
         });
     }
 
-    public static Arbitrary<DeclarationNode<Attributes>> declarationNode(GenEnvironment env, NamespaceName nsName) {
+    // Data declarations
+    public static boolean classNameCollides(GenEnvironment env, NamespaceName nsName, String name) {
+        return name.equals(nsName.name()) ||
+            env.lookupValue(name).isPresent() ||
+            env.lookupType(name).isPresent();
+    }
+
+    private static ConstructorParamNode<Attributes> constructorParamNode(ConstructorName constrName, String name, BuiltInType typ) {
+        var nameMeta = new FieldName(constrName, name);
+        var meta = Meta.of(new Attributes(nameMeta, typ));
+        var ascMeta = Meta.of(new Attributes(new BuiltInName(typ.name()), typ.kind()));
+        var ascription = SyntaxNodes.typeRefNode(ascMeta, typ.name());
+        return SyntaxNodes.constructorParamNode(meta, name, ascription);
+    }
+
+    public static Arbitrary<ConstructorNode<Attributes>> constructorNode(GenEnvironment env, NamespaceName nsName, DataName dataName) {
+        return Arbitraries.integers().between(0, 3).flatMap(numArgs -> {
+            return Combinators.combine(
+                nameArbitrary.filter(name -> !classNameCollides(env, nsName, name)),
+                nameArbitrary.list().ofSize(numArgs).uniqueElements(),
+                Arbitraries.of(Type.builtIns.stream().toList()).list().ofSize(numArgs)
+            ).as((constructorName, fieldNames, fieldTypes) -> {
+                var dataType = new TypeConstructor(dataName.name(), TypeKind.INSTANCE);
+
+                var constrName = new ConstructorName(dataName, new QualifiedName(nsName, constructorName));
+                var constrMeta = Meta.of(new Attributes(constrName, Type.function(Lists.immutable.ofAll(fieldTypes), dataType)));
+
+                var fields = IntStream.range(0, numArgs).mapToObj(i -> {
+                    var name = fieldNames.get(i);
+                    var argTyp = fieldTypes.get(i);
+                    return constructorParamNode(constrName, name, argTyp);
+                }).collect(Collectors2.toImmutableList());
+
+                return SyntaxNodes.constructorNode(
+                    constrMeta,
+                    constructorName,
+                    fields,
+                    Optional.empty()
+                );
+            });
+        });
+    }
+
+    public static Arbitrary<DataNode<Attributes>> dataNode(GenEnvironment env, NamespaceName nsName) {
+        return nameArbitrary.filter(name -> !classNameCollides(env, nsName, name)).flatMap(name -> {
+            var dataName = new DataName(new QualifiedName(nsName, name));
+
+            var constructorNodes =  constructorNode(env, nsName, dataName).list()
+                .ofMaxSize(3)
+                .uniqueElements(it -> it.name());
+
+            return constructorNodes.map(constructors -> {
+                var dataMeta = Meta.of(new Attributes(dataName, TypeKind.INSTANCE));
+                return SyntaxNodes.dataNode(dataMeta, name, Lists.immutable.empty(), Lists.immutable.ofAll(constructors));
+            });
+        });
+    }
+
+    // Let declarations
+    public static Arbitrary<LetNode<Attributes>> letNode(GenEnvironment env, NamespaceName nsName) {
         return Combinators.combine(
             nameArbitrary.filter(name -> env.lookupValue(name).isEmpty()),
             exprNode(env)
@@ -374,12 +416,27 @@ public class SyntaxArbitraries {
         });
     }
 
+    // Declarations
+    public static Arbitrary<DeclarationNode<Attributes>> declarationNode(GenEnvironment env, NamespaceName nsName) {
+        return Arbitraries.frequencyOf(
+            Tuple.of(1, dataNode(env, nsName)),
+            Tuple.of(3, letNode(env, nsName))
+        );
+    }
+
     public static Arbitrary<ImmutableList<DeclarationNode<Attributes>>> declarations(GenEnvironment env, NamespaceName nsName, int depth) {
         return Arbitraries.recursive(
             () -> Arbitraries.just(Lists.immutable.empty()),
             (existingDecls) -> existingDecls.flatMap(decls -> {
                 return declarationNode(env, nsName).map(decl -> {
-                    env.putValue(decl.name(), decl.meta());
+                    if (decl instanceof LetNode<Attributes> let) {
+                        env.putValue(let.name(), let.meta());
+                    } else if (decl instanceof DataNode<Attributes> data) {
+                        env.putType(data.name(), data.meta());
+                        data.constructors().forEach(constr -> {
+                            env.putValue(constr.name(), constr.meta());
+                        });
+                    }
                     return decls.newWith(decl);
                 });
             }),
@@ -391,9 +448,10 @@ public class SyntaxArbitraries {
         nameArbitrary,
         Arbitraries.integers().between(0, 8)
     ).flatAs((name, declCount) -> {
+        var env = new GenEnvironment();
         var pkg = Lists.immutable.of("Mina", "Test");
         var nsName = new NamespaceName(pkg, name);
-        return declarations(new GenEnvironment(), nsName, declCount).map(decls -> {
+        return declarations(env, nsName, declCount).map(decls -> {
             return SyntaxNodes.namespaceNode(
                 Meta.of(new Attributes(nsName, Type.NAMESPACE)),
                 SyntaxNodes.nsIdNode(Range.EMPTY, pkg, name),
