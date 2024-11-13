@@ -41,13 +41,13 @@ public class CodeGeneratorTest {
         var contextLoader = Thread.currentThread().getContextClassLoader();
         var codeGenerator = new CodeGenerator();
         var tempDir = createTempDir();
-        System.err.println(namespace.accept(printer).render(80));
         try (var urlLoader = URLClassLoader.newInstance(new URL[] { tempDir.toUri().toURL() }, contextLoader)) {
             var namespaceClassName = namespace.getName().canonicalName().replace('/', '.') + ".$namespace";
             codeGenerator.generate(tempDir, namespace);
             try {
                 Class.forName(namespaceClassName, true, urlLoader);
             } catch (ClassNotFoundException | LinkageError e) {
+                System.err.println(namespace.accept(printer).render(80));
                 Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
             }
         } finally {
