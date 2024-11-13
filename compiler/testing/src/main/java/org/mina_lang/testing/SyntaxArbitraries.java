@@ -501,7 +501,7 @@ public class SyntaxArbitraries {
     public static Arbitrary<? extends ExprNode<Attributes>> exprNode(GenEnvironment env) {
         return Arbitraries.lazy(() -> {
             var generators = Lists.mutable.of(
-                Tuple.of(4, literalNode),
+                Tuple.of(8, literalNode),
                 Tuple.of(1, ifNode(env)),
                 Tuple.of(1, lambdaNode(env)),
                 Tuple.of(1, blockNode(env))
@@ -533,7 +533,7 @@ public class SyntaxArbitraries {
 
             var literalGen = literalWithType(typ);
             if (literalGen != null) {
-                generators.add(Tuple.of(4, literalGen));
+                generators.add(Tuple.of(8, literalGen));
                 generators.add(Tuple.of(1, ifNodeWithType(env, typ)));
                 generators.add(Tuple.of(1, blockNodeWithType(env, typ)));
             }

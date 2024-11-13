@@ -27,6 +27,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -456,37 +457,38 @@ public class CodeGenerator {
         } else if (expr instanceof ApplyNode<Attributes> apply) {
             var applyType = Types.getType(apply);
 
-            Name appliedName;
-            TypeApply funType;
-            ImmutableList<ExprNode<Attributes>> effectiveArgs;
+            ExprNode<Attributes> appliedExpr;
+            ImmutableList<ExprNode<Attributes>> appliedArgs;
+
             if (apply.expr() instanceof SelectNode<Attributes> select) {
-                funType = (TypeApply) Types.getUnderlyingType(select.selection());
-                effectiveArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
-                appliedName = select.selection().meta().meta().name();
+                appliedExpr = select.selection();
+                appliedArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
             } else {
-                funType = (TypeApply) Types.getUnderlyingType(apply.expr());
-                effectiveArgs = apply.args();
-                appliedName = apply.expr().meta().meta().name();
+                appliedExpr = apply.expr();
+                appliedArgs = apply.args();
             }
 
-            var funReturnType = Types.asmType(funType.typeArguments().getLast());
-            var funArgTypes = funType.typeArguments()
-                    .take(funType.typeArguments().size() - 1)
+            Name appliedName = appliedExpr.meta().meta().name();
+            TypeApply appliedType = (TypeApply) Types.getUnderlyingType(appliedExpr);
+
+            var funReturnType = Types.asmType(appliedType.typeArguments().getLast());
+            var funArgTypes = appliedType.typeArguments()
+                    .take(appliedType.typeArguments().size() - 1)
                     .collect(Types::asmType)
-                    .toArray(new Type[funType.typeArguments().size() - 1]);
+                    .toArray(new Type[appliedType.typeArguments().size() - 1]);
 
             if (appliedName instanceof LetName letName) {
                 var namespaceName = letName.name().ns();
                 var declarationName = letName.name().name();
                 var ownerType = Types.getNamespaceAsmType(namespaceName);
 
-                effectiveArgs
-                        .zip(funType.typeArguments())
+                appliedArgs
+                        .zip(appliedType.typeArguments())
                         .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
 
                 method.methodWriter().invokeStatic(ownerType, new Method(declarationName, funReturnType, funArgTypes));
 
-                Asm.boxUnboxReturnValue(method.methodWriter(), funType.typeArguments().getLast(), applyType);
+                Asm.boxUnboxReturnValue(method.methodWriter(), appliedType.typeArguments().getLast(), applyType);
 
             } else if (appliedName instanceof ConstructorName constrName) {
                 var constrType = Types.getConstructorAsmType(constrName);
@@ -494,8 +496,8 @@ public class CodeGenerator {
                 method.methodWriter().newInstance(constrType);
                 method.methodWriter().dup();
 
-                effectiveArgs
-                        .zip(funType.typeArguments())
+                appliedArgs
+                        .zip(appliedType.typeArguments())
                         .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
 
                 method.methodWriter().invokeConstructor(constrType, new Method("<init>", Type.VOID_TYPE, funArgTypes));
@@ -507,17 +509,17 @@ public class CodeGenerator {
                 method.methodWriter().checkCast(Types.getDataAsmType(constrName.enclosing()));
 
             } else if (appliedName.equals(Nameless.INSTANCE) || appliedName instanceof LocalName) {
-                generateExpr(apply.expr());
+                generateExpr(appliedExpr);
 
-                effectiveArgs
-                        .zip(funType.typeArguments())
+                appliedArgs
+                        .zip(appliedType.typeArguments())
                         .forEach(pair -> generateBoxedArgExpr(pair.getOne(), pair.getTwo()));
 
                 method.methodWriter().invokeInterface(
-                        Types.asmType(funType),
+                        Types.asmType(appliedType),
                         Types.erasedMethod("apply", funArgTypes.length));
 
-                Asm.boxUnboxReturnValue(method.methodWriter(), funType.typeArguments().getLast(), applyType);
+                Asm.unboxReturnValue(method.methodWriter(), applyType);
             }
 
         } else if (expr instanceof LiteralNode<Attributes> lit) {
@@ -562,11 +564,15 @@ public class CodeGenerator {
                         let.name().name(),
                         Types.asmType(ref));
             } else if (name instanceof LocalName local) {
-                environment.lookupLocalVar(local).ifPresentOrElse(localVar -> {
+                environment.lookupLocalVarIn(method.methodWriter(), local).ifPresentOrElse(localVar -> {
                     method.methodWriter().loadLocal(localVar.index());
                 }, () -> {
-                    var localVar = method.methodParams().get(local);
-                    method.methodWriter().loadArg(localVar.index());
+                    var methodParam = Optional.ofNullable(method.methodParams().get(local));
+                    methodParam.ifPresentOrElse(localVar -> {
+                        method.methodWriter().loadArg(localVar.index());
+                    }, () -> {
+                        throw new IllegalStateException("Unable to look up local variable " + local.name() + "@" + local.index());
+                    });
                 });
             }
         }

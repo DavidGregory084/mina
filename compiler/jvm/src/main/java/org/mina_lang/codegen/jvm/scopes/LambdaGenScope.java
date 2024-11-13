@@ -16,6 +16,7 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.Named;
+import org.mina_lang.common.types.Type;
 import org.mina_lang.syntax.LambdaNode;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.ReferenceNode;
@@ -54,7 +55,7 @@ public record LambdaGenScope(
             LambdaNode<Attributes> lambda,
             ClassWriter namespaceWriter) {
 
-        var freeVariables = lambda.accept(new FreeVariablesFolder());
+        var freeVariables = lambda.accept(new FreeLocalVariablesFolder());
 
         // Any free variables captured in the lambda must be converted into parameters
         var allParams = Lists.immutable.<MetaNode<Attributes>>empty()

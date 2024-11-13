@@ -204,12 +204,12 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
 
     @Override
     public Doc visitSelect(Meta<A> meta, Doc receiver, Doc selection) {
-        return receiver.append(
-            Doc.group(
-                Doc.lineOrEmpty()
-                    .append(DOT)
-                    .append(selection)
-                    .indent(this.indent)));
+        return receiver.append(Doc.group(
+            Doc.lineOrEmpty()
+                .append(DOT)
+                .append(selection)
+                .indent(this.indent)
+        ));
     }
 
     @Override

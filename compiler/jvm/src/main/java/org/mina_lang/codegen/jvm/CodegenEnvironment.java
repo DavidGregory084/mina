@@ -12,6 +12,7 @@ import org.mina_lang.common.Environment;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.Optional;
 
@@ -99,9 +100,13 @@ public record CodegenEnvironment(MutableStack<CodegenScope> scopes) implements E
         return new CodegenEnvironment(scopes);
     }
 
-    public Optional<LocalVar> lookupLocalVar(Named varName) {
+    public Optional<LocalVar> lookupLocalVarIn(GeneratorAdapter methodWriter, Named varName) {
         return scopes()
-                .select(scope -> scope instanceof VarBindingScope varBinder && varBinder.hasLocalVar(varName))
+                .select(scope -> {
+                    return scope instanceof VarBindingScope varBinder &&
+                        varBinder.methodWriter().equals(methodWriter) && // Make sure we only look up local vars from the same Java method
+                        varBinder.hasLocalVar(varName);
+                })
                 .getFirstOptional()
                 .flatMap(varBinder -> ((VarBindingScope) varBinder).lookupLocalVar(varName));
     }
