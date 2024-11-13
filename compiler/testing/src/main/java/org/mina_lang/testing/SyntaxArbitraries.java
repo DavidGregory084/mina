@@ -34,8 +34,16 @@ public class SyntaxArbitraries {
         return node.meta().meta().name();
     }
 
+    private static Name getName(Meta<Attributes> meta) {
+        return meta.meta().name();
+    }
+
     private static Type getType(MetaNode<Attributes> node) {
         return (Type) node.meta().meta().sort();
+    }
+
+    private static Type getType(Meta<Attributes> meta) {
+        return (Type) meta.meta().sort();
     }
 
     private static Set<Meta<Attributes>> getValues(GenEnvironment env) {
@@ -54,20 +62,20 @@ public class SyntaxArbitraries {
     }
 
     private static boolean isFunction(Meta<Attributes> meta) {
-        return Type.isFunction((Type) meta.meta().sort());
+        return Type.isFunction(getType(meta));
     }
 
     private static boolean isFunctionWithReturnType(Meta<Attributes> meta, Type typ) {
-        return isFunction(meta) && ((TypeApply) meta.meta().sort()).typeArguments().getLast().equals(typ);
+        return isFunction(meta) && ((TypeApply) getType(meta)).typeArguments().getLast().equals(typ);
     }
 
     private static boolean isAtLeastUnaryFunction(Meta<Attributes> meta) {
-        return isFunction(meta) && ((TypeApply) meta.meta().sort()).typeArguments().size() > 1;
+        return isFunction(meta) && ((TypeApply) getType(meta)).typeArguments().size() > 1;
     }
 
     private static boolean isFunctionOfBoundType(Meta<Attributes> meta, Type typ) {
         if (!isAtLeastUnaryFunction(meta)) { return false; }
-        var fnTyp = (TypeApply) meta.meta().sort();
+        var fnTyp = (TypeApply) getType(meta);
         var argTyps = fnTyp.typeArguments().take(fnTyp.typeArguments().size() - 1);
         var retTyp = fnTyp.typeArguments().getLast();
         var boundTyp = Type.function(argTyps.drop(1), retTyp);
@@ -163,7 +171,7 @@ public class SyntaxArbitraries {
             Arbitraries.oneOf(booleanNode, refWithType(env, Type.BOOLEAN)),
             exprNode(env)
         ).flatAs((cond, cons) -> {
-            return exprNodeWithType(env, (Type) cons.meta().meta().sort()).map(alt -> {
+            return exprNodeWithType(env, getType(cons)).map(alt -> {
                 return SyntaxNodes.ifNode(Meta.nameless(getType(cons)), cond, cons, alt);
             });
         });
@@ -175,6 +183,96 @@ public class SyntaxArbitraries {
             exprNodeWithType(env, typ), exprNodeWithType(env, typ)
         ).as((cond, cons, alt) -> {
             return SyntaxNodes.ifNode(Meta.nameless(getType(cons)), cond, cons, alt);
+        });
+    }
+
+    // Match expressions
+    private static Arbitrary<IdPatternNode<Attributes>> idPatternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
+        return nameArbitrary.map(name -> {
+            var patName = new LocalName(name, env.localVarIndex().getAndIncrement());
+            var patMeta = Meta.of(new Attributes(patName, scrutineeType));
+            scope.putValue(name, patMeta);
+            return SyntaxNodes.idPatternNode(patMeta, name);
+        });
+    }
+
+    private static Stream<Arbitrary<LiteralPatternNode<Attributes>>> literalPatternNode(GenEnvironment env, Type scrutineeType) {
+        var literal = literalWithType(scrutineeType);
+
+        if (literal == null || scrutineeType.equals(Type.UNIT))  { return Stream.empty(); }
+
+        return Stream.of(literal).map(literalArb -> {
+            return literalArb.map(literalNode -> {
+                return SyntaxNodes.literalPatternNode(
+                    Meta.nameless(scrutineeType),
+                    (LiteralNode<Attributes>) literalNode
+                );
+            });
+        });
+    }
+
+    private static Arbitrary<PatternNode<Attributes>> patternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
+        List<Tuple.Tuple2<Integer, ? extends Arbitrary<? extends PatternNode<Attributes>>>> generators =
+            Lists.mutable.of(Tuple.of(2, idPatternNode(env, scope, scrutineeType)));
+
+        generators.addAll(literalPatternNode(env, scrutineeType).map(pat -> Tuple.of(2, pat)).toList());
+
+        return Arbitraries.frequencyOf(generators.toArray(new Tuple.Tuple2[0]));
+    }
+
+    private static Arbitrary<CaseNode<Attributes>> caseNodeWithType(GenEnvironment env, GenScope caseScope, Type scrutineeType, Type resultType) {
+        return patternNode(env, caseScope, scrutineeType).flatMap(pattern -> {
+            return exprNodeWithType(env, resultType).map(expr -> {
+                return SyntaxNodes.caseNode(Meta.nameless(resultType), pattern, expr);
+            });
+        });
+    }
+
+    private static Arbitrary<CaseNode<Attributes>> fallbackCaseNodeWithType(GenEnvironment env, Type scrutineeType, Type resultType) {
+        var caseScope = new GenScope();
+        env.pushScope(caseScope);
+        return idPatternNode(env, caseScope, scrutineeType).flatMap(pattern -> {
+            return exprNodeWithType(env, resultType).map(expr -> {
+                env.popScope(GenScope.class);
+                return SyntaxNodes.caseNode(Meta.nameless(resultType), pattern, expr);
+            });
+        });
+    }
+
+    public static Arbitrary<ImmutableList<CaseNode<Attributes>>> caseNodesWithType(GenEnvironment env, Type scrutineeType, Type resultType, int depth) {
+        return Arbitraries.recursive(
+            () -> Arbitraries.just(Lists.immutable.empty()),
+            (existingDecls) -> existingDecls.flatMap(decls -> {
+                var caseScope = new GenScope();
+                env.pushScope(caseScope);
+                return caseNodeWithType(env, caseScope, scrutineeType, resultType).map(caseNode -> {
+                    env.popScope(GenScope.class);
+                    return decls.newWith(caseNode);
+                });
+            }),
+            depth
+        );
+    }
+
+    private static Arbitrary<MatchNode<Attributes>> matchNode(GenEnvironment env) {
+        return Arbitraries.of(Type.builtIns.toSet()).flatMap(typ -> matchNodeWithType(env, typ));
+    }
+
+    private static Arbitrary<MatchNode<Attributes>> matchNodeWithType(GenEnvironment env, Type resultType) {
+        return Combinators.combine(
+            Arbitraries.integers().between(0, 4),
+            exprNode(env)
+        ).flatAs((caseCount, scrutinee) -> {
+            var scrutineeType = getType(scrutinee);
+            return caseNodesWithType(env, scrutineeType, resultType, caseCount).flatMap(caseNodes -> {
+                return fallbackCaseNodeWithType(env, scrutineeType, resultType).map(fallbackCase -> {
+                    return SyntaxNodes.matchNode(
+                        Meta.nameless(resultType),
+                        scrutinee,
+                        Lists.immutable.ofAll(caseNodes).newWith(fallbackCase)
+                    );
+                });
+            });
         });
     }
 
@@ -199,7 +297,7 @@ public class SyntaxArbitraries {
             return Combinators.combine(
                 nameArbitrary.list().ofSize(numArgs).uniqueElements(),
                 booleanArbitrary.list().ofSize(numArgs),
-                Arbitraries.of(Type.builtIns.stream().toList()).list().ofSize(numArgs)
+                Arbitraries.of(Type.builtIns.toSet()).list().ofSize(numArgs)
             ).flatAs((argNames, argsAscribed, argTypes) -> {
                 var lambdaScope = new GenScope();
 
@@ -266,7 +364,7 @@ public class SyntaxArbitraries {
             exprNode(env)
         ).as((name, expr) -> {
             var letName = new LocalName(name, env.localVarIndex().getAndIncrement());
-            var letMeta = Meta.of(new Attributes(letName, expr.meta().meta().sort()));
+            var letMeta = Meta.of(new Attributes(letName, getType(expr)));
             return SyntaxNodes.letNode(letMeta, name, expr);
         });
     }
@@ -295,7 +393,7 @@ public class SyntaxArbitraries {
                     env.popScope(GenScope.class);
 
                     return maybeResult.map(result -> {
-                        var blockMeta = Meta.nameless(result.meta().meta().sort());
+                        var blockMeta = Meta.nameless(getType(result));
                         return SyntaxNodes.blockNode(blockMeta, letDecls, result);
                     }).orElseGet(() -> {
                         var blockMeta = Meta.nameless(Type.UNIT);
@@ -315,7 +413,7 @@ public class SyntaxArbitraries {
             return Arbitraries.lazy(() -> blockLetDeclarations(env, blockScope, letCount).flatMap(letDecls -> {
                 return exprNodeWithType(env, typ).map(result -> {
                     env.popScope(GenScope.class);
-                    var blockMeta = Meta.nameless(result.meta().meta().sort());
+                    var blockMeta = Meta.nameless(getType(result));
                     return SyntaxNodes.blockNode(blockMeta, letDecls, result);
                 });
             }));
@@ -327,8 +425,8 @@ public class SyntaxArbitraries {
         var values = getValuesWhere(env, SyntaxArbitraries::isAtLeastUnaryFunction);
 
         return values.stream().map(fnMeta -> {
-            var fnTyp = (TypeApply) fnMeta.meta().sort();
-            var fnName = (Named) fnMeta.meta().name();
+            var fnName = (Named) getName(fnMeta);
+            var fnTyp = (TypeApply) getType(fnMeta);
             var argTyps = fnTyp.typeArguments().take(fnTyp.typeArguments().size() - 1);
             var retTyp = fnTyp.typeArguments().getLast();
 
@@ -350,8 +448,8 @@ public class SyntaxArbitraries {
         var values = getValuesWhere(env, meta -> isFunctionOfBoundType(meta, typ));
 
         return values.stream().map(fnMeta -> {
-            var fnTyp = (TypeApply) fnMeta.meta().sort();
-            var fnName = (Named) fnMeta.meta().name();
+            var fnName = (Named) getName(fnMeta);
+            var fnTyp = (TypeApply) getType(fnMeta);
             var argTyps = fnTyp.typeArguments().take(fnTyp.typeArguments().size() - 1);
             var retTyp = fnTyp.typeArguments().getLast();
 
@@ -373,8 +471,8 @@ public class SyntaxArbitraries {
         var values = getValuesWhere(env, meta -> isAtLeastUnaryFunction(meta) && isFunctionWithReturnType(meta, typ));
 
         return values.stream().map(fnMeta -> {
-            var fnTyp = (TypeApply) fnMeta.meta().sort();
-            var fnName = (Named) fnMeta.meta().name();
+            var fnName = (Named) getName(fnMeta);
+            var fnTyp = (TypeApply) getType(fnMeta);
             var argTyps = fnTyp.typeArguments().take(fnTyp.typeArguments().size() - 1);
             var retTyp = fnTyp.typeArguments().getLast();
 
@@ -395,8 +493,8 @@ public class SyntaxArbitraries {
         Set<Meta<Attributes>> values = getValuesWhere(env, SyntaxArbitraries::isFunction);
 
         return values.stream().map(fnMeta -> {
-            var fnTyp = (TypeApply) fnMeta.meta().sort();
-            var fnName = (Named) fnMeta.meta().name();
+            var fnName = (Named) getName(fnMeta);
+            var fnTyp = (TypeApply) getType(fnMeta);
             var argTyps = fnTyp.typeArguments().take(fnTyp.typeArguments().size() - 1);
             var retTyp = fnTyp.typeArguments().getLast();
 
@@ -417,7 +515,7 @@ public class SyntaxArbitraries {
     public static Stream<Arbitrary<ApplyNode<Attributes>>> selectApplyNode(GenEnvironment env) {
         return selectNode(env).map(selectArb -> {
             return selectArb.flatMap(selectNode -> {
-                var selectTyp = (TypeApply) selectNode.meta().meta().sort();
+                var selectTyp = (TypeApply) getType(selectNode);
                 var argTyps = selectTyp.typeArguments().take(selectTyp.typeArguments().size() - 1);
                 var retTyp = selectTyp.typeArguments().getLast();
 
@@ -440,8 +538,8 @@ public class SyntaxArbitraries {
         Set<Meta<Attributes>> values = getValuesWhere(env, meta -> isFunctionWithReturnType(meta, typ));
 
         return values.stream().map(fnMeta -> {
-            var fnTyp = (TypeApply) fnMeta.meta().sort();
-            var fnName = (Named) fnMeta.meta().name();
+            var fnName = (Named) getName(fnMeta);
+            var fnTyp = (TypeApply) getType(fnMeta);
             var argTyps = fnTyp.typeArguments().take(fnTyp.typeArguments().size() - 1);
             var retTyp = fnTyp.typeArguments().getLast();
 
@@ -462,7 +560,7 @@ public class SyntaxArbitraries {
     public static Stream<Arbitrary<ApplyNode<Attributes>>> selectApplyNodeWithType(GenEnvironment env, Type typ) {
         return selectNodeWithReturnType(env, typ).map(selectArb -> {
             return selectArb.flatMap(selectNode -> {
-                var selectTyp = (TypeApply) selectNode.meta().meta().sort();
+                var selectTyp = (TypeApply) getType(selectNode);
                 var argTyps = selectTyp.typeArguments().take(selectTyp.typeArguments().size() - 1);
                 var retTyp = selectTyp.typeArguments().getLast();
 
@@ -484,16 +582,16 @@ public class SyntaxArbitraries {
     // Variable references
     public static Arbitrary<ReferenceNode<Attributes>> refNode(GenEnvironment env) {
         return Arbitraries.of(getValues(env)).map(meta -> {
-            Named name = (Named) meta.meta().name();
+            Named name = (Named) getName(meta);
             return SyntaxNodes.refNode(meta, name.localName());
         });
     }
 
     public static Arbitrary<? extends ExprNode<Attributes>>[] refWithType(GenEnvironment env, Type typ) {
         return getValues(env).stream()
-            .filter(meta -> meta.meta().sort().equals(typ))
+            .filter(meta -> getType(meta).equals(typ))
             .map(meta -> {
-                Named name = (Named) meta.meta().name();
+                Named name = (Named) getName(meta);
                 return Arbitraries.just(SyntaxNodes.refNode(meta, name.localName()));
             }).toArray(Arbitrary[]::new);
     }
@@ -504,7 +602,8 @@ public class SyntaxArbitraries {
                 Tuple.of(8, literalNode),
                 Tuple.of(1, ifNode(env)),
                 Tuple.of(1, lambdaNode(env)),
-                Tuple.of(1, blockNode(env))
+                Tuple.of(1, blockNode(env)),
+                Tuple.of(1, matchNode(env))
             );
             if (env.scopes().collectInt(scope -> scope.values().size()).sum() > 0) {
                 generators.add(Tuple.of(1, refNode(env)));
@@ -536,6 +635,7 @@ public class SyntaxArbitraries {
                 generators.add(Tuple.of(8, literalGen));
                 generators.add(Tuple.of(1, ifNodeWithType(env, typ)));
                 generators.add(Tuple.of(1, blockNodeWithType(env, typ)));
+                generators.add(Tuple.of(1, matchNodeWithType(env, typ)));
             }
 
             return Arbitraries.frequencyOf(generators.toArray(new Tuple.Tuple2[0]));
@@ -562,7 +662,7 @@ public class SyntaxArbitraries {
             return Combinators.combine(
                 nameArbitrary.filter(name -> !classNameCollides(env, nsName, name)),
                 nameArbitrary.list().ofSize(numArgs).uniqueElements(),
-                Arbitraries.of(Type.builtIns.stream().toList()).list().ofSize(numArgs)
+                Arbitraries.of(Type.builtIns.toSet()).list().ofSize(numArgs)
             ).as((constructorName, fieldNames, fieldTypes) -> {
                 var dataType = new TypeConstructor(dataName.name(), TypeKind.INSTANCE);
 
@@ -607,7 +707,7 @@ public class SyntaxArbitraries {
             exprNode(env)
         ).as((name, expr) -> {
             var letName = new LetName(new QualifiedName(nsName, name));
-            var letMeta = Meta.of(new Attributes(letName, expr.meta().meta().sort()));
+            var letMeta = Meta.of(new Attributes(letName, getType(expr)));
             return SyntaxNodes.letNode(letMeta, name, expr);
         });
     }
