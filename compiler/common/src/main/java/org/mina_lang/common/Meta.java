@@ -5,6 +5,7 @@
 package org.mina_lang.common;
 
 import com.opencastsoftware.yvette.Range;
+import org.mina_lang.common.names.Name;
 import org.mina_lang.common.types.Sort;
 
 public record Meta<A>(Range range, A meta) {
@@ -28,5 +29,9 @@ public record Meta<A>(Range range, A meta) {
 
     public static <A> Meta<A> of(A meta) {
         return new Meta<A>(Range.EMPTY, meta);
+    }
+
+    public static Meta<Attributes> of(Name name, Sort sort) {
+        return new Meta<>(Range.EMPTY, new Attributes(name, sort));
     }
 }

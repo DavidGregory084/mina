@@ -190,7 +190,7 @@ public class SyntaxArbitraries {
     private static Arbitrary<IdPatternNode<Attributes>> idPatternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
         return nameArbitrary.map(name -> {
             var patName = new LocalName(name, env.localVarIndex().getAndIncrement());
-            var patMeta = Meta.of(new Attributes(patName, scrutineeType));
+            var patMeta = Meta.of(patName, scrutineeType);
             scope.putValue(name, patMeta);
             return SyntaxNodes.idPatternNode(patMeta, name);
         });
@@ -279,11 +279,11 @@ public class SyntaxArbitraries {
     // Lambda expressions
     private static ParamNode<Attributes> lambdaParamNode(GenEnvironment env, GenScope scope, String name, boolean ascribed, Type typ) {
         var nameMeta = new LocalName(name, env.localVarIndex().getAndIncrement());
-        var meta = Meta.of(new Attributes(nameMeta, typ));
+        var meta = Meta.of(nameMeta, typ);
         scope.putValue(name, meta);
 
         if (typ instanceof BuiltInType builtInType) {
-            var ascMeta = Meta.of(new Attributes(new BuiltInName(builtInType.name()), typ.kind()));
+            var ascMeta = Meta.of(new BuiltInName(builtInType.name()), typ.kind());
             var ascription = Optional.<TypeNode<Attributes>>ofNullable(
                 ascribed ? SyntaxNodes.typeRefNode(ascMeta, builtInType.name()) : null);
             return SyntaxNodes.paramNode(meta, name, ascription);
@@ -364,7 +364,7 @@ public class SyntaxArbitraries {
             exprNode(env)
         ).as((name, expr) -> {
             var letName = new LocalName(name, env.localVarIndex().getAndIncrement());
-            var letMeta = Meta.of(new Attributes(letName, getType(expr)));
+            var letMeta = Meta.of(letName, getType(expr));
             return SyntaxNodes.letNode(letMeta, name, expr);
         });
     }
@@ -651,8 +651,8 @@ public class SyntaxArbitraries {
 
     private static ConstructorParamNode<Attributes> constructorParamNode(ConstructorName constrName, String name, BuiltInType typ) {
         var nameMeta = new FieldName(constrName, name);
-        var meta = Meta.of(new Attributes(nameMeta, typ));
-        var ascMeta = Meta.of(new Attributes(new BuiltInName(typ.name()), typ.kind()));
+        var meta = Meta.of(nameMeta, typ);
+        var ascMeta = Meta.of(new BuiltInName(typ.name()), typ.kind());
         var ascription = SyntaxNodes.typeRefNode(ascMeta, typ.name());
         return SyntaxNodes.constructorParamNode(meta, name, ascription);
     }
@@ -667,7 +667,7 @@ public class SyntaxArbitraries {
                 var dataType = new TypeConstructor(dataName.name(), TypeKind.INSTANCE);
 
                 var constrName = new ConstructorName(dataName, new QualifiedName(nsName, constructorName));
-                var constrMeta = Meta.of(new Attributes(constrName, Type.function(Lists.immutable.ofAll(fieldTypes), dataType)));
+                var constrMeta = Meta.of(constrName, Type.function(Lists.immutable.ofAll(fieldTypes), dataType));
 
                 var fields = IntStream.range(0, numArgs).mapToObj(i -> {
                     var name = fieldNames.get(i);
@@ -694,7 +694,7 @@ public class SyntaxArbitraries {
                 .uniqueElements(it -> it.name());
 
             return constructorNodes.map(constructors -> {
-                var dataMeta = Meta.of(new Attributes(dataName, TypeKind.INSTANCE));
+                var dataMeta = Meta.of(dataName, TypeKind.INSTANCE);
                 return SyntaxNodes.dataNode(dataMeta, name, Lists.immutable.empty(), Lists.immutable.ofAll(constructors));
             });
         });
@@ -707,7 +707,7 @@ public class SyntaxArbitraries {
             exprNode(env)
         ).as((name, expr) -> {
             var letName = new LetName(new QualifiedName(nsName, name));
-            var letMeta = Meta.of(new Attributes(letName, getType(expr)));
+            var letMeta = Meta.of(letName, getType(expr));
             return SyntaxNodes.letNode(letMeta, name, expr);
         });
     }
@@ -749,7 +749,7 @@ public class SyntaxArbitraries {
         var nsName = new NamespaceName(pkg, name);
         return declarations(env, nsName, declCount).map(decls -> {
             return SyntaxNodes.namespaceNode(
-                Meta.of(new Attributes(nsName, Type.NAMESPACE)),
+                Meta.of(nsName, Type.NAMESPACE),
                 SyntaxNodes.nsIdNode(Range.EMPTY, pkg, name),
                 Lists.immutable.empty(), decls
             );

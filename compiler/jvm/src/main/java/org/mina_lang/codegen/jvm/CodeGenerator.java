@@ -407,17 +407,17 @@ public class CodeGenerator {
             // TODO: Investigate using a bootstrap method with MethodHandle#bind to simplify this
             var funType = (TypeApply) Types.getUnderlyingType(select);
 
-            var lambdaAttrs = new Attributes(Nameless.INSTANCE, selectMeta.meta().sort());
+            var lambdaAttrs = Attributes.nameless(selectMeta.meta().sort());
             var lambdaMeta = selectMeta.withMeta(lambdaAttrs);
 
             var lambdaParams = funType.typeArguments()
                 .take(funType.typeArguments().size() - 1)
                 .collectWithIndex((paramTy, index) -> {
                     var paramName = new LocalName("arg" +  index, 0);
-                    return paramNode(Meta.of(new Attributes(paramName, paramTy)), "arg" + index);
+                    return paramNode(Meta.of(paramName, paramTy), "arg" + index);
                 });
 
-            var applyAttrs = new Attributes(Nameless.INSTANCE, funType.typeArguments().getLast());
+            var applyAttrs = Attributes.nameless(funType.typeArguments().getLast());
             var applyMeta = selectMeta.withMeta(applyAttrs);
 
             var appliedExprs = Lists.immutable.of(select.receiver())
@@ -425,7 +425,7 @@ public class CodeGenerator {
                     .take(funType.typeArguments().size() - 1)
                     .collectWithIndex((paramTy, index) -> {
                         var paramName = new LocalName("arg" +  index, 0);
-                        return refNode(Meta.of(new Attributes(paramName, paramTy)), "arg" + index);
+                        return refNode(Meta.of(paramName, paramTy), "arg" + index);
                     }));
 
             var lambda = lambdaNode(

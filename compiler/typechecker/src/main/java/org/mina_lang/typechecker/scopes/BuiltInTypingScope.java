@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.typechecker.scopes;
@@ -35,7 +35,7 @@ public record BuiltInTypingScope(
         var builtInTypes = Type.builtIns
                 .toMap(
                         typ -> typ.name(),
-                        typ -> Meta.of(new Attributes(new BuiltInName(typ.name()), typ.kind())));
+                        typ -> Meta.of(new BuiltInName(typ.name()), typ.kind()));
 
         return new BuiltInTypingScope(
                 Maps.mutable.empty(),
