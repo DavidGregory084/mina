@@ -176,8 +176,9 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     public Doc visitIf(Meta<A> meta, Doc condition, Doc consequent, Doc alternative) {
         return Doc.group(
             IF.appendSpace(condition)
-            .appendLineOrSpace(THEN).appendSpace(consequent.indent(this.indent))
-            .appendLineOrSpace(ELSE).appendSpace(alternative.indent(this.indent)));
+                .appendLineOrSpace(THEN).appendSpace(consequent)
+                .appendLineOrSpace(ELSE).appendSpace(alternative)
+        );
     }
 
     @Override

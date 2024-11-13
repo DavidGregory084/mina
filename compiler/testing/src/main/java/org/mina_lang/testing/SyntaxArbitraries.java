@@ -212,7 +212,7 @@ public class SyntaxArbitraries {
 
                 env.pushScope(lambdaScope);
 
-                return exprNode(env).map(bodyExpr -> {
+                return Arbitraries.lazy(() -> exprNode(env).map(bodyExpr -> {
                     env.popScope(GenScope.class);
                     var upcastArgTypes = argTypes.stream().map(typ -> (Type) typ).collect(Collectors2.toImmutableList());
                     return SyntaxNodes.lambdaNode(
@@ -220,7 +220,7 @@ public class SyntaxArbitraries {
                         argExprs,
                         bodyExpr
                     );
-                });
+                }));
             });
         });
     }
@@ -248,14 +248,14 @@ public class SyntaxArbitraries {
 
             env.pushScope(lambdaScope);
 
-            return exprNodeWithType(env, returnType).map(bodyExpr -> {
+            return Arbitraries.lazy(() -> exprNodeWithType(env, returnType).map(bodyExpr -> {
                 env.popScope(GenScope.class);
                 return SyntaxNodes.lambdaNode(
                     Meta.nameless(Type.function(argTypes, getType(bodyExpr))),
                     argExprs,
                     bodyExpr
                 );
-            });
+            }));
         }));
     }
 
@@ -290,7 +290,7 @@ public class SyntaxArbitraries {
 
             env.pushScope(blockScope);
 
-            return blockLetDeclarations(env, blockScope, letCount).flatMap(letDecls -> {
+            return Arbitraries.lazy(() -> blockLetDeclarations(env, blockScope, letCount).flatMap(letDecls -> {
                 return exprNode(env).optional().map(maybeResult -> {
                     env.popScope(GenScope.class);
 
@@ -302,23 +302,23 @@ public class SyntaxArbitraries {
                         return SyntaxNodes.blockNode(blockMeta, letDecls, Optional.empty());
                     });
                 });
-            });
+            }));
         });
     }
 
     public static Arbitrary<BlockNode<Attributes>> blockNodeWithType(GenEnvironment env, Type typ) {
-        var blockScope = new GenScope();
-
         return Arbitraries.integers().between(0, 3).flatMap(letCount -> {
+            var blockScope = new GenScope();
+
             env.pushScope(blockScope);
 
-            return blockLetDeclarations(env, blockScope, letCount).flatMap(letDecls -> {
+            return Arbitraries.lazy(() -> blockLetDeclarations(env, blockScope, letCount).flatMap(letDecls -> {
                 return exprNodeWithType(env, typ).map(result -> {
                     env.popScope(GenScope.class);
                     var blockMeta = Meta.nameless(result.meta().meta().sort());
                     return SyntaxNodes.blockNode(blockMeta, letDecls, result);
                 });
-            });
+            }));
         });
     }
 
