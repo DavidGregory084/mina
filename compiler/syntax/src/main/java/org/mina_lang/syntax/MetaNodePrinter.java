@@ -54,6 +54,10 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
         this.indent = DEFAULT_INDENT;
     }
 
+    private Doc indented(Doc expr) {
+        return Doc.group(Doc.lineOrSpace().append(expr).indent(this.indent));
+    }
+
     private Doc visitNamespaceId(NamespaceIdNode id) {
         if (!id.pkg().isEmpty()) {
             return Doc.intersperse(RSLASH, id.pkg().stream().map(Doc::text))
@@ -142,7 +146,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     public Doc visitLet(Meta<A> meta, String name, Optional<Doc> type, Doc expr) {
         var nameDoc = LET.appendSpace(Doc.text(name));
         var typeDoc = type.map(COLON::appendSpace);
-        var bodyDoc = Doc.group(EQUAL.append(Doc.lineOrSpace().append(expr).indent(this.indent)));
+        var bodyDoc = EQUAL.append(indented(expr));
         return typeDoc
             .map(typ -> nameDoc.append(typ).appendSpace(bodyDoc))
             .orElseGet(() -> nameDoc.appendSpace(bodyDoc));
@@ -154,7 +158,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
         var tpArgsDoc = typeParams.isEmpty() ? Doc.empty() : visitTypeParams(typeParams);
         var argsDoc = valueParams.isEmpty() ? Doc.empty() : visitValueParams(valueParams);
         var typeDoc = returnType.map(COLON::appendSpace);
-        var bodyDoc = Doc.group(EQUAL.append(Doc.lineOrSpace().append(expr).indent(this.indent)));
+        var bodyDoc = EQUAL.append(indented(expr));
         return typeDoc
             .map(typ -> nameDoc.append(tpArgsDoc).append(argsDoc).append(typ).appendSpace(bodyDoc))
             .orElseGet(() -> nameDoc.append(tpArgsDoc).append(argsDoc).appendSpace(bodyDoc));
@@ -183,11 +187,9 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
 
     @Override
     public Doc visitLambda(Meta<A> meta, ImmutableList<Doc> params, Doc body) {
-        var argsDoc = visitValueParams(params);
-        var bodyDoc =  Doc.group(Doc.lineOrSpace().append(body).indent(this.indent));
-        return argsDoc
+        return visitValueParams(params)
             .appendSpace(ARROW)
-            .append(bodyDoc);
+            .append(indented(body));
     }
 
     @Override
