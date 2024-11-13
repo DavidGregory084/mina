@@ -16,7 +16,6 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.Named;
-import org.mina_lang.common.types.Type;
 import org.mina_lang.syntax.LambdaNode;
 import org.mina_lang.syntax.MetaNode;
 import org.mina_lang.syntax.ReferenceNode;
