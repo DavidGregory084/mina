@@ -17,3 +17,4 @@ compiler/parser/src/main/antlr/org/mina_lang/parser/gen/
 .project
 *.class
 *.tokens
+*.tsbuildinfo
