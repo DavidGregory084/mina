@@ -19,10 +19,8 @@ import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -59,6 +57,46 @@ public class SyntaxArbitraries {
             .flatCollect(GenScope::values)
             .select(test)
             .toSet();
+    }
+
+    private static Set<Meta<Attributes>> getTypes(GenEnvironment env) {
+        return env.scopes().toList()
+            .toReversed()
+            .flatCollect(GenScope::types)
+            .toSet();
+    }
+
+    private static Set<Meta<Attributes>> getTypesWhere(GenEnvironment env, Predicate<Meta<Attributes>> test) {
+        return env.scopes().toList()
+            .toReversed()
+            .flatCollect(GenScope::types)
+            .select(test)
+            .toSet();
+    }
+
+    private static Map<String, Meta<Attributes>> getFields(GenEnvironment env, ConstructorName constrName) {
+        return env.scopes().toList()
+            .toReversed().stream()
+            .flatMap(scope -> {
+                var constrFields = scope.fields().get(constrName);
+                return constrFields != null
+                    ? constrFields.entrySet().stream()
+                    : Stream.empty();
+            })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private static Map<String, Meta<Attributes>> getFieldsWhere(GenEnvironment env, ConstructorName constrName, Predicate<Meta<Attributes>> test) {
+        return env.scopes().toList()
+            .toReversed().stream()
+            .flatMap(scope -> {
+                var constrFields = scope.fields().get(constrName);
+                return constrFields != null
+                    ? constrFields.entrySet().stream()
+                    : Stream.empty();
+            })
+            .filter(entry -> test.accept(entry.getValue()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static <T> void addWeightedGenerator(List<Tuple.Tuple2<Integer, Arbitrary<? extends T>>> generators, Stream<Arbitrary<? extends T>> arbitraryStream, int weight) {
@@ -218,11 +256,61 @@ public class SyntaxArbitraries {
         });
     }
 
+    private static Arbitrary<FieldPatternNode<Attributes>> fieldPatternNode(GenEnvironment env, GenScope scope, String fieldName, Meta<Attributes> fieldMeta) {
+        var fieldType = getType(fieldMeta);
+        return patternNode(env, scope, fieldType).optional().map(pat -> {
+            if (pat.isEmpty()) {
+                scope.putValue(fieldName, fieldMeta);
+            }
+            return SyntaxNodes.fieldPatternNode(fieldMeta, fieldName, pat);
+        });
+    }
+
+    private static Arbitrary<ImmutableList<FieldPatternNode<Attributes>>> fieldPatternNodes(GenEnvironment env, GenScope scope, ConstructorName constrName) {
+        var constrFields = getFields(env, constrName);
+        return Arbitraries.subsetOf(constrFields.entrySet()).flatMap(fieldSet -> {
+            var fieldPatterns = fieldSet.stream()
+                .map(entry -> fieldPatternNode(env, scope, entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+           return Combinators.combine(fieldPatterns).as(Lists.immutable::ofAll);
+        });
+    }
+
+    private static Stream<Arbitrary<? extends PatternNode<Attributes>>> constructorPatternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
+        if (scrutineeType instanceof TypeConstructor tyCon) {
+            var dataMeta = env.lookupType(tyCon.name().name());
+
+            if (dataMeta.isEmpty()) { return Stream.empty(); }
+
+            var dataName = getName(dataMeta.get());
+
+            var dataConstructors = getValuesWhere(env, meta -> {
+                var metaName = getName(meta);
+                return metaName instanceof ConstructorName constrName &&
+                    constrName.enclosing().equals(dataName);
+            });
+
+            return Stream.of(
+                Arbitraries.of(dataConstructors)
+                    .flatMap(constrMeta -> {
+                        var constrName = (ConstructorName) getName(constrMeta);
+                        var constrId = SyntaxNodes.idNode(Range.EMPTY, constrName.name().name());
+                        return fieldPatternNodes(env, scope, constrName).map(fieldPatterns -> {
+                            return SyntaxNodes.constructorPatternNode(constrMeta, constrId, fieldPatterns);
+                        });
+                    })
+            );
+        } else {
+            return Stream.empty();
+        }
+    }
+
     private static Arbitrary<PatternNode<Attributes>> patternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
         List<Tuple.Tuple2<Integer, Arbitrary<? extends PatternNode<Attributes>>>> generators =
-            Lists.mutable.of(Tuple.of(2, idPatternNode(env, scope, scrutineeType)));
+            Lists.mutable.of(Tuple.of(1, idPatternNode(env, scope, scrutineeType)));
 
         addWeightedGenerator(generators, literalPatternNode(env, scrutineeType), 2);
+        addWeightedGenerator(generators, constructorPatternNode(env, scope, scrutineeType), 2);
 
         return Arbitraries.frequencyOf(generators.toArray(new Tuple.Tuple2[0]));
     }
@@ -659,6 +747,13 @@ public class SyntaxArbitraries {
             env.lookupType(name).isPresent();
     }
 
+    public static boolean classNameCollides(GenEnvironment env, NamespaceName nsName, DataName dataName, String name) {
+        return name.equals(nsName.name()) ||
+            name.equals(dataName.name().name()) ||
+            env.lookupValue(name).isPresent() ||
+            env.lookupType(name).isPresent();
+    }
+
     private static ConstructorParamNode<Attributes> constructorParamNode(ConstructorName constrName, String name, BuiltInType typ) {
         var nameMeta = new FieldName(constrName, name);
         var meta = Meta.of(nameMeta, typ);
@@ -670,7 +765,7 @@ public class SyntaxArbitraries {
     public static Arbitrary<ConstructorNode<Attributes>> constructorNode(GenEnvironment env, NamespaceName nsName, DataName dataName) {
         return Arbitraries.integers().between(0, 3).flatMap(numArgs -> {
             return Combinators.combine(
-                nameArbitrary.filter(name -> !classNameCollides(env, nsName, name)),
+                nameArbitrary.filter(name -> !classNameCollides(env, nsName, dataName, name)),
                 nameArbitrary.list().ofSize(numArgs).uniqueElements(),
                 Arbitraries.of(Type.builtIns.toSet()).list().ofSize(numArgs)
             ).as((constructorName, fieldNames, fieldTypes) -> {
@@ -740,7 +835,11 @@ public class SyntaxArbitraries {
                     } else if (decl instanceof DataNode<Attributes> data) {
                         env.putType(data.name(), data.meta());
                         data.constructors().forEach(constr -> {
+                            var constrName = (ConstructorName) getName(constr);
                             env.putValue(constr.name(), constr.meta());
+                            constr.params().forEach(constrParam -> {
+                                env.putField(constrName, constrParam.name(), constrParam.meta());
+                            });
                         });
                     }
                     return decls.newWith(decl);
