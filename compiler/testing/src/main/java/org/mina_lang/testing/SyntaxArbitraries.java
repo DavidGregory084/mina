@@ -61,6 +61,13 @@ public class SyntaxArbitraries {
             .toSet();
     }
 
+    private static <T> void addWeightedGenerator(List<Tuple.Tuple2<Integer, Arbitrary<? extends T>>> generators, Stream<Arbitrary<? extends T>> arbitraryStream, int weight) {
+        var arbitraries = arbitraryStream.toList();
+        if (!arbitraries.isEmpty()) {
+            generators.add(Tuple.of(weight, Arbitraries.oneOf(arbitraries)));
+        }
+    }
+
     private static boolean isFunction(Meta<Attributes> meta) {
         return Type.isFunction(getType(meta));
     }
@@ -141,7 +148,7 @@ public class SyntaxArbitraries {
         Optional.empty()
     ));
 
-    public static Arbitrary<ExprNode<Attributes>> literalNode = Arbitraries.oneOf(booleanNode, charNode, stringNode, intNode, longNode, floatNode, doubleNode, unitNode);
+    public static Arbitrary<? extends ExprNode<Attributes>> literalNode = Arbitraries.oneOf(booleanNode, charNode, stringNode, intNode, longNode, floatNode, doubleNode, unitNode);
 
     public static Arbitrary<? extends ExprNode<Attributes>> literalWithType(Type typ) {
         if (Type.BOOLEAN.equals(typ)) {
@@ -166,7 +173,7 @@ public class SyntaxArbitraries {
     }
 
     // If expressions
-    public static Arbitrary<IfNode<Attributes>> ifNode(GenEnvironment env) {
+    public static Arbitrary<? extends ExprNode<Attributes>> ifNode(GenEnvironment env) {
         return Combinators.combine(
             Arbitraries.oneOf(booleanNode, refWithType(env, Type.BOOLEAN)),
             exprNode(env)
@@ -177,7 +184,7 @@ public class SyntaxArbitraries {
         });
     }
 
-    public static Arbitrary<IfNode<Attributes>> ifNodeWithType(GenEnvironment env, Type typ) {
+    public static Arbitrary<? extends ExprNode<Attributes>> ifNodeWithType(GenEnvironment env, Type typ) {
         return Combinators.combine(
             Arbitraries.oneOf(booleanNode, refWithType(env, Type.BOOLEAN)),
             exprNodeWithType(env, typ), exprNodeWithType(env, typ)
@@ -187,7 +194,7 @@ public class SyntaxArbitraries {
     }
 
     // Match expressions
-    private static Arbitrary<IdPatternNode<Attributes>> idPatternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
+    private static Arbitrary<? extends PatternNode<Attributes>> idPatternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
         return nameArbitrary.map(name -> {
             var patName = new LocalName(name, env.localVarIndex().getAndIncrement());
             var patMeta = Meta.of(patName, scrutineeType);
@@ -196,7 +203,7 @@ public class SyntaxArbitraries {
         });
     }
 
-    private static Stream<Arbitrary<LiteralPatternNode<Attributes>>> literalPatternNode(GenEnvironment env, Type scrutineeType) {
+    private static Stream<Arbitrary<? extends PatternNode<Attributes>>> literalPatternNode(GenEnvironment env, Type scrutineeType) {
         var literal = literalWithType(scrutineeType);
 
         if (literal == null || scrutineeType.equals(Type.UNIT))  { return Stream.empty(); }
@@ -212,10 +219,10 @@ public class SyntaxArbitraries {
     }
 
     private static Arbitrary<PatternNode<Attributes>> patternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
-        List<Tuple.Tuple2<Integer, ? extends Arbitrary<? extends PatternNode<Attributes>>>> generators =
+        List<Tuple.Tuple2<Integer, Arbitrary<? extends PatternNode<Attributes>>>> generators =
             Lists.mutable.of(Tuple.of(2, idPatternNode(env, scope, scrutineeType)));
 
-        generators.addAll(literalPatternNode(env, scrutineeType).map(pat -> Tuple.of(2, pat)).toList());
+        addWeightedGenerator(generators, literalPatternNode(env, scrutineeType), 2);
 
         return Arbitraries.frequencyOf(generators.toArray(new Tuple.Tuple2[0]));
     }
@@ -254,7 +261,7 @@ public class SyntaxArbitraries {
         );
     }
 
-    private static Arbitrary<MatchNode<Attributes>> matchNode(GenEnvironment env) {
+    private static Arbitrary<? extends ExprNode<Attributes>> matchNode(GenEnvironment env) {
         return Arbitraries.of(Type.builtIns.toSet()).flatMap(typ -> matchNodeWithType(env, typ));
     }
 
@@ -292,7 +299,7 @@ public class SyntaxArbitraries {
         }
     }
 
-    public static Arbitrary<LambdaNode<Attributes>> lambdaNode(GenEnvironment env) {
+    public static Arbitrary<? extends ExprNode<Attributes>> lambdaNode(GenEnvironment env) {
         return Arbitraries.integers().between(0, 5).flatMap(numArgs -> {
             return Combinators.combine(
                 nameArbitrary.list().ofSize(numArgs).uniqueElements(),
@@ -323,7 +330,7 @@ public class SyntaxArbitraries {
         });
     }
 
-    public static Stream<Arbitrary<LambdaNode<Attributes>>> lambdaNodeWithType(GenEnvironment env, Type typ) {
+    public static Stream<Arbitrary<? extends ExprNode<Attributes>>> lambdaNodeWithType(GenEnvironment env, Type typ) {
         if (!Type.isFunction(typ)) { return Stream.empty(); }
 
         var tyApp = (TypeApply) typ;
@@ -382,7 +389,7 @@ public class SyntaxArbitraries {
         );
     }
 
-    public static Arbitrary<BlockNode<Attributes>> blockNode(GenEnvironment env) {
+    public static Arbitrary<? extends ExprNode<Attributes>> blockNode(GenEnvironment env) {
         return Arbitraries.integers().between(0, 3).flatMap(letCount -> {
             var blockScope = new GenScope();
 
@@ -421,7 +428,7 @@ public class SyntaxArbitraries {
     }
 
     // Function binding (UFCS)
-    public static Stream<Arbitrary<SelectNode<Attributes>>> selectNode(GenEnvironment env) {
+    public static Stream<Arbitrary<? extends ExprNode<Attributes>>> selectNode(GenEnvironment env) {
         var values = getValuesWhere(env, SyntaxArbitraries::isAtLeastUnaryFunction);
 
         return values.stream().map(fnMeta -> {
@@ -442,7 +449,7 @@ public class SyntaxArbitraries {
         });
     }
 
-    public static Stream<Arbitrary<SelectNode<Attributes>>> selectNodeWithType(GenEnvironment env, Type typ) {
+    public static Stream<Arbitrary<? extends ExprNode<Attributes>>> selectNodeWithType(GenEnvironment env, Type typ) {
         if (!Type.isFunction(typ)) { return Stream.empty(); }
 
         var values = getValuesWhere(env, meta -> isFunctionOfBoundType(meta, typ));
@@ -489,7 +496,7 @@ public class SyntaxArbitraries {
     }
 
     // Function application
-    public static Stream<Arbitrary<ApplyNode<Attributes>>> applyNode(GenEnvironment env) {
+    public static Stream<Arbitrary<? extends ExprNode<Attributes>>> applyNode(GenEnvironment env) {
         Set<Meta<Attributes>> values = getValuesWhere(env, SyntaxArbitraries::isFunction);
 
         return values.stream().map(fnMeta -> {
@@ -512,7 +519,7 @@ public class SyntaxArbitraries {
         });
     }
 
-    public static Stream<Arbitrary<ApplyNode<Attributes>>> selectApplyNode(GenEnvironment env) {
+    public static Stream<Arbitrary<? extends ExprNode<Attributes>>> selectApplyNode(GenEnvironment env) {
         return selectNode(env).map(selectArb -> {
             return selectArb.flatMap(selectNode -> {
                 var selectTyp = (TypeApply) getType(selectNode);
@@ -534,7 +541,7 @@ public class SyntaxArbitraries {
         });
     }
 
-    public static Stream<Arbitrary<ApplyNode<Attributes>>> applyNodeWithType(GenEnvironment env, Type typ) {
+    public static Stream<Arbitrary<? extends ExprNode<Attributes>>> applyNodeWithType(GenEnvironment env, Type typ) {
         Set<Meta<Attributes>> values = getValuesWhere(env, meta -> isFunctionWithReturnType(meta, typ));
 
         return values.stream().map(fnMeta -> {
@@ -557,7 +564,7 @@ public class SyntaxArbitraries {
         });
     }
 
-    public static Stream<Arbitrary<ApplyNode<Attributes>>> selectApplyNodeWithType(GenEnvironment env, Type typ) {
+    public static Stream<Arbitrary<? extends ExprNode<Attributes>>> selectApplyNodeWithType(GenEnvironment env, Type typ) {
         return selectNodeWithReturnType(env, typ).map(selectArb -> {
             return selectArb.flatMap(selectNode -> {
                 var selectTyp = (TypeApply) getType(selectNode);
@@ -598,37 +605,40 @@ public class SyntaxArbitraries {
 
     public static Arbitrary<? extends ExprNode<Attributes>> exprNode(GenEnvironment env) {
         return Arbitraries.lazy(() -> {
-            var generators = Lists.mutable.of(
-                Tuple.of(8, literalNode),
-                Tuple.of(1, ifNode(env)),
-                Tuple.of(1, lambdaNode(env)),
-                Tuple.of(1, blockNode(env)),
-                Tuple.of(1, matchNode(env))
-            );
-            if (env.scopes().collectInt(scope -> scope.values().size()).sum() > 0) {
-                generators.add(Tuple.of(1, refNode(env)));
+            List<Tuple.Tuple2<Integer, Arbitrary<? extends ExprNode<Attributes>>>> generators =
+                Lists.mutable.of(
+                    Tuple.of(8, literalNode),
+                    Tuple.of(1, ifNode(env)),
+                    Tuple.of(1, lambdaNode(env)),
+                    Tuple.of(1, blockNode(env)),
+                    Tuple.of(1, matchNode(env))
+                );
+
+            if (!getValues(env).isEmpty()) {
+                generators.add(Tuple.of(4, refNode(env)));
             }
             if (!getValuesWhere(env, SyntaxArbitraries::isFunction).isEmpty()) {
-                generators.addAll(applyNode(env).map(gen -> Tuple.of(1, gen)).toList());
+                addWeightedGenerator(generators, applyNode(env), 1);
             }
             if (!getValuesWhere(env, SyntaxArbitraries::isAtLeastUnaryFunction).isEmpty()) {
-                generators.addAll(selectNode(env).map(gen -> Tuple.of(1, gen)).toList());
-                generators.addAll(selectApplyNode(env).map(gen -> Tuple.of(1, gen)).toList());
+                addWeightedGenerator(generators, selectNode(env), 1);
+                addWeightedGenerator(generators, selectApplyNode(env), 1);
             }
+
             return Arbitraries.frequencyOf(generators.toArray(new Tuple.Tuple2[0]));
         });
     }
 
     public static Arbitrary<? extends ExprNode<Attributes>> exprNodeWithType(GenEnvironment env, Type typ) {
         return Arbitraries.lazy(() -> {
-            List<Tuple.Tuple2<Integer, ? extends Arbitrary<? extends ExprNode<Attributes>>>> generators =
+            List<Tuple.Tuple2<Integer, Arbitrary<? extends ExprNode<Attributes>>>> generators =
                 Lists.mutable.empty();
 
-            generators.addAll(Arrays.stream(refWithType(env, typ)).map(gen -> Tuple.of(1, gen)).toList());
-            generators.addAll(applyNodeWithType(env, typ).map(gen -> Tuple.of(1, gen)).toList());
-            generators.addAll(lambdaNodeWithType(env, typ).map(gen -> Tuple.of(1, gen)).toList());
-            generators.addAll(selectNodeWithType(env, typ).map(gen -> Tuple.of(1, gen)).toList());
-            generators.addAll(selectApplyNodeWithType(env, typ).map(gen -> Tuple.of(1, gen)).toList());
+            addWeightedGenerator(generators, Arrays.stream(refWithType(env, typ)), 1);
+            addWeightedGenerator(generators, applyNodeWithType(env, typ), 1);
+            addWeightedGenerator(generators, lambdaNodeWithType(env, typ), 1);
+            addWeightedGenerator(generators, selectNodeWithType(env, typ), 1);
+            addWeightedGenerator(generators, selectApplyNodeWithType(env, typ), 1);
 
             var literalGen = literalWithType(typ);
             if (literalGen != null) {
