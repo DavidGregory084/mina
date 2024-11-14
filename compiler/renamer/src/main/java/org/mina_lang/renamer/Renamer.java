@@ -277,9 +277,11 @@ public class Renamer {
             var enclosingData = environment.enclosingData().get();
             var enclosingNamespace = environment.enclosingNamespace().get();
             var constrName = constr.getName(enclosingData.data(), enclosingNamespace.namespace());
-            var constrScope = new ConstructorNamingScope(constrName);
+            environment.pushScope(new ConstructorNamingScope(constrName));
+            // Data declarations must be compiled before any references to their constructors
+            updateDeclarationGraph(enclosingData.data(), constrName);
+            // Data declarations depend upon references to other data types in their constructors
             updateDeclarationGraph(constrName, enclosingData.data());
-            environment.pushScope(constrScope);
         }
 
         @Override
