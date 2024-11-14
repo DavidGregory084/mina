@@ -857,7 +857,7 @@ public class Typechecker {
 
                     return selectNode(updatedMeta, checkedReceiver, inferredSelection);
                 } else {
-                    var inferredReceiver = (ReferenceNode<Attributes>) inferExpr(select.receiver());
+                    var inferredReceiver = inferExpr(select.receiver());
 
                     var updatedMeta = updateMetaWith(select.meta(), newUnsolvedType(TypeKind.INSTANCE));
 
