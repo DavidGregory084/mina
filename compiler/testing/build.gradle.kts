@@ -12,7 +12,4 @@ dependencies {
 
     // Property-based Testing
     api(libs.jqwik)
-
-    // Unicode Utilities
-    implementation(libs.icu4j)
 }

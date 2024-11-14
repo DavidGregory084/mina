@@ -15,7 +15,6 @@ gradleVersions = "0.51.0"
 gradleGitVersioning = "6.4.4"
 gson = "2.11.0"
 hamcrest = "2.2"
-icu4j = "75.1"
 jacoco = "0.8.8"
 jansi = "2.4.1"
 jgrapht = "1.5.2"
@@ -57,7 +56,6 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 hamcrestFuture = { module = "com.spotify:hamcrest-future", version.ref = "spotifyHamcrest" }
 hamcrestOptional = { module = "com.spotify:hamcrest-optional", version.ref = "spotifyHamcrest" }
-icu4j = { module = "com.ibm.icu:icu4j", version.ref = "icu4j"}
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jgrapht = { module = "org.jgrapht:jgrapht-core", version.ref = "jgrapht" }
 jgraphtIo = { module = "org.jgrapht:jgrapht-io", version.ref = "jgrapht" }
