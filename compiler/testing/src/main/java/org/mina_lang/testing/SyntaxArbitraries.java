@@ -241,6 +241,17 @@ public class SyntaxArbitraries {
         });
     }
 
+    private static Arbitrary<? extends PatternNode<Attributes>> aliasPatternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
+        return nameArbitrary.flatMap(name -> {
+            var patName = new LocalName(name, env.localVarIndex().getAndIncrement());
+            var patMeta = Meta.of(patName, scrutineeType);
+            scope.putValue(name, patMeta);
+            return patternNode(env, scope, scrutineeType).map(pattern -> {
+                return SyntaxNodes.aliasPatternNode(patMeta, name, pattern);
+            });
+        });
+    }
+
     private static Stream<Arbitrary<? extends PatternNode<Attributes>>> literalPatternNode(GenEnvironment env, Type scrutineeType) {
         var literal = literalWithType(scrutineeType);
 
@@ -307,7 +318,10 @@ public class SyntaxArbitraries {
 
     private static Arbitrary<PatternNode<Attributes>> patternNode(GenEnvironment env, GenScope scope, Type scrutineeType) {
         List<Tuple.Tuple2<Integer, Arbitrary<? extends PatternNode<Attributes>>>> generators =
-            Lists.mutable.of(Tuple.of(1, idPatternNode(env, scope, scrutineeType)));
+            Lists.mutable.of(
+                Tuple.of(1, idPatternNode(env, scope, scrutineeType)),
+                Tuple.of(1, aliasPatternNode(env, scope, scrutineeType))
+            );
 
         addWeightedGenerator(generators, literalPatternNode(env, scrutineeType), 2);
         addWeightedGenerator(generators, constructorPatternNode(env, scope, scrutineeType), 2);
