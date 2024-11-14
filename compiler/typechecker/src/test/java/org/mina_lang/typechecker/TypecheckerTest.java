@@ -137,25 +137,25 @@ public class TypecheckerTest {
 
         assertThat(
                 consLocalEntry,
-                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Cons.NAME, ExampleNodes.Cons.TYPE)))));
+                is(optionalWithValue(Meta.of(ExampleNodes.Cons.NAME, ExampleNodes.Cons.TYPE))));
 
         var consCanonicalEntry = environment.lookupValue("Mina/Test/Kindchecker.Cons");
 
         assertThat(
                 consCanonicalEntry,
-                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Cons.NAME, ExampleNodes.Cons.TYPE)))));
+                is(optionalWithValue(Meta.of(ExampleNodes.Cons.NAME, ExampleNodes.Cons.TYPE))));
 
         var nilLocalEntry = environment.lookupValue("Nil");
 
         assertThat(
                 nilLocalEntry,
-                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Nil.NAME, ExampleNodes.Nil.TYPE)))));
+                is(optionalWithValue(Meta.of(ExampleNodes.Nil.NAME, ExampleNodes.Nil.TYPE))));
 
         var nilCanonicalEntry = environment.lookupValue("Mina/Test/Kindchecker.Nil");
 
         assertThat(
                 nilCanonicalEntry,
-                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Nil.NAME, ExampleNodes.Nil.TYPE)))));
+                is(optionalWithValue(Meta.of(ExampleNodes.Nil.NAME, ExampleNodes.Nil.TYPE))));
     }
 
     @Test
@@ -178,13 +178,13 @@ public class TypecheckerTest {
 
         assertThat(
                 unfixLocalEntry,
-                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Unfix.NAME, ExampleNodes.Unfix.TYPE)))));
+                is(optionalWithValue(Meta.of(ExampleNodes.Unfix.NAME, ExampleNodes.Unfix.TYPE))));
 
         var unfixCanonicalEntry = environment.lookupValue("Mina/Test/Kindchecker.Unfix");
 
         assertThat(
                 unfixCanonicalEntry,
-                is(optionalWithValue(Meta.of(new Attributes(ExampleNodes.Unfix.NAME, ExampleNodes.Unfix.TYPE)))));
+                is(optionalWithValue(Meta.of(ExampleNodes.Unfix.NAME, ExampleNodes.Unfix.TYPE))));
     }
 
     @Provide
@@ -237,10 +237,10 @@ public class TypecheckerTest {
                 originalLiteralNode);
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, expectedType)),
+                Meta.of(letName, expectedType),
                 "testLiteral",
                 typeRefNode(
-                        Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)),
+                        Meta.of(builtInName, TypeKind.INSTANCE),
                         expectedType.name()),
                 expectedLiteralNode);
 
@@ -263,11 +263,9 @@ public class TypecheckerTest {
                         Optional.empty()));
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, Type.UNIT)),
+                Meta.of(letName, Type.UNIT),
                 "testEmptyBlock",
-                typeRefNode(
-                        Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)),
-                        "Unit"),
+                typeRefNode(Meta.of(builtInName, TypeKind.INSTANCE), "Unit"),
                 blockNode(
                         ExampleNodes.namelessMeta(Type.UNIT),
                         Optional.empty()));
@@ -317,11 +315,9 @@ public class TypecheckerTest {
                         Optional.of(ExampleNodes.Int.namedNode(1))));
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, Type.INT)),
+                Meta.of(letName, Type.INT),
                 "testBlock",
-                typeRefNode(
-                        Meta.of(new Attributes(builtInName, TypeKind.INSTANCE)),
-                        "Int"),
+                typeRefNode(Meta.of(builtInName, TypeKind.INSTANCE), "Int"),
                 blockNode(
                         ExampleNodes.namelessMeta(Type.INT),
                         Optional.of(ExampleNodes.Int.typedNode(1))));
@@ -376,7 +372,7 @@ public class TypecheckerTest {
                 originalLiteralNode);
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, expectedType)),
+                Meta.of(letName, expectedType),
                 "testLiteral",
                 expectedLiteralNode);
 
@@ -441,7 +437,7 @@ public class TypecheckerTest {
                 originalBoolNode);
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, ExampleNodes.True.TYPE)),
+                Meta.of(letName, ExampleNodes.True.TYPE),
                 "testBool",
                 ExampleNodes.True.KINDED_TYPE_NODE,
                 expectedBoolNode);
@@ -502,7 +498,7 @@ public class TypecheckerTest {
                 originalBoolNode);
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, ExampleNodes.True.TYPE)),
+                Meta.of(letName, ExampleNodes.True.TYPE),
                 "testBool",
                 expectedBoolNode);
 
@@ -528,21 +524,16 @@ public class TypecheckerTest {
                         refNode(Meta.of(new LocalName("i", 0)), "i")));
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, Type.function(Type.INT, Type.INT))),
+                Meta.of(letName, Type.function(Type.INT, Type.INT)),
                 "testAnnotatedLambda",
                 funTypeNode(
-                        Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
-                        Lists.immutable.of(typeRefNode(Meta.of(new Attributes(
-                                new BuiltInName("Int"), TypeKind.INSTANCE)), "Int")),
-                        typeRefNode(Meta.of(new Attributes(new BuiltInName("Int"),
-                                TypeKind.INSTANCE)), "Int")),
+                        Meta.nameless(TypeKind.INSTANCE),
+                        Lists.immutable.of(typeRefNode(Meta.of(new BuiltInName("Int"), TypeKind.INSTANCE), "Int")),
+                        typeRefNode(Meta.of(new BuiltInName("Int"), TypeKind.INSTANCE), "Int")),
                 lambdaNode(
-                        Meta.of(new Attributes(Nameless.INSTANCE,
-                                Type.function(Type.INT, Type.INT))),
-                        Lists.immutable.of(paramNode(Meta.of(
-                                new Attributes(new LocalName("i", 0), Type.INT)), "i")),
-                        refNode(Meta.of(new Attributes(new LocalName("i", 0), Type.INT)),
-                                "i")));
+                        Meta.nameless(Type.function(Type.INT, Type.INT)),
+                        Lists.immutable.of(paramNode(Meta.of(new LocalName("i", 0), Type.INT), "i")),
+                        refNode(Meta.of(new LocalName("i", 0), Type.INT), "i")));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -579,7 +570,7 @@ public class TypecheckerTest {
         var intToIntToInt = Type.function(intToInt, Type.INT);
 
         var expectedNode = letNode(
-                Meta.of(new Attributes(letName, intToIntToInt)),
+                Meta.of(letName, intToIntToInt),
                 "testAnnotatedLambda",
                 funTypeNode(
                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
@@ -607,7 +598,7 @@ public class TypecheckerTest {
     void typecheckAnnotatedPolyIdLet() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
         var tyVarAName = new ForAllVarName("A");
-        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+        var tyVarAMeta = Meta.of(tyVarAName, TypeKind.INSTANCE);
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
@@ -616,7 +607,7 @@ public class TypecheckerTest {
                 Type.function(tyVarA, tyVarA),
                 TypeKind.INSTANCE);
 
-        var letMeta = Meta.of(new Attributes(letName, letType));
+        var letMeta = Meta.of(letName, letType);
 
         /*- let id: [A] { A -> A } = a -> a  */
         var originalNode = letNode(
@@ -657,11 +648,11 @@ public class TypecheckerTest {
     void typecheckAnnotatedPolyConstLet() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
         var tyVarAName = new ForAllVarName("A");
-        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+        var tyVarAMeta = Meta.of(tyVarAName, TypeKind.INSTANCE);
 
         var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
         var tyVarBName = new ForAllVarName("B");
-        var tyVarBMeta = Meta.of(new Attributes(tyVarBName, TypeKind.INSTANCE));
+        var tyVarBMeta = Meta.of(tyVarBName, TypeKind.INSTANCE);
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
@@ -670,7 +661,7 @@ public class TypecheckerTest {
                 Type.function(tyVarA, tyVarB, tyVarA),
                 TypeKind.INSTANCE);
 
-        var letMeta = Meta.of(new Attributes(letName, letType));
+        var letMeta = Meta.of(letName, letType);
 
         /*- let const: [A, B] { (A, B) -> A } = (a, b) -> a  */
         var originalNode = letNode(
@@ -738,7 +729,7 @@ public class TypecheckerTest {
         var intToIntToInt = Type.function(intToInt, Type.INT);
 
         var expectedNode = letFnNode(
-                Meta.of(new Attributes(letName, intToIntToInt)),
+                Meta.of(letName, intToIntToInt),
                 "testAnnotatedLambda",
                 Lists.immutable.of(ExampleNodes.Param.typedNode("f", intToInt)),
                 ExampleNodes.Int.KINDED_TYPE_NODE,
@@ -755,7 +746,7 @@ public class TypecheckerTest {
     void typecheckAnnotatedPolyIdLetFn() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
         var tyVarAName = new ForAllVarName("A");
-        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+        var tyVarAMeta = Meta.of(tyVarAName, TypeKind.INSTANCE);
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
@@ -764,7 +755,7 @@ public class TypecheckerTest {
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
 
-        var letMeta = Meta.of(new Attributes(letName, letType));
+        var letMeta = Meta.of(letName, letType);
 
         /*- let id[A](a: A): A = a  */
         var originalNode = letFnNode(
@@ -791,11 +782,11 @@ public class TypecheckerTest {
     void typecheckAnnotatedPolyConstLetFn() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
         var tyVarAName = new ForAllVarName("A");
-        var tyVarAMeta = Meta.of(new Attributes(tyVarAName, TypeKind.INSTANCE));
+        var tyVarAMeta = Meta.of(tyVarAName, TypeKind.INSTANCE);
 
         var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
         var tyVarBName = new ForAllVarName("B");
-        var tyVarBMeta = Meta.of(new Attributes(tyVarBName, TypeKind.INSTANCE));
+        var tyVarBMeta = Meta.of(tyVarBName, TypeKind.INSTANCE);
 
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
@@ -804,7 +795,7 @@ public class TypecheckerTest {
                 Type.function(tyVarA, tyVarB, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
 
-        var letMeta = Meta.of(new Attributes(letName, letType));
+        var letMeta = Meta.of(letName, letType);
 
         /*- let const[A, B](a: A, b: B): A = (a, b) -> a  */
         var originalNode = letFnNode(
@@ -993,7 +984,7 @@ public class TypecheckerTest {
         /*- f: () -> Int */
         environment.putValue(
                 "f",
-                Meta.of(new Attributes(new LocalName("f", 0), Type.function(Type.INT))));
+                Meta.of(new LocalName("f", 0), Type.function(Type.INT)));
 
         /*- f() */
         var originalNode = applyNode(
@@ -1017,7 +1008,7 @@ public class TypecheckerTest {
         /*- f: Int -> Int */
         environment.putValue(
                 "f",
-                Meta.of(new Attributes(new LocalName("f", 0), Type.function(Type.INT, Type.INT))));
+                Meta.of(new LocalName("f", 0), Type.function(Type.INT, Type.INT)));
 
         /*- f(1) */
         var originalNode = applyNode(
@@ -1047,7 +1038,7 @@ public class TypecheckerTest {
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
 
-        var idMeta = Meta.of(new Attributes(idName, idType));
+        var idMeta = Meta.of(idName, idType);
 
         /*- id: [A] { A -> A }  */
         environment.putValue("id", idMeta);
@@ -1081,7 +1072,7 @@ public class TypecheckerTest {
                 Type.function(tyVarA, tyVarB, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
 
-        var constMeta = Meta.of(new Attributes(constName, constType));
+        var constMeta = Meta.of(constName, constType);
 
         /*- const: [A, B] { (A, B) -> A } */
         environment.putValue("const", constMeta);

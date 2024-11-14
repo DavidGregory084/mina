@@ -1,10 +1,12 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common;
 
 import com.opencastsoftware.yvette.Range;
+import org.mina_lang.common.names.Name;
+import org.mina_lang.common.types.Sort;
 
 public record Meta<A>(Range range, A meta) {
     public static Meta<Void> EMPTY = new Meta<>(Range.EMPTY, null);
@@ -21,7 +23,15 @@ public record Meta<A>(Range range, A meta) {
         return new Meta<Void>(range, null);
     }
 
+    public static Meta<Attributes> nameless(Sort sort) {
+        return Meta.of(Attributes.nameless(sort));
+    }
+
     public static <A> Meta<A> of(A meta) {
         return new Meta<A>(Range.EMPTY, meta);
+    }
+
+    public static Meta<Attributes> of(Name name, Sort sort) {
+        return new Meta<>(Range.EMPTY, new Attributes(name, sort));
     }
 }

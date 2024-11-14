@@ -18,7 +18,7 @@ import java.util.Optional;
 
 import static org.mina_lang.syntax.SyntaxNodes.refNode;
 
-public class FreeVariablesFolder implements MetaNodeFolder<Attributes, ImmutableList<ReferenceNode<Attributes>>> {
+public class FreeLocalVariablesFolder implements MetaNodeFolder<Attributes, ImmutableList<ReferenceNode<Attributes>>> {
     MutableSet<Name> boundVariables = Sets.mutable.empty();
 
     @Override
@@ -197,7 +197,12 @@ public class FreeVariablesFolder implements MetaNodeFolder<Attributes, Immutable
 
     @Override
     public ImmutableList<ReferenceNode<Attributes>> visitReference(Meta<Attributes> meta, QualifiedIdNode id) {
-        return Lists.immutable.of(refNode(meta, id));
+        // Top-level definitions can remain free in lambdas
+        if (meta.meta().name() instanceof LocalName) {
+            return Lists.immutable.of(refNode(meta, id));
+        } else {
+            return Lists.immutable.empty();
+        }
     }
 
     @Override

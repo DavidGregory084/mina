@@ -27,7 +27,7 @@ public class ExampleNodes {
     }
 
     public static Meta<Attributes> namelessMeta(Sort sort) {
-        return Meta.of(new Attributes(Nameless.INSTANCE, sort));
+        return Meta.nameless(sort);
     }
 
     public static class Boolean {
@@ -36,7 +36,7 @@ public class ExampleNodes {
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Boolean");
 
         public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "Boolean");
+                Meta.of(NAME, TypeKind.INSTANCE), "Boolean");
 
         public static LiteralNode<Name> namedNode(boolean b) {
             return boolNode(namelessMeta(), b);
@@ -53,7 +53,7 @@ public class ExampleNodes {
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Int");
 
         public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "Int");
+                Meta.of(NAME, TypeKind.INSTANCE), "Int");
 
         public static LiteralNode<Name> namedNode(int i) {
             return intNode(namelessMeta(), i);
@@ -70,7 +70,7 @@ public class ExampleNodes {
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Long");
 
         public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "Long");
+                Meta.of(NAME, TypeKind.INSTANCE), "Long");
 
         public static LiteralNode<Name> namedNode(long i) {
             return longNode(namelessMeta(), i);
@@ -86,8 +86,7 @@ public class ExampleNodes {
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Float");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "Float");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, TypeKind.INSTANCE), "Float");
 
         public static LiteralNode<Name> namedNode(float i) {
             return floatNode(namelessMeta(), i);
@@ -103,8 +102,7 @@ public class ExampleNodes {
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Double");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "Double");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, TypeKind.INSTANCE), "Double");
 
         public static LiteralNode<Name> namedNode(double i) {
             return doubleNode(namelessMeta(), i);
@@ -120,8 +118,7 @@ public class ExampleNodes {
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Char");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "Char");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, TypeKind.INSTANCE), "Char");
 
         public static LiteralNode<Name> namedNode(char c) {
             return charNode(namelessMeta(), c);
@@ -137,8 +134,7 @@ public class ExampleNodes {
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "String");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, TypeKind.INSTANCE)), "String");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, TypeKind.INSTANCE), "String");
 
         public static LiteralNode<Name> namedNode(java.lang.String s) {
             return stringNode(namelessMeta(), s);
@@ -165,14 +161,14 @@ public class ExampleNodes {
         }
 
         public static ParamNode<Attributes> typedNode(java.lang.String name, Type type) {
-            return paramNode(Meta.of(new Attributes(name(name), type)), name);
+            return paramNode(Meta.of(name(name), type), name);
         }
 
         public static ParamNode<Attributes> typedNode(
                 java.lang.String name,
                 Type type,
                 TypeNode<Attributes> annotation) {
-            return paramNode(Meta.of(new Attributes(name(name), type)), name, annotation);
+            return paramNode(Meta.of(name(name), type), name, annotation);
         }
     }
 
@@ -186,7 +182,7 @@ public class ExampleNodes {
         }
 
         public static ReferenceNode<Attributes> typedNode(java.lang.String name, Type type) {
-            return refNode(Meta.of(new Attributes(name(name), type)), name);
+            return refNode(Meta.of(name(name), type), name);
         }
     }
 
@@ -195,12 +191,11 @@ public class ExampleNodes {
 
         public static Kind KIND = TypeKind.INSTANCE;
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> KINDED_META = Meta.of(NAME, KIND);
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Bool");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, KIND)), "Bool");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, KIND), "Bool");
     }
 
     public static class True {
@@ -212,7 +207,7 @@ public class ExampleNodes {
                 Lists.immutable.empty(),
                 new TypeConstructor(Bool.NAME.name(), TypeKind.INSTANCE));
 
-        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
+        public static Meta<Attributes> TYPED_META = Meta.of(NAME, TYPE);
 
         public static TypeNode<Name> NAMED_TYPE_NODE = funTypeNode(
                 Meta.of(Nameless.INSTANCE),
@@ -220,7 +215,7 @@ public class ExampleNodes {
                 Bool.NAMED_TYPE_NODE);
 
         public static TypeNode<Attributes> KINDED_TYPE_NODE = funTypeNode(
-                Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
+                Meta.nameless(TypeKind.INSTANCE),
                 Lists.immutable.empty(),
                 Bool.KINDED_TYPE_NODE);
     }
@@ -234,7 +229,7 @@ public class ExampleNodes {
                 Lists.immutable.empty(),
                 new TypeConstructor(Bool.NAME.name(), TypeKind.INSTANCE));
 
-        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
+        public static Meta<Attributes> TYPED_META = Meta.of(NAME, TYPE);
 
         public static TypeNode<Name> NAMED_TYPE_NODE = funTypeNode(
                 Meta.of(Nameless.INSTANCE),
@@ -242,7 +237,7 @@ public class ExampleNodes {
                 Bool.NAMED_TYPE_NODE);
 
         public static TypeNode<Attributes> KINDED_TYPE_NODE = funTypeNode(
-                Meta.of(new Attributes(Nameless.INSTANCE, TypeKind.INSTANCE)),
+                Meta.nameless(TypeKind.INSTANCE),
                 Lists.immutable.empty(),
                 Bool.KINDED_TYPE_NODE);
     }
@@ -256,12 +251,11 @@ public class ExampleNodes {
 
         public static Type TYPE = new TypeConstructor(QUAL_NAME, KIND);
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> KINDED_META = Meta.of(NAME, KIND);
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "List");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, KIND)), "List");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, KIND), "List");
 
         public static Name TYPE_VAR_A_NAME = new ForAllVarName("A");
 
@@ -316,15 +310,15 @@ public class ExampleNodes {
                                 TypeKind.INSTANCE)),
                 KIND);
 
-        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
+        public static Meta<Attributes> TYPED_META = Meta.of(NAME, TYPE);
 
         public static FieldName HEAD_NAME = new FieldName(NAME, "head");
 
-        public static Meta<Attributes> TYPED_HEAD_META = Meta.of(new Attributes(HEAD_NAME, HEAD_TYPE));
+        public static Meta<Attributes> TYPED_HEAD_META = Meta.of(HEAD_NAME, HEAD_TYPE);
 
         public static FieldName TAIL_NAME = new FieldName(NAME, "tail");
 
-        public static Meta<Attributes> TYPED_TAIL_META = Meta.of(new Attributes(TAIL_NAME, TAIL_TYPE));
+        public static Meta<Attributes> TYPED_TAIL_META = Meta.of(TAIL_NAME, TAIL_TYPE);
 
         public static ConstructorNode<Name> NAMED_NODE = constructorNode(
                 Meta.<Name>of(NAME),
@@ -376,7 +370,7 @@ public class ExampleNodes {
                                 Lists.immutable.of(List.TYPE_VAR_A_TYPE), TypeKind.INSTANCE)),
                 KIND);
 
-        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
+        public static Meta<Attributes> TYPED_META = Meta.of(NAME, TYPE);
 
         public static ConstructorNode<Name> NAMED_NODE = constructorNode(
                 Meta.<Name>of(NAME),
@@ -396,12 +390,11 @@ public class ExampleNodes {
 
         public static Kind KIND = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE);
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> KINDED_META = Meta.of(NAME, KIND);
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Either");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, KIND)), "Either");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, KIND), "Either");
     }
 
     public static class Functor {
@@ -411,12 +404,11 @@ public class ExampleNodes {
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE),
                 TypeKind.INSTANCE);
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> KINDED_META = Meta.of(NAME, KIND);
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Functor");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, KIND)), "Functor");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, KIND), "Functor");
     }
 
     public static class Fix {
@@ -429,12 +421,11 @@ public class ExampleNodes {
 
         public static Type TYPE = new TypeConstructor(QUAL_NAME, KIND);
 
-        public static Meta<Attributes> KINDED_META = Meta.of(new Attributes(NAME, KIND));
+        public static Meta<Attributes> KINDED_META = Meta.of(NAME, KIND);
 
         public static TypeNode<Name> NAMED_TYPE_NODE = typeRefNode(Meta.of(NAME), "Fix");
 
-        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(
-                Meta.of(new Attributes(NAME, KIND)), "Fix");
+        public static TypeNode<Attributes> KINDED_TYPE_NODE = typeRefNode(Meta.of(NAME, KIND), "Fix");
 
         public static Name TYPE_VAR_F_NAME = new ForAllVarName("F");
         public static Kind TYPE_VAR_F_KIND = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
@@ -484,11 +475,11 @@ public class ExampleNodes {
                                 TypeKind.INSTANCE)),
                 Fix.KIND);
 
-        public static Meta<Attributes> TYPED_META = Meta.of(new Attributes(NAME, TYPE));
+        public static Meta<Attributes> TYPED_META = Meta.of(NAME, TYPE);
 
         public static FieldName UNFIX_NAME = new FieldName(NAME, "unfix");
 
-        public static Meta<Attributes> TYPED_UNFIX_META = Meta.of(new Attributes(UNFIX_NAME, UNFIX_TYPE));
+        public static Meta<Attributes> TYPED_UNFIX_META = Meta.of(UNFIX_NAME, UNFIX_TYPE);
 
         public static ConstructorNode<Name> NAMED_NODE = constructorNode(
                 Meta.<Name>of(NAME),

@@ -308,8 +308,8 @@ public class KindcheckerTest {
         // *
         var typeVarAKind = TypeKind.INSTANCE;
 
-        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
-        var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
+        var typeVarFMeta = Meta.of(typeVarFName, typeVarFKind);
+        var typeVarAMeta = Meta.of(typeVarAName, typeVarAKind);
 
         // [F, A] { F[A] }
         var originalNode = quantifiedTypeNode(
@@ -349,9 +349,9 @@ public class KindcheckerTest {
         // *
         var typeVarAKind = TypeKind.INSTANCE;
 
-        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
-        var typeVarGMeta = Meta.of(new Attributes(typeVarGName, typeVarGKind));
-        var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
+        var typeVarFMeta = Meta.of(typeVarFName, typeVarFKind);
+        var typeVarGMeta = Meta.of(typeVarGName, typeVarGKind);
+        var typeVarAMeta = Meta.of(typeVarAName, typeVarAKind);
 
         // [F, G, A] { F[G[A]] }
         var originalNode = quantifiedTypeNode(
@@ -403,10 +403,10 @@ public class KindcheckerTest {
         // *
         var typeVarBKind = TypeKind.INSTANCE;
 
-        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
-        var typeVarGMeta = Meta.of(new Attributes(typeVarGName, typeVarGKind));
-        var typeVarAMeta = Meta.of(new Attributes(typeVarAName, typeVarAKind));
-        var typeVarBMeta = Meta.of(new Attributes(typeVarBName, typeVarBKind));
+        var typeVarFMeta = Meta.of(typeVarFName, typeVarFKind);
+        var typeVarGMeta = Meta.of(typeVarGName, typeVarGKind);
+        var typeVarAMeta = Meta.of(typeVarAName, typeVarAKind);
+        var typeVarBMeta = Meta.of(typeVarBName, typeVarBKind);
 
         // [F, G, A, B] { F[G, A] -> F[G, B] -> G[B] }
         var originalNode = quantifiedTypeNode(
@@ -505,7 +505,7 @@ public class KindcheckerTest {
         // * => *
         var typeVarFKind = new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE);
         var typeVarFName = new ForAllVarName("F");
-        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
+        var typeVarFMeta = Meta.of(typeVarFName, typeVarFKind);
 
         // [F] { Functor[F] }
         var originalNode = quantifiedTypeNode(
@@ -537,7 +537,7 @@ public class KindcheckerTest {
         // [* => *] => *
         var typeVarFKind = new HigherKind(ExampleNodes.Functor.KIND, TypeKind.INSTANCE);
         var typeVarFName = new ForAllVarName("F");
-        var typeVarFMeta = Meta.of(new Attributes(typeVarFName, typeVarFKind));
+        var typeVarFMeta = Meta.of(typeVarFName, typeVarFKind);
 
         // F { F[Functor] }
         var originalNode = quantifiedTypeNode(

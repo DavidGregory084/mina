@@ -36,6 +36,10 @@ project(":compiler:typechecker").name = "mina-compiler-typechecker"
 include("compiler:main")
 project(":compiler:main").name = "mina-compiler-main"
 
+// Compiler testing utilities
+include("compiler:testing")
+project(":compiler:testing").name = "mina-compiler-testing"
+
 // Command line interface
 include("compiler:cli")
 project(":compiler:cli").name = "mina-compiler"

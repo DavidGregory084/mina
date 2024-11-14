@@ -54,7 +54,7 @@ public record LambdaGenScope(
             LambdaNode<Attributes> lambda,
             ClassWriter namespaceWriter) {
 
-        var freeVariables = lambda.accept(new FreeVariablesFolder());
+        var freeVariables = lambda.accept(new FreeLocalVariablesFolder());
 
         // Any free variables captured in the lambda must be converted into parameters
         var allParams = Lists.immutable.<MetaNode<Attributes>>empty()
