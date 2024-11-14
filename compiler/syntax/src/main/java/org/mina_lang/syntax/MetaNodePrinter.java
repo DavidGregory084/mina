@@ -43,6 +43,8 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     private static final Doc TRUE = Doc.text("true");
     private static final Doc FALSE = Doc.text("false");
     private static final Doc SPACE = Doc.text(" ");
+    private static final Doc LONG_SUFFIX = Doc.text("L");
+    private static final Doc FLOAT_SUFFIX = Doc.text("F");
 
     private final int indent;
 
@@ -207,7 +209,10 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
 
     @Override
     public Doc visitSelect(Meta<A> meta, Doc receiver, Doc selection) {
-        return receiver.append(Doc.group(
+        return receiver.bracket(
+            this.indent, Doc.lineOrEmpty(),
+            LPAREN, RPAREN
+        ).append(Doc.group(
             Doc.lineOrEmpty()
                 .append(DOT)
                 .append(selection)
@@ -302,12 +307,12 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
 
     @Override
     public Doc visitLong(Meta<A> meta, long value) {
-        return Doc.text(Long.toString(value));
+        return Doc.text(Long.toString(value)).append(LONG_SUFFIX);
     }
 
     @Override
     public Doc visitFloat(Meta<A> meta, float value) {
-        return Doc.text(Float.toString(value));
+        return Doc.text(Float.toString(value)).append(FLOAT_SUFFIX);
     }
 
     @Override
