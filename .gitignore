@@ -1,6 +1,7 @@
 .antlr/
 .gradle/
 .idea/
+.kotlin/
 .settings/
 .vscode/
 .vscode-test/
