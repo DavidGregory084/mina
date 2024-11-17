@@ -306,8 +306,10 @@ public class SyntaxArbitraries {
                     .flatMap(constrMeta -> {
                         var constrName = (ConstructorName) getName(constrMeta);
                         var constrId = SyntaxNodes.idNode(Range.EMPTY, constrName.name().name());
+                        var constrType = (TypeApply) getType(constrMeta);
+                        var constrPatMeta = Meta.of(constrName, constrType.typeArguments().getLast());
                         return fieldPatternNodes(env, scope, constrName).map(fieldPatterns -> {
-                            return SyntaxNodes.constructorPatternNode(constrMeta, constrId, fieldPatterns);
+                            return SyntaxNodes.constructorPatternNode(constrPatMeta, constrId, fieldPatterns);
                         });
                     })
             );
