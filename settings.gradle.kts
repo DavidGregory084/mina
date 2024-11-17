@@ -22,6 +22,10 @@ project(":gradle-plugin").name = "mina-gradle-plugin"
 include("compiler:common")
 project(":compiler:common").name = "mina-compiler-common"
 
+// Protobuf definitions
+include("compiler:proto")
+project(":compiler:proto").name = "mina-compiler-proto"
+
 // Frontend
 include("compiler:syntax")
 project(":compiler:syntax").name = "mina-compiler-syntax"

@@ -1,0 +1,67 @@
+edition = "2023";
+
+import "names.proto";
+import "google/protobuf/empty.proto";
+
+package mina.types;
+option java_package = "org.mina_lang.proto.types";
+
+option java_multiple_files = true;
+
+message Sort {
+  oneof sort {
+    // Kinds
+    google.protobuf.Empty typeKind = 1;
+    HigherKind higherKind = 2;
+
+    // Types
+    QuantifiedType quantTy = 3;
+    TypeConstructor tyCon = 4;
+    BuiltInType builtIn = 5;
+    TypeApply tyApp = 6;
+
+    // Type variables
+    ForAllVar forall = 7;
+    ExistsVar exists = 8;
+  }
+}
+
+// Kinds
+message HigherKind {
+  repeated uint32 args = 1;
+  uint32 result = 2;
+}
+
+// Types
+message QuantifiedType {
+  repeated uint32 args = 1;
+  uint32 body = 2;
+  uint32 kind = 3;
+}
+
+message TypeConstructor {
+  mina.names.QualifiedName name = 1;
+  uint32 kind = 2;
+}
+
+message BuiltInType {
+  uint32 name = 1;
+  uint32 kind = 2;
+}
+
+message TypeApply {
+  uint32 typ = 1;
+  repeated uint32 args = 2;
+  uint32 kind = 3;
+}
+
+// Type variables
+message ForAllVar {
+  uint32 name = 1;
+  uint32 kind = 2;
+}
+
+message ExistsVar {
+  uint32 name = 1;
+  uint32 kind = 2;
+}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.names;
@@ -11,4 +11,6 @@ public sealed interface Name permits Named, Nameless {
     default Attributes withSort(Sort sort) {
         return new Attributes(this, sort);
     }
+
+    void accept(NameVisitor visitor);
 }

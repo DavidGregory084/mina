@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.main;
@@ -7,14 +7,23 @@ package org.mina_lang.main;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 
+import java.io.IOException;
+
 public non-sealed interface ParallelPhase<A, B> extends Phase<B> {
     ParallelFlux<A> inputFlux();
 
-    void consumeInput(A inputNode);
+    void consumeInput(A inputNode) throws IOException;
 
     default Mono<B> runPhase() {
         return inputFlux()
-                .doOnNext(this::consumeInput)
+                .flatMap(input  -> {
+                    try {
+                        consumeInput(input);
+                        return Mono.empty();
+                    } catch (IOException e) {
+                        return Mono.error(e);
+                    }
+                })
                 .then()
                 .then(Mono.defer(() -> {
                     // Mono is not allowed to contain null,

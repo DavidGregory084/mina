@@ -46,7 +46,7 @@ public class CodeGeneratorTest {
             codeGenerator.generate(tempDir, namespace);
             try {
                 Class.forName(namespaceClassName, true, urlLoader);
-            } catch (ClassNotFoundException | LinkageError e) {
+            } catch (Exception | LinkageError e) {
                 System.err.println(namespace.accept(printer).render(80));
                 Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
             }

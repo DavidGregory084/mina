@@ -6,6 +6,7 @@ package org.mina_lang.gradle.compiler;
 
 import com.opencastsoftware.yvette.handlers.ReportHandler;
 import com.opencastsoftware.yvette.handlers.graphical.GraphicalReportHandler;
+import org.apache.commons.lang3.function.Failable;
 import org.gradle.api.problems.Problems;
 import org.gradle.internal.UncheckedException;
 import org.mina_lang.gradle.MinaCompilationException;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
 
 public class MinaApiCompiler implements MinaCompiler {
@@ -36,9 +38,13 @@ public class MinaApiCompiler implements MinaCompiler {
     }
 
     @Override
-    public void compile(MinaCompileParameters compileParameters) {
+    public void compile(MinaCompileParameters compileParameters) throws IOException {
         var problemReporter = new MinaProblemReporter(problems);
         var compiler = new Main(problemReporter);
+
+        var classpath = Failable.stream(compileParameters.getClasspath().getFiles())
+            .map(file -> file.toURI().toURL())
+            .stream().toArray(URL[]::new);
 
         var destDir = compileParameters
             .getDestinationDirectory().get()
@@ -51,7 +57,7 @@ public class MinaApiCompiler implements MinaCompiler {
             .toArray(Path[]::new);
 
         try {
-            compiler.compileSourcePaths(destDir, sourcePaths).join();
+            compiler.compileSourcePaths(classpath, destDir, sourcePaths).join();
 
             // Report diagnostics to the Gradle CLI log
             problemReporter.getDiagnostics().forEach(diagnostic -> {

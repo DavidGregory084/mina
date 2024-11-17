@@ -8,6 +8,7 @@ import com.opencastsoftware.yvette.Range;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.api.factory.Sets;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.HawickJamesSimpleCycles;
 import org.jgrapht.graph.DefaultEdge;
@@ -21,12 +22,15 @@ import org.mina_lang.syntax.NamespaceNode;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
@@ -35,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -158,7 +163,8 @@ public class Main {
     }
 
     public Graph<NamespaceName, DefaultEdge> constructNamespaceGraph(
-            ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes) {
+        ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes,
+        Set<NamespaceName> importedNamespaces) {
         var namespaceGraph = GraphTypeBuilder.<NamespaceName, DefaultEdge>directed()
                 .edgeClass(DefaultEdge.class)
                 .allowingMultipleEdges(false)
@@ -176,8 +182,7 @@ public class Main {
                         namespaceGraph.addVertex(importName);
                         namespaceGraph.addEdge(importName, namespaceName);
                     } else {
-                        // TODO: find the namespace on the classpath
-                        // or produce an "unknown namespace" error
+                        importedNamespaces.add(importName);
                     }
                 });
         });
@@ -187,29 +192,40 @@ public class Main {
         return namespaceGraph;
     }
 
-    public CompletableFuture<Void> compileSourcePaths(Path destinationPath, Path... sourcePaths) throws IOException {
+    public CompletableFuture<Void> compileSourcePaths(URL[] classpath, Path destinationPath, Path... sourcePaths) throws IOException {
         var sourceData = readSourceData(sourcePaths);
 
         var parsingPhase = new ParsingPhase(sourceData, scopedDiagnostics, namespaceNodes, mainCollector);
 
         return parsingPhase.runPhase().flatMap(parsedNodes -> {
-            var namespaceGraph = constructNamespaceGraph(parsedNodes);
+            Set<NamespaceName> importedNamespaces = Sets.mutable.empty();
+            var namespaceGraph = constructNamespaceGraph(parsedNodes, importedNamespaces);
 
             // We can't proceed if our namespace graph is badly formed
             if (mainCollector.hasErrors()) {
                 return Mono.empty();
             } else {
-                var renamingPhase = new RenamingPhase(namespaceGraph, parsedNodes, scopedDiagnostics);
+                return Mono.using(() -> new URLClassLoader(classpath), classLoader -> {
+                    var classpathResolutionPhase = new ClasspathResolutionPhase(classLoader, importedNamespaces);
 
-                var typecheckingPhase = Phase.andThen(renamingPhase, renamedNodes -> {
-                    return new TypecheckingPhase(namespaceGraph, renamedNodes, scopedDiagnostics);
+                    return classpathResolutionPhase.runPhase().flatMap(classpathScopes -> {
+
+                        var renamingPhase = new RenamingPhase(namespaceGraph, classpathScopes, parsedNodes, scopedDiagnostics);
+
+                        var typecheckingPhase = Phase.andThen(renamingPhase, renamedNodes -> {
+                            return new TypecheckingPhase(namespaceGraph, classpathScopes, renamedNodes, scopedDiagnostics);
+                        });
+
+                        var codegenPhase = Phase.andThen(typecheckingPhase, typecheckedNodes -> {
+                            return new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                        });
+
+                        return Phase.runMono(codegenPhase);
+                    });
+                }, classLoader -> {
+                    try { classLoader.close(); }
+                    catch (IOException e) { throw Exceptions.propagate(e); }
                 });
-
-                var codegenPhase = Phase.andThen(typecheckingPhase, typecheckedNodes -> {
-                    return new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
-                });
-
-                return Phase.runMono(codegenPhase);
             }
         }).then().toFuture();
     }

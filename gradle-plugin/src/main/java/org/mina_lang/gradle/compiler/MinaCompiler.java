@@ -6,6 +6,8 @@ package org.mina_lang.gradle.compiler;
 
 import org.mina_lang.gradle.MinaCompileParameters;
 
+import java.io.IOException;
+
 public interface MinaCompiler {
-    void compile(MinaCompileParameters compileParameters);
+    void compile(MinaCompileParameters compileParameters) throws IOException;
 }

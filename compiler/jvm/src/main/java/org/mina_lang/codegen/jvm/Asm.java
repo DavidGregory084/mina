@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm;
@@ -13,10 +13,7 @@ import org.mina_lang.common.types.TypeApply;
 import org.mina_lang.common.types.TypeVar;
 import org.mina_lang.syntax.ConstructorParamNode;
 import org.mina_lang.syntax.ExprNode;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
@@ -370,6 +367,50 @@ public class Asm {
             methodWriter.unbox(Types.asmType(implType));
         } else if (interfaceType instanceof TypeVar tyVar) {
             methodWriter.checkCast(Types.asmType(implType));
+        }
+    }
+
+    public static class EnvironmentAttribute extends Attribute {
+        private final byte[] data;
+
+        public EnvironmentAttribute(byte[] data) {
+            super("MinaEnvironment");
+            this.data = data;
+        }
+
+        public byte[] data() {
+            return data;
+        }
+
+        @Override
+        protected Attribute read(ClassReader classReader, int offset, int length, char[] charBuffer, int codeAttributeOffset, Label[] labels) {
+            return new EnvironmentAttribute(classReader.readBytes(offset, length));
+        }
+
+        @Override
+        protected ByteVector write(ClassWriter classWriter, byte[] code, int codeLength, int maxStack, int maxLocals) {
+            var byteVector = new ByteVector(data.length);
+            byteVector.putByteArray(data, 0, data.length);
+            return byteVector;
+        }
+    }
+
+    public static class EnvironmentAttributeVisitor extends ClassVisitor {
+        private byte[] data = new byte[0];
+
+        protected EnvironmentAttributeVisitor() {
+            super(ASM9);
+        }
+
+        public byte[] data() {
+            return data;
+        }
+
+        @Override
+        public void visitAttribute(Attribute attribute) {
+            if (attribute instanceof EnvironmentAttribute env) {
+                data = env.data();
+            }
         }
     }
 }

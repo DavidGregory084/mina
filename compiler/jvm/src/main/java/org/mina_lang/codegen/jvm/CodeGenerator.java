@@ -15,6 +15,7 @@ import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.Sort;
 import org.mina_lang.common.types.TypeApply;
+import org.mina_lang.proto.ProtobufWriter;
 import org.mina_lang.syntax.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -38,9 +39,11 @@ import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 public class CodeGenerator {
     CodegenEnvironment environment = CodegenEnvironment.empty();
 
+    ProtobufWriter protobufWriter = new ProtobufWriter();
+
     MutableMap<Named, byte[]> classes = Maps.mutable.empty();
 
-    public void generate(Path destination, NamespaceNode<Attributes> namespace) {
+    public void generate(Path destination, NamespaceNode<Attributes> namespace) throws IOException {
         generateNamespace(namespace);
 
         classes.forEachKeyValue((name, classData) -> {
@@ -162,7 +165,7 @@ public class CodeGenerator {
     }
 
     public void generateNamespace(NamespaceNode<Attributes> namespace) {
-        withScope(NamespaceGenScope.open(namespace), namespaceScope -> {
+        withScope(NamespaceGenScope.open(namespace, protobufWriter), namespaceScope -> {
             populateTopLevel(namespace);
 
             namespace.declarationGroups()

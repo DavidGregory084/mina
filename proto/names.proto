@@ -1,0 +1,60 @@
+edition = "2023";
+
+package mina.names;
+option java_package = "org.mina_lang.proto.names";
+
+option java_multiple_files = true;
+
+message QualifiedName {
+  uint32 namespace = 1;
+  uint32 name = 2;
+}
+
+message NamespaceName {
+  repeated uint32 pkg = 1;
+  uint32 name = 2;
+}
+
+message BuiltInName {
+  uint32 name = 1;
+}
+
+message LetName {
+  QualifiedName name = 1;
+}
+
+message DataName {
+  QualifiedName name = 2;
+}
+
+message ConstructorName {
+  uint32 enclosing = 1;
+  QualifiedName name = 2;
+}
+
+message FieldName {
+  uint32 constr = 1;
+  uint32 name = 2;
+}
+
+message ForAllVarName {
+  uint32 name = 1;
+}
+
+message ExistsVarName {
+  uint32 name = 1;
+}
+
+message Name {
+  oneof name {
+    NamespaceName namespace = 1;
+    BuiltInName builtIn = 2;
+    LetName let = 3;
+    DataName data = 4;
+    ConstructorName constr = 5;
+    FieldName field = 6;
+    ForAllVarName forall = 7;
+    ExistsVarName exists = 8;
+  }
+}
+

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -24,6 +24,11 @@ public record HigherKind(ImmutableList<Kind> argKinds, Kind resultKind) implemen
     @Override
     public <A> A accept(KindFolder<A> visitor) {
         return visitor.visitHigherKind(this);
+    }
+
+    @Override
+    public void accept(KindVisitor visitor) {
+        visitor.visitHigherKind(this);
     }
 
     @Override
