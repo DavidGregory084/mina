@@ -49,11 +49,11 @@ public class CodeGeneratorTest {
                     Class.forName(namespaceClassName, true, urlLoader);
                 } catch (Exception | LinkageError e) {
                     System.err.println(namespace.accept(printer).render(80));
-                    Assertions.fail("Exception while generating code for namespace" + namespace.getName().canonicalName(), e);
+                    Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
                 }
             } catch (Exception e) {
                 System.err.println(namespace.accept(printer).render(80));
-                Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
+                Assertions.fail("Exception while generating code for namespace" + namespace.getName().canonicalName(), e);
             }
         } finally {
             clearTempDir(tempDir);

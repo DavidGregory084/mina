@@ -8,7 +8,9 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import org.apache.commons.lang3.function.Failable;
+import org.junit.jupiter.api.Assertions;
 import org.mina_lang.common.Attributes;
+import org.mina_lang.syntax.MetaNodePrinter;
 import org.mina_lang.syntax.NamespaceNode;
 
 import java.io.IOException;
@@ -23,6 +25,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class NamespaceReaderTest {
+    private static final MetaNodePrinter<Attributes> printer = new MetaNodePrinter<>();
+
     private Path createTempDir() throws IOException {
         return Files.createTempDirectory("mina-codegen-reader-test");
     }
@@ -43,7 +47,12 @@ public class NamespaceReaderTest {
         var codeGenerator = new CodeGenerator();
         var tempDir = createTempDir();
         try (var urlLoader = URLClassLoader.newInstance(new URL[] { tempDir.toUri().toURL() }, contextLoader)) {
-            codeGenerator.generate(tempDir, namespace);
+            try {
+                codeGenerator.generate(tempDir, namespace);
+            } catch (Exception e) {
+                System.err.println(namespace.accept(printer).render(80));
+                Assertions.fail("Exception while generating code for namespace" + namespace.getName().canonicalName(), e);
+            }
             var classpathScope = NamespaceReader.readScope(urlLoader, namespace.getName());
             assertThat(classpathScope, is(equalTo(originalScope)));
         } finally {

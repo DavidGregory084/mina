@@ -18,4 +18,9 @@ public record GenEnvironment(
     public GenEnvironment() {
         this(Stacks.mutable.of(new GenScope()), new AtomicInteger(0));
     }
+    public GenEnvironment withScope(GenScope scope) {
+        var newScopes = Stacks.mutable.ofAll(scopes);
+        newScopes.push(scope);
+        return new GenEnvironment(newScopes, localVarIndex);
+    }
 }
