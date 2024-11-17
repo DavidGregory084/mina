@@ -73,6 +73,7 @@ val npmBuild by
         dependsOn(":compiler:mina-compiler-parser:publish")
         dependsOn(":compiler:mina-compiler-renamer:publish")
         dependsOn(":compiler:mina-compiler-typechecker:publish")
+        dependsOn(":compiler:mina-compiler-proto:publish")
         dependsOn(":compiler:mina-compiler-jvm:publish")
         dependsOn(":compiler:mina-compiler-main:publish")
         dependsOn(":mina-lang-server:publish")
