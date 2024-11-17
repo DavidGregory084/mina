@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -15,6 +15,11 @@ public record UnsolvedKind(int id) implements Kind {
     @Override
     public <A> A accept(KindFolder<A> visitor) {
         return visitor.visitUnsolvedKind(this);
+    }
+
+    @Override
+    public void accept(KindVisitor visitor) {
+        visitor.visitUnsolvedKind(this);
     }
 
     @Override

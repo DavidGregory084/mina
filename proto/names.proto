@@ -1,4 +1,4 @@
-syntax = "proto3";
+edition = "2023";
 
 package mina.names;
 option java_package = "org.mina_lang.proto.names";
@@ -6,19 +6,17 @@ option java_package = "org.mina_lang.proto.names";
 option java_multiple_files = true;
 
 message QualifiedName {
-  NamespaceName namespace = 1;
-  string name = 2;
+  uint32 namespace = 1;
+  uint32 name = 2;
 }
 
-message Nameless {}
-
 message NamespaceName {
-  repeated string pkg = 1;
-  string name = 2;
+  repeated uint32 pkg = 1;
+  uint32 name = 2;
 }
 
 message BuiltInName {
-  string name = 1;
+  uint32 name = 1;
 }
 
 message LetName {
@@ -30,34 +28,33 @@ message DataName {
 }
 
 message ConstructorName {
-  DataName enclosing = 1;
+  uint32 enclosing = 1;
   QualifiedName name = 2;
 }
 
 message FieldName {
-  ConstructorName constr = 1;
-  string name = 2;
+  uint32 constr = 1;
+  uint32 name = 2;
 }
 
 message ForAllVarName {
-  string name = 1;
+  uint32 name = 1;
 }
 
 message ExistsVarName {
-  string name = 1;
+  uint32 name = 1;
 }
 
 message Name {
   oneof name {
-    Nameless nameless = 1;
-    NamespaceName namespace = 2;
-    BuiltInName builtIn = 3;
-    LetName let = 4;
-    DataName data = 5;
-    ConstructorName constr = 6;
-    FieldName field = 7;
-    ForAllVarName forall = 8;
-    ExistsVarName exists = 9;
+    NamespaceName namespace = 1;
+    BuiltInName builtIn = 2;
+    LetName let = 3;
+    DataName data = 4;
+    ConstructorName constr = 5;
+    FieldName field = 6;
+    ForAllVarName forall = 7;
+    ExistsVarName exists = 8;
   }
 }
 

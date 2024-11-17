@@ -11,10 +11,12 @@ import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,7 +49,11 @@ public class CodegenPhase implements ParallelPhase<NamespaceNode<Attributes>, Vo
         if (!nsDiagnostics.hasErrors()) {
             logger.info("Emitting namespace {}", nsName.canonicalName());
             var codegen = new CodeGenerator();
-            codegen.generate(destinationPath, typecheckedNode);
+            try {
+                codegen.generate(destinationPath, typecheckedNode);
+            } catch (IOException e) {
+                throw Exceptions.propagate(e);
+            }
         }
     }
 

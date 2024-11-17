@@ -7,6 +7,9 @@ dependencies {
     // Syntax Tree Definitions
     api(project(":compiler:mina-compiler-syntax"))
 
+    // Protobuf Serialization
+    implementation(project(":compiler:mina-compiler-proto"))
+
     // Java Bytecode Generation
     api(libs.asm)
     api(libs.asmCommons)

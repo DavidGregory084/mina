@@ -1,6 +1,7 @@
-syntax = "proto3";
+edition = "2023";
 
 import "names.proto";
+import "google/protobuf/empty.proto";
 
 package mina.types;
 option java_package = "org.mina_lang.proto.types";
@@ -9,72 +10,58 @@ option java_multiple_files = true;
 
 message Sort {
   oneof sort {
-    Kind kind = 1;
-    Type typ = 2;
+    // Kinds
+    google.protobuf.Empty typeKind = 1;
+    HigherKind higherKind = 2;
+
+    // Types
+    QuantifiedType quantTy = 3;
+    TypeConstructor tyCon = 4;
+    BuiltInType builtIn = 5;
+    TypeApply tyApp = 6;
+
+    // Type variables
+    ForAllVar forall = 7;
+    ExistsVar exists = 8;
   }
 }
 
 // Kinds
-message Kind {
-  oneof kind {
-    TypeKind typeKind = 1;
-    HigherKind higherKind = 2;
-  }
-}
-
-message TypeKind {}
-
 message HigherKind {
-  repeated Kind args = 1;
-  Kind result = 2;
+  repeated uint32 args = 1;
+  uint32 result = 2;
 }
 
 // Types
-message Type {
-  oneof typ {
-    QuantifiedType quantTy = 1;
-    TypeConstructor tyCon = 2;
-    BuiltInType builtIn = 3;
-    TypeApply tyApp = 4;
-    TypeVar tyVar = 5;
-  }
-}
-
 message QuantifiedType {
-  repeated TypeVar args = 1;
-  Type body = 2;
-  Kind kind = 3;
+  repeated uint32 args = 1;
+  uint32 body = 2;
+  uint32 kind = 3;
 }
 
 message TypeConstructor {
   mina.names.QualifiedName name = 1;
-  Kind kind = 2;
+  uint32 kind = 2;
 }
 
 message BuiltInType {
-  string name = 1;
-  Kind kind = 2;
+  uint32 name = 1;
+  uint32 kind = 2;
 }
 
 message TypeApply {
-  Type typ = 1;
-  repeated Type args = 2;
-  Kind kind = 3;
+  uint32 typ = 1;
+  repeated uint32 args = 2;
+  uint32 kind = 3;
 }
 
-message TypeVar {
-  oneof tyVar {
-    ForAllVar forall = 1;
-    ExistsVar exists = 2;
-  }
-}
-
+// Type variables
 message ForAllVar {
-  string name = 1;
-  Kind kind = 2;
+  uint32 name = 1;
+  uint32 kind = 2;
 }
 
 message ExistsVar {
-  string name = 1;
-  Kind kind = 2;
+  uint32 name = 1;
+  uint32 kind = 2;
 }

@@ -11,6 +11,6 @@ plugins {
 
 repositories { maven("https://maven-central.storage-download.googleapis.com/maven2/") }
 
-dependencies { implementation(libs.protobufJava) }
+dependencies { api(libs.protobufJava) }
 
 protobuf { protoc { artifact = libs.protoc.get().toString() } }

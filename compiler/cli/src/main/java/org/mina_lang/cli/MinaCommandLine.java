@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.cli;
@@ -17,6 +17,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.*;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
@@ -25,10 +26,22 @@ import java.util.concurrent.Callable;
 public class MinaCommandLine implements Callable<Integer> {
     private static final Logger logger = LoggerFactory.getLogger(MinaCommandLine.class);
 
-    @Option(names = { "-d", "--destination" }, paramLabel = "path", description = {
+    @Option(
+        names = { "-d", "--destination" },
+        paramLabel = "path",
+        description = {
             "The destination path for compiled class files.",
             "Defaults to the current directory." })
     private Path destination = Paths.get(".");
+
+    @Option(
+        names = { "-cp", "--classpath"},
+        paramLabel = "classpath",
+        description = {
+            "The Java classpath from which to load Mina namespaces.",
+            "Defaults to an empty classpath."},
+        parameterConsumer = ClasspathParameterConsumer.class)
+    private URL[] classpath = new URL[0];
 
     @Parameters(description = { "The source paths from which to compile *.mina files." }, arity = "1..*")
     private Path[] paths;
@@ -54,6 +67,10 @@ public class MinaCommandLine implements Callable<Integer> {
         this.reportHandler = reportHandler;
     }
 
+    public URL[] classpath() {
+        return classpath;
+    }
+
     public Path destination() {
         return destination;
     }
@@ -67,7 +84,7 @@ public class MinaCommandLine implements Callable<Integer> {
     }
 
     public int compileSourcePaths() throws IOException {
-        compilerMain.compileSourcePaths(destination, paths).join();
+        compilerMain.compileSourcePaths(classpath, destination, paths).join();
 
         var mainCollector = compilerMain.getMainCollector();
 

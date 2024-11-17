@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common.types;
@@ -23,6 +23,11 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
     @Override
     default <A> A accept(SortFolder<A> visitor) {
         return visitor.visitType(this);
+    }
+
+    @Override
+    default void accept(SortVisitor visitor) {
+        visitor.visitType(this);
     }
 
     public void accept(TypeVisitor visitor);

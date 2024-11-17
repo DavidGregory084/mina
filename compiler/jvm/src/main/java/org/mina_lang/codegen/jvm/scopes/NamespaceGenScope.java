@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm.scopes;
@@ -14,6 +14,7 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.Named;
+import org.mina_lang.proto.ProtobufWriter;
 import org.mina_lang.syntax.NamespaceNode;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -67,7 +68,7 @@ public record NamespaceGenScope(
         return initWriter();
     }
 
-    public static NamespaceGenScope open(NamespaceNode<Attributes> namespace) {
+    public static NamespaceGenScope open(NamespaceNode<Attributes> namespace, ProtobufWriter protobufWriter) {
         var classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         var initWriter = Asm.staticInitializer(classWriter);
         var namespaceType = Types.getNamespaceAsmType(namespace);
@@ -80,6 +81,11 @@ public record NamespaceGenScope(
                 null,
                 Types.OBJECT_TYPE.getInternalName(),
                 null);
+
+        // Visit the custom MinaEnvironment attribute which stores information
+        // about values, types and constructor fields in the namespace
+        var proto = protobufWriter.toProto(namespace.getScope());
+        classWriter.visitAttribute(new Asm.EnvironmentAttribute(proto.toByteArray()));
 
         // Start and end labels for variable debug info of the static initializer
         var startLabel = new Label();
