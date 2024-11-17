@@ -36,17 +36,22 @@ public class CodeGeneratorTest {
     }
 
     // Shrinking doesn't work well with such complex arbitraries
-    @Property(shrinking = ShrinkingMode.OFF)
+    @Property(seed = "-5190183513089973571", shrinking = ShrinkingMode.OFF)
     public void generatesArbitraryNamespaces(@ForAll NamespaceNode<Attributes> namespace) throws IOException {
         var contextLoader = Thread.currentThread().getContextClassLoader();
         var codeGenerator = new CodeGenerator();
         var tempDir = createTempDir();
         try (var urlLoader = URLClassLoader.newInstance(new URL[] { tempDir.toUri().toURL() }, contextLoader)) {
             var namespaceClassName = namespace.getName().canonicalName().replace('/', '.') + ".$namespace";
-            codeGenerator.generate(tempDir, namespace);
             try {
-                Class.forName(namespaceClassName, true, urlLoader);
-            } catch (Exception | LinkageError e) {
+                codeGenerator.generate(tempDir, namespace);
+                try {
+                    Class.forName(namespaceClassName, true, urlLoader);
+                } catch (Exception | LinkageError e) {
+                    System.err.println(namespace.accept(printer).render(80));
+                    Assertions.fail("Exception while generating code for namespace" + namespace.getName().canonicalName(), e);
+                }
+            } catch (Exception e) {
                 System.err.println(namespace.accept(printer).render(80));
                 Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
             }
