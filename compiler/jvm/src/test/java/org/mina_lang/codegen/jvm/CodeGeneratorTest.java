@@ -36,7 +36,7 @@ public class CodeGeneratorTest {
     }
 
     // Shrinking doesn't work well with such complex arbitraries
-    @Property(seed = "-5190183513089973571", shrinking = ShrinkingMode.OFF)
+    @Property(shrinking = ShrinkingMode.OFF)
     public void generatesArbitraryNamespaces(@ForAll NamespaceNode<Attributes> namespace) throws IOException {
         var contextLoader = Thread.currentThread().getContextClassLoader();
         var codeGenerator = new CodeGenerator();
