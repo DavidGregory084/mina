@@ -130,7 +130,7 @@ public class Asm {
             ClassWriter classWriter) {
         var argTypeArray = argTypes.toArray(new Type[argTypes.size()]);
         return new GeneratorAdapter(
-                ACC_STATIC,
+                ACC_PUBLIC + ACC_STATIC,
                 new Method(name, returnType, argTypeArray),
                 signature,
                 null,
@@ -146,7 +146,7 @@ public class Asm {
         var argTypeArray = argTypes.toArray(new Type[argTypes.size()]);
         var returnType = Types.asmType(bodyExpr);
         return new GeneratorAdapter(
-                ACC_STATIC,
+                ACC_PUBLIC + ACC_STATIC,
                 new Method(name, returnType, argTypeArray),
                 signature,
                 null,
