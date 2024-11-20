@@ -197,7 +197,8 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         var fields = namespaceScope.fields().get(constr);
         if (fields != null) {
             fields.forEach((fieldName, meta) -> {
-                importScope.putFieldIfAbsent(constr, fieldName, meta);
+                var locatedMeta = Meta.of(meta.meta());
+                importScope.putFieldIfAbsent(constr, fieldName, locatedMeta);
             });
         }
     }

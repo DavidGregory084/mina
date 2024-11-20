@@ -16,6 +16,7 @@ import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.diagnostics.NamespaceDiagnosticReporter;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.BuiltInType;
+import org.mina_lang.common.types.Type;
 import org.mina_lang.common.types.TypeConstructor;
 import org.mina_lang.common.types.TypeKind;
 import org.mina_lang.renamer.scopes.ImportedNamesScope;
@@ -145,7 +146,10 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
+            Lists.immutable.of(
+                importSymbolsNode(
+                    Range.EMPTY, importedIdNode,
+                    importeeNode(importedSymbolRange, "Void"))),
             Lists.immutable.empty());
 
         var populator = createScopePopulator(
@@ -290,6 +294,181 @@ public class ImportScopePopulationTest {
     }
 
     @Test
+    void populatesQualifiedImportsSuccessfully() {
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var baseCollector = new ErrorCollector();
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsRange = new Range(1, 2, 1, 23);
+
+        var importedScope = new TopLevelScope<>(
+            Maps.mutable.of("one", Meta.of(
+                new LetName(new QualifiedName(importedNsName, "one")),
+                new BuiltInType("Int", TypeKind.INSTANCE))),
+            Maps.mutable.of("Void", Meta.of(
+                new DataName(new QualifiedName(importedNsName, "Void")),
+                new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
+            Maps.mutable.empty()
+        );
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other
+         * }
+         */
+        var namespaceNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(importQualifiedNode(importedNsRange, importedIdNode)),
+            Lists.immutable.empty());
+
+        var populator = createScopePopulator(
+            Maps.mutable.empty(),
+            Maps.mutable.of(importedNsName, importedScope),
+            scopedCollector);
+
+        var expectedScope = new ImportedNamesScope();
+        expectedScope.putValue("Other.one", new Meta<>(
+            importedNsRange,
+            new LetName(new QualifiedName(importedNsName, "one"))));
+        expectedScope.putType("Other.Void", new Meta<>(
+            importedNsRange,
+            new DataName(new QualifiedName(importedNsName, "Void"))));
+
+        assertThat(
+            populator.populateImportScope(namespaceNode, new ImportedNamesScope()),
+            is(Optional.of(expectedScope)));
+
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
+    }
+
+    @Test
+    void populatesQualifiedImportWithConstructorFieldsSuccessfully() {
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var baseCollector = new ErrorCollector();
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsRange = new Range(1, 2, 1, 23);
+
+        var dataName = new DataName(new QualifiedName(importedNsName, "One"));
+        var constrName = new ConstructorName(dataName, new QualifiedName(importedNsName, "MkOne"));
+
+        var importedScope = new TopLevelScope<>(
+            Maps.mutable.of(
+                "one", Meta.of(
+                    new LetName(new QualifiedName(importedNsName, "one")),
+                    new BuiltInType("Int", TypeKind.INSTANCE)),
+                "MkOne", Meta.of(
+                    constrName,
+                    Type.function(
+                        Type.INT,
+                        new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE)))),
+            Maps.mutable.of("One", Meta.of(
+                dataName,
+                new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE))),
+            Maps.mutable.of(constrName, Maps.mutable.of(
+                    "value",
+                    Meta.of(
+                        new FieldName(constrName, "value"),
+                        new BuiltInType("Int", TypeKind.INSTANCE))))
+        );
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other
+         * }
+         */
+        var namespaceNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(importQualifiedNode(importedNsRange, importedIdNode)),
+            Lists.immutable.empty());
+
+        var populator = createScopePopulator(
+            Maps.mutable.empty(),
+            Maps.mutable.of(importedNsName, importedScope),
+            scopedCollector);
+
+        var expectedScope = new ImportedNamesScope();
+        expectedScope.putValue("Other.one", new Meta<>(
+            importedNsRange,
+            new LetName(new QualifiedName(importedNsName, "one"))));
+        expectedScope.putValue("Other.MkOne",
+            new Meta<>(importedNsRange, constrName));
+        expectedScope.putType("Other.One", new Meta<>(
+            importedNsRange,
+            new DataName(new QualifiedName(importedNsName, "One"))));
+        expectedScope.putField(constrName, "value", new Meta<>(
+            Range.EMPTY,
+            new FieldName(constrName, "value")));
+
+        assertThat(
+            populator.populateImportScope(namespaceNode, new ImportedNamesScope()),
+            is(Optional.of(expectedScope)));
+
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
+    }
+
+    @Test
+    void populatesQualifiedImportsWithAliasSuccessfully() {
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var baseCollector = new ErrorCollector();
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsRange = new Range(1, 2, 1, 23);
+
+        var importedScope = new TopLevelScope<>(
+            Maps.mutable.of("one", Meta.of(
+                new LetName(new QualifiedName(importedNsName, "one")),
+                new BuiltInType("Int", TypeKind.INSTANCE))),
+            Maps.mutable.of("Void", Meta.of(
+                new DataName(new QualifiedName(importedNsName, "Void")),
+                new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
+            Maps.mutable.empty()
+        );
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other as Another
+         * }
+         */
+        var namespaceNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(
+                importQualifiedNode(importedNsRange, importedIdNode, Optional.of("Another"))),
+            Lists.immutable.empty());
+
+        var populator = createScopePopulator(
+            Maps.mutable.empty(),
+            Maps.mutable.of(importedNsName, importedScope),
+            scopedCollector);
+
+        var expectedScope = new ImportedNamesScope();
+        expectedScope.putValue("Another.one", new Meta<>(
+            importedNsRange,
+            new LetName(new QualifiedName(importedNsName, "one"))));
+        expectedScope.putType("Another.Void", new Meta<>(
+            importedNsRange,
+            new DataName(new QualifiedName(importedNsName, "Void"))));
+
+        assertThat(
+            populator.populateImportScope(namespaceNode, new ImportedNamesScope()),
+            is(Optional.of(expectedScope)));
+
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
+    }
+
+    @Test
     void resolvesValuesFromImportsSuccessfully() {
         var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
@@ -316,7 +495,10 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one"))),
+            Lists.immutable.of(
+                importSymbolsNode(
+                    Range.EMPTY, importedIdNode,
+                    importeeNode(importedSymbolRange, "one"))),
             Lists.immutable.empty());
 
         var populator = createScopePopulator(
@@ -328,6 +510,119 @@ public class ImportScopePopulationTest {
         expectedScope.putValue("one", new Meta<>(
             importedSymbolRange,
             new LetName(new QualifiedName(importedNsName, "one"))));
+
+        assertThat(
+            populator.populateImportScope(namespaceNode, new ImportedNamesScope()),
+            is(Optional.of(expectedScope)));
+
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
+    }
+
+    @Test
+    void resolvesAliasedValuesFromImportsSuccessfully() {
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var baseCollector = new ErrorCollector();
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedSymbolRange = new Range(1, 25, 1, 27);
+
+        var importedScope = new TopLevelScope<>(
+            Maps.mutable.of("one", Meta.of(
+                new LetName(new QualifiedName(importedNsName, "one")),
+                new BuiltInType("Int", TypeKind.INSTANCE))),
+            Maps.mutable.empty(),
+            Maps.mutable.empty()
+        );
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other.one as One
+         * }
+         */
+        var namespaceNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(
+                importSymbolsNode(
+                    Range.EMPTY, importedIdNode,
+                    importeeNode(importedSymbolRange, "one", Optional.of("One")))),
+            Lists.immutable.empty());
+
+        var populator = createScopePopulator(
+            Maps.mutable.empty(),
+            Maps.mutable.of(importedNsName, importedScope),
+            scopedCollector);
+
+        var expectedScope = new ImportedNamesScope();
+        expectedScope.putValue("One", new Meta<>(
+            importedSymbolRange,
+            new LetName(new QualifiedName(importedNsName, "one"))));
+
+        assertThat(
+            populator.populateImportScope(namespaceNode, new ImportedNamesScope()),
+            is(Optional.of(expectedScope)));
+
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
+    }
+
+    @Test
+    void resolvesValuesWithConstructorFieldsSuccessfully() {
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var baseCollector = new ErrorCollector();
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedSymbolRange = new Range(1, 25, 1, 29);
+
+        var dataName = new DataName(new QualifiedName(importedNsName, "One"));
+        var constrName = new ConstructorName(dataName, new QualifiedName(importedNsName, "MkOne"));
+
+        var importedScope = new TopLevelScope<>(
+            Maps.mutable.of("MkOne", Meta.of(
+                    constrName,
+                    Type.function(
+                        Type.INT,
+                        new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE)))),
+            Maps.mutable.of("One", Meta.of(
+                dataName,
+                new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE))),
+            Maps.mutable.of(constrName, Maps.mutable.of(
+                "value",
+                Meta.of(
+                    new FieldName(constrName, "value"),
+                    new BuiltInType("Int", TypeKind.INSTANCE))))
+        );
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other.MkOne
+         * }
+         */
+        var namespaceNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(
+                importSymbolsNode(
+                    Range.EMPTY, importedIdNode,
+                    importeeNode(importedSymbolRange, "MkOne"))),
+            Lists.immutable.empty());
+
+        var populator = createScopePopulator(
+            Maps.mutable.empty(),
+            Maps.mutable.of(importedNsName, importedScope),
+            scopedCollector);
+
+        var expectedScope = new ImportedNamesScope();
+        expectedScope.putValue("MkOne",
+            new Meta<>(importedSymbolRange, constrName));
+        expectedScope.putField(constrName, "value", new Meta<>(
+            Range.EMPTY,
+            new FieldName(constrName, "value")));
 
         assertThat(
             populator.populateImportScope(namespaceNode, new ImportedNamesScope()),
@@ -363,7 +658,10 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
+            Lists.immutable.of(
+                importSymbolsNode(
+                    Range.EMPTY, importedIdNode,
+                    importeeNode(importedSymbolRange, "Void"))),
             Lists.immutable.empty());
 
         var populator = createScopePopulator(
@@ -373,6 +671,56 @@ public class ImportScopePopulationTest {
 
         var expectedScope = new ImportedNamesScope();
         expectedScope.putType("Void", new Meta<>(
+            importedSymbolRange,
+            new DataName(new QualifiedName(importedNsName, "Void"))));
+
+        assertThat(
+            populator.populateImportScope(namespaceNode, new ImportedNamesScope()),
+            is(Optional.of(expectedScope)));
+
+        assertThat(baseCollector.getDiagnostics(), is(empty()));
+    }
+
+    @Test
+    void resolvesAliasedTypesFromImportsSuccessfully() {
+        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var baseCollector = new ErrorCollector();
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedSymbolRange = new Range(1, 25, 1, 28);
+
+        var importedScope = new TopLevelScope<>(
+            Maps.mutable.empty(),
+            Maps.mutable.of("Void", Meta.of(
+                new DataName(new QualifiedName(importedNsName, "Void")),
+                new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
+            Maps.mutable.empty()
+        );
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other.Void as Never
+         * }
+         */
+        var namespaceNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(
+                importSymbolsNode(
+                    Range.EMPTY, importedIdNode,
+                    importeeNode(importedSymbolRange, "Void", Optional.of("Never")))),
+            Lists.immutable.empty());
+
+        var populator = createScopePopulator(
+            Maps.mutable.empty(),
+            Maps.mutable.of(importedNsName, importedScope),
+            scopedCollector);
+
+        var expectedScope = new ImportedNamesScope();
+        expectedScope.putType("Never", new Meta<>(
             importedSymbolRange,
             new DataName(new QualifiedName(importedNsName, "Void"))));
 
