@@ -6,11 +6,10 @@ package org.mina_lang.main;
 
 import com.opencastsoftware.prettier4j.Doc;
 import com.opencastsoftware.yvette.Range;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.tuple.Tuples;
-import org.mina_lang.common.Attributes;
-import org.mina_lang.common.Meta;
-import org.mina_lang.common.Scope;
-import org.mina_lang.common.TopLevelScope;
+import org.mina_lang.common.*;
+import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.diagnostics.NamespaceDiagnosticReporter;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.Named;
@@ -60,6 +59,32 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         getNamespaceDiagnostics(namespace).reportError(range, message);
     }
 
+    private void duplicateValueDefinition(
+        NamespaceName namespace, String symbol,
+        Meta<A> proposed, Meta<A> existing) {
+        var diagnostics = getNamespaceDiagnostics(namespace);
+        var originalDefinition = new DiagnosticRelatedInformation(
+            new Location(diagnostics.getSourceUri(), existing.range()),
+            "Original definition of value '" + symbol + "'");
+        diagnostics.reportError(
+            proposed.range(),
+            "Duplicate definition of value '" + symbol + "'",
+            Lists.immutable.of(originalDefinition));
+    }
+
+    private void duplicateTypeDefinition(
+        NamespaceName namespace, String symbol,
+        Meta<A> proposed, Meta<A> existing) {
+        var diagnostics = getNamespaceDiagnostics(namespace);
+        var originalDefinition = new DiagnosticRelatedInformation(
+            new Location(diagnostics.getSourceUri(), existing.range()),
+            "Original definition of type '" + symbol + "'");
+        diagnostics.reportError(
+            proposed.range(),
+            "Duplicate definition of type '" + symbol + "'",
+            Lists.immutable.of(originalDefinition));
+    }
+
     default Optional<B> populateImportScope(NamespaceNode<?> namespaceNode, B scope) {
         var nsName = namespaceNode.getName();
 
@@ -79,9 +104,9 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
 
             if (importNode instanceof ImportQualifiedNode qualifiedNode) {
                 qualifiedNode.alias().ifPresentOrElse(alias -> {
-                    populateQualifiedImport(importedScope, scope, alias);
+                    populateQualifiedImport(importNode.range(), importedScope, scope, alias);
                 }, () -> {
-                    populateQualifiedImport(importedScope, scope, qualifiedNode.namespace().ns());
+                    populateQualifiedImport(importNode.range(), importedScope, scope, qualifiedNode.namespace().ns());
                 });
             } else if (importNode instanceof ImportSymbolsNode symbolsNode) {
                 for (var importedSymbol : symbolsNode.symbols()) {
@@ -121,14 +146,16 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         return new TopLevelScope<>(values, types, fields);
     }
 
-    private void populateQualifiedImport(Scope<A> namespaceScope, B importScope, String namespaceAlias) {
+    private void populateQualifiedImport(Range range, Scope<A> namespaceScope, B importScope, String namespaceAlias) {
         namespaceScope.types().forEach(meta -> {
             var name = getName(meta);
-            importScope.putTypeIfAbsent(namespaceAlias + "." + name.localName(), meta);
+            var locatedMeta = new Meta<>(range, meta.meta());
+            importScope.putTypeIfAbsent(namespaceAlias + "." + name.localName(), locatedMeta);
         });
         namespaceScope.values().forEach(meta -> {
             var name = getName(meta);
-            importScope.putValueIfAbsent(namespaceAlias + "." + name.localName(), meta);
+            var locatedMeta = new Meta<>(range, meta.meta());
+            importScope.putValueIfAbsent(namespaceAlias + "." + name.localName(), locatedMeta);
             if (name instanceof ConstructorName constrName) {
                 addConstructorFields(namespaceScope, importScope, constrName);
             }
@@ -145,11 +172,17 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         var value = namespaceScope.lookupValue(symbol);
 
         type.ifPresent(meta -> {
-            importScope.putTypeIfAbsent(alias, meta);
+            var locatedMeta = new Meta<>(range, meta.meta());
+            importScope.putTypeIfAbsentOrElse(alias, locatedMeta, (name, proposed, existing) -> {
+                duplicateTypeDefinition(namespace, name, proposed, existing);
+            });
         });
 
         value.ifPresent(meta -> {
-            importScope.putValueIfAbsent(alias, meta);
+            var locatedMeta = new Meta<>(range, meta.meta());
+            importScope.putValueIfAbsentOrElse(alias, locatedMeta, (name, proposed, existing) -> {
+                duplicateValueDefinition(namespace, name, proposed, existing);
+            });
             if (getName(meta) instanceof ConstructorName constrName) {
                 addConstructorFields(namespaceScope, importScope, constrName);
             }
@@ -164,7 +197,8 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         var fields = namespaceScope.fields().get(constr);
         if (fields != null) {
             fields.forEach((fieldName, meta) -> {
-                importScope.putFieldIfAbsent(constr, fieldName, meta);
+                var locatedMeta = Meta.of(meta.meta());
+                importScope.putFieldIfAbsent(constr, fieldName, locatedMeta);
             });
         }
     }

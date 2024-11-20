@@ -39,6 +39,19 @@ public class RenamerTest {
         assertThat(renamedNode, is(equalTo(expectedNode)));
     }
 
+    ErrorCollector testRenameWithWarnings(
+        NameEnvironment environment,
+        NamespaceNode<Void> originalNode,
+        NamespaceNode<Name> expectedNode) {
+        var baseCollector = new ErrorCollector();
+        var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
+        var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
+        var renamer = new Renamer(scopedCollector, environment);
+        var renamedNode = renamer.rename(originalNode);
+        assertThat(renamedNode, is(equalTo(expectedNode)));
+        return baseCollector;
+    }
+
     <A extends Name> void testSuccessfulRename(
             NameEnvironment environment,
             MetaNode<Void> originalNode,
@@ -2117,6 +2130,94 @@ public class RenamerTest {
                 collector.getDiagnostics(),
                 unknownFieldRange,
                 "Reference to unknown field 'hed' in constructor 'Mina/Test/Renamer.Cons'");
+    }
+
+    @Test
+    void warnWhenLocalValueShadowsImport() {
+        var importedSymbolRange = new Range(1, 25, 1, 27);
+        var localDeclarationRange = new Range(2, 2, 2, 12);
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var letName = new LetName(new QualifiedName(namespaceName, "one"));
+
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNamespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedSymbolName = new LetName(new QualifiedName(importedNamespaceName, "one"));
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other.one
+         *   let one = 1
+         * }
+         */
+        var originalNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one"))),
+            Lists.immutable.of(letNode(localDeclarationRange, "one", intNode(Range.EMPTY, 1))));
+
+        var expectedNode = namespaceNode(
+            Meta.of(namespaceName), idNode,
+            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one"))),
+            Lists.immutable.of(letNode(new Meta<>(localDeclarationRange, letName), "one", intNode(Meta.of(Nameless.INSTANCE), 1))));
+
+        var environment = NameEnvironment.withBuiltInNames();
+
+        environment.putValue("one", new Meta<>(importedSymbolRange, importedSymbolName));
+
+        var collector = testRenameWithWarnings(environment, originalNode, expectedNode);
+
+        assertDiagnosticWithRelatedInfo(
+            collector.getDiagnostics(),
+            localDeclarationRange,
+            "The local declaration 'one' shadows the imported declaration 'Mina/Test/Other.one'",
+            importedSymbolRange,
+            "Import of declaration 'one'");
+    }
+
+    @Test
+    void warnWhenLocalTypeShadowsImport() {
+        var importedSymbolRange = new Range(1, 25, 1, 28);
+        var localDeclarationRange = new Range(2, 2, 2, 13);
+
+        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var dataName = new DataName(new QualifiedName(namespaceName, "Void"));
+
+        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
+        var importedNamespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedSymbolName = new DataName(new QualifiedName(importedNamespaceName, "Void"));
+
+        /*-
+         * namespace Mina/Test/Renamer {
+         *   import Mina/Test/Other.Void
+         *   data Void {}
+         * }
+         */
+        var originalNode = namespaceNode(
+            Range.EMPTY, idNode,
+            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
+            Lists.immutable.of(dataNode(localDeclarationRange, "Void", Lists.immutable.empty(), Lists.immutable.empty())));
+
+        var expectedNode = namespaceNode(
+            Meta.of(namespaceName), idNode,
+            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
+            Lists.immutable.of(dataNode(new Meta<Name>(localDeclarationRange, dataName), "Void", Lists.immutable.empty(), Lists.immutable.empty())));
+
+        var environment = NameEnvironment.withBuiltInNames();
+
+        environment.putType("Void", new Meta<>(importedSymbolRange, importedSymbolName));
+
+        var collector = testRenameWithWarnings(environment, originalNode, expectedNode);
+
+        assertDiagnosticWithRelatedInfo(
+            collector.getDiagnostics(),
+            localDeclarationRange,
+            "The local declaration 'Void' shadows the imported declaration 'Mina/Test/Other.Void'",
+            importedSymbolRange,
+            "Import of declaration 'Void'");
     }
 
     @Test

@@ -64,7 +64,7 @@ public class Renamer {
         return node.accept(renamer);
     }
 
-    public Void duplicateValueDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
+    public void duplicateValueDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 new Location(diagnostics.getSourceUri(), existing.range()),
                 "Original definition of value '" + name + "'");
@@ -72,10 +72,9 @@ public class Renamer {
                 proposed.range(),
                 "Duplicate definition of value '" + name + "'",
                 Lists.immutable.of(originalDefinition));
-        return null;
     }
 
-    public Void duplicateTypeDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
+    public void duplicateTypeDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 new Location(diagnostics.getSourceUri(), existing.range()),
                 "Original definition of type '" + name + "'");
@@ -83,10 +82,9 @@ public class Renamer {
                 proposed.range(),
                 "Duplicate definition of type '" + name + "'",
                 Lists.immutable.of(originalDefinition));
-        return null;
     }
 
-    public Void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
+    public void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
             Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 new Location(diagnostics.getSourceUri(), existing.range()),
@@ -95,7 +93,6 @@ public class Renamer {
                 proposed.range(),
                 "Duplicate definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'",
                 Lists.immutable.of(originalDefinition));
-        return null;
     }
 
     public void undefinedType(String name, Meta<Void> meta) {
@@ -117,6 +114,17 @@ public class Renamer {
                 "Reference to unknown field '" + name + "' in constructor '" + constr.name().canonicalName() + "'");
     }
 
+    public void shadowsImportedDeclaration(String name, Meta<Name> local, Meta<Name> imported) {
+        var importedDeclaration = new DiagnosticRelatedInformation(
+            new Location(diagnostics.getSourceUri(), imported.range()),
+            "Import of declaration '" + name + "'");
+        var importedName = (Named) imported.meta();
+        diagnostics.reportWarning(
+            local.range(),
+            "The local declaration '" + name + "' shadows the imported declaration '" + importedName.canonicalName() + "'",
+            Lists.immutable.of(importedDeclaration));
+    }
+
     public NamespaceNamingScope populateTopLevel(NamespaceNode<Void> namespace) {
         var currentNamespace = namespace.getName();
         var namespaceScope = new NamespaceNamingScope(currentNamespace);
@@ -131,18 +139,31 @@ public class Renamer {
                             this::duplicateValueDefinition);
                     namespaceScope.putValueIfAbsent(letFnName.canonicalName(), letFnMeta);
 
+                    environment.lookupValue(letFnName.localName()).ifPresent(importedMeta -> {
+                        shadowsImportedDeclaration(letFnName.localName(), letFnMeta, importedMeta);
+                    });
+
                 } else if (decl instanceof LetNode<Void> let) {
                     var letName = let.getName(currentNamespace);
                     var letMeta = new Meta<Name>(let.range(), letName);
 
                     namespaceScope.putValueIfAbsentOrElse(letName.localName(), letMeta, this::duplicateValueDefinition);
                     namespaceScope.putValueIfAbsent(letName.canonicalName(), letMeta);
+
+                    environment.lookupValue(letName.localName()).ifPresent(importedMeta -> {
+                        shadowsImportedDeclaration(letName.localName(), letMeta, importedMeta);
+                    });
+
                 } else if (decl instanceof DataNode<Void> data) {
                     var dataName = data.getName(currentNamespace);
                     var dataMeta = new Meta<Name>(data.range(), dataName);
 
                     namespaceScope.putTypeIfAbsentOrElse(dataName.localName(), dataMeta, this::duplicateTypeDefinition);
                     namespaceScope.putTypeIfAbsent(dataName.canonicalName(), dataMeta);
+
+                    environment.lookupType(dataName.localName()).ifPresent(importedMeta -> {
+                        shadowsImportedDeclaration(dataName.localName(), dataMeta, importedMeta);
+                    });
 
                     data.constructors().forEach(constr -> {
                         var constrName = constr.getName(dataName, currentNamespace);
@@ -151,6 +172,10 @@ public class Renamer {
                         namespaceScope.putValueIfAbsentOrElse(constrName.localName(), constrMeta,
                                 this::duplicateValueDefinition);
                         namespaceScope.putValueIfAbsent(constrName.canonicalName(), constrMeta);
+
+                        environment.lookupValue(constrName.localName()).ifPresent(importedMeta -> {
+                            shadowsImportedDeclaration(constrName.localName(), constrMeta, importedMeta);
+                        });
 
                         constr.params().forEach(constrParam -> {
                             var fieldName = new FieldName(constrName, constrParam.name());
