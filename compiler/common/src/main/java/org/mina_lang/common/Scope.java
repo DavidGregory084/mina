@@ -1,12 +1,12 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2023 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.common;
 
-import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.factory.Maps;
+import org.mina_lang.common.functions.TriConsumer;
 import org.mina_lang.common.names.ConstructorName;
 
 import java.util.Optional;
@@ -44,10 +44,10 @@ public interface Scope<A> {
     }
 
     default void putValueIfAbsentOrElse(String name, Meta<A> proposed,
-            Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
+            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
         var existing = putValueIfAbsent(name, proposed);
         if (existing != null) {
-            orElseFn.value(name, proposed, existing);
+            orElseFn.accept(name, proposed, existing);
         }
     }
 
@@ -76,10 +76,10 @@ public interface Scope<A> {
     }
 
     default void putTypeIfAbsentOrElse(String name, Meta<A> proposed,
-            Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
+            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
         var existing = putTypeIfAbsent(name, proposed);
         if (existing != null) {
-            orElseFn.value(name, proposed, existing);
+            orElseFn.accept(name, proposed, existing);
         }
     };
 
@@ -104,20 +104,20 @@ public interface Scope<A> {
     };
 
     default void putField(ConstructorName constr, String name, Meta<A> meta) {
-        var constrFields = fields().getIfAbsentPut(constr, () -> Maps.mutable.empty());
+        var constrFields = fields().getIfAbsentPut(constr, Maps.mutable::empty);
         constrFields.put(name, meta);
     }
 
     default Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
-        var constrFields = fields().getIfAbsentPut(constr, () -> Maps.mutable.empty());
+        var constrFields = fields().getIfAbsentPut(constr, Maps.mutable::empty);
         return constrFields.putIfAbsent(name, meta);
     }
 
     default void putFieldIfAbsentOrElse(ConstructorName constr, String name, Meta<A> proposed,
-            Function3<String, Meta<A>, Meta<A>, Void> orElseFn) {
+            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
         var existing = putFieldIfAbsent(constr, name, proposed);
         if (existing != null) {
-            orElseFn.value(name, proposed, existing);
+            orElseFn.accept(name, proposed, existing);
         }
     }
 }

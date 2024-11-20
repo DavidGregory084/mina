@@ -5,7 +5,7 @@
 package org.mina_lang.langserver.bsp;
 
 import ch.epfl.scala.bsp4j.*;
-import org.eclipse.collections.api.block.function.Function3;
+import org.apache.commons.lang3.function.TriConsumer;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
@@ -61,8 +61,6 @@ public class BuildServerConnectorTest {
 
             // Don't connect to any server
             assertThat(buildServer.getBuildInitializeReceived().isDone(), is(false));
-
-            return null;
         });
     }
 
@@ -93,8 +91,6 @@ public class BuildServerConnectorTest {
             // Send a shutdown message to the server
             assertThat(buildServer.getBuildShutdownReceived(), stageWillCompleteWithValue());
             assertThat(buildServer.getBuildExitReceived(), stageWillCompleteWithValue());
-
-            return null;
         });
     }
 
@@ -132,12 +128,10 @@ public class BuildServerConnectorTest {
             // Send a shutdown message to the server
             assertThat(buildServer.getBuildShutdownReceived(), stageWillCompleteWithValue());
             assertThat(buildServer.getBuildExitReceived(), stageWillCompleteWithValue());
-
-            return null;
         });
     }
 
-    void withBuildServerConnector(BuildServerDiscovery discovery, Function3<BuildServerConnector, TestLanguageClient, TestBuildServer, Void> testFunction) throws IOException {
+    void withBuildServerConnector(BuildServerDiscovery discovery, TriConsumer<BuildServerConnector, TestLanguageClient, TestBuildServer> testFunction) throws IOException {
         var buildClientIn = new PipedInputStream();
         var buildClientOut = new PipedOutputStream();
         var buildServerIn = new PipedInputStream();
@@ -164,7 +158,7 @@ public class BuildServerConnectorTest {
         var listener = buildServerLauncher.startListening();
 
         try {
-            testFunction.value(connector, langClient, buildServer);
+            testFunction.accept(connector, langClient, buildServer);
         } finally {
             listener.cancel(true);
         }

@@ -64,7 +64,7 @@ public class Renamer {
         return node.accept(renamer);
     }
 
-    public Void duplicateValueDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
+    public void duplicateValueDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 new Location(diagnostics.getSourceUri(), existing.range()),
                 "Original definition of value '" + name + "'");
@@ -72,10 +72,9 @@ public class Renamer {
                 proposed.range(),
                 "Duplicate definition of value '" + name + "'",
                 Lists.immutable.of(originalDefinition));
-        return null;
     }
 
-    public Void duplicateTypeDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
+    public void duplicateTypeDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 new Location(diagnostics.getSourceUri(), existing.range()),
                 "Original definition of type '" + name + "'");
@@ -83,10 +82,9 @@ public class Renamer {
                 proposed.range(),
                 "Duplicate definition of type '" + name + "'",
                 Lists.immutable.of(originalDefinition));
-        return null;
     }
 
-    public Void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
+    public void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
             Meta<Name> existing) {
         var originalDefinition = new DiagnosticRelatedInformation(
                 new Location(diagnostics.getSourceUri(), existing.range()),
@@ -95,7 +93,6 @@ public class Renamer {
                 proposed.range(),
                 "Duplicate definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'",
                 Lists.immutable.of(originalDefinition));
-        return null;
     }
 
     public void undefinedType(String name, Meta<Void> meta) {
