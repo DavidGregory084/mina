@@ -71,12 +71,6 @@ DOT: '.';
 DOUBLE_EQUAL: '==';
 NOT_EQUAL: '!=';
 
-// Prefix operators
-EXCLAMATION: '!';
-TILDE: '~';
-PLUS: '+';
-MINUS: '-';
-
 // Binary operators
 DOUBLE_ASTERISK: '**';
 ASTERISK: '*';
@@ -99,6 +93,12 @@ LESS_THAN_EQUAL: '<=';
 GREATER_THAN_EQUAL: '>=';
 LESS_THAN: '<';
 GREATER_THAN: '>';
+
+// Prefix unary operators
+EXCLAMATION: '!';
+TILDE: '~';
+PLUS: '+';
+MINUS: '-';
 
 // Assignment operator
 EQUAL: '=';
