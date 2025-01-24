@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2023-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2023-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.codegen.jvm;
@@ -193,6 +193,16 @@ public class FreeLocalVariablesFolder implements MetaNodeFolder<Attributes, Immu
            ImmutableList<ReferenceNode<Attributes>> receiver,
            ImmutableList<ReferenceNode<Attributes>> selection) {
         return receiver.newWithAll(selection);
+    }
+
+    @Override
+    public ImmutableList<ReferenceNode<Attributes>> visitUnaryOp(Meta<Attributes> meta, UnaryOp operator, ImmutableList<ReferenceNode<Attributes>> operand) {
+        return operand;
+    }
+
+    @Override
+    public ImmutableList<ReferenceNode<Attributes>> visitBinaryOp(Meta<Attributes> meta, ImmutableList<ReferenceNode<Attributes>> leftOperand, BinaryOp operator, ImmutableList<ReferenceNode<Attributes>> rightOperand) {
+        return leftOperand.newWithAll(rightOperand);
     }
 
     @Override

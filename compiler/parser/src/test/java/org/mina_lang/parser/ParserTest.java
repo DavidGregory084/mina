@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.parser;
@@ -10,8 +10,10 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.parser.Parser.Visitor;
+import org.mina_lang.syntax.BinaryOp;
 import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.syntax.SyntaxNode;
+import org.mina_lang.syntax.UnaryOp;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -641,7 +643,7 @@ public class ParserTest {
     @Test
     void parseIfExpressionMissingAlternative() {
         var errors = testFailedParse("if false then 0", Parser::getExprVisitor, MinaParser::expr);
-        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting {'else', '(', '.'}"));
+        assertThat(errors.get(0), startsWith("mismatched input '<EOF>' expecting {"));
     }
 
     // Function application
@@ -813,6 +815,917 @@ public class ParserTest {
                         Lists.immutable.of(refNode(new Range(0, 4, 0, 5), "x"))),
                     refNode(new Range(0, 7, 0, 8), "g")),
                 Lists.immutable.of(refNode(new Range(0, 9, 0, 10), "y"))));
+    }
+
+    // Unary operators
+    @Test
+    void parseNegationOperator() {
+        testSuccessfulParse("-x", Parser::getExprVisitor, MinaParser::expr,
+            unaryOpNode(
+                new Range(0, 0, 0, 2),
+                UnaryOp.NEGATE,
+                refNode(new Range(0, 1, 0, 2), "x")));
+    }
+
+    @Test
+    void parseNotOperator() {
+        testSuccessfulParse("!x", Parser::getExprVisitor, MinaParser::expr,
+            unaryOpNode(
+                new Range(0, 0, 0, 2),
+                UnaryOp.BOOLEAN_NOT,
+                refNode(new Range(0, 1, 0, 2), "x")));
+    }
+
+    @Test
+    void parseBitwiseNotOperator() {
+        testSuccessfulParse("~x", Parser::getExprVisitor, MinaParser::expr,
+            unaryOpNode(
+                new Range(0, 0, 0, 2),
+                UnaryOp.BITWISE_NOT,
+                refNode(new Range(0, 1, 0, 2), "x")));
+    }
+
+    // Binary operators
+    @Test
+    void parsePowerOperator() {
+        testSuccessfulParse("x ** y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.POWER,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void powerOperatorRightAssociative() {
+        testSuccessfulParse("x ** y ** z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.POWER,
+                binaryOpNode(
+                    new Range(0, 5, 0, 11),
+                    refNode(new Range(0, 5, 0, 6), "y"),
+                    BinaryOp.POWER,
+                    refNode(new Range(0, 10, 0, 11), "z"))));
+    }
+
+    @Test
+    void applicationHasPrecedenceOverPower() {
+        testSuccessfulParse("x ** y(z)", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.POWER,
+                applyNode(
+                    new Range(0, 5, 0, 9),
+                    refNode(new Range(0, 5, 0, 6), "y"),
+                    Lists.immutable.of(refNode(new Range(0, 7, 0, 8), "z")))));
+    }
+
+    @Test
+    void unaryNegateHasPrecedenceOverPower() {
+        testSuccessfulParse("-x ** y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 7),
+                unaryOpNode(
+                    new Range(0, 0, 0, 2),
+                    UnaryOp.NEGATE,
+                    refNode(new Range(0, 1, 0, 2), "x")),
+                BinaryOp.POWER,
+                refNode(new Range(0, 6, 0, 7), "y")));
+    }
+
+    @Test
+    void parseMultiplyOperator() {
+        testSuccessfulParse("x * y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.MULTIPLY,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void multiplyOperatorLeftAssociative() {
+        testSuccessfulParse("x * y * z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.MULTIPLY,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.MULTIPLY,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void powerHasPrecedenceOverMultiply() {
+        testSuccessfulParse("x * y ** z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.MULTIPLY,
+                binaryOpNode(
+                    new Range(0, 4, 0, 10),
+                    refNode(new Range(0, 4, 0, 5), "y"),
+                    BinaryOp.POWER,
+                    refNode(new Range(0, 9, 0, 10), "z"))));
+    }
+
+    @Test
+    void parseDivideOperator() {
+        testSuccessfulParse("x / y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.DIVIDE,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void divideOperatorLeftAssociative() {
+        testSuccessfulParse("x / y / z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.DIVIDE,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.DIVIDE,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void divideHasEqualPrecedenceToMultiply() {
+        testSuccessfulParse("x / y * z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.DIVIDE,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.MULTIPLY,
+                refNode(new Range(0, 8, 0, 9), "z")));
+
+        testSuccessfulParse("x * y / z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.MULTIPLY,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.DIVIDE,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void parseModulusOperator() {
+        testSuccessfulParse("x % y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.MODULUS,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void modulusOperatorLeftAssociative() {
+        testSuccessfulParse("x % y % z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.MODULUS,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.MODULUS,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void modulusHasEqualPrecedenceToMultiply() {
+        testSuccessfulParse("x % y * z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.MODULUS,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.MULTIPLY,
+                refNode(new Range(0, 8, 0, 9), "z")));
+
+        testSuccessfulParse("x * y % z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.MULTIPLY,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.MODULUS,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void parseAdditionOperator() {
+        testSuccessfulParse("x + y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.ADD,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void additionOperatorLeftAssociative() {
+        testSuccessfulParse("x + y + z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.ADD,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.ADD,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void multiplyHasPrecedenceOverAddition() {
+        testSuccessfulParse("x + y * z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.ADD,
+                binaryOpNode(
+                    new Range(0, 4, 0, 9),
+                    refNode(new Range(0, 4, 0, 5), "y"),
+                    BinaryOp.MULTIPLY,
+                    refNode(new Range(0, 8, 0, 9), "z"))));
+    }
+
+    @Test
+    void parseSubtractionOperator() {
+        testSuccessfulParse("x - y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.SUBTRACT,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void subtractionOperatorLeftAssociative() {
+        testSuccessfulParse("x - y - z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.SUBTRACT,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.SUBTRACT,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void subtractionHasEqualPrecedenceToAddition() {
+        testSuccessfulParse("x + y - z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.ADD,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.SUBTRACT,
+                refNode(new Range(0, 8, 0, 9), "z")));
+
+        testSuccessfulParse("x - y + z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.SUBTRACT,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.ADD,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void parseLeftShiftOperator() {
+        testSuccessfulParse("x << y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.SHIFT_LEFT,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void leftShiftOperatorLeftAssociative() {
+        testSuccessfulParse("x << y << z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.SHIFT_LEFT,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.SHIFT_LEFT,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void additionHasPrecedenceOverLeftShift() {
+        testSuccessfulParse("x << y + z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.SHIFT_LEFT,
+                binaryOpNode(
+                    new Range(0, 5, 0, 10),
+                    refNode(new Range(0, 5, 0, 6), "y"),
+                    BinaryOp.ADD,
+                    refNode(new Range(0, 9, 0, 10), "z"))));
+    }
+
+    @Test
+    void parseRightShiftOperator() {
+        testSuccessfulParse("x >> y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.SHIFT_RIGHT,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void rightShiftOperatorLeftAssociative() {
+        testSuccessfulParse("x >> y >> z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.SHIFT_RIGHT,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.SHIFT_RIGHT,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void rightShiftHasEqualPrecedenceToLeftShift() {
+        testSuccessfulParse("x << y >> z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.SHIFT_LEFT,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.SHIFT_RIGHT,
+                refNode(new Range(0, 10, 0, 11), "z")));
+
+        testSuccessfulParse("x >> y << z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.SHIFT_RIGHT,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.SHIFT_LEFT,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void parseUnsignedRightShiftOperator() {
+        testSuccessfulParse("x >>> y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 7),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.UNSIGNED_SHIFT_RIGHT,
+                refNode(new Range(0, 6, 0, 7), "y")));
+    }
+
+    @Test
+    void unsignedRightShiftOperatorLeftAssociative() {
+        testSuccessfulParse("x >>> y >>> z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 13),
+                binaryOpNode(
+                    new Range(0, 0, 0, 7),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.UNSIGNED_SHIFT_RIGHT,
+                    refNode(new Range(0, 6, 0, 7), "y")),
+                BinaryOp.UNSIGNED_SHIFT_RIGHT,
+                refNode(new Range(0, 12, 0, 13), "z")));
+    }
+
+    @Test
+    void unsignedRightShiftHasEqualPrecedenceToLeftShift() {
+        testSuccessfulParse("x << y >>> z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 12),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.SHIFT_LEFT,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.UNSIGNED_SHIFT_RIGHT,
+                refNode(new Range(0, 11, 0, 12), "z")));
+
+        testSuccessfulParse("x >>> y << z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 12),
+                binaryOpNode(
+                    new Range(0, 0, 0, 7),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.UNSIGNED_SHIFT_RIGHT,
+                    refNode(new Range(0, 6, 0, 7), "y")),
+                BinaryOp.SHIFT_LEFT,
+                refNode(new Range(0, 11, 0, 12), "z")));
+    }
+
+    @Test
+    void parseBitwiseAndOperator() {
+        testSuccessfulParse("x & y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BITWISE_AND,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void bitwiseAndOperatorLeftAssociative() {
+        testSuccessfulParse("x & y & z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.BITWISE_AND,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.BITWISE_AND,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void leftShiftHasPrecedenceOverBitwiseAnd() {
+        testSuccessfulParse("x & y << z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BITWISE_AND,
+                binaryOpNode(
+                    new Range(0, 4, 0, 10),
+                    refNode(new Range(0, 4, 0, 5), "y"),
+                    BinaryOp.SHIFT_LEFT,
+                    refNode(new Range(0, 9, 0, 10), "z"))));
+    }
+
+    @Test
+    void parseBitwiseOrOperator() {
+        testSuccessfulParse("x | y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BITWISE_OR,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void bitwiseOrOperatorLeftAssociative() {
+        testSuccessfulParse("x | y | z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.BITWISE_OR,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.BITWISE_OR,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void bitwiseAndHasPrecedenceOverBitwiseOr() {
+        testSuccessfulParse("x | y & z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BITWISE_OR,
+                binaryOpNode(
+                    new Range(0, 4, 0, 9),
+                    refNode(new Range(0, 4, 0, 5), "y"),
+                    BinaryOp.BITWISE_AND,
+                    refNode(new Range(0, 8, 0, 9), "z"))));
+    }
+
+    @Test
+    void parseBitwiseXorOperator() {
+        testSuccessfulParse("x ^ y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BITWISE_XOR,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void bitwiseXorOperatorLeftAssociative() {
+        testSuccessfulParse("x ^ y ^ z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.BITWISE_XOR,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.BITWISE_XOR,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void bitwiseXorHasEqualPrecedenceToBitwiseOr() {
+        testSuccessfulParse("x ^ y | z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.BITWISE_XOR,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.BITWISE_OR,
+                refNode(new Range(0, 8, 0, 9), "z")));
+
+        testSuccessfulParse("x | y ^ z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.BITWISE_OR,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.BITWISE_XOR,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void parseLessThanOperator() {
+        testSuccessfulParse("x < y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.LESS_THAN,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void lessThanOperatorLeftAssociative() {
+        testSuccessfulParse("x < y < z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.LESS_THAN,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.LESS_THAN,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void bitwiseOrHasPrecedenceOverLessThan() {
+        testSuccessfulParse("x < y | z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.LESS_THAN,
+                binaryOpNode(
+                    new Range(0, 4, 0, 9),
+                    refNode(new Range(0, 4, 0, 5), "y"),
+                    BinaryOp.BITWISE_OR,
+                    refNode(new Range(0, 8, 0, 9), "z"))));
+    }
+
+    @Test
+    void parseLessThanOrEqualOperator() {
+        testSuccessfulParse("x <= y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.LESS_THAN_EQUAL,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void lessThanOrEqualOperatorLeftAssociative() {
+        testSuccessfulParse("x <= y <= z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.LESS_THAN_EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.LESS_THAN_EQUAL,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void lessThanOrEqualHasEqualPrecedenceToLessThan() {
+        testSuccessfulParse("x <= y < z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.LESS_THAN_EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.LESS_THAN,
+                refNode(new Range(0, 9, 0, 10), "z")));
+
+        testSuccessfulParse("x < y <= z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.LESS_THAN,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.LESS_THAN_EQUAL,
+                refNode(new Range(0, 9, 0, 10), "z")));
+    }
+
+    @Test
+    void parseGreaterThanOperator() {
+        testSuccessfulParse("x > y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 5),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.GREATER_THAN,
+                refNode(new Range(0, 4, 0, 5), "y")));
+    }
+
+    @Test
+    void greaterThanOperatorLeftAssociative() {
+        testSuccessfulParse("x > y > z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.GREATER_THAN,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.GREATER_THAN,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void greaterThanHasEqualPrecedenceToLessThan() {
+        testSuccessfulParse("x > y < z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.GREATER_THAN,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.LESS_THAN,
+                refNode(new Range(0, 8, 0, 9), "z")));
+
+        testSuccessfulParse("x < y > z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 9),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.LESS_THAN,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.GREATER_THAN,
+                refNode(new Range(0, 8, 0, 9), "z")));
+    }
+
+    @Test
+    void parseGreaterThanOrEqualOperator() {
+        testSuccessfulParse("x >= y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.GREATER_THAN_EQUAL,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void greaterThanOrEqualOperatorLeftAssociative() {
+        testSuccessfulParse("x >= y >= z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.GREATER_THAN_EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.GREATER_THAN_EQUAL,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void greaterOrEqualThanHasEqualPrecedenceToLessThan() {
+        testSuccessfulParse("x >= y < z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.GREATER_THAN_EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.LESS_THAN,
+                refNode(new Range(0, 9, 0, 10), "z")));
+
+        testSuccessfulParse("x < y >= z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                binaryOpNode(
+                    new Range(0, 0, 0, 5),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.LESS_THAN,
+                    refNode(new Range(0, 4, 0, 5), "y")),
+                BinaryOp.GREATER_THAN_EQUAL,
+                refNode(new Range(0, 9, 0, 10), "z")));
+    }
+
+    @Test
+    void parseEqualOperator() {
+        testSuccessfulParse("x == y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.EQUAL,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void equalOperatorLeftAssociative() {
+        testSuccessfulParse("x == y == z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.EQUAL,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void lessThanHasPrecedenceOverEquals() {
+        testSuccessfulParse("x == y < z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 10),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.EQUAL,
+                binaryOpNode(
+                    new Range(0, 5, 0, 10),
+                    refNode(new Range(0, 5, 0, 6), "y"),
+                    BinaryOp.LESS_THAN,
+                    refNode(new Range(0, 9, 0, 10), "z"))));
+    }
+
+    @Test
+    void parseNotEqualOperator() {
+        testSuccessfulParse("x != y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.NOT_EQUAL,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void notEqualOperatorLeftAssociative() {
+        testSuccessfulParse("x != y != z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.NOT_EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.NOT_EQUAL,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void notEqualHasEqualPrecedenceToEqual() {
+        testSuccessfulParse("x == y != z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.NOT_EQUAL,
+                refNode(new Range(0, 10, 0, 11), "z")));
+
+        testSuccessfulParse("x != y == z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.NOT_EQUAL,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.EQUAL,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void parseBooleanAndOperator() {
+        testSuccessfulParse("x && y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BOOLEAN_AND,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void andOperatorLeftAssociative() {
+        testSuccessfulParse("x && y && z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.BOOLEAN_AND,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.BOOLEAN_AND,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void equalsHasPrecedenceOverAnd() {
+        testSuccessfulParse("x && y == z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BOOLEAN_AND,
+                binaryOpNode(
+                    new Range(0, 5, 0, 11),
+                    refNode(new Range(0, 5, 0, 6), "y"),
+                    BinaryOp.EQUAL,
+                    refNode(new Range(0, 10, 0, 11), "z"))));
+    }
+
+    @Test
+    void parseBooleanOrOperator() {
+        testSuccessfulParse("x || y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BOOLEAN_OR,
+                refNode(new Range(0, 5, 0, 6), "y")));
+    }
+
+    @Test
+    void orOperatorLeftAssociative() {
+        testSuccessfulParse("x || y || z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                binaryOpNode(
+                    new Range(0, 0, 0, 6),
+                    refNode(new Range(0, 0, 0, 1), "x"),
+                    BinaryOp.BOOLEAN_OR,
+                    refNode(new Range(0, 5, 0, 6), "y")),
+                BinaryOp.BOOLEAN_OR,
+                refNode(new Range(0, 10, 0, 11), "z")));
+    }
+
+    @Test
+    void andHasPrecedenceOverOr() {
+        testSuccessfulParse("x || y && z", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 11),
+                refNode(new Range(0, 0, 0, 1), "x"),
+                BinaryOp.BOOLEAN_OR,
+                binaryOpNode(
+                    new Range(0, 5, 0, 11),
+                    refNode(new Range(0, 5, 0, 6), "y"),
+                    BinaryOp.BOOLEAN_AND,
+                    refNode(new Range(0, 10, 0, 11), "z"))));
     }
 
     // Match expressions
@@ -1277,12 +2190,6 @@ public class ParserTest {
         var errors = testFailedParse("Parser.", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
-    }
-
-    @Test
-    void parseIllegalFQNInExpression() {
-        // Doesn't consume the entire input
-        testFailedParse("Mina/Test/Parser", Parser::getExprVisitor, MinaParser::expr);
     }
 
     @Test

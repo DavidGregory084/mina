@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.parser;
@@ -252,6 +252,61 @@ public class Parser {
                     .map(t -> visit(t))
                     .orElse(null);
         }
+
+        public UnaryOp visitUnaryOperator(Token token) {
+            if (token != null) {
+                return switch (token.getType()) {
+                    case MinaParser.MINUS -> UnaryOp.NEGATE;
+                    case MinaParser.EXCLAMATION -> UnaryOp.BOOLEAN_NOT;
+                    case MinaParser.TILDE -> UnaryOp.BITWISE_NOT;
+                    default -> {
+                        // It shouldn't be possible to get here due to our grammar
+                        diagnostics.reportError(
+                            tokenRange(token),
+                            "Unrecognised unary operator: '" + token.getText() + "'");
+                        yield null;
+                    }
+                };
+            }
+
+            return null;
+        }
+
+        public BinaryOp visitBinaryOperator(Token token) {
+            if (token != null) {
+               return switch (token.getType()) {
+                   case MinaParser.DOUBLE_ASTERISK -> BinaryOp.POWER;
+                   case MinaParser.ASTERISK -> BinaryOp.MULTIPLY;
+                   case MinaParser.RSLASH -> BinaryOp.DIVIDE;
+                   case MinaParser.PERCENT -> BinaryOp.MODULUS;
+                   case MinaParser.PLUS -> BinaryOp.ADD;
+                   case MinaParser.MINUS -> BinaryOp.SUBTRACT;
+                   case MinaParser.LEFT_SHIFT -> BinaryOp.SHIFT_LEFT;
+                   case MinaParser.RIGHT_SHIFT -> BinaryOp.SHIFT_RIGHT;
+                   case MinaParser.UNSIGNED_RIGHT_SHIFT -> BinaryOp.UNSIGNED_SHIFT_RIGHT;
+                   case MinaParser.AMPERSAND -> BinaryOp.BITWISE_AND;
+                   case MinaParser.PIPE -> BinaryOp.BITWISE_OR;
+                   case MinaParser.CARET -> BinaryOp.BITWISE_XOR;
+                   case MinaParser.LESS_THAN -> BinaryOp.LESS_THAN;
+                   case MinaParser.LESS_THAN_EQUAL -> BinaryOp.LESS_THAN_EQUAL;
+                   case MinaParser.GREATER_THAN -> BinaryOp.GREATER_THAN;
+                   case MinaParser.GREATER_THAN_EQUAL -> BinaryOp.GREATER_THAN_EQUAL;
+                   case MinaParser.DOUBLE_EQUAL -> BinaryOp.EQUAL;
+                   case MinaParser.NOT_EQUAL -> BinaryOp.NOT_EQUAL;
+                   case MinaParser.DOUBLE_AMPERSAND -> BinaryOp.BOOLEAN_AND;
+                   case MinaParser.DOUBLE_PIPE -> BinaryOp.BOOLEAN_OR;
+                   default -> {
+                       // It shouldn't be possible to get here due to our grammar
+                       diagnostics.reportError(
+                           tokenRange(token),
+                           "Unrecognised binary operator: '" + token.getText() + "'");
+                       yield null;
+                   }
+               };
+            }
+
+            return null;
+        }
     }
 
     class NamespaceVisitor extends Visitor<NamespaceContext, NamespaceNode<Void>> {
@@ -270,6 +325,10 @@ public class Parser {
 
     class ImportVisitor extends Visitor<ImportDeclarationContext, ImportNode> {
         Set<String> qualifiedNamespaces = new HashSet<>();
+
+        public boolean hasImportedNamespace(Token token) {
+            return token != null && qualifiedNamespaces.contains(token.getText());
+        }
 
         @Override
         public ImportNode visitImportDeclaration(ImportDeclarationContext ctx) {
@@ -536,36 +595,53 @@ public class Parser {
                 return parenExpr;
             }
 
-            var applicableExprNode = visitNullable(ctx.applicableExpr());
+            var receiver = ctx.receiver;
+            var selection = ctx.selection;
 
-            if (applicableExprNode != null) {
-                var application = ctx.application();
+            if (receiver != null || selection != null) {
+                // This is horrible, but it means that we don't need to transform the AST in the renamer
+                var selectToken = Optional.ofNullable(selection);
 
-                if (application != null) {
-                    var args = visitNullableRepeated(ctx.application(), ApplicationContext::expr, this);
-                    return applyNode(contextRange(ctx), applicableExprNode, args);
+                // If the receiver is one of our imported namespaces, produce a qualified ID
+                if (receiver != null && importVisitor.hasImportedNamespace(receiver.id)) {
+                    return refNode(
+                        contextRange(ctx),
+                        nsIdNode(contextRange(receiver), receiver.id.getText()),
+                        selectToken.map(Token::getText).orElse(null));
+                } else {
+                    // Otherwise it's a normal selection
+                    return selectNode(
+                        contextRange(ctx),
+                        visitNullable(receiver),
+                        selectToken.map(token -> refNode(tokenRange(token), token.getText())).orElse(null));
                 }
+            }
 
-                var selection = ctx.selection;
+            var function = ctx.function;
+            var application = ctx.application();
 
-                if (selection != null) {
-                    // This is horrible, but it means that we don't need to transform the AST in the renamer
-                    var receiver = ctx.applicableExpr().id;
+            if (function != null || application != null) {
+                var args = visitNullableRepeated(application, ApplicationContext::expr, this);
+                return applyNode(contextRange(ctx), visitNullable(function), args);
+            }
 
-                    // If the receiver is one of our imported namespaces, produce a qualified ID
-                    if (receiver != null && importVisitor.qualifiedNamespaces.contains(receiver.getText())) {
-                        return refNode(
-                            contextRange(ctx),
-                            nsIdNode(contextRange(ctx.applicableExpr()), receiver.getText()),
-                            selection.getText());
-                    } else {
-                        // Otherwise it's a normal selection
-                        return selectNode(
-                            contextRange(ctx),
-                            applicableExprNode,
-                            refNode(tokenRange(selection), selection.getText()));
-                    }
-                }
+            var unaryOperand = ctx.unaryOperand;
+            var operator = ctx.operator;
+
+            if (unaryOperand != null) {
+                var unaryNode = visitNullable(unaryOperand);
+                var unaryOperator = visitUnaryOperator(operator);
+                return unaryOpNode(contextRange(ctx), unaryOperator, unaryNode);
+            }
+
+            var leftOperand = ctx.leftOperand;
+            var rightOperand = ctx.rightOperand;
+
+            if (leftOperand != null || rightOperand != null) {
+                var leftNode = visitNullable(leftOperand);
+                var rightNode = visitNullable(rightOperand);
+                var binaryOperator = visitBinaryOperator(operator);
+                return binaryOpNode(contextRange(ctx), leftNode, binaryOperator, rightNode);
             }
 
             return null;

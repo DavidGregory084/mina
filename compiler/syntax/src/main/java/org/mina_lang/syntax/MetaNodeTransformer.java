@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -90,6 +90,20 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
     SelectNode<B> visitSelect(Meta<A> meta, ExprNode<B> receiver, ReferenceNode<B> selection);
 
     default void postVisitSelect(SelectNode<B> select) {}
+
+
+    default void preVisitUnaryOp(UnaryOpNode<A> unaryOp) {}
+
+    UnaryOpNode<B> visitUnaryOp(Meta<A> meta, UnaryOp operator, ExprNode<B> operand);
+
+    default void postVisitUnaryOp(UnaryOpNode<A> unaryOp) {}
+
+
+    default void preVisitBinaryOp(BinaryOpNode<A> binaryOp) {}
+
+    BinaryOpNode<B> visitBinaryOp(Meta<A> meta, ExprNode<B> leftOperand, BinaryOp operator, ExprNode<B> rightOperand);
+
+    default void postVisitBinaryOp(BinaryOpNode<A> binaryOp) {}
 
 
     default void preVisitReference(ReferenceNode<A> ref) {}

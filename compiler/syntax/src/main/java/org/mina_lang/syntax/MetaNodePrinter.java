@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2024-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -28,6 +28,27 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     private static final Doc LBRACE = Doc.text("{");
     private static final Doc RBRACE = Doc.text("}");
     private static final Doc SEMI = Doc.text(";");
+    private static final Doc MINUS = Doc.text("-");
+    private static final Doc NOT = Doc.text("!");
+    private static final Doc POW = Doc.text("**");
+    private static final Doc MUL = Doc.text("*");
+    private static final Doc MOD = Doc.text("%");
+    private static final Doc PLUS = Doc.text("+");
+    private static final Doc SHL = Doc.text("<<");
+    private static final Doc SHR = Doc.text(">>");
+    private static final Doc USHR = Doc.text(">>>");
+    private static final Doc BITWISE_NOT = Doc.text("~");
+    private static final Doc BITWISE_XOR = Doc.text("^");
+    private static final Doc BITWISE_OR = Doc.text("|");
+    private static final Doc BITWISE_AND = Doc.text("&");
+    private static final Doc AND = Doc.text("&&");
+    private static final Doc OR = Doc.text("||");
+    private static final Doc LT = Doc.text("<");
+    private static final Doc LTE = Doc.text("<=");
+    private static final Doc GT = Doc.text(">");
+    private static final Doc GTE = Doc.text(">=");
+    private static final Doc EQ = Doc.text("==");
+    private static final Doc NEQ = Doc.text("!=");
     private static final Doc IF = Doc.text("if");
     private static final Doc THEN = Doc.text("then");
     private static final Doc ELSE = Doc.text("else");
@@ -218,6 +239,48 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
                 .append(selection)
                 .indent(this.indent)
         ));
+    }
+
+    @Override
+    public Doc visitUnaryOp(Meta<A> meta, UnaryOp operator, Doc operand) {
+        var operatorDoc = switch (operator) {
+            case NEGATE -> MINUS;
+            case BITWISE_NOT -> BITWISE_NOT;
+            case BOOLEAN_NOT -> NOT;
+        };
+
+        return operatorDoc.append(operand);
+    }
+
+    @Override
+    public Doc visitBinaryOp(Meta<A> meta, Doc leftOperand, BinaryOp operator, Doc rightOperand) {
+        var operatorDoc = switch (operator) {
+            case POWER -> POW;
+            case MULTIPLY -> MUL;
+            case DIVIDE -> RSLASH;
+            case MODULUS -> MOD;
+            case ADD -> PLUS;
+            case SUBTRACT -> MINUS;
+            case SHIFT_LEFT -> SHL;
+            case SHIFT_RIGHT -> SHR;
+            case UNSIGNED_SHIFT_RIGHT -> USHR;
+            case BITWISE_AND -> BITWISE_AND;
+            case BITWISE_OR -> BITWISE_OR;
+            case BITWISE_XOR -> BITWISE_XOR;
+            case LESS_THAN -> LT;
+            case LESS_THAN_EQUAL -> LTE;
+            case GREATER_THAN -> GT;
+            case GREATER_THAN_EQUAL -> GTE;
+            case EQUAL -> EQ;
+            case NOT_EQUAL -> NEQ;
+            case BOOLEAN_AND -> AND;
+            case BOOLEAN_OR -> OR;
+        };
+
+        return leftOperand
+            .appendLineOrSpace(operatorDoc)
+            .appendLineOrSpace(rightOperand)
+            .bracket(this.indent, Doc.lineOrEmpty(), LPAREN, RPAREN);
     }
 
     @Override

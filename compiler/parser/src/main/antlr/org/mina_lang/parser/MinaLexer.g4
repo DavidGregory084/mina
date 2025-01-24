@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 lexer grammar MinaLexer;
@@ -25,7 +25,7 @@ WHITESPACE: WS+ -> channel(WHITESPACE_CHANNEL);
 DOC_COMMENT: '///' ~[\r\n]* -> channel(COMMENTS_CHANNEL);
 LINE_COMMENT: '//' ~[\r\n]* -> channel(COMMENTS_CHANNEL);
 
-// Package separator
+// Package separator; division operator
 RSLASH: '/';
 
 // Namespace header
@@ -56,8 +56,6 @@ LSQUARE: '[';
 RSQUARE: ']';
 
 // Reserved operators
-EQ: '=';
-DOT: '.';
 COMMA: ',';
 ARROW: '->';
 FATARROW: '=>';
@@ -65,6 +63,45 @@ AT: '@';
 SEMICOLON: ';';
 COLON: ':';
 QUESTION: '?';
+
+// Member selection
+DOT: '.';
+
+// Equality operators
+DOUBLE_EQUAL: '==';
+NOT_EQUAL: '!=';
+
+// Prefix operators
+EXCLAMATION: '!';
+TILDE: '~';
+PLUS: '+';
+MINUS: '-';
+
+// Binary operators
+DOUBLE_ASTERISK: '**';
+ASTERISK: '*';
+PERCENT: '%';
+
+// Logical operators
+DOUBLE_PIPE: '||';
+DOUBLE_AMPERSAND: '&&';
+
+// Bitwise binary operators
+AMPERSAND: '&';
+CARET: '^';
+UNSIGNED_RIGHT_SHIFT: '>>>';
+LEFT_SHIFT: '<<';
+RIGHT_SHIFT: '>>';
+PIPE: '|';
+
+// Relational operators
+LESS_THAN_EQUAL: '<=';
+GREATER_THAN_EQUAL: '>=';
+LESS_THAN: '<';
+GREATER_THAN: '>';
+
+// Assignment operator
+EQUAL: '=';
 
 // Boolean literals
 TRUE: 'true';
