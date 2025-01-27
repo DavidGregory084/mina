@@ -39,7 +39,7 @@ spotless {
              */
             """
                 .trimIndent()
-        )
+        ).updateYearWithLatest(false)
         formatAnnotations()
         importOrder("", "javax|java", "\\#") // IntelliJ import order
         removeUnusedImports()
