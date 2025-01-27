@@ -11,14 +11,15 @@ spotless {
     antlr4 {
         target("src/**/*.g4")
         licenseHeader(
-            """
+                """
             /*
              * SPDX-FileCopyrightText:  © ${"$"}YEAR David Gregory
              * SPDX-License-Identifier: Apache-2.0
              */
             """
-                .trimIndent()
-        )
+                    .trimIndent()
+            )
+            .updateYearWithLatest(false)
     }
 }
 
