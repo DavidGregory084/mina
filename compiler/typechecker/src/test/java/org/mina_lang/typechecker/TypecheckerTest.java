@@ -1284,21 +1284,35 @@ public class TypecheckerTest {
     void typecheckNumericBinaryMismatchedOperands(BinaryOp binaryOp) {
         var environment = TypeEnvironment.withBuiltInTypes();
 
+        var longOperandMeta = new Meta<Name>(new Range(0, 1, 0, 1), Nameless.INSTANCE);
+
         var mixedIntLongNode = binaryOpNode(
             ExampleNodes.namelessMeta(),
             intNode(ExampleNodes.namelessMeta(), 1),
             binaryOp,
-            longNode(ExampleNodes.namelessMeta(), 2L));
+            longNode(longOperandMeta, 2L));
 
-        testFailedTypecheck(environment, mixedIntLongNode);
+        var intLongCollector = testFailedTypecheck(environment, mixedIntLongNode);
+
+        assertDiagnostic(
+            intLongCollector.getDiagnostics(),
+            longOperandMeta.range(),
+            "Mismatched type! Expected: Int, Actual: Long");
+
+        var floatOperandMeta = new Meta<Name>(new Range(0, 1, 0, 2), Nameless.INSTANCE);
 
         var mixedIntFloatNode = binaryOpNode(
             ExampleNodes.namelessMeta(),
             intNode(ExampleNodes.namelessMeta(), 1),
             binaryOp,
-            floatNode(ExampleNodes.namelessMeta(), 2.0F));
+            floatNode(floatOperandMeta, 2.0F));
 
-        testFailedTypecheck(environment, mixedIntFloatNode);
+        var intFloatCollector = testFailedTypecheck(environment, mixedIntFloatNode);
+
+        assertDiagnostic(
+            intFloatCollector.getDiagnostics(),
+            floatOperandMeta.range(),
+            "Mismatched type! Expected: Int, Actual: Float");
     }
 
     @ParameterizedTest(name = "Integral binary operators typecheck successfully - {0}")
@@ -1358,13 +1372,20 @@ public class TypecheckerTest {
     void typecheckIntegralBinaryMismatchedOperands(BinaryOp binaryOp) {
         var environment = TypeEnvironment.withBuiltInTypes();
 
+        var longOperandMeta = new Meta<Name>(new Range(0, 1, 0, 1), Nameless.INSTANCE);
+
         var mixedIntLongNode = binaryOpNode(
             ExampleNodes.namelessMeta(),
             intNode(ExampleNodes.namelessMeta(), 1),
             binaryOp,
-            longNode(ExampleNodes.namelessMeta(), 2L));
+            longNode(longOperandMeta, 2L));
 
-        testFailedTypecheck(environment, mixedIntLongNode);
+        var collector = testFailedTypecheck(environment, mixedIntLongNode);
+
+        assertDiagnostic(
+            collector.getDiagnostics(),
+            longOperandMeta.range(),
+            "Mismatched type! Expected: Int, Actual: Long");
     }
 
     @ParameterizedTest(name = "Boolean binary operators typecheck successfully - {0}")
