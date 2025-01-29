@@ -171,7 +171,6 @@ public class Typechecker {
             case NUMERIC -> Doc.text("A numeric type");
             case INTEGRAL -> Doc.text("An integral type");
             case BOOLEAN -> Type.BOOLEAN.accept(sortPrinter);
-            case EQUIVALENT -> Doc.text("");
             case INTEGRAL_OR_BOOLEAN -> Doc.text("An integral or boolean type");
         };
 
@@ -183,6 +182,24 @@ public class Typechecker {
                 Doc.text("Mismatched operand type!")
                     .appendLineOrSpace(Doc.text("Expected: ").append(expected))
                     .appendLineOr(Doc.text(", "), Doc.text("Actual: ").append(actual)))
+            .render(80);
+
+        diagnostics.reportError(range, message);
+    }
+
+    void mismatchedEqualityOperandType(Range range, Type leftType, Type rightType) {
+        var left = leftType
+            .accept(sortTransformer.getTypeTransformer())
+            .accept(sortPrinter);
+
+        var right = rightType
+            .accept(sortTransformer.getTypeTransformer())
+            .accept(sortPrinter);
+
+        var message = Doc.group(
+                Doc.text("Mismatched operand types!")
+                    .appendLineOrSpace(Doc.text("Left: ").append(left))
+                    .appendLineOr(Doc.text(", "), Doc.text("Right: ").append(right)))
             .render(80);
 
         diagnostics.reportError(range, message);
@@ -976,7 +993,7 @@ public class Typechecker {
                     var rightSubLeft = checkSubType(rightOperandType, leftOperandType);
                     resultType = Type.BOOLEAN;
                     if (!leftSubRight && !rightSubLeft) {
-                        mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.EQUIVALENT);
+                        mismatchedEqualityOperandType(binOp.range(), leftOperandType, rightOperandType);
                     }
                 }
                 // Boolean operands

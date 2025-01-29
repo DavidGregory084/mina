@@ -8,6 +8,5 @@ public enum ExpectedOperandType {
     NUMERIC,
     INTEGRAL,
     BOOLEAN,
-    EQUIVALENT,
     INTEGRAL_OR_BOOLEAN,
 }

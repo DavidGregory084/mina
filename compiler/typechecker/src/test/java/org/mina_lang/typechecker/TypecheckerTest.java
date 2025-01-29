@@ -1416,6 +1416,47 @@ public class TypecheckerTest {
         testSuccessfulTypecheck(environment, boolBinaryNode, expectedBoolBinaryNode);
     }
 
+    @ParameterizedTest(name = "Equality operators typecheck successfully - {0}")
+    @EnumSource(value = BinaryOp.class, names = {"EQUAL", "NOT_EQUAL"})
+    void typecheckEquals(BinaryOp binaryOp) {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var intEqualsNode = binaryOpNode(
+            ExampleNodes.namelessMeta(),
+            intNode(ExampleNodes.namelessMeta(), 1),
+            binaryOp,
+            intNode(ExampleNodes.namelessMeta(), 2));
+
+        var expectedIntEqualsNode = binaryOpNode(
+            Meta.nameless(Type.BOOLEAN),
+            intNode(Meta.nameless(Type.INT), 1),
+            binaryOp,
+            intNode(Meta.nameless(Type.INT), 2));
+
+        testSuccessfulTypecheck(environment, intEqualsNode, expectedIntEqualsNode);
+    }
+
+    @ParameterizedTest(name = "Equality operators with mismatched operands fail to typecheck - {0}")
+    @EnumSource(value = BinaryOp.class, names = {"EQUAL", "NOT_EQUAL"})
+    void typecheckEqualsMismatchedOperands(BinaryOp binaryOp) {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var equalsMeta = new Meta<Name>(new Range(0, 1, 0, 5), Nameless.INSTANCE);
+
+        var intEqualsNode = binaryOpNode(
+            equalsMeta,
+            intNode(ExampleNodes.namelessMeta(), 1),
+            binaryOp,
+            boolNode(ExampleNodes.namelessMeta(), false));
+
+        var collector = testFailedTypecheck(environment, intEqualsNode);
+
+        assertDiagnostic(
+            collector.getDiagnostics(),
+            equalsMeta.range(),
+            "Mismatched operand types! Left: Int, Right: Boolean");
+    }
+
     @Test
     @DisplayName("References to variables in the environment typecheck successfully")
     void typecheckReference() {
