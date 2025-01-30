@@ -71,8 +71,7 @@ DOT: '.';
 DOUBLE_EQUAL: '==';
 NOT_EQUAL: '!=';
 
-// Binary operators
-DOUBLE_ASTERISK: '**';
+// Multiplicative operators
 ASTERISK: '*';
 PERCENT: '%';
 

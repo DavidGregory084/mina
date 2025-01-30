@@ -17,10 +17,7 @@ import org.mina_lang.common.types.Sort;
 import org.mina_lang.common.types.TypeApply;
 import org.mina_lang.proto.ProtobufWriter;
 import org.mina_lang.syntax.*;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.CheckClassAdapter;
@@ -33,7 +30,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
-import static org.mina_lang.syntax.SyntaxNodes.applyNode;
 import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 
 public class CodeGenerator {
@@ -335,6 +331,29 @@ public class CodeGenerator {
         }
     }
 
+    private int opcodeFor(BinaryOp binaryOp) {
+        return switch (binaryOp) {
+            case MULTIPLY -> GeneratorAdapter.MUL;
+            case DIVIDE -> GeneratorAdapter.DIV;
+            case MODULUS -> GeneratorAdapter.REM;
+            case ADD -> GeneratorAdapter.ADD;
+            case SUBTRACT -> GeneratorAdapter.SUB;
+            case SHIFT_LEFT -> GeneratorAdapter.SHL;
+            case SHIFT_RIGHT -> GeneratorAdapter.SHR;
+            case UNSIGNED_SHIFT_RIGHT -> GeneratorAdapter.USHR;
+            case BITWISE_AND, BOOLEAN_AND -> GeneratorAdapter.AND;
+            case BITWISE_OR, BOOLEAN_OR -> GeneratorAdapter.OR;
+            case BITWISE_XOR -> GeneratorAdapter.XOR;
+            case LESS_THAN -> GeneratorAdapter.GE;
+            case LESS_THAN_EQUAL -> GeneratorAdapter.GT;
+            case GREATER_THAN -> GeneratorAdapter.LE;
+            case GREATER_THAN_EQUAL -> GeneratorAdapter.LT;
+            case EQUAL -> GeneratorAdapter.EQ;
+            case NOT_EQUAL -> GeneratorAdapter.NE;
+            default -> throw new IllegalArgumentException("Unexpected operator in code generation: " + binaryOp);
+        };
+    }
+
     public void generateExpr(ExprNode<Attributes> expr) {
         var namespace = environment.enclosingNamespace().get();
         var method = environment.enclosingJavaMethod().get();
@@ -524,6 +543,51 @@ public class CodeGenerator {
 
                 Asm.unboxReturnValue(method.methodWriter(), applyType);
             }
+        } else if (expr instanceof UnaryOpNode<Attributes> unaryOp) {
+            generateExpr(unaryOp.operand());
+
+            var operandType = Types.asmType(unaryOp.operand());
+
+            switch (unaryOp.operator()) {
+                case NEGATE ->
+                    method.methodWriter().math(GeneratorAdapter.NEG, operandType);
+                case BITWISE_NOT, BOOLEAN_NOT -> {
+                    switch (operandType.getSort()) {
+                        case Type.LONG -> method.methodWriter().visitInsn(Opcodes.LCONST_1);
+                        case Type.INT, Type.BOOLEAN -> method.methodWriter().visitInsn(Opcodes.ICONST_1);
+                    }
+                    method.methodWriter().math(GeneratorAdapter.XOR, operandType);
+                }
+            }
+
+        } else if (expr instanceof BinaryOpNode<Attributes> binaryOp) {
+            generateExpr(binaryOp.leftOperand());
+            generateExpr(binaryOp.rightOperand());
+
+            var leftOperandType = Types.asmType(binaryOp.leftOperand());
+            var operator = binaryOp.operator();
+
+            if (BinaryOp.EQUALITY_OPERATORS.contains(operator) || BinaryOp.RELATIONAL_OPERATORS.contains(operator)) {
+                var isEqualityOperator = BinaryOp.EQUALITY_OPERATORS.contains(operator);
+                var isReferenceTypeOperand = leftOperandType.getSort() == Type.OBJECT;
+                if (isEqualityOperator && isReferenceTypeOperand) {
+                    method.methodWriter().invokeVirtual(leftOperandType, Asm.EQUALS_METHOD);
+                    if (binaryOp.operator().equals(BinaryOp.NOT_EQUAL)) {
+                        method.methodWriter().not();
+                    }
+                } else {
+                    withScope(IfGenScope.open(), ifScope -> {
+                        method.methodWriter().ifCmp(leftOperandType, opcodeFor(operator), ifScope.elseLabel());
+                        method.methodWriter().push(true);
+                        method.methodWriter().goTo(ifScope.endLabel());
+                        method.methodWriter().visitLabel(ifScope.elseLabel());
+                        method.methodWriter().push(false);
+                        method.methodWriter().visitLabel(ifScope.endLabel());
+                    });
+                }
+            } else {
+                method.methodWriter().math(opcodeFor(operator), leftOperandType);
+            }
 
         } else if (expr instanceof LiteralNode<Attributes> lit) {
             generateLiteral(lit);
@@ -645,10 +709,7 @@ public class CodeGenerator {
             generateLiteral(litPat.literal());
 
             if (litPat.literal() instanceof StringNode<Attributes> strPat) {
-                var equalsDescriptor = Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Types.OBJECT_TYPE);
-                var equalsMethod = new Method("equals", equalsDescriptor);
-
-                method.methodWriter().invokeVirtual(Types.STRING_TYPE, equalsMethod);
+                method.methodWriter().invokeVirtual(Types.STRING_TYPE, Asm.EQUALS_METHOD);
                 method.methodWriter().ifZCmp(GeneratorAdapter.EQ, caseScope.endLabel());
             } else {
                 method.methodWriter().ifCmp(Types.asmType(litPat), GeneratorAdapter.NE, caseScope.endLabel());

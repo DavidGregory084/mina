@@ -116,7 +116,11 @@ public class ProtobufReader {
             }
             case BUILTIN -> {
                 var builtIn = proto.getBuiltIn();
-                yield new BuiltInType(strings[builtIn.getName()], (Kind) sorts[builtIn.getKind()]);
+                var builtInName = strings[builtIn.getName()];
+                yield Type.builtIns.getIfAbsent(
+                    builtInName,
+                    () -> new BuiltInType(builtInName, (Kind) sorts[builtIn.getKind()])
+                );
             }
             case QUANTTY -> {
                 var quant = proto.getQuantTy();

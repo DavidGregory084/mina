@@ -4,8 +4,9 @@
  */
 package org.mina_lang.syntax;
 
+import java.util.Set;
+
 public enum BinaryOp {
-    POWER,
     MULTIPLY,
     DIVIDE,
     MODULUS,
@@ -24,5 +25,23 @@ public enum BinaryOp {
     EQUAL,
     NOT_EQUAL,
     BOOLEAN_AND,
-    BOOLEAN_OR
+    BOOLEAN_OR;
+
+    public static final Set<BinaryOp> ARITHMETIC_OPERATORS =
+        Set.of(ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULUS);
+
+    public static final Set<BinaryOp> BITWISE_OPERATORS =
+        Set.of(BITWISE_AND, BITWISE_OR, BITWISE_XOR);
+
+    public static final Set<BinaryOp> BOOLEAN_OPERATORS =
+        Set.of(BOOLEAN_AND, BOOLEAN_OR);
+
+    public static final Set<BinaryOp> EQUALITY_OPERATORS =
+        Set.of(EQUAL, NOT_EQUAL);
+
+    public static final Set<BinaryOp> RELATIONAL_OPERATORS =
+        Set.of(LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL);
+
+    public static final Set<BinaryOp> SHIFT_OPERATORS =
+        Set.of(SHIFT_LEFT, SHIFT_RIGHT, UNSIGNED_SHIFT_RIGHT);
 }
