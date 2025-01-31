@@ -682,6 +682,11 @@ public class CodeGenerator {
             BinaryOp.BOOLEAN_OPERATORS.contains(binOp.operator())
         ) {
             generateBooleanOp(binOp, trueLabel, falseLabel);
+        } else if (
+            expr instanceof UnaryOpNode<Attributes> unOp &&
+            unOp.operator().equals(UnaryOp.BOOLEAN_NOT)
+        ) {
+            generateBooleanExpr(unOp.operand(), falseLabel, trueLabel);
         } else {
             generateExpr(expr);
         }
