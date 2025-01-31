@@ -847,56 +847,6 @@ public class ParserTest {
 
     // Binary operators
     @Test
-    void parsePowerOperator() {
-        testSuccessfulParse("x ** y", Parser::getExprVisitor, MinaParser::expr,
-            binaryOpNode(
-                new Range(0, 0, 0, 6),
-                refNode(new Range(0, 0, 0, 1), "x"),
-                BinaryOp.POWER,
-                refNode(new Range(0, 5, 0, 6), "y")));
-    }
-
-    @Test
-    void powerOperatorRightAssociative() {
-        testSuccessfulParse("x ** y ** z", Parser::getExprVisitor, MinaParser::expr,
-            binaryOpNode(
-                new Range(0, 0, 0, 11),
-                refNode(new Range(0, 0, 0, 1), "x"),
-                BinaryOp.POWER,
-                binaryOpNode(
-                    new Range(0, 5, 0, 11),
-                    refNode(new Range(0, 5, 0, 6), "y"),
-                    BinaryOp.POWER,
-                    refNode(new Range(0, 10, 0, 11), "z"))));
-    }
-
-    @Test
-    void applicationHasPrecedenceOverPower() {
-        testSuccessfulParse("x ** y(z)", Parser::getExprVisitor, MinaParser::expr,
-            binaryOpNode(
-                new Range(0, 0, 0, 9),
-                refNode(new Range(0, 0, 0, 1), "x"),
-                BinaryOp.POWER,
-                applyNode(
-                    new Range(0, 5, 0, 9),
-                    refNode(new Range(0, 5, 0, 6), "y"),
-                    Lists.immutable.of(refNode(new Range(0, 7, 0, 8), "z")))));
-    }
-
-    @Test
-    void unaryNegateHasPrecedenceOverPower() {
-        testSuccessfulParse("-x ** y", Parser::getExprVisitor, MinaParser::expr,
-            binaryOpNode(
-                new Range(0, 0, 0, 7),
-                unaryOpNode(
-                    new Range(0, 0, 0, 2),
-                    UnaryOp.NEGATE,
-                    refNode(new Range(0, 1, 0, 2), "x")),
-                BinaryOp.POWER,
-                refNode(new Range(0, 6, 0, 7), "y")));
-    }
-
-    @Test
     void parseMultiplyOperator() {
         testSuccessfulParse("x * y", Parser::getExprVisitor, MinaParser::expr,
             binaryOpNode(
@@ -921,17 +871,29 @@ public class ParserTest {
     }
 
     @Test
-    void powerHasPrecedenceOverMultiply() {
-        testSuccessfulParse("x * y ** z", Parser::getExprVisitor, MinaParser::expr,
+    void applicationHasPrecedenceOverMultiply() {
+        testSuccessfulParse("x * y(z)", Parser::getExprVisitor, MinaParser::expr,
             binaryOpNode(
-                new Range(0, 0, 0, 10),
+                new Range(0, 0, 0, 8),
                 refNode(new Range(0, 0, 0, 1), "x"),
                 BinaryOp.MULTIPLY,
-                binaryOpNode(
-                    new Range(0, 4, 0, 10),
+                applyNode(
+                    new Range(0, 4, 0, 8),
                     refNode(new Range(0, 4, 0, 5), "y"),
-                    BinaryOp.POWER,
-                    refNode(new Range(0, 9, 0, 10), "z"))));
+                    Lists.immutable.of(refNode(new Range(0, 6, 0, 7), "z")))));
+    }
+
+    @Test
+    void unaryNegateHasPrecedenceOverMultiply() {
+        testSuccessfulParse("-x * y", Parser::getExprVisitor, MinaParser::expr,
+            binaryOpNode(
+                new Range(0, 0, 0, 6),
+                unaryOpNode(
+                    new Range(0, 0, 0, 2),
+                    UnaryOp.NEGATE,
+                    refNode(new Range(0, 1, 0, 2), "x")),
+                BinaryOp.MULTIPLY,
+                refNode(new Range(0, 5, 0, 6), "y")));
     }
 
     @Test

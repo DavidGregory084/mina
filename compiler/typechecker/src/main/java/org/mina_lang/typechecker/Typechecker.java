@@ -166,6 +166,45 @@ public class Typechecker {
         diagnostics.reportError(range, message);
     }
 
+    void mismatchedOperandType(Range range, Type actualType, ExpectedOperandType expectedOperand) {
+        var expected = switch (expectedOperand) {
+            case NUMERIC -> Doc.text("A numeric type");
+            case INTEGRAL -> Doc.text("An integral type");
+            case BOOLEAN -> Type.BOOLEAN.accept(sortPrinter);
+            case INTEGRAL_OR_BOOLEAN -> Doc.text("An integral or boolean type");
+        };
+
+        var actual = actualType
+            .accept(sortTransformer.getTypeTransformer())
+            .accept(sortPrinter);
+
+        var message = Doc.group(
+                Doc.text("Mismatched operand type!")
+                    .appendLineOrSpace(Doc.text("Expected: ").append(expected))
+                    .appendLineOr(Doc.text(", "), Doc.text("Actual: ").append(actual)))
+            .render(80);
+
+        diagnostics.reportError(range, message);
+    }
+
+    void mismatchedEqualityOperandType(Range range, Type leftType, Type rightType) {
+        var left = leftType
+            .accept(sortTransformer.getTypeTransformer())
+            .accept(sortPrinter);
+
+        var right = rightType
+            .accept(sortTransformer.getTypeTransformer())
+            .accept(sortPrinter);
+
+        var message = Doc.group(
+                Doc.text("Mismatched operand types!")
+                    .appendLineOrSpace(Doc.text("Left: ").append(left))
+                    .appendLineOr(Doc.text(", "), Doc.text("Right: ").append(right)))
+            .render(80);
+
+        diagnostics.reportError(range, message);
+    }
+
     void mismatchedApplication(Range range, Type actualType, Type expectedType) {
         var expected = expectedType
                 .accept(sortTransformer.getTypeTransformer())
@@ -474,6 +513,16 @@ public class Typechecker {
                 return false;
             }
         });
+    }
+
+    boolean checkSubType(Type subType, Type ...superTypeCandidates) {
+        for (var candidate: superTypeCandidates) {
+            if (checkSubType(subType, candidate)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     NamespaceTypingScope populateTopLevel(NamespaceNode<Name> namespace) {
@@ -826,7 +875,7 @@ public class Typechecker {
                             .of(first)
                             .newWithAll(rest);
                 });
-            }).orElseGet(() -> Lists.immutable.empty());
+            }).orElseGet(Lists.immutable::empty);
 
             var matchType = firstCaseType
                     .orElseGet(() -> newUnsolvedType(TypeKind.INSTANCE));
@@ -834,6 +883,138 @@ public class Typechecker {
             var updatedMeta = updateMetaWith(match.meta(), matchType);
 
             return matchNode(updatedMeta, scrutinee, cases);
+
+        } else if (expr instanceof UnaryOpNode<Name> unOp) {
+            var inferredOperand = inferExpr(unOp.operand());
+            var operandType = getType(inferredOperand);
+
+            Type resultType = operandType;
+
+            switch (unOp.operator()) {
+                // Boolean operand
+                case BOOLEAN_NOT -> {
+                    if (!checkSubType(operandType, Type.BOOLEAN)) {
+                        mismatchedOperandType(inferredOperand.range(), operandType, ExpectedOperandType.BOOLEAN);
+                    }
+                    resultType = Type.BOOLEAN;
+                }
+                // Integral operand
+                case BITWISE_NOT -> {
+                    var operandValid = checkSubType(operandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    if (!operandValid) {
+                        mismatchedOperandType(inferredOperand.range(), operandType, ExpectedOperandType.INTEGRAL);
+                        // We don't know what the result type should be as the operand is not of integral type
+                        resultType = newUnsolvedType(TypeKind.INSTANCE);
+                    }
+                }
+                // Numeric operand
+                case NEGATE -> {
+                    var operandValid = checkSubType(operandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    if (!operandValid) {
+                        mismatchedOperandType(inferredOperand.range(), operandType, ExpectedOperandType.NUMERIC);
+                        // We don't know what the result type should be as the operand is not of numeric type
+                        resultType = newUnsolvedType(TypeKind.INSTANCE);
+                    }
+                }
+            }
+
+            var updatedMeta = updateMetaWith(unOp.meta(), resultType);
+
+            return unaryOpNode(updatedMeta, unOp.operator(), inferredOperand);
+
+        } else if (expr instanceof BinaryOpNode<Name> binOp) {
+            var inferredLeftOperand = inferExpr(binOp.leftOperand());
+            ExprNode<Attributes> inferredRightOperand = null;
+
+            var leftOperandType = getType(inferredLeftOperand);
+
+            Type resultType = leftOperandType;
+
+            if (BinaryOp.ARITHMETIC_OPERATORS.contains(binOp.operator())) {
+                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                if (!leftValid) {
+                    mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
+                    inferredRightOperand = inferExpr(binOp.rightOperand());
+                    var rightOperandType = getType(inferredRightOperand);
+                    var rightValid = checkSubType(rightOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    if (!rightValid) {
+                        mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
+                        resultType = newUnsolvedType(TypeKind.INSTANCE);
+                    }
+                } else {
+                    inferredRightOperand = checkExpr(binOp.rightOperand(), leftOperandType);
+                }
+            } else if (BinaryOp.RELATIONAL_OPERATORS.contains(binOp.operator())) {
+                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                resultType = Type.BOOLEAN;
+                if (!leftValid) {
+                    mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
+                    inferredRightOperand = inferExpr(binOp.rightOperand());
+                    var rightOperandType = getType(inferredRightOperand);
+                    var rightValid = checkSubType(rightOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    if (!rightValid) {
+                        mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
+                    }
+                } else {
+                    inferredRightOperand = checkExpr(binOp.rightOperand(), leftOperandType);
+                }
+            } else if (BinaryOp.SHIFT_OPERATORS.contains(binOp.operator())) {
+                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG);
+                if (!leftValid) {
+                    mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
+                    inferredRightOperand = inferExpr(binOp.rightOperand());
+                    var rightOperandType = getType(inferredRightOperand);
+                    var rightValid = checkSubType(rightOperandType, Type.INT);
+                    if (!rightValid) {
+                        mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
+                        resultType = newUnsolvedType(TypeKind.INSTANCE);
+                    }
+                } else {
+                    inferredRightOperand = checkExpr(binOp.rightOperand(), Type.INT);
+                }
+            } else if (BinaryOp.BITWISE_OPERATORS.contains(binOp.operator())) {
+                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG, Type.BOOLEAN);
+                if (!leftValid) {
+                    mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
+                    inferredRightOperand = inferExpr(binOp.rightOperand());
+                    var rightOperandType = getType(inferredRightOperand);
+                    var rightValid = checkSubType(rightOperandType, Type.INT, Type.LONG, Type.BOOLEAN);
+                    if (!rightValid) {
+                        mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
+                        resultType = newUnsolvedType(TypeKind.INSTANCE);
+                    }
+                } else {
+                    inferredRightOperand = checkExpr(binOp.rightOperand(), leftOperandType);
+                }
+            } else if (BinaryOp.EQUALITY_OPERATORS.contains(binOp.operator())) {
+                inferredRightOperand = inferExpr(binOp.rightOperand());
+                var rightOperandType = getType(inferredRightOperand);
+                var leftSubRight = checkSubType(leftOperandType, rightOperandType);
+                var rightSubLeft = checkSubType(rightOperandType, leftOperandType);
+                resultType = Type.BOOLEAN;
+                if (!leftSubRight && !rightSubLeft) {
+                    mismatchedEqualityOperandType(binOp.range(), leftOperandType, rightOperandType);
+                }
+            } else if (BinaryOp.BOOLEAN_OPERATORS.contains(binOp.operator())) {
+                var leftValid = checkSubType(leftOperandType, Type.BOOLEAN);
+                resultType = Type.BOOLEAN;
+                if (!leftValid) {
+                    mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
+                    inferredRightOperand = inferExpr(binOp.rightOperand());
+                    var rightOperandType = getType(inferredRightOperand);
+                    var rightValid = checkSubType(rightOperandType, Type.BOOLEAN);
+                    if (!rightValid) {
+                        mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
+                        resultType = newUnsolvedType(TypeKind.INSTANCE);
+                    }
+                } else {
+                    inferredRightOperand = checkExpr(binOp.rightOperand(), leftOperandType);
+                }
+            }
+
+            var updatedMeta = updateMetaWith(binOp.meta(), resultType);
+
+            return binaryOpNode(updatedMeta, inferredLeftOperand, binOp.operator(), inferredRightOperand);
 
         } else if (expr instanceof LiteralNode<Name> literal) {
             return inferLiteral(literal);
