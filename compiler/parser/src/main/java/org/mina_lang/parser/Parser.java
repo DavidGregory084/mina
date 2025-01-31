@@ -275,7 +275,6 @@ public class Parser {
         public BinaryOp visitBinaryOperator(Token token) {
             if (token != null) {
                return switch (token.getType()) {
-                   case MinaParser.DOUBLE_ASTERISK -> BinaryOp.POWER;
                    case MinaParser.ASTERISK -> BinaryOp.MULTIPLY;
                    case MinaParser.RSLASH -> BinaryOp.DIVIDE;
                    case MinaParser.PERCENT -> BinaryOp.MODULUS;

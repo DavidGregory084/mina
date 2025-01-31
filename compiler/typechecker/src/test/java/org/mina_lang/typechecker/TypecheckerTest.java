@@ -1195,7 +1195,6 @@ public class TypecheckerTest {
     @EnumSource(
         value = BinaryOp.class,
         names = {
-            "POWER",
             "MULTIPLY",
             "DIVIDE",
             "MODULUS",
@@ -1216,7 +1215,7 @@ public class TypecheckerTest {
             intNode(ExampleNodes.namelessMeta(), 2));
 
         var expectedIntBinaryNode = binaryOpNode(
-            Meta.nameless(Type.INT),
+            Meta.nameless(BinaryOp.RELATIONAL_OPERATORS.contains(binaryOp) ? Type.BOOLEAN : Type.INT),
             intNode(Meta.nameless(Type.INT), 1),
             binaryOp,
             intNode(Meta.nameless(Type.INT), 2));
@@ -1230,7 +1229,7 @@ public class TypecheckerTest {
             longNode(ExampleNodes.namelessMeta(), 2L));
 
         var expectedLongBinaryNode = binaryOpNode(
-            Meta.nameless(Type.LONG),
+            Meta.nameless(BinaryOp.RELATIONAL_OPERATORS.contains(binaryOp) ? Type.BOOLEAN : Type.LONG),
             longNode(Meta.nameless(Type.LONG), 1L),
             binaryOp,
             longNode(Meta.nameless(Type.LONG), 2L));
@@ -1244,7 +1243,7 @@ public class TypecheckerTest {
             floatNode(ExampleNodes.namelessMeta(), 2.0F));
 
         var expectedFloatBinaryNode = binaryOpNode(
-            Meta.nameless(Type.FLOAT),
+            Meta.nameless(BinaryOp.RELATIONAL_OPERATORS.contains(binaryOp) ? Type.BOOLEAN : Type.FLOAT),
             floatNode(Meta.nameless(Type.FLOAT), 1.0F),
             binaryOp,
             floatNode(Meta.nameless(Type.FLOAT), 2.0F));
@@ -1258,7 +1257,7 @@ public class TypecheckerTest {
             doubleNode(ExampleNodes.namelessMeta(), 2.0));
 
         var expectedDoubleBinaryNode = binaryOpNode(
-            Meta.nameless(Type.DOUBLE),
+            Meta.nameless(BinaryOp.RELATIONAL_OPERATORS.contains(binaryOp) ? Type.BOOLEAN : Type.DOUBLE),
             doubleNode(Meta.nameless(Type.DOUBLE), 1.0),
             binaryOp,
             doubleNode(Meta.nameless(Type.DOUBLE), 2.0));
@@ -1270,7 +1269,6 @@ public class TypecheckerTest {
     @EnumSource(
         value = BinaryOp.class,
         names = {
-            "POWER",
             "MULTIPLY",
             "DIVIDE",
             "MODULUS",
@@ -1315,18 +1313,16 @@ public class TypecheckerTest {
             "Mismatched type! Expected: Int, Actual: Float");
     }
 
-    @ParameterizedTest(name = "Integral binary operators typecheck successfully - {0}")
+    @ParameterizedTest(name = "Bitwise binary operators typecheck successfully - {0}")
     @EnumSource(
         value = BinaryOp.class,
         names = {
-        "SHIFT_LEFT",
-        "SHIFT_RIGHT",
-        "UNSIGNED_SHIFT_RIGHT",
-        "BITWISE_AND",
-        "BITWISE_OR",
-        "BITWISE_XOR"
-    })
-    void typecheckIntegralBinary(BinaryOp binaryOp) {
+            "BITWISE_AND",
+            "BITWISE_OR",
+            "BITWISE_XOR"
+        }
+    )
+    void typecheckBitwiseBinary(BinaryOp binaryOp) {
         var environment = TypeEnvironment.withBuiltInTypes();
 
         var intBinaryNode = binaryOpNode(
@@ -1358,18 +1354,83 @@ public class TypecheckerTest {
         testSuccessfulTypecheck(environment, longBinaryNode, expectedLongBinaryNode);
     }
 
-    @ParameterizedTest(name = "Integral binary operators with mismatched operands fail to typecheck - {0}")
+    @ParameterizedTest(name = "Bitwise operators with mismatched operands fail to typecheck - {0}")
+    @EnumSource(
+        value = BinaryOp.class,
+        names = {
+            "BITWISE_AND",
+            "BITWISE_OR",
+            "BITWISE_XOR"
+        }
+    )
+    void typecheckBitwiseBinaryMismatchedOperands(BinaryOp binaryOp) {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var longOperandMeta = new Meta<Name>(new Range(0, 1, 0, 1), Nameless.INSTANCE);
+
+        var mixedIntLongNode = binaryOpNode(
+            ExampleNodes.namelessMeta(),
+            intNode(ExampleNodes.namelessMeta(), 1),
+            binaryOp,
+            longNode(longOperandMeta, 2L));
+
+        var collector = testFailedTypecheck(environment, mixedIntLongNode);
+
+        assertDiagnostic(
+            collector.getDiagnostics(),
+            longOperandMeta.range(),
+            "Mismatched type! Expected: Int, Actual: Long");
+    }
+
+    @ParameterizedTest(name = "Binary shift operators typecheck successfully - {0}")
     @EnumSource(
         value = BinaryOp.class,
         names = {
             "SHIFT_LEFT",
             "SHIFT_RIGHT",
             "UNSIGNED_SHIFT_RIGHT",
-            "BITWISE_AND",
-            "BITWISE_OR",
-            "BITWISE_XOR"}
-    )
-    void typecheckIntegralBinaryMismatchedOperands(BinaryOp binaryOp) {
+        })
+    void typecheckBinaryShift(BinaryOp binaryOp) {
+        var environment = TypeEnvironment.withBuiltInTypes();
+
+        var intBinaryNode = binaryOpNode(
+            ExampleNodes.namelessMeta(),
+            intNode(ExampleNodes.namelessMeta(), 1),
+            binaryOp,
+            intNode(ExampleNodes.namelessMeta(), 2));
+
+        var expectedIntBinaryNode = binaryOpNode(
+            Meta.nameless(Type.INT),
+            intNode(Meta.nameless(Type.INT), 1),
+            binaryOp,
+            intNode(Meta.nameless(Type.INT), 2));
+
+        testSuccessfulTypecheck(environment, intBinaryNode, expectedIntBinaryNode);
+
+        var longBinaryNode = binaryOpNode(
+            ExampleNodes.namelessMeta(),
+            longNode(ExampleNodes.namelessMeta(), 1L),
+            binaryOp,
+            intNode(ExampleNodes.namelessMeta(), 2));
+
+        var expectedLongBinaryNode = binaryOpNode(
+            Meta.nameless(Type.LONG),
+            longNode(Meta.nameless(Type.LONG), 1L),
+            binaryOp,
+            intNode(Meta.nameless(Type.INT), 2));
+
+        testSuccessfulTypecheck(environment, longBinaryNode, expectedLongBinaryNode);
+    }
+
+    @ParameterizedTest(name = "Integral binary operators with mismatched operands fail to typecheck - {0}")
+    @EnumSource(
+        value = BinaryOp.class,
+        names = {
+            "SHIFT_LEFT",
+            "SHIFT_RIGHT",
+            "UNSIGNED_SHIFT_RIGHT"
+        })
+    void typecheckBinaryShiftMismatchedOperands(BinaryOp binaryOp) {
         var environment = TypeEnvironment.withBuiltInTypes();
 
         var longOperandMeta = new Meta<Name>(new Range(0, 1, 0, 1), Nameless.INSTANCE);

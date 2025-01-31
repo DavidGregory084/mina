@@ -132,8 +132,6 @@ applicableExpr:
     | function = applicableExpr application
     // Prefix operators
     | operator = (MINUS | EXCLAMATION | TILDE) unaryOperand = applicableExpr
-    // Exponentiation
-    | <assoc=right> leftOperand = applicableExpr operator = DOUBLE_ASTERISK rightOperand = applicableExpr
     // Multiplicative arithmetic operators
     | leftOperand = applicableExpr operator = (ASTERISK | RSLASH | PERCENT) rightOperand = applicableExpr
     // Additive arithmetic operators

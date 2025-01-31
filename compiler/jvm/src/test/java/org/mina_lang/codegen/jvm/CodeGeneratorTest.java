@@ -47,6 +47,12 @@ public class CodeGeneratorTest {
                 codeGenerator.generate(tempDir, namespace);
                 try {
                     Class.forName(namespaceClassName, true, urlLoader);
+                } catch (ExceptionInInitializerError e) {
+                    // We don't care about divide by zero errors from this randomly generated code
+                    if (!e.getCause().getMessage().startsWith("/ by zero")) {
+                        System.err.println(namespace.accept(printer).render(80));
+                        Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);
+                    }
                 } catch (Exception | LinkageError e) {
                     System.err.println(namespace.accept(printer).render(80));
                     Assertions.fail("Exception while loading compiled namespace " + namespace.getName().canonicalName(), e);

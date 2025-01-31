@@ -30,7 +30,6 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     private static final Doc SEMI = Doc.text(";");
     private static final Doc MINUS = Doc.text("-");
     private static final Doc NOT = Doc.text("!");
-    private static final Doc POW = Doc.text("**");
     private static final Doc MUL = Doc.text("*");
     private static final Doc MOD = Doc.text("%");
     private static final Doc PLUS = Doc.text("+");
@@ -255,7 +254,6 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     @Override
     public Doc visitBinaryOp(Meta<A> meta, Doc leftOperand, BinaryOp operator, Doc rightOperand) {
         var operatorDoc = switch (operator) {
-            case POWER -> POW;
             case MULTIPLY -> MUL;
             case DIVIDE -> RSLASH;
             case MODULUS -> MOD;
