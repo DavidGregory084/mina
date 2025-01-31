@@ -900,7 +900,7 @@ public class Typechecker {
                 }
                 // Integral operand
                 case BITWISE_NOT -> {
-                    var operandValid = checkSubType(operandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    var operandValid = checkSubType(operandType, Type.INT, Type.LONG);
                     if (!operandValid) {
                         mismatchedOperandType(inferredOperand.range(), operandType, ExpectedOperandType.INTEGRAL);
                         // We don't know what the result type should be as the operand is not of integral type

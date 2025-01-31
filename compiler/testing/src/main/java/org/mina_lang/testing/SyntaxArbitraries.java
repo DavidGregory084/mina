@@ -798,7 +798,7 @@ public class SyntaxArbitraries {
                 binaryOpNode(env, Type.BOOLEAN, Type.LONG, Type.LONG, binaryRelationalOperators()),
                 binaryOpNode(env, Type.BOOLEAN, Type.FLOAT, Type.FLOAT, binaryRelationalOperators()),
                 binaryOpNode(env, Type.BOOLEAN, Type.DOUBLE, Type.DOUBLE, binaryRelationalOperators()),
-                binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryBooleanOperators())
+                binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryBooleanOperators(), binaryBitwiseOperators())
             );
         } else if (typ.equals(Type.INT)) {
             return Stream.of(
