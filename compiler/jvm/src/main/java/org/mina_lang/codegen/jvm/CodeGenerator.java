@@ -341,16 +341,15 @@ public class CodeGenerator {
             case SHIFT_LEFT -> GeneratorAdapter.SHL;
             case SHIFT_RIGHT -> GeneratorAdapter.SHR;
             case UNSIGNED_SHIFT_RIGHT -> GeneratorAdapter.USHR;
-            case BITWISE_AND, BOOLEAN_AND -> GeneratorAdapter.AND;
-            case BITWISE_OR, BOOLEAN_OR -> GeneratorAdapter.OR;
+            case BITWISE_AND -> GeneratorAdapter.AND;
+            case BITWISE_OR -> GeneratorAdapter.OR;
             case BITWISE_XOR -> GeneratorAdapter.XOR;
             case LESS_THAN -> GeneratorAdapter.GE;
             case LESS_THAN_EQUAL -> GeneratorAdapter.GT;
             case GREATER_THAN -> GeneratorAdapter.LE;
             case GREATER_THAN_EQUAL -> GeneratorAdapter.LT;
-            case EQUAL -> GeneratorAdapter.EQ;
-            case NOT_EQUAL -> GeneratorAdapter.NE;
-            default -> throw new IllegalArgumentException("Unexpected operator in code generation: " + binaryOp);
+            case EQUAL, BOOLEAN_AND -> GeneratorAdapter.EQ;
+            case NOT_EQUAL, BOOLEAN_OR -> GeneratorAdapter.NE;
         };
     }
 
@@ -459,8 +458,9 @@ public class CodeGenerator {
 
         } else if (expr instanceof IfNode<Attributes> ifExpr) {
             withScope(IfGenScope.open(), ifScope -> {
-                generateExpr(ifExpr.condition());
+                generateBooleanExpr(ifExpr.condition(), ifScope.thenLabel(), ifScope.elseLabel());
                 method.methodWriter().ifZCmp(GeneratorAdapter.EQ, ifScope.elseLabel());
+                method.methodWriter().visitLabel(ifScope.thenLabel());
                 generateExpr(ifExpr.consequent());
                 method.methodWriter().goTo(ifScope.endLabel());
                 method.methodWriter().visitLabel(ifScope.elseLabel());
@@ -469,8 +469,8 @@ public class CodeGenerator {
             });
         } else if (expr instanceof MatchNode<Attributes> match) {
             withScope(MatchGenScope.open(method), matchScope -> {
-                var scrutineeLocal = method.methodWriter()
-                    .newLocal(Types.asmType(match.scrutinee()));
+                var scrutineeType = Types.asmType(match.scrutinee());
+                var scrutineeLocal = method.methodWriter().newLocal(scrutineeType);
                 generateExpr(match.scrutinee());
                 method.methodWriter().storeLocal(scrutineeLocal);
                 match.cases().forEachWithIndex((cse, index) -> generateCase(cse, index, scrutineeLocal));
@@ -552,31 +552,35 @@ public class CodeGenerator {
                 case NEGATE ->
                     method.methodWriter().math(GeneratorAdapter.NEG, operandType);
                 case BITWISE_NOT, BOOLEAN_NOT -> {
-                    switch (operandType.getSort()) {
-                        case Type.LONG -> method.methodWriter().visitInsn(Opcodes.LCONST_1);
-                        case Type.INT, Type.BOOLEAN -> method.methodWriter().visitInsn(Opcodes.ICONST_1);
+                    if (operandType.getSort() == Type.LONG) {
+                        method.methodWriter().visitInsn(Opcodes.LCONST_1);
+                    } else {
+                        method.methodWriter().visitInsn(Opcodes.ICONST_1);
                     }
+
                     method.methodWriter().math(GeneratorAdapter.XOR, operandType);
                 }
             }
 
         } else if (expr instanceof BinaryOpNode<Attributes> binaryOp) {
-            generateExpr(binaryOp.leftOperand());
-            generateExpr(binaryOp.rightOperand());
-
-            var leftOperandType = Types.asmType(binaryOp.leftOperand());
             var operator = binaryOp.operator();
+            var leftOperandType = Types.asmType(binaryOp.leftOperand());
 
             if (BinaryOp.EQUALITY_OPERATORS.contains(operator) || BinaryOp.RELATIONAL_OPERATORS.contains(operator)) {
                 var isEqualityOperator = BinaryOp.EQUALITY_OPERATORS.contains(operator);
                 var isReferenceTypeOperand = leftOperandType.getSort() == Type.OBJECT;
+
                 if (isEqualityOperator && isReferenceTypeOperand) {
+                    generateExpr(binaryOp.leftOperand());
+                    generateExpr(binaryOp.rightOperand());
                     method.methodWriter().invokeVirtual(leftOperandType, Asm.EQUALS_METHOD);
                     if (binaryOp.operator().equals(BinaryOp.NOT_EQUAL)) {
                         method.methodWriter().not();
                     }
                 } else {
                     withScope(IfGenScope.open(), ifScope -> {
+                        generateExpr(binaryOp.leftOperand());
+                        generateExpr(binaryOp.rightOperand());
                         method.methodWriter().ifCmp(leftOperandType, opcodeFor(operator), ifScope.elseLabel());
                         method.methodWriter().push(true);
                         method.methodWriter().goTo(ifScope.endLabel());
@@ -585,7 +589,20 @@ public class CodeGenerator {
                         method.methodWriter().visitLabel(ifScope.endLabel());
                     });
                 }
+            } else if (BinaryOp.BOOLEAN_OPERATORS.contains(operator)) {
+                withScope(IfGenScope.open(), ifScope -> {
+                    generateBooleanOp(binaryOp, ifScope.thenLabel(), ifScope.elseLabel());
+                    method.methodWriter().ifZCmp(GeneratorAdapter.EQ, ifScope.elseLabel());
+                    method.methodWriter().visitLabel(ifScope.thenLabel());
+                    method.methodWriter().push(true);
+                    method.methodWriter().goTo(ifScope.endLabel());
+                    method.methodWriter().visitLabel(ifScope.elseLabel());
+                    method.methodWriter().push(false);
+                    method.methodWriter().visitLabel(ifScope.endLabel());
+                });
             } else {
+                generateExpr(binaryOp.leftOperand());
+                generateExpr(binaryOp.rightOperand());
                 method.methodWriter().math(opcodeFor(operator), leftOperandType);
             }
 
@@ -657,6 +674,45 @@ public class CodeGenerator {
         var appliedArgType = Types.getType(argExpr);
         generateExpr(argExpr);
         method.methodWriter().box(Types.asmType(appliedArgType));
+    }
+
+    public void generateBooleanExpr(ExprNode<Attributes> expr, Label trueLabel, Label falseLabel) {
+        if (
+            expr instanceof BinaryOpNode<Attributes> binOp &&
+            BinaryOp.BOOLEAN_OPERATORS.contains(binOp.operator())
+        ) {
+            generateBooleanOp(binOp, trueLabel, falseLabel);
+        } else {
+            generateExpr(expr);
+        }
+    }
+
+    public void generateBooleanOp(BinaryOpNode<Attributes> booleanOp, Label trueLabel, Label falseLabel) {
+        var method = environment.enclosingJavaMethod().get();
+
+        var operator = booleanOp.operator();
+
+        var breakLabel = new Label();
+
+        generateBooleanExpr(
+            booleanOp.leftOperand(),
+            // Nested operators jump to the right && operand when short-circuiting
+            operator.equals(BinaryOp.BOOLEAN_AND) ? breakLabel : trueLabel,
+            // Nested operators jump to the right || operand when short-circuiting
+            operator.equals(BinaryOp.BOOLEAN_OR) ? breakLabel : falseLabel
+        );
+
+        if (operator.equals(BinaryOp.BOOLEAN_OR)) {
+            // left || right - short circuit when true
+            method.methodWriter().ifZCmp(GeneratorAdapter.NE, trueLabel);
+        } else {
+            // left && right - short circuit when false
+            method.methodWriter().ifZCmp(GeneratorAdapter.EQ, falseLabel);
+        }
+
+        method.methodWriter().visitLabel(breakLabel);
+
+        generateBooleanExpr(booleanOp.rightOperand(), trueLabel, falseLabel);
     }
 
     public void generateLiteral(LiteralNode<Attributes> literal) {

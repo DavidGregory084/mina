@@ -725,9 +725,6 @@ public class SyntaxArbitraries {
     // Binary operators
     public static Arbitrary<BinaryOp> binaryBooleanOperators() {
         return Arbitraries.of(
-            BinaryOp.BITWISE_AND,
-            BinaryOp.BITWISE_OR,
-            BinaryOp.BITWISE_XOR,
             BinaryOp.BOOLEAN_AND,
             BinaryOp.BOOLEAN_OR,
             BinaryOp.LESS_THAN,
@@ -737,17 +734,30 @@ public class SyntaxArbitraries {
         );
     }
 
-    public static Arbitrary<BinaryOp> binaryIntegralOperators() {
+    public static Arbitrary<BinaryOp> binaryBitwiseOperators() {
         return Arbitraries.of(
-            // BinaryOp.POWER,
+            BinaryOp.BITWISE_AND,
+            BinaryOp.BITWISE_OR,
+            BinaryOp.BITWISE_XOR
+        );
+    }
+
+    public static Arbitrary<BinaryOp> binaryRelationalOperators() {
+        return Arbitraries.of(
+            BinaryOp.LESS_THAN,
+            BinaryOp.LESS_THAN_EQUAL,
+            BinaryOp.GREATER_THAN,
+            BinaryOp.GREATER_THAN_EQUAL
+        );
+    }
+
+    public static Arbitrary<BinaryOp> binaryNumericOperators() {
+        return Arbitraries.of(
             BinaryOp.MULTIPLY,
             BinaryOp.DIVIDE,
             BinaryOp.MODULUS,
             BinaryOp.ADD,
-            BinaryOp.SUBTRACT,
-            BinaryOp.BITWISE_AND,
-            BinaryOp.BITWISE_OR,
-            BinaryOp.BITWISE_XOR
+            BinaryOp.SUBTRACT
         );
     }
 
@@ -759,56 +769,53 @@ public class SyntaxArbitraries {
         );
     }
 
+    @SafeVarargs
+    public static Arbitrary<? extends ExprNode<Attributes>> binaryOpNode(GenEnvironment env, Type resultType, Type leftOpType, Type rightOpType, Arbitrary<BinaryOp> binOp, Arbitrary<BinaryOp> ...binOps) {
+        return Combinators.combine(
+            exprNodeWithType(env, leftOpType),
+            exprNodeWithType(env, rightOpType),
+            Arbitraries.oneOf(binOp, binOps)
+        ) .as((leftExpr, rightExpr, binaryOp) -> {
+            return SyntaxNodes.binaryOpNode(Meta.nameless(BinaryOp.RELATIONAL_OPERATORS.contains(binaryOp) ? Type.BOOLEAN : resultType), leftExpr, binaryOp, rightExpr);
+        });
+    }
+
     public static Arbitrary<? extends ExprNode<Attributes>> binaryOpNode(GenEnvironment env) {
         return Arbitraries.oneOf(
-            Combinators.combine(
-                exprNodeWithType(env, Type.BOOLEAN),
-                exprNodeWithType(env, Type.BOOLEAN),
-                binaryBooleanOperators()
-            ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.BOOLEAN), leftExpr, binaryOp, rightExpr)),
-            Combinators.combine(
-                exprNodeWithType(env, Type.INT),
-                exprNodeWithType(env, Type.INT),
-                Arbitraries.oneOf(binaryIntegralOperators(), binaryShiftOperators())
-            ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.INT), leftExpr, binaryOp, rightExpr)),
-            Combinators.combine(
-                exprNodeWithType(env, Type.LONG),
-                exprNodeWithType(env, Type.INT),
-                binaryShiftOperators()
-            ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.LONG), leftExpr, binaryOp, rightExpr)),
-            Combinators.combine(
-                exprNodeWithType(env, Type.LONG),
-                exprNodeWithType(env, Type.LONG),
-                binaryIntegralOperators()
-            ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.LONG), leftExpr, binaryOp, rightExpr))
+            binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryBooleanOperators()),
+            binaryOpNode(env, Type.INT, Type.INT, Type.INT, binaryNumericOperators(), binaryBitwiseOperators(), binaryShiftOperators(), binaryRelationalOperators()),
+            binaryOpNode(env, Type.LONG, Type.LONG, Type.INT, binaryShiftOperators()),
+            binaryOpNode(env, Type.LONG, Type.LONG, Type.LONG, binaryNumericOperators(), binaryBitwiseOperators(), binaryRelationalOperators()),
+            binaryOpNode(env, Type.FLOAT, Type.FLOAT, Type.FLOAT, binaryNumericOperators(), binaryRelationalOperators()),
+            binaryOpNode(env, Type.DOUBLE, Type.DOUBLE, Type.DOUBLE, binaryNumericOperators(), binaryRelationalOperators())
         );
     }
 
     public static Stream<Arbitrary<? extends ExprNode<Attributes>>> binaryOpNodeWithType(GenEnvironment env, Type typ) {
         if (typ.equals(Type.BOOLEAN)) {
-            return Stream.of(Combinators.combine(
-                exprNodeWithType(env, Type.BOOLEAN),
-                exprNodeWithType(env, Type.BOOLEAN),
-                binaryBooleanOperators()
-            ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.BOOLEAN), leftExpr, binaryOp, rightExpr)));
+            return Stream.of(
+                binaryOpNode(env, Type.BOOLEAN, Type.INT, Type.INT, binaryRelationalOperators()),
+                binaryOpNode(env, Type.BOOLEAN, Type.LONG, Type.LONG, binaryRelationalOperators()),
+                binaryOpNode(env, Type.BOOLEAN, Type.FLOAT, Type.FLOAT, binaryRelationalOperators()),
+                binaryOpNode(env, Type.BOOLEAN, Type.DOUBLE, Type.DOUBLE, binaryRelationalOperators()),
+                binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryBooleanOperators())
+            );
         } else if (typ.equals(Type.INT)) {
-            return Stream.of(Combinators.combine(
-                exprNodeWithType(env, Type.INT),
-                exprNodeWithType(env, Type.INT),
-                binaryIntegralOperators()
-            ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.INT), leftExpr, binaryOp, rightExpr)));
+            return Stream.of(
+                binaryOpNode(env, Type.INT, Type.INT, Type.INT, binaryNumericOperators(), binaryBitwiseOperators(), binaryShiftOperators())
+            );
         } else if (typ.equals(Type.LONG)) {
             return Stream.of(
-                Combinators.combine(
-                    exprNodeWithType(env, Type.LONG),
-                    exprNodeWithType(env, Type.INT),
-                    binaryShiftOperators()
-                ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.LONG), leftExpr, binaryOp, rightExpr)),
-                Combinators.combine(
-                    exprNodeWithType(env, Type.LONG),
-                    exprNodeWithType(env, Type.LONG),
-                    binaryIntegralOperators()
-                ).as((leftExpr, rightExpr, binaryOp) -> SyntaxNodes.binaryOpNode(Meta.nameless(Type.LONG), leftExpr, binaryOp, rightExpr))
+                binaryOpNode(env, Type.LONG, Type.LONG, Type.LONG, binaryNumericOperators(), binaryBitwiseOperators()),
+                binaryOpNode(env, Type.LONG, Type.LONG, Type.INT, binaryShiftOperators())
+            );
+        } else if (typ.equals(Type.FLOAT)) {
+            return Stream.of(
+                binaryOpNode(env, Type.FLOAT, Type.FLOAT, Type.FLOAT, binaryNumericOperators())
+            );
+        } else if (typ.equals(Type.DOUBLE)) {
+            return Stream.of(
+                binaryOpNode(env, Type.DOUBLE, Type.DOUBLE, Type.DOUBLE, binaryNumericOperators())
             );
         } else {
             return Stream.empty();
