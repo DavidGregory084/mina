@@ -723,14 +723,10 @@ public class SyntaxArbitraries {
     }
 
     // Binary operators
-    public static Arbitrary<BinaryOp> binaryBooleanOperators() {
+    public static Arbitrary<BinaryOp> binaryLogicalOperators() {
         return Arbitraries.of(
             BinaryOp.BOOLEAN_AND,
-            BinaryOp.BOOLEAN_OR,
-            BinaryOp.LESS_THAN,
-            BinaryOp.LESS_THAN_EQUAL,
-            BinaryOp.GREATER_THAN,
-            BinaryOp.GREATER_THAN_EQUAL
+            BinaryOp.BOOLEAN_OR
         );
     }
 
@@ -776,18 +772,27 @@ public class SyntaxArbitraries {
             exprNodeWithType(env, rightOpType),
             Arbitraries.oneOf(binOp, binOps)
         ) .as((leftExpr, rightExpr, binaryOp) -> {
-            return SyntaxNodes.binaryOpNode(Meta.nameless(BinaryOp.RELATIONAL_OPERATORS.contains(binaryOp) ? Type.BOOLEAN : resultType), leftExpr, binaryOp, rightExpr);
+            return SyntaxNodes.binaryOpNode(Meta.nameless(resultType), leftExpr, binaryOp, rightExpr);
         });
     }
 
     public static Arbitrary<? extends ExprNode<Attributes>> binaryOpNode(GenEnvironment env) {
         return Arbitraries.oneOf(
-            binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryBooleanOperators()),
-            binaryOpNode(env, Type.INT, Type.INT, Type.INT, binaryNumericOperators(), binaryBitwiseOperators(), binaryShiftOperators(), binaryRelationalOperators()),
+            // Boolean operands
+            binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryLogicalOperators(), binaryBitwiseOperators()),
+            // Int operands
+            binaryOpNode(env, Type.INT, Type.INT, Type.INT, binaryNumericOperators(), binaryBitwiseOperators(), binaryShiftOperators()),
+            binaryOpNode(env, Type.BOOLEAN, Type.INT, Type.INT, binaryRelationalOperators()),
+            // Long operands
+            binaryOpNode(env, Type.LONG, Type.LONG, Type.LONG, binaryNumericOperators(), binaryBitwiseOperators()),
             binaryOpNode(env, Type.LONG, Type.LONG, Type.INT, binaryShiftOperators()),
-            binaryOpNode(env, Type.LONG, Type.LONG, Type.LONG, binaryNumericOperators(), binaryBitwiseOperators(), binaryRelationalOperators()),
-            binaryOpNode(env, Type.FLOAT, Type.FLOAT, Type.FLOAT, binaryNumericOperators(), binaryRelationalOperators()),
-            binaryOpNode(env, Type.DOUBLE, Type.DOUBLE, Type.DOUBLE, binaryNumericOperators(), binaryRelationalOperators())
+            binaryOpNode(env, Type.BOOLEAN, Type.LONG, Type.LONG, binaryRelationalOperators()),
+            // Float operands
+            binaryOpNode(env, Type.FLOAT, Type.FLOAT, Type.FLOAT, binaryNumericOperators()),
+            binaryOpNode(env, Type.BOOLEAN, Type.FLOAT, Type.FLOAT, binaryRelationalOperators()),
+            // Double operands
+            binaryOpNode(env, Type.DOUBLE, Type.DOUBLE, Type.DOUBLE, binaryNumericOperators()),
+            binaryOpNode(env, Type.BOOLEAN, Type.DOUBLE, Type.DOUBLE, binaryRelationalOperators())
         );
     }
 
@@ -798,7 +803,7 @@ public class SyntaxArbitraries {
                 binaryOpNode(env, Type.BOOLEAN, Type.LONG, Type.LONG, binaryRelationalOperators()),
                 binaryOpNode(env, Type.BOOLEAN, Type.FLOAT, Type.FLOAT, binaryRelationalOperators()),
                 binaryOpNode(env, Type.BOOLEAN, Type.DOUBLE, Type.DOUBLE, binaryRelationalOperators()),
-                binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryBooleanOperators(), binaryBitwiseOperators())
+                binaryOpNode(env, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN, binaryLogicalOperators(), binaryBitwiseOperators())
             );
         } else if (typ.equals(Type.INT)) {
             return Stream.of(
