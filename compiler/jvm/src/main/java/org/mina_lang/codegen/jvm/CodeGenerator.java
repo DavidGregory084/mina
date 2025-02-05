@@ -334,14 +334,14 @@ public class CodeGenerator {
 
     private int compareOpcodeFor(BinaryOp binaryOp) {
         if (binaryOp == null) {
-            return GeneratorAdapter.EQ;
+            return GeneratorAdapter.NE;
         } else {
             return switch (binaryOp) {
                 case LESS_THAN -> GeneratorAdapter.GE;
                 case LESS_THAN_EQUAL -> GeneratorAdapter.GT;
                 case GREATER_THAN -> GeneratorAdapter.LE;
                 case GREATER_THAN_EQUAL -> GeneratorAdapter.LT;
-                case EQUAL, BOOLEAN_OR -> GeneratorAdapter.NE;
+                case EQUAL -> GeneratorAdapter.NE;
                 default -> GeneratorAdapter.EQ;
             };
         }
@@ -349,14 +349,14 @@ public class CodeGenerator {
 
     private int invertedCompareOpcodeFor(BinaryOp binaryOp) {
         if (binaryOp == null) {
-            return GeneratorAdapter.NE;
+            return GeneratorAdapter.EQ;
         } else {
             return switch (binaryOp) {
                 case LESS_THAN -> GeneratorAdapter.LT;
                 case LESS_THAN_EQUAL -> GeneratorAdapter.LE;
                 case GREATER_THAN -> GeneratorAdapter.GT;
                 case GREATER_THAN_EQUAL -> GeneratorAdapter.GE;
-                case EQUAL, BOOLEAN_OR -> GeneratorAdapter.EQ;
+                case EQUAL -> GeneratorAdapter.EQ;
                 default -> GeneratorAdapter.NE;
             };
         }
@@ -692,76 +692,50 @@ public class CodeGenerator {
 
     public void generateComparison(ExprNode<Attributes> expr, Set<BinaryOp> operators, BinaryOp enclosingOp, Type leftOperandType, Label trueLabel, Label falseLabel, Label nextOpLabel) {
         var method = environment.enclosingJavaMethod().get();
-        var nextOpIsTrue = nextOpLabel.equals(trueLabel);
-        var nextOpIsFalse = nextOpLabel.equals(falseLabel);
+
+        // Branch to the false label by default, unless it is already the next operation
+        var branchLabel = !nextOpLabel.equals(falseLabel) ? falseLabel : trueLabel;
+
+        // Are we branching to the false label?
+        var branchingToFalse = branchLabel == falseLabel;
+
+        // Fall through to the true label by default, unless we had to invert our branch label
+        var alternativeLabel = branchingToFalse ? trueLabel : falseLabel;
+
+        var comparisonOpcode = branchingToFalse
+            ? compareOpcodeFor(enclosingOp)
+            : invertedCompareOpcodeFor(enclosingOp);
+
+        var invertedComparisonOpcode = branchingToFalse
+            ? invertedCompareOpcodeFor(enclosingOp)
+            : compareOpcodeFor(enclosingOp);
 
         if (enclosingOp == null) {
-            // It's a boolean value without any enclosing operators
-            if (!nextOpIsFalse) {
-                method.methodWriter().ifZCmp(compareOpcodeFor(enclosingOp), falseLabel);
-                if (!nextOpIsTrue) method.methodWriter().goTo(trueLabel);
-            } else {
-                method.methodWriter().ifZCmp(invertedCompareOpcodeFor(enclosingOp), trueLabel);
-                if (!nextOpIsFalse) method.methodWriter().goTo(falseLabel);
-            }
+            // It's a boolean value without any enclosing operators:
+            // We're comparing to zero, so we must invert our comparison
+            method.methodWriter().ifZCmp(invertedComparisonOpcode, branchLabel);
+            if (!nextOpLabel.equals(alternativeLabel)) method.methodWriter().goTo(alternativeLabel);
+
         } else if (operators.contains(enclosingOp)) {
 
-            var isReferenceType = leftOperandType.getSort() == Type.OBJECT;
+            if (BinaryOp.RELATIONAL_OPERATORS.contains(enclosingOp)) {
+                method.methodWriter().ifCmp(Types.asmType(expr), comparisonOpcode, branchLabel);
+            } else if (BinaryOp.EQUALITY_OPERATORS.contains(enclosingOp)) {
 
-            if (isReferenceType && BinaryOp.EQUALITY_OPERATORS.contains(enclosingOp)) {
-                // Invoke .equals to compare the operands
-                method.methodWriter().invokeVirtual(leftOperandType, Asm.EQUALS_METHOD);
+                if (leftOperandType.getSort() == Type.OBJECT) {
+                    // We have a reference type, so call .equals
+                    method.methodWriter().invokeVirtual(leftOperandType, Asm.EQUALS_METHOD);
+                    // We're comparing to zero, so we must invert our comparison
+                    method.methodWriter().ifZCmp(invertedComparisonOpcode, branchLabel);
+                } else {
+                    method.methodWriter().ifCmp(leftOperandType, comparisonOpcode, branchLabel);
+                }
+            } else {
+                method.methodWriter().ifZCmp(comparisonOpcode, branchLabel);
             }
 
-            // We're generating comparisons for this kind of operator here
-            switch (enclosingOp) {
-                case LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL -> {
-                    if (!nextOpIsFalse) {
-                        method.methodWriter().ifCmp(Types.asmType(expr), compareOpcodeFor(enclosingOp), falseLabel);
-                        if (!nextOpIsTrue) method.methodWriter().goTo(trueLabel);
-                    } else {
-                        method.methodWriter().ifCmp(Types.asmType(expr), invertedCompareOpcodeFor(enclosingOp), trueLabel);
-                        if (!nextOpIsFalse) method.methodWriter().goTo(falseLabel);
-                    }
-                }
-                case BOOLEAN_OR -> {
-                    if (!nextOpIsTrue) {
-                        method.methodWriter().ifZCmp(compareOpcodeFor(enclosingOp), trueLabel);
-                        if (!nextOpIsFalse) method.methodWriter().goTo(falseLabel);
-                    } else {
-                        method.methodWriter().ifZCmp(invertedCompareOpcodeFor(enclosingOp), falseLabel);
-                        if (!nextOpIsTrue) method.methodWriter().goTo(trueLabel);
-                    }
-                }
-                case EQUAL, NOT_EQUAL -> {
-                    if (isReferenceType) {
-                        if (!nextOpIsTrue) {
-                            method.methodWriter().ifZCmp(compareOpcodeFor(enclosingOp), trueLabel);
-                            if (!nextOpIsFalse) method.methodWriter().goTo(falseLabel);
-                        } else {
-                            method.methodWriter().ifZCmp(invertedCompareOpcodeFor(enclosingOp), falseLabel);
-                            if (!nextOpIsTrue) method.methodWriter().goTo(trueLabel);
-                        }
-                    } else {
-                        if (!nextOpIsTrue) {
-                            method.methodWriter().ifCmp(leftOperandType, compareOpcodeFor(enclosingOp), trueLabel);
-                            if (!nextOpIsFalse) method.methodWriter().goTo(falseLabel);
-                        } else {
-                            method.methodWriter().ifCmp(leftOperandType, invertedCompareOpcodeFor(enclosingOp), falseLabel);
-                            if (!nextOpIsTrue) method.methodWriter().goTo(trueLabel);
-                        }
-                    }
-                }
-                default -> {
-                    if (!nextOpIsFalse) {
-                        method.methodWriter().ifZCmp(compareOpcodeFor(enclosingOp), falseLabel);
-                        if (!nextOpIsTrue) method.methodWriter().goTo(trueLabel);
-                    } else {
-                        method.methodWriter().ifZCmp(invertedCompareOpcodeFor(enclosingOp), trueLabel);
-                        if (!nextOpIsFalse) method.methodWriter().goTo(falseLabel);
-                    }
-                }
-            }
+            // Jump to the alternative if we didn't branch, unless it's the next operation anyway
+            if (!nextOpLabel.equals(alternativeLabel)) method.methodWriter().goTo(alternativeLabel);
         }
     }
 
