@@ -23,6 +23,8 @@ import java.lang.runtime.ObjectMethods;
 import static org.objectweb.asm.Opcodes.*;
 
 public class Asm {
+    public static Method EQUALS_METHOD = new Method("equals", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Types.OBJECT_TYPE));
+
     private static String METAFACTORY_DESCRIPTOR = MethodType
             .methodType(
                     // Return type

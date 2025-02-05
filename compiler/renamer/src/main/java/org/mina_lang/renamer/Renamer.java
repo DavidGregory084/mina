@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.renamer;
@@ -512,6 +512,16 @@ public class Renamer {
         @Override
         public SelectNode<Name> visitSelect(Meta<Void> meta, ExprNode<Name> receiver, ReferenceNode<Name> selection) {
             return selectNode(new Meta<>(meta.range(), Nameless.INSTANCE), receiver, selection);
+        }
+
+        @Override
+        public UnaryOpNode<Name> visitUnaryOp(Meta<Void> meta, UnaryOp operator, ExprNode<Name> operand) {
+            return unaryOpNode(new Meta<>(meta.range(), Nameless.INSTANCE), operator, operand);
+        }
+
+        @Override
+        public BinaryOpNode<Name> visitBinaryOp(Meta<Void> meta, ExprNode<Name> leftOperand, BinaryOp operator, ExprNode<Name> rightOperand) {
+            return binaryOpNode(new Meta<>(meta.range(), Nameless.INSTANCE), leftOperand, operator, rightOperand);
         }
 
         @Override

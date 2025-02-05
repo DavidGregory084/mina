@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -119,6 +119,14 @@ public interface SyntaxNodeVisitor {
 
     default void visitSelect(SelectNode<?> select) {
         visit(select);
+    }
+
+    default void visitUnaryOpNode(UnaryOpNode<?> unOp) {
+        visit(unOp);
+    }
+
+    default void visitBinaryOpNode(BinaryOpNode<?> binOp) {
+        visit(binOp);
     }
 
     default void visitReference(ReferenceNode<?> ref) {

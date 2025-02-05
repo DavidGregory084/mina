@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 package org.mina_lang.syntax;
@@ -480,6 +480,42 @@ public class SyntaxNodes {
         ExprNode<A> receiver,
         ReferenceNode<A> selection) {
         return new SelectNode<>(meta, receiver, selection);
+    }
+
+    // Unary operators
+    public static UnaryOpNode<Void> unaryOpNode(
+       Range range,
+       UnaryOp operator,
+       ExprNode<Void> operand
+    ) {
+        return new UnaryOpNode<>(Meta.of(range), operator, operand);
+    }
+
+    public static <A> UnaryOpNode<A> unaryOpNode(
+        Meta<A> meta,
+        UnaryOp operator,
+        ExprNode<A> operand
+    ) {
+        return new UnaryOpNode<>(meta, operator, operand);
+    }
+
+    // Binary operators
+    public static BinaryOpNode<Void> binaryOpNode(
+        Range range,
+        ExprNode<Void> leftOperand,
+        BinaryOp operator,
+        ExprNode<Void> rightOperand
+    ) {
+        return new BinaryOpNode<>(Meta.of(range), leftOperand, operator, rightOperand);
+    }
+
+    public static <A> BinaryOpNode<A> binaryOpNode(
+        Meta<A> meta,
+        ExprNode<A> leftOperand,
+        BinaryOp operator,
+        ExprNode<A> rightOperand
+    ) {
+        return new BinaryOpNode<>(meta, leftOperand, operator, rightOperand);
     }
 
     // Atomic expressions

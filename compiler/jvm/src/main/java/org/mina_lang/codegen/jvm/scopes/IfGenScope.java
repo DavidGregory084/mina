@@ -12,23 +12,26 @@ import org.mina_lang.common.names.ConstructorName;
 import org.objectweb.asm.Label;
 
 public record IfGenScope(
+        Label thenLabel,
         Label elseLabel,
         Label endLabel,
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,
         MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields) implements CodegenScope {
-    public IfGenScope(Label elseLabel, Label endLabel) {
+    public IfGenScope(Label thenLabel, Label elseLabel, Label endLabel) {
         this(
-                elseLabel,
-                endLabel,
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty());
+            thenLabel,
+            elseLabel,
+            endLabel,
+            Maps.mutable.empty(),
+            Maps.mutable.empty(),
+            Maps.mutable.empty());
     }
 
     public static IfGenScope open() {
+        var thenLabel = new Label();
         var elseLabel = new Label();
         var endLabel = new Label();
-        return new IfGenScope(elseLabel, endLabel);
+        return new IfGenScope(thenLabel, elseLabel, endLabel);
     }
 }

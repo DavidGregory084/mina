@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText:  © 2022-2024 David Gregory
+ * SPDX-FileCopyrightText:  © 2022-2025 David Gregory
  * SPDX-License-Identifier: Apache-2.0
  */
 parser grammar MinaParser;
@@ -38,9 +38,9 @@ declaration: dataDeclaration | letFnDeclaration | letDeclaration;
 dataDeclaration:
     DATA ID typeParams? LBRACE dataConstructor* RBRACE;
 
-letFnDeclaration: LET ID typeParams? lambdaParams typeAnnotation? EQ expr;
+letFnDeclaration: LET ID typeParams? lambdaParams typeAnnotation? EQUAL expr;
 
-letDeclaration: LET ID typeAnnotation? EQ expr;
+letDeclaration: LET ID typeAnnotation? EQUAL expr;
 
 // Data constructors
 dataConstructor: CASE ID constructorParams typeAnnotation?;
@@ -121,11 +121,35 @@ fieldPatterns: fieldPattern (COMMA fieldPattern)*;
 fieldPattern: ID (COLON pattern)?;
 
 applicableExpr:
+    // Atoms
     id = ID
     | literal
+    // Parentheses
     | parenExpr
-    | applicableExpr DOT selection = ID
-    | applicableExpr application;
+    // Member selection
+    | receiver = applicableExpr DOT selection = ID
+    // Function application
+    | function = applicableExpr application
+    // Prefix operators
+    | operator = (MINUS | EXCLAMATION | TILDE) unaryOperand = applicableExpr
+    // Multiplicative arithmetic operators
+    | leftOperand = applicableExpr operator = (ASTERISK | RSLASH | PERCENT) rightOperand = applicableExpr
+    // Additive arithmetic operators
+    | leftOperand = applicableExpr operator = (PLUS | MINUS) rightOperand = applicableExpr
+    // Bitwise shift operators
+    | leftOperand = applicableExpr operator = (LEFT_SHIFT | RIGHT_SHIFT | UNSIGNED_RIGHT_SHIFT) rightOperand = applicableExpr
+    // Bitwise and
+    | leftOperand = applicableExpr operator = AMPERSAND rightOperand = applicableExpr
+    // Bitwise or and xor
+    | leftOperand = applicableExpr operator = (CARET | PIPE) rightOperand = applicableExpr
+    // Relational operators
+    | leftOperand = applicableExpr operator = (LESS_THAN | LESS_THAN_EQUAL | GREATER_THAN | GREATER_THAN_EQUAL) rightOperand = applicableExpr
+    // Equality operators
+    | leftOperand = applicableExpr operator = (DOUBLE_EQUAL | NOT_EQUAL) rightOperand = applicableExpr
+    // Logical operators
+    | leftOperand = applicableExpr operator = DOUBLE_AMPERSAND rightOperand = applicableExpr
+    | leftOperand = applicableExpr operator = DOUBLE_PIPE rightOperand = applicableExpr
+    ;
 
 application: LPAREN RPAREN | LPAREN expr (COMMA expr)* RPAREN;
 
