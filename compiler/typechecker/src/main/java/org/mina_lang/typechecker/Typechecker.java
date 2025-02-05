@@ -995,7 +995,7 @@ public class Typechecker {
                 if (!leftSubRight && !rightSubLeft) {
                     mismatchedEqualityOperandType(binOp.range(), leftOperandType, rightOperandType);
                 }
-            } else if (BinaryOp.BOOLEAN_OPERATORS.contains(binOp.operator())) {
+            } else if (BinaryOp.LOGICAL_OPERATORS.contains(binOp.operator())) {
                 var leftValid = checkSubType(leftOperandType, Type.BOOLEAN);
                 resultType = Type.BOOLEAN;
                 if (!leftValid) {
