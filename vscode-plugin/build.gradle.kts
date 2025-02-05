@@ -92,4 +92,4 @@ val npmBuild by
         outputs.dir("${project.projectDir}/out")
     }
 
-// tasks.build { dependsOn(npmBuild) }
+tasks.build { dependsOn(npmBuild) }
