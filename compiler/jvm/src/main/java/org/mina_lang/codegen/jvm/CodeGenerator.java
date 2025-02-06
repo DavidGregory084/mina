@@ -745,6 +745,8 @@ public class CodeGenerator {
 
     public void generateBooleanExpr(ExprNode<Attributes> expr, Set<BinaryOp> operators, BinaryOp enclosingOp, Type enclosingType, Label trueLabel, Label falseLabel, Label nextOpLabel) {
         if (
+            // We cannot translate the children of comparison operators into jumps, because they need operands to compare!
+            (enclosingOp == null || BinaryOp.LOGICAL_OPERATORS.contains(enclosingOp)) &&
             expr instanceof BinaryOpNode<Attributes> binOp &&
             BinaryOp.BOOLEAN_OPERATORS.contains(binOp.operator())
         ) {
