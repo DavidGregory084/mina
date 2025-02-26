@@ -44,7 +44,7 @@
     "@tsconfig/recommended": "^1.0.8",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^18.19.75",
+    "@types/node": "^18.19.76",
     "@types/vscode": "^1.82.0",
     "@typescript-eslint/eslint-plugin": "^8.23.0",
     "@typescript-eslint/parser": "^8.23.0",
