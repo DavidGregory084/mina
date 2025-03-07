@@ -5,6 +5,7 @@
 package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.operators.UnaryOp;
 
 public record UnaryOpNode<A>(Meta<A> meta, UnaryOp operator, ExprNode<A> operand) implements ExprNode<A> {
     @Override

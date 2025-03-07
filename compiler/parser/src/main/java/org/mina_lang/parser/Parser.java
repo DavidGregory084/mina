@@ -17,6 +17,8 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.collector.Collectors2;
 import org.eclipse.collections.impl.factory.Lists;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.parser.MinaParser.*;
 import org.mina_lang.syntax.*;
 

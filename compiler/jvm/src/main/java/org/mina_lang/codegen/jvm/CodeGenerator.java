@@ -13,6 +13,8 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.*;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.Sort;
 import org.mina_lang.common.types.TypeApply;
 import org.mina_lang.proto.ProtobufWriter;

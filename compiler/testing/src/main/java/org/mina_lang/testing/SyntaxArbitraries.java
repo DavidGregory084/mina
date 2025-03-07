@@ -16,6 +16,8 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.*;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
@@ -829,9 +831,11 @@ public class SyntaxArbitraries {
 
     // Variable references
     public static Arbitrary<ReferenceNode<Attributes>> refNode(GenEnvironment env) {
-        return Arbitraries.of(getValues(env)).map(meta -> {
-            Named name = (Named) getName(meta);
-            return SyntaxNodes.refNode(meta, name.localName());
+        return Arbitraries.lazy(() -> {
+            return Arbitraries.of(getValues(env)).map(meta -> {
+                Named name = (Named) getName(meta);
+                return SyntaxNodes.refNode(meta, name.localName());
+            });
         });
     }
 

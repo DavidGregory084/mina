@@ -9,11 +9,11 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.parser.Parser.Visitor;
-import org.mina_lang.syntax.BinaryOp;
 import org.mina_lang.syntax.NamespaceNode;
 import org.mina_lang.syntax.SyntaxNode;
-import org.mina_lang.syntax.UnaryOp;
 
 import java.math.BigDecimal;
 import java.net.URI;

@@ -15,6 +15,7 @@ import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.diagnostics.LocalDiagnosticReporter;
 import org.mina_lang.common.names.*;
+import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 import org.mina_lang.typechecker.scopes.*;
@@ -780,6 +781,8 @@ public class Typechecker {
 
                 return letNode(typedMeta, let.name(), kindedType, checkedExpr);
             }).orElseGet(() -> {
+                putValueDeclaration(updateMetaWith(let.meta(), newUnsolvedType(TypeKind.INSTANCE)));
+
                 var inferredExpr = inferExpr(let.expr());
                 var inferredType = getType(inferredExpr);
 

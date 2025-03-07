@@ -20,6 +20,8 @@ import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.diagnostics.LocalDiagnosticReporter;
 import org.mina_lang.common.names.*;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.renamer.scopes.*;
 import org.mina_lang.syntax.*;
 

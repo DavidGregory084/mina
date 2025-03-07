@@ -8,6 +8,8 @@ import com.opencastsoftware.prettier4j.Doc;
 import org.apache.commons.text.StringEscapeUtils;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 
 import java.util.Optional;
 

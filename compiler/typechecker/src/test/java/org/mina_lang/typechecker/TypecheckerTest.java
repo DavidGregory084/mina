@@ -18,6 +18,8 @@ import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.Diagnostic;
 import org.mina_lang.common.diagnostics.NamespaceDiagnosticReporter;
 import org.mina_lang.common.names.*;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 

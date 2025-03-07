@@ -12,6 +12,8 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.names.Name;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.syntax.*;
 
 import java.util.Optional;

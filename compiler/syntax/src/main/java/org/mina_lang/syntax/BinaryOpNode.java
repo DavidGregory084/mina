@@ -5,6 +5,7 @@
 package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.operators.BinaryOp;
 
 public record BinaryOpNode<A>(Meta<A> meta, ExprNode<A> leftOperand, BinaryOp operator, ExprNode<A> rightOperand) implements ExprNode<A> {
     @Override

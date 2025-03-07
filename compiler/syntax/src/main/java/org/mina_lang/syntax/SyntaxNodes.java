@@ -8,6 +8,8 @@ import com.opencastsoftware.yvette.Range;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
 
 import java.util.Optional;
 
