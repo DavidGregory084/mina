@@ -4,5 +4,5 @@
  */
 package org.mina_lang.ina;
 
-public sealed interface Value extends Expression permits Lambda, Literal, Reference {
+public sealed interface LocalBinding permits Join, LetAssign {
 }

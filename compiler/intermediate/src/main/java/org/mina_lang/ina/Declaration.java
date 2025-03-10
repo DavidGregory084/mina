@@ -4,8 +4,8 @@
  */
 package org.mina_lang.ina;
 
-import org.mina_lang.common.names.Named;
+import org.mina_lang.common.names.DeclarationName;
 
-public sealed interface Declaration permits Data, Let, Join {
-    Named name();
+public sealed interface Declaration extends InaNode permits Data, Let {
+    DeclarationName name();
 }

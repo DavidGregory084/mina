@@ -4,8 +4,8 @@
  */
 package org.mina_lang.ina;
 
-import org.mina_lang.common.names.LocalName;
+import org.mina_lang.common.names.LocalBindingName;
 import org.mina_lang.common.types.Type;
 
-public record Param(LocalName name, Type type) {
+public record Param(LocalBindingName name, Type type) implements InaNode {
 }

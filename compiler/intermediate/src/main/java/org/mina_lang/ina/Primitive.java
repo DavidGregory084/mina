@@ -4,5 +4,6 @@
  */
 package org.mina_lang.ina;
 
-public sealed interface Value extends Expression permits Lambda, Literal, Reference {
+public sealed interface Primitive extends Literal permits Boolean, Char, Double, Float, Int, Long {
+    Object boxedValue();
 }

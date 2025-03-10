@@ -4,8 +4,8 @@
  */
 package org.mina_lang.ina;
 
-import org.mina_lang.common.names.LetName;
+import org.mina_lang.common.names.LocalBindingName;
 import org.mina_lang.common.types.Type;
 
-public record Join(LetName name, Type type, Expression expression) implements Declaration {
+public record Join(LocalBindingName name, Type type, Expression body) implements LocalBinding {
 }

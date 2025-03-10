@@ -6,7 +6,7 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public record Boolean(boolean value) implements Literal {
+public record Boolean(boolean value) implements Primitive {
     @Override
     public Type type() {
         return Type.BOOLEAN;

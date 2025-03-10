@@ -23,6 +23,8 @@ public interface NameVisitor {
 
     void visitFieldName(FieldName field);
 
+    void visitSyntheticName(SyntheticName synthetic);
+
     default void visitDeclarationName(DeclarationName declaration) {
         declaration.accept(this);
     }

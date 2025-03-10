@@ -4,5 +4,5 @@
  */
 package org.mina_lang.ina;
 
-public record Case(Pattern pattern, Expression consequent) {
+public record Case(Pattern pattern, Expression consequent) implements InaNode {
 }

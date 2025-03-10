@@ -6,7 +6,7 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public record Double(double value) implements Literal {
+public record Double(double value) implements Primitive {
     @Override
     public Type type() {
         return Type.DOUBLE;

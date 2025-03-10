@@ -7,5 +7,5 @@ package org.mina_lang.ina;
 import org.mina_lang.common.names.FieldName;
 import org.mina_lang.common.types.Type;
 
-public record Field(FieldName name, Type type) {
+public record Field(FieldName name, Type type) implements InaNode {
 }

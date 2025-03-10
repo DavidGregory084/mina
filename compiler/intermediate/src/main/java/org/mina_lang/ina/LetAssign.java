@@ -4,11 +4,8 @@
  */
 package org.mina_lang.ina;
 
+import org.mina_lang.common.names.LocalBindingName;
 import org.mina_lang.common.types.Type;
 
-public record String(java.lang.String value) implements Literal {
-    @Override
-    public Type type() {
-        return Type.STRING;
-    }
+public record LetAssign(LocalBindingName name, Type type, Expression body) implements LocalBinding {
 }

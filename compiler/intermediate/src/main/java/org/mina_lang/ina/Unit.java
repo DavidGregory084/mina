@@ -6,9 +6,11 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public record String(java.lang.String value) implements Literal {
+public enum Unit implements Literal {
+    INSTANCE;
+
     @Override
     public Type type() {
-        return Type.STRING;
+        return Type.UNIT;
     }
 }

@@ -4,5 +4,8 @@
  */
 package org.mina_lang.ina;
 
-public sealed interface Pattern permits AliasPattern, ConstructorPattern, IdPattern, LiteralPattern {
+import org.mina_lang.common.types.Type;
+
+public sealed interface Pattern extends InaNode permits AliasPattern, ConstructorPattern, IdPattern, LiteralPattern {
+    Type type();
 }

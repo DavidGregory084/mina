@@ -5,6 +5,7 @@
 package org.mina_lang.ina;
 
 import org.mina_lang.common.names.LocalName;
+import org.mina_lang.common.types.Type;
 
-public record AliasPattern(LocalName alias, Pattern pattern) implements Pattern {
+public record AliasPattern(LocalName alias, Type type, Pattern pattern) implements Pattern {
 }

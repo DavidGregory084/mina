@@ -4,6 +4,5 @@
  */
 package org.mina_lang.ina;
 
-public sealed interface Literal extends Value permits Boolean, Char, Double, Float, Int, Long, String {
-    Object boxedValue();
+public sealed interface Literal extends Value permits Primitive, String, Unit {
 }

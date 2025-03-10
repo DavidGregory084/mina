@@ -6,7 +6,7 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public record Char(char value) implements Literal {
+public record Char(char value) implements Primitive {
     @Override
     public Type type() {
         return Type.CHAR;

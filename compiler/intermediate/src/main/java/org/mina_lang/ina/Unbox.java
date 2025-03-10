@@ -6,9 +6,9 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public record String(java.lang.String value) implements Literal {
+public record Unbox(Expression expr, Type primitive) implements Expression {
     @Override
     public Type type() {
-        return Type.STRING;
+        return primitive;
     }
 }

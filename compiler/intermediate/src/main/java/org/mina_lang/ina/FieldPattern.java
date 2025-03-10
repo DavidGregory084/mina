@@ -5,6 +5,7 @@
 package org.mina_lang.ina;
 
 import org.mina_lang.common.names.FieldName;
+import org.mina_lang.common.types.Type;
 
-public record FieldPattern(FieldName name, Pattern pattern) {
+public record FieldPattern(FieldName name, Type type, Pattern pattern) implements InaNode {
 }

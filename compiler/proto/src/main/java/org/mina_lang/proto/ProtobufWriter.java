@@ -137,6 +137,11 @@ public class ProtobufWriter {
         }
 
         @Override
+        public void visitSyntheticName(org.mina_lang.common.names.SyntheticName synthetic) {
+            // Local names should not appear in the top-level scope
+        }
+
+        @Override
         public void visitBuiltInName(org.mina_lang.common.names.BuiltInName builtIn) {
             recordName(builtIn, () -> {
                 var proto = BuiltInName.newBuilder()
