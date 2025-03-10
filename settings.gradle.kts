@@ -51,6 +51,8 @@ project(":compiler:cli").name = "mina-compiler"
 // Optimizer & code generation
 include("compiler:intermediate")
 project(":compiler:intermediate").name = "mina-compiler-intermediate"
+include("compiler:optimiser")
+project(":compiler:optimiser").name = "mina-compiler-optimiser"
 include("compiler:jvm")
 project(":compiler:jvm").name = "mina-compiler-jvm"
 
