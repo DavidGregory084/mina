@@ -3,3 +3,8 @@ plugins {
     id("java-project-convention")
     id("java-protobuf-convention")
 }
+
+dependencies {
+    // Common Definitions
+    api(project(":compiler:mina-compiler-common"))
+}

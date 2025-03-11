@@ -4,7 +4,7 @@
  */
 package org.mina_lang.common.names;
 
-public record LocalName(String name, int index) implements Named {
+public record LocalName(String name, int index) implements LocalBindingName {
 
     @Override
     public String localName() {
