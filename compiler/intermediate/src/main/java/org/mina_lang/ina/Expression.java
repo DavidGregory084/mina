@@ -6,6 +6,6 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public sealed interface Expression extends InaNode permits Apply, BinOp, Block, Box, If, Match, UnOp, Unbox, Value {
+public sealed interface Expression extends InaNode permits Apply, BinOp, Block, If, Match, UnOp, Value {
     Type type();
 }
