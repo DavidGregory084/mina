@@ -6,7 +6,7 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public record Unbox(Expression expr, Type primitive) implements Expression {
+public record Unbox(Value expr, Type primitive) implements Value {
     @Override
     public Type type() {
         return primitive;
