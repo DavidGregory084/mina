@@ -9,10 +9,7 @@ import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.*;
-import org.mina_lang.common.types.QuantifiedType;
-import org.mina_lang.common.types.Type;
-import org.mina_lang.common.types.TypeApply;
-import org.mina_lang.common.types.TypeVar;
+import org.mina_lang.common.types.*;
 import org.mina_lang.ina.*;
 import org.mina_lang.ina.Boolean;
 import org.mina_lang.ina.Double;
@@ -35,6 +32,10 @@ public class Lower {
             type = quant.body();
         }
         return type;
+    }
+
+    public Type getUnderlyingType(MetaNode<Attributes> node) {
+        return getUnderlyingType((Type) node.meta().meta().sort());
     }
 
     public Namespace lower(NamespaceNode<Attributes> namespace) {
@@ -61,8 +62,21 @@ public class Lower {
 
     Data lowerData(DataNode<Attributes> data) {
         var name = (DataName) data.meta().meta().name();
-        var typeParams = data.typeParams().collect(tyVar -> (TypeVar) tyVar.meta().meta().sort());
+
+        ImmutableList<TypeVar> typeParams = data.typeParams().collect(tyVar -> {
+            var kind = (Kind) tyVar.meta().meta().sort();
+
+            if (tyVar instanceof ForAllVarNode<Attributes> forall) {
+                return new ForAllVar(forall.name(), kind);
+            } else if (tyVar instanceof ExistsVarNode<Attributes> exists) {
+                return new ExistsVar(exists.name(), kind);
+            }
+
+            return null;
+        });
+
         var constructors = data.constructors().collect(this::lowerConstructor);
+
         return new Data(name, typeParams, constructors);
     }
 
@@ -82,7 +96,6 @@ public class Lower {
         var name = (LetName) let.meta().meta().name();
         var type = (Type) let.meta().meta().sort();
         var body = lowerExpr(let.expr());
-        System.out.println(body);
         return new Let(name, type, body);
     }
 
@@ -91,7 +104,6 @@ public class Lower {
         var type = (Type) letFn.meta().meta().sort();
         var params = letFn.valueParams().collect(this::lowerParam);
         var body = lowerExpr(letFn.expr());
-        System.out.println(body);
         return new Let(name, type, new Lambda(type, params, body));
     }
 
@@ -102,14 +114,14 @@ public class Lower {
     }
 
     Value lowerToValue(List<LocalBinding> bindings, ExprNode<Attributes> expr) {
-        var exprName = nameSupply.newSyntheticName();
-        var exprType = (Type) expr.meta().meta().sort();
         var loweredExpr = lowerExpr(expr);
 
         Value value;
         if (loweredExpr instanceof Value loweredValue) {
             value = loweredValue;
         } else {
+            var exprName = nameSupply.newSyntheticName();
+            var exprType = (Type) expr.meta().meta().sort();
             bindings.add(new LetAssign(exprName, exprType, loweredExpr));
             value = new Reference(exprName, exprType);
         }
@@ -144,7 +156,9 @@ public class Lower {
     }
 
     Expression lowerApply(ApplyNode<Attributes> apply) {
-        var type = (Type) apply.meta().meta().sort();
+        var applyType = (Type) apply.meta().meta().sort();
+        var funType = (TypeApply) getUnderlyingType(apply.expr());
+        var returnType = funType.typeArguments().getLast();
         MutableList<LocalBinding> bindings = Lists.mutable.empty();
 
         // Eliminate selections that are applied immediately, replacing them with
@@ -159,13 +173,39 @@ public class Lower {
             appliedArgs = apply.args();
         }
 
-        var expr = lowerToValue(bindings, appliedExpr);
+        var loweredFn = lowerToValue(bindings, appliedExpr);
 
-        var args = appliedArgs.collect(arg -> lowerToValue(bindings, arg));
+        var args = appliedArgs
+            .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
+            .collect(pair -> {
+                var loweredArg = lowerToValue(bindings, pair.getOne());
+                var funArgType = pair.getTwo();
+                if (loweredArg.type().isPrimitive() && !funArgType.isPrimitive()) {
+                    return new Box(loweredArg, loweredArg.type());
+                } else if (!loweredArg.type().isPrimitive() && funArgType.isPrimitive()) {
+                    return new Unbox(loweredArg, funArgType);
+                } else {
+                    return loweredArg;
+                }
+            });
 
-        var loweredApply = new Apply(type, expr, args);
+        var loweredApply = new Apply(applyType, loweredFn, args);
 
-        return bindings.isEmpty() ? loweredApply : new Block(type, bindings.toImmutableList(), loweredApply);
+        Expression tailExpr;
+
+        if (applyType.isPrimitive() && !returnType.isPrimitive()) {
+            var applyName = nameSupply.newSyntheticName();
+            bindings.add(new LetAssign(applyName, applyType, loweredApply));
+            tailExpr = new Unbox(new Reference(applyName, applyType), applyType);
+        } else if (!applyType.isPrimitive() && returnType.isPrimitive()) {
+            var applyName = nameSupply.newSyntheticName();
+            bindings.add(new LetAssign(applyName, applyType, loweredApply));
+            tailExpr = new Box(new Reference(applyName, applyType), returnType);
+        } else {
+            tailExpr = loweredApply;
+        }
+
+        return bindings.isEmpty() ? tailExpr : new Block(applyType, bindings.toImmutableList(), tailExpr);
     }
 
     Expression lowerBlock(BlockNode<Attributes> block) {
@@ -248,13 +288,13 @@ public class Lower {
         } else if (pattern instanceof IdPatternNode<Attributes> id) {
             var name = (LocalName) id.meta().meta().name();
             var type = (Type) id.meta().meta().sort();
-           return new IdPattern(name, type);
+            return new IdPattern(name, type);
         } else if (pattern instanceof AliasPatternNode<Attributes> alias) {
             var name = (LocalName) alias.meta().meta().name();
             var type = (Type) alias.meta().meta().sort();
             var aliased = lowerPattern(alias.pattern());
             return new AliasPattern(name, type, aliased);
-        }  else if (pattern instanceof ConstructorPatternNode<Attributes> constr) {
+        } else if (pattern instanceof ConstructorPatternNode<Attributes> constr) {
             var name = (ConstructorName) constr.meta().meta().name();
             var type = (Type) constr.meta().meta().sort();
             var fields = constr.fields()
