@@ -178,7 +178,51 @@ public class LowerTest {
     }
 
     @Test
-    void lowersUnOpWithComputedOperand() {
+    void lowersUnOpWithIncOperand() {
+        withLowering(lower -> {
+            assertThat(
+                // -inc(1)
+                lower.lowerExpr(NEGATE_INC_ONE_NODE),
+                // {
+                //   let $0 = inc(1)
+                //   -$0
+                // }
+                is(new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        new LetAssign(
+                            new SyntheticName(0),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(1))))
+                    ),
+                    new UnOp(Type.INT, UnaryOp.NEGATE, new Reference(new SyntheticName(0), Type.INT)))));
+        });
+    }
+
+    @Test
+    void lowersUnOpWithMagicOperand() {
+        withLowering(lower -> {
+            assertThat(
+                // -magic(1)
+                lower.lowerExpr(NEGATE_MAGIC_ONE_NODE),
+                // {
+                //   let $0 = magic(box(1))
+                //   -$0
+                // }
+                is(new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        new LetAssign(
+                            new SyntheticName(0),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1), Type.INT))))
+                    ),
+                    new UnOp(Type.INT, UnaryOp.NEGATE, new Reference(new SyntheticName(0), Type.INT)))));
+        });
+    }
+
+    @Test
+    void lowersUnOpWithIdOperand() {
         withLowering(lower -> {
             assertThat(
                 // -id(1)
@@ -219,7 +263,59 @@ public class LowerTest {
     }
 
     @Test
-    void lowersBinOpWithComputedOperands() {
+    void lowersBinOpWithIncOperands() {
+        withLowering(lower -> {
+            assertThat(
+                // inc(1) + inc(2)
+                lower.lowerExpr(INC_ONE_PLUS_INC_TWO_NODE),
+                // {
+                //   let $0 = inc(1)
+                //   let $1 = inc(2)
+                //   $0 + $1
+                // }
+                is(new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        new LetAssign(
+                            new SyntheticName(0),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(1)))),
+                        new LetAssign(
+                            new SyntheticName(1),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(2))))),
+                    new BinOp(Type.INT, new Reference(new SyntheticName(0), Type.INT), BinaryOp.ADD, new Reference(new SyntheticName(1), Type.INT)))));
+        });
+    }
+
+    @Test
+    void lowersBinOpWithMagicOperands() {
+        withLowering(lower -> {
+            assertThat(
+                // magic(1) + magic(2)
+                lower.lowerExpr(MAGIC_ONE_PLUS_MAGIC_TWO_NODE),
+                // {
+                //   let $0 = magic(box(1))
+                //   let $1 = magic(box(2))
+                //   $0 + $1
+                // }
+                is(new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        new LetAssign(
+                            new SyntheticName(0),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1), Type.INT)))),
+                        new LetAssign(
+                            new SyntheticName(1),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(2), Type.INT))))),
+                    new BinOp(Type.INT, new Reference(new SyntheticName(0), Type.INT), BinaryOp.ADD, new Reference(new SyntheticName(1), Type.INT)))));
+        });
+    }
+
+    @Test
+    void lowersBinOpWithIdOperands() {
         withLowering(lower -> {
             // let $1 = {
             //    let $0 = id(box(1))
