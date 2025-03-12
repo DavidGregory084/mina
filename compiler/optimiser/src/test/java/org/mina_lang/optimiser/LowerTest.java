@@ -178,6 +178,126 @@ public class LowerTest {
     }
 
     @Test
+    void lowersApplyInc() {
+        withLowering(lower -> {
+            assertThat(
+                // inc(1)
+                lower.lowerExpr(APPLY_INC_NODE),
+                // inc(1)
+                is(new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(1)))));
+        });
+    }
+
+    @Test
+    void lowersApplyMagicToInt() {
+        withLowering(lower -> {
+            assertThat(
+                // magic(1)
+                lower.lowerExpr(APPLY_MAGIC_INT_NODE),
+                // magic(box(1))
+                is(new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1))))));
+        });
+    }
+
+    @Test
+    void lowersApplyMagicToString() {
+        withLowering(lower -> {
+            assertThat(
+                // magic("abc")
+                lower.lowerExpr(APPLY_MAGIC_STRING_NODE),
+                // magic("abc")
+                is(new Apply(Type.STRING, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new String("abc")))));
+        });
+    }
+
+    @Test
+    void lowersApplyIdToInt() {
+        withLowering(lower -> {
+            assertThat(
+                // id(1)
+                lower.lowerExpr(APPLY_ID_INT_NODE),
+                // {
+                //   let $0 = id(box(1))
+                //   unbox($0)
+                // }
+                is(new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        new LetAssign(
+                            new SyntheticName(0),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1)))))),
+                    new Unbox(new Reference(new SyntheticName(0), Type.INT)))));
+        });
+    }
+
+    @Test
+    void lowersApplyIdToString() {
+        withLowering(lower -> {
+            assertThat(
+                // id("abc")
+                lower.lowerExpr(APPLY_ID_STRING_NODE),
+                // id("abc")
+                is(new Apply(Type.STRING, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new String("abc")))));
+        });
+    }
+
+    @Test
+    void lowersApplyConstPoly() {
+        withLowering(lower -> {
+            assertThat(
+                // const(const(1, 'a'), "b")
+                lower.lowerExpr(APPLY_CONST_POLY_NODE),
+                // {
+                //   let $1 = {
+                //     let $0 = const(box(1), box('a'))
+                //     unbox($0)
+                //   }
+                //   let $2 = const(box($1), "b")
+                //   unbox($2)
+                // }
+                is(new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        // let $1 =
+                        new LetAssign(
+                            new SyntheticName(1),
+                            Type.INT,
+                            new Block(
+                                Type.INT,
+                                Lists.immutable.of(
+                                    // let $0 =
+                                    new LetAssign(
+                                        new SyntheticName(0),
+                                        Type.INT,
+                                        // const(1, 'a')
+                                        new Apply(
+                                            Type.INT,
+                                            new Reference(LET_CONST_NAME, LET_CONST_TYPE),
+                                            Lists.immutable.of(
+                                                new Box(new Int(1)),
+                                                new Box(new Char('a')))))
+
+                                ),
+                                // unbox($0)
+                                new Unbox(new Reference(new SyntheticName(0), Type.INT)))),
+                        // let $2 =
+                        new LetAssign(
+                            new SyntheticName(2),
+                            Type.INT,
+                            // const(box($1), "b")
+                            new Apply(
+                                Type.INT,
+                                new Reference(LET_CONST_NAME, LET_CONST_TYPE),
+                                Lists.immutable.of(
+                                    new Box(new Reference(new SyntheticName(1), Type.INT)),
+                                    new String("b"))))),
+                    // unbox($2)
+                    new Unbox(new Reference(new SyntheticName(2), Type.INT)))));
+        });
+    }
+
+    @Test
     void lowersUnOpWithIncOperand() {
         withLowering(lower -> {
             assertThat(
@@ -215,7 +335,7 @@ public class LowerTest {
                         new LetAssign(
                             new SyntheticName(0),
                             Type.INT,
-                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1), Type.INT))))
+                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1)))))
                     ),
                     new UnOp(Type.INT, UnaryOp.NEGATE, new Reference(new SyntheticName(0), Type.INT)))));
         });
@@ -238,13 +358,13 @@ public class LowerTest {
                     Type.INT,
                     Lists.immutable.of(
                         new LetAssign(new SyntheticName(1), Type.INT, new Block(
-                                Type.INT,
-                                Lists.immutable.of(
-                                    new LetAssign(
-                                        new SyntheticName(0),
-                                        Type.INT,
-                                        new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1), Type.INT))))),
-                                new Unbox(new Reference(new SyntheticName(0), Type.INT), Type.INT))
+                            Type.INT,
+                            Lists.immutable.of(
+                                new LetAssign(
+                                    new SyntheticName(0),
+                                    Type.INT,
+                                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1)))))),
+                            new Unbox(new Reference(new SyntheticName(0), Type.INT)))
                         )
                     ),
                     new UnOp(Type.INT, UnaryOp.NEGATE, new Reference(new SyntheticName(1), Type.INT)))));
@@ -305,11 +425,11 @@ public class LowerTest {
                         new LetAssign(
                             new SyntheticName(0),
                             Type.INT,
-                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1), Type.INT)))),
+                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1))))),
                         new LetAssign(
                             new SyntheticName(1),
                             Type.INT,
-                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(2), Type.INT))))),
+                            new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(2)))))),
                     new BinOp(Type.INT, new Reference(new SyntheticName(0), Type.INT), BinaryOp.ADD, new Reference(new SyntheticName(1), Type.INT)))));
         });
     }
@@ -322,13 +442,13 @@ public class LowerTest {
             //    unbox($0)
             // }
             var letId1 = new LetAssign(new SyntheticName(1), Type.INT, new Block(
-                    Type.INT,
-                    Lists.immutable.of(
-                        new LetAssign(
-                            new SyntheticName(0),
-                            Type.INT,
-                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1), Type.INT))))),
-                    new Unbox(new Reference(new SyntheticName(0), Type.INT), Type.INT)
+                Type.INT,
+                Lists.immutable.of(
+                    new LetAssign(
+                        new SyntheticName(0),
+                        Type.INT,
+                        new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1)))))),
+                new Unbox(new Reference(new SyntheticName(0), Type.INT))
             ));
 
             // let $3 = {
@@ -336,13 +456,13 @@ public class LowerTest {
             //    unbox($2)
             // }
             var letId2 = new LetAssign(new SyntheticName(3), Type.INT, new Block(
-                    Type.INT,
-                    Lists.immutable.of(
-                        new LetAssign(
-                            new SyntheticName(2),
-                            Type.INT,
-                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2), Type.INT))))),
-                    new Unbox(new Reference(new SyntheticName(2), Type.INT), Type.INT)
+                Type.INT,
+                Lists.immutable.of(
+                    new LetAssign(
+                        new SyntheticName(2),
+                        Type.INT,
+                        new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2)))))),
+                new Unbox(new Reference(new SyntheticName(2), Type.INT))
             ));
 
             assertThat(
