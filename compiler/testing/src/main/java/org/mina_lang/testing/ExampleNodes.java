@@ -198,7 +198,7 @@ public interface ExampleNodes {
     LetName LET_INT_NAME = new LetName(new QualifiedName(NAMESPACE_NAME, "one"));
 
     /**
-     * A typed and kinded example node for a simple let binding to an integer literal:
+     * A typed example node for a simple let binding to an integer literal:
      * <pre><code>
      * let one = 1
      * </code></pre>
@@ -306,7 +306,99 @@ public interface ExampleNodes {
     Meta<Attributes> LET_MAGIC_META = Meta.of(LET_MAGIC_NAME, LET_MAGIC_TYPE);
 
     /**
-     * A typed and kinded example node for a negation expression:
+     * Top level let binding name <code>Mina/Test/Examples.const</code>.
+     */
+    LetName LET_CONST_NAME = new LetName(new QualifiedName(NAMESPACE_NAME, "const"));
+
+    /**
+     * The type of the constant function <code>Mina/Test/Examples.const</code>.
+     * <pre><code>[A] { (A, B) -> A }</code></pre>
+     */
+    QuantifiedType LET_CONST_TYPE = new QuantifiedType(
+        Lists.immutable.of(TYPE_VAR_A, TYPE_VAR_B),
+        Type.function(TYPE_VAR_A, TYPE_VAR_B, TYPE_VAR_A),
+        KIND_STAR);
+
+    /**
+     * Syntax tree metadata for a constant function <code>Mina/Test/Examples.const</code>.
+     */
+    Meta<Attributes> LET_CONST_META = Meta.of(LET_CONST_NAME, LET_CONST_TYPE);
+
+    /**
+     * A typed example node for the application of an increment function to an integer:
+     * <pre><code>
+     * inc(1)
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_INC_NODE = applyNode(
+        Meta.nameless(Type.INT),
+        refNode(LET_INC_META, "inc"),
+        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1)));
+
+    /**
+     * A typed example node for the application of a magic number function to an integer:
+     * <pre><code>
+     * magic(1)
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_MAGIC_INT_NODE = applyNode(
+        Meta.nameless(Type.INT),
+        refNode(LET_MAGIC_META, "magic"),
+        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1)));
+
+    /**
+     * A typed example node for the application of a magic number function to a string:
+     * <pre><code>
+     * magic("abc")
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_MAGIC_STRING_NODE = applyNode(
+        Meta.nameless(Type.STRING),
+        refNode(LET_MAGIC_META, "magic"),
+        Lists.immutable.of(stringNode(Meta.nameless(Type.STRING), "abc")));
+
+    /**
+     * A typed example node for the application of an identity function to an integer:
+     * <pre><code>
+     * id(1)
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_ID_INT_NODE = applyNode(
+        Meta.nameless(Type.INT),
+        refNode(LET_ID_META, "id"),
+        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1)));
+
+    /**
+     * A typed example node for the application of an identity function to a string:
+     * <pre><code>
+     * id("abc")
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_ID_STRING_NODE = applyNode(
+        Meta.nameless(Type.STRING),
+        refNode(LET_ID_META, "id"),
+        Lists.immutable.of(stringNode(Meta.nameless(Type.STRING), "abc")));
+
+    /**
+     * A typed example node for two differently-instantiated applications of a const function:
+     * <pre><code>
+     * const(const(1, 'a'), "b")
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_CONST_POLY_NODE = applyNode(
+        Meta.nameless(Type.INT),
+        refNode(LET_CONST_META, "const"),
+        Lists.immutable.of(
+            applyNode(
+                Meta.nameless(Type.INT),
+                refNode(LET_CONST_META, "const"),
+                Lists.immutable.of(
+                    intNode(Meta.nameless(Type.INT), 1),
+                    charNode(Meta.nameless(Type.CHAR), 'a'))),
+            stringNode(Meta.nameless(Type.STRING), "b")));
+
+    /**
+     * A typed example node for a negation expression:
      * <pre><code>
      * -1
      * </code></pre>
@@ -317,7 +409,7 @@ public interface ExampleNodes {
         intNode(Meta.nameless(Type.INT), 1));
 
     /**
-     * A typed and kinded example node for a negation expression that calls increment on its operand:
+     * A typed example node for a negation expression that calls increment on its operand:
      * <pre><code>
      * -inc(1)
      * </code></pre>
@@ -328,7 +420,7 @@ public interface ExampleNodes {
         applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))));
 
     /**
-     * A typed and kinded example node for a negation expression that calls magic on its operand:
+     * A typed example node for a negation expression that calls magic on its operand:
      * <pre><code>
      * -magic(1)
      * </code></pre>
@@ -339,7 +431,7 @@ public interface ExampleNodes {
         applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))));
 
     /**
-     * A typed and kinded example node for a negation expression that calls identity on its operand:
+     * A typed example node for a negation expression that calls identity on its operand:
      * <pre><code>
      * -id(1)
      * </code></pre>
@@ -350,7 +442,7 @@ public interface ExampleNodes {
         applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))));
 
     /**
-     * A typed and kinded example node for an addition expression:
+     * A typed example node for an addition expression:
      * <pre><code>
      * 1 + 2
      * </code></pre>
@@ -362,7 +454,7 @@ public interface ExampleNodes {
         intNode(Meta.nameless(Type.INT), 2));
 
     /**
-     * A typed and kinded example node for an addition expression that calls increment on its operands:
+     * A typed example node for an addition expression that calls increment on its operands:
      * <pre><code>
      * inc(1) + inc(2)
      * </code></pre>
@@ -374,7 +466,7 @@ public interface ExampleNodes {
         applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
 
     /**
-     * A typed and kinded example node for an addition expression that calls magic on its operands:
+     * A typed example node for an addition expression that calls magic on its operands:
      * <pre><code>
      * magic(1) + magic(2)
      * </code></pre>
@@ -386,7 +478,7 @@ public interface ExampleNodes {
         applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
 
     /**
-     * A typed and kinded example node for an addition expression that calls identity on its operands:
+     * A typed example node for an addition expression that calls identity on its operands:
      * <pre><code>
      * id(1) + id(2)
      * </code></pre>

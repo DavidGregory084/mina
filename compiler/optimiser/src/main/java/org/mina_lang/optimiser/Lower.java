@@ -181,9 +181,7 @@ public class Lower {
                 var loweredArg = lowerToValue(bindings, pair.getOne());
                 var funArgType = pair.getTwo();
                 if (loweredArg.type().isPrimitive() && !funArgType.isPrimitive()) {
-                    return new Box(loweredArg, loweredArg.type());
-                } else if (!loweredArg.type().isPrimitive() && funArgType.isPrimitive()) {
-                    return new Unbox(loweredArg, funArgType);
+                    return new Box(loweredArg);
                 } else {
                     return loweredArg;
                 }
@@ -196,11 +194,7 @@ public class Lower {
         if (applyType.isPrimitive() && !returnType.isPrimitive()) {
             var applyName = nameSupply.newSyntheticName();
             bindings.add(new LetAssign(applyName, applyType, loweredApply));
-            tailExpr = new Unbox(new Reference(applyName, applyType), applyType);
-        } else if (!applyType.isPrimitive() && returnType.isPrimitive()) {
-            var applyName = nameSupply.newSyntheticName();
-            bindings.add(new LetAssign(applyName, applyType, loweredApply));
-            tailExpr = new Box(new Reference(applyName, applyType), returnType);
+            tailExpr = new Unbox(new Reference(applyName, applyType));
         } else {
             tailExpr = loweredApply;
         }
