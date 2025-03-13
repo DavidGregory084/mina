@@ -157,9 +157,6 @@ public class Lower {
 
     Expression lowerApply(ApplyNode<Attributes> apply) {
         var applyType = (Type) apply.meta().meta().sort();
-        var funType = (TypeApply) getUnderlyingType(apply.expr());
-        var returnType = funType.typeArguments().getLast();
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
 
         // Eliminate selections that are applied immediately, replacing them with
         // a function call with the receiver as the first argument
@@ -173,6 +170,11 @@ public class Lower {
             appliedArgs = apply.args();
         }
 
+        var funType = (TypeApply) getUnderlyingType(appliedExpr);
+        var returnType = funType.typeArguments().getLast();
+
+        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+
         var loweredFn = lowerToValue(bindings, appliedExpr);
 
         var args = appliedArgs
@@ -180,6 +182,7 @@ public class Lower {
             .collect(pair -> {
                 var loweredArg = lowerToValue(bindings, pair.getOne());
                 var funArgType = pair.getTwo();
+                // Box primitive arguments to polymorphic functions
                 if (loweredArg.type().isPrimitive() && !funArgType.isPrimitive()) {
                     return new Box(loweredArg);
                 } else {
@@ -191,6 +194,7 @@ public class Lower {
 
         Expression tailExpr;
 
+        // Unbox primitive return values of polymorphic functions
         if (applyType.isPrimitive() && !returnType.isPrimitive()) {
             var applyName = nameSupply.newSyntheticName();
             bindings.add(new LetAssign(applyName, applyType, loweredApply));
@@ -235,21 +239,56 @@ public class Lower {
         // To do this, we create a lambda to represent the partial application of the selection
         // receiver.selection ==> (..restArgs) => selection(receiver, ..restArgs)
         var type = (Type) select.meta().meta().sort();
-        var funType = (TypeApply) getUnderlyingType(type);
+        var adaptedFunType = (TypeApply) getUnderlyingType(type);
+        var adaptedReturnType = adaptedFunType.typeArguments().getLast();
 
         // The params of the lambda are new synthetic names
-        var params = funType.typeArguments()
-            .take(funType.typeArguments().size() - 1)
+        var params = adaptedFunType.typeArguments()
+            .take(adaptedFunType.typeArguments().size() - 1)
             .collect((paramTy) -> new Param(nameSupply.newSyntheticName(), paramTy));
 
         // The body of the lambda is an application of the selection to the lowered receiver and any residual args
         MutableList<LocalBinding> bindings = Lists.mutable.empty();
-        var receiver = lowerToValue(bindings, select.receiver());
-        var residualArgs = params.collect(param -> new Reference(param.name(), param.type()));
-        var args = Lists.immutable.of(receiver).newWithAll(residualArgs);
         var selection = lowerReference(select.selection());
-        var apply = new Apply(funType.typeArguments().getLast(), selection, args);
-        var body = bindings.isEmpty() ? apply : new Block(type, bindings.toImmutableList(), apply);
+
+        var receiver = lowerToValue(bindings, select.receiver());
+
+        // The underlying (potentially polymorphic) function type
+        var selectionType = (Type) select.selection().meta().meta().sort();
+        var underlyingFunType = (TypeApply) getUnderlyingType(selectionType);
+        var underlyingReturnType = underlyingFunType.typeArguments().getLast();
+
+        // Assemble the full argument list of the underlying function
+        var residualArgs = params.collect(param -> new Reference(param.name(), param.type()));
+        var appliedArgs = Lists.immutable.of(receiver).newWithAll(residualArgs);
+
+        var args = appliedArgs
+            .zip(underlyingFunType.typeArguments().take(underlyingFunType.typeArguments().size() - 1))
+            .collect(pair -> {
+                var loweredArg = pair.getOne();
+                var underlyingArgType = pair.getTwo();
+                // Box primitive arguments to polymorphic functions
+                if (loweredArg.type().isPrimitive() && !underlyingArgType.isPrimitive()) {
+                    return new Box(loweredArg);
+                } else {
+                    return loweredArg;
+                }
+            });
+
+        var loweredApply = new Apply(adaptedReturnType, selection, args);
+
+        Expression tailExpr;
+
+        // Unbox primitive return values of polymorphic functions
+        if (adaptedReturnType.isPrimitive() && !underlyingReturnType.isPrimitive()) {
+            var applyName = nameSupply.newSyntheticName();
+            bindings.add(new LetAssign(applyName, adaptedReturnType, loweredApply));
+            tailExpr = new Unbox(new Reference(applyName, adaptedReturnType));
+        } else {
+            tailExpr = loweredApply;
+        }
+
+        var body = bindings.isEmpty() ? tailExpr : new Block(adaptedReturnType, bindings.toImmutableList(), tailExpr);
 
         return new Lambda(type, params, body);
     }
