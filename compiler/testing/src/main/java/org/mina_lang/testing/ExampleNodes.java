@@ -398,6 +398,62 @@ public interface ExampleNodes {
             stringNode(Meta.nameless(Type.STRING), "b")));
 
     /**
+     * The type of the increment function <code>Mina/Test/Examples.inc</code> after being partially applied with an integer.
+     * <pre><code>() -> Int</code></pre>
+     */
+    TypeApply SELECT_INC_INT_TYPE = Type.function(Type.INT);
+
+    /**
+     * A typed example node for the selection of an increment function on an integer:
+     * <pre><code>
+     * 1.inc
+     * </code></pre>
+     */
+    SelectNode<Attributes> SELECT_INC_INT_NODE = selectNode(
+        Meta.nameless(SELECT_INC_INT_TYPE),
+        intNode(Meta.nameless(Type.INT), 1),
+        refNode(LET_INC_META, "inc"));
+
+    /**
+     * A typed example node for the selection and application of an increment function on an integer:
+     * <pre><code>
+     * 1.inc()
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_SELECT_INC_INT_NODE = applyNode(
+        Meta.nameless(Type.INT),
+        SELECT_INC_INT_NODE,
+        Lists.immutable.empty());
+
+    /**
+     * The type of the magic number function <code>Mina/Test/Examples.magic</code> after being partially applied with an integer.
+     * <pre><code>() -> Int</code></pre>
+     */
+    TypeApply SELECT_MAGIC_INT_TYPE = Type.function(Type.INT);
+
+    /**
+     * A typed example node for the selection of an increment function on an integer:
+     * <pre><code>
+     * 1.magic
+     * </code></pre>
+     */
+    SelectNode<Attributes> SELECT_MAGIC_INT_NODE = selectNode(
+        Meta.nameless(SELECT_MAGIC_INT_TYPE),
+        intNode(Meta.nameless(Type.INT), 1),
+        refNode(LET_MAGIC_META, "magic"));
+
+    /**
+     * A typed example node for the selection and application of an increment function on an integer:
+     * <pre><code>
+     * 1.magic()
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_SELECT_MAGIC_INT_NODE = applyNode(
+        Meta.nameless(Type.INT),
+        SELECT_MAGIC_INT_NODE,
+        Lists.immutable.empty());
+
+    /**
      * The type of the constant function <code>Mina/Test/Examples.const</code> after being partially applied with an integer.
      * <pre><code>[B] { B -> Int }</code></pre>
      */
@@ -429,10 +485,7 @@ public interface ExampleNodes {
      */
     ApplyNode<Attributes> APPLY_CHAR_SELECT_CONST_INT_NODE = applyNode(
         Meta.nameless(Type.INT),
-        selectNode(
-            Meta.nameless(SELECT_CONST_INT_TYPE),
-            intNode(Meta.nameless(Type.INT), 1),
-            refNode(LET_CONST_META, "const")),
+        SELECT_CONST_INT_NODE,
         Lists.immutable.of(charNode(Meta.nameless(Type.CHAR), 'b')));
 
     /**

@@ -300,6 +300,70 @@ public class LowerTest {
     }
 
     @Test
+    void lowersSelectIncWithoutApply() {
+        withLowering(lower -> {
+            assertThat(
+                // 1.inc
+            lower.lowerExpr(SELECT_INC_INT_NODE),
+                // () -> inc(1)
+                is(new Lambda(
+                    SELECT_INC_INT_TYPE,
+                    // () ->
+                    Lists.immutable.empty(),
+                    new Apply(
+                        Type.INT,
+                        new Reference(LET_INC_NAME, LET_INC_TYPE),
+                        Lists.immutable.of(new Int(1))))));
+        });
+    }
+
+    @Test
+    void lowersSelectIncWithApply() {
+        withLowering(lower -> {
+            assertThat(
+                // 1.inc()
+                lower.lowerExpr(APPLY_SELECT_INC_INT_NODE),
+                // inc(1)
+                is(new Apply(
+                    Type.INT,
+                    new Reference(LET_INC_NAME, LET_INC_TYPE),
+                    Lists.immutable.of(new Int(1)))));
+        });
+    }
+
+    @Test
+    void lowersSelectMagicWithoutApply() {
+        withLowering(lower -> {
+            assertThat(
+                // 1.magic
+                lower.lowerExpr(SELECT_MAGIC_INT_NODE),
+                // () -> magic(1)
+                is(new Lambda(
+                    SELECT_MAGIC_INT_TYPE,
+                    // () ->
+                    Lists.immutable.empty(),
+                    new Apply(
+                        Type.INT,
+                        new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE),
+                        Lists.immutable.of(new Box(new Int(1)))))));
+        });
+    }
+
+    @Test
+    void lowersSelectMagicWithApply() {
+        withLowering(lower -> {
+            assertThat(
+                // 1.magic()
+                lower.lowerExpr(APPLY_SELECT_MAGIC_INT_NODE),
+                // magic(box(1))
+                is(new Apply(
+                    Type.INT,
+                    new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE),
+                    Lists.immutable.of(new Box(new Int(1))))));
+        });
+    }
+
+    @Test
     void lowersSelectConstWithoutApply() {
         withLowering(lower -> {
             assertThat(
