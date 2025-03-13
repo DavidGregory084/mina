@@ -312,7 +312,7 @@ public interface ExampleNodes {
 
     /**
      * The type of the constant function <code>Mina/Test/Examples.const</code>.
-     * <pre><code>[A] { (A, B) -> A }</code></pre>
+     * <pre><code>[A, B] { (A, B) -> A }</code></pre>
      */
     QuantifiedType LET_CONST_TYPE = new QuantifiedType(
         Lists.immutable.of(TYPE_VAR_A, TYPE_VAR_B),
@@ -396,6 +396,44 @@ public interface ExampleNodes {
                     intNode(Meta.nameless(Type.INT), 1),
                     charNode(Meta.nameless(Type.CHAR), 'a'))),
             stringNode(Meta.nameless(Type.STRING), "b")));
+
+    /**
+     * The type of the constant function <code>Mina/Test/Examples.const</code> after being partially applied with an integer.
+     * <pre><code>[B] { B -> Int }</code></pre>
+     */
+    QuantifiedType SELECT_CONST_INT_TYPE = new QuantifiedType(
+        Lists.immutable.of(TYPE_VAR_B),
+        Type.function(TYPE_VAR_B, Type.INT),
+        KIND_STAR);
+
+    /**
+     * A typed example node for the selection of a const function on an integer:
+     * <pre><code>
+     * 1.const
+     * </code></pre>
+     * This code could not actually typecheck in Mina source code without an enclosing type annotation, e.g.:
+     * <pre><code>
+     * let constOne: [B] { B -> Int } = 1.const
+     * </code></pre>
+     */
+    SelectNode<Attributes> SELECT_CONST_INT_NODE = selectNode(
+        Meta.nameless(SELECT_CONST_INT_TYPE),
+        intNode(Meta.nameless(Type.INT), 1),
+        refNode(LET_CONST_META, "const"));
+
+    /**
+     * A typed example node for the application of a char to the selection of a const function on an integer:
+     * <pre><code>
+     * 1.const('b')
+     * </code></pre>
+     */
+    ApplyNode<Attributes> APPLY_CHAR_SELECT_CONST_INT_NODE = applyNode(
+        Meta.nameless(Type.INT),
+        selectNode(
+            Meta.nameless(SELECT_CONST_INT_TYPE),
+            intNode(Meta.nameless(Type.INT), 1),
+            refNode(LET_CONST_META, "const")),
+        Lists.immutable.of(charNode(Meta.nameless(Type.CHAR), 'b')));
 
     /**
      * A typed example node for a negation expression:

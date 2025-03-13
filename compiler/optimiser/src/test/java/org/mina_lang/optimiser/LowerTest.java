@@ -72,7 +72,9 @@ public class LowerTest {
     void lowersLet() {
         withLowering(lower -> {
             assertThat(
+                // let id: [A] { A -> A } = (a: A) -> a
                 lower.lowerDeclaration(LET_INT_NODE),
+                // let id: [A] { A -> A } = (a: A) -> a
                 is(new Let(LET_INT_NAME, Type.INT, new Int(1))));
         });
     }
@@ -294,6 +296,64 @@ public class LowerTest {
                                     new String("b"))))),
                     // unbox($2)
                     new Unbox(new Reference(new SyntheticName(2), Type.INT)))));
+        });
+    }
+
+    @Test
+    void lowersSelectConstWithoutApply() {
+        withLowering(lower -> {
+            assertThat(
+                // 1.const
+                lower.lowerExpr(SELECT_CONST_INT_NODE),
+                // ($0: B) -> {
+                //   let $1 = const(box(1), $0)
+                //   unbox($1)
+                // }
+                is(new Lambda(
+                    SELECT_CONST_INT_TYPE,
+                    // ($0: B) ->
+                    Lists.immutable.of(new Param(new SyntheticName(0), TYPE_VAR_B)),
+                    new Block(
+                        Type.INT,
+                        Lists.immutable.of(
+                            // let $1 =
+                            new LetAssign(
+                                new SyntheticName(1),
+                                Type.INT,
+                                // const(box(1), $0)
+                                new Apply(
+                                    Type.INT,
+                                    new Reference(LET_CONST_NAME, LET_CONST_TYPE),
+                                    Lists.immutable.of(new Box(new Int(1)), new Reference(new SyntheticName(0), TYPE_VAR_B))))),
+                        // unbox($1)
+                        new Unbox(new Reference(new SyntheticName(1), Type.INT))))));
+        });
+    }
+
+    @Test
+    void lowersSelectConstWithApply() {
+        withLowering(lower -> {
+            assertThat(
+                // 1.const('b')
+                lower.lowerExpr(APPLY_CHAR_SELECT_CONST_INT_NODE),
+                // {
+                //   let $0 = const(box(1), box('b'))
+                //   unbox($0)
+                // }
+                is(new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        // let $0 =
+                        new LetAssign(
+                            new SyntheticName(0),
+                            Type.INT,
+                            // const(box(1), box('b'))
+                            new Apply(
+                                Type.INT,
+                                new Reference(LET_CONST_NAME, LET_CONST_TYPE),
+                                Lists.immutable.of(new Box(new Int(1)), new Box(new Char('b')))))),
+                    // unbox($0)
+                    new Unbox(new Reference(new SyntheticName(0), Type.INT)))));
         });
     }
 
