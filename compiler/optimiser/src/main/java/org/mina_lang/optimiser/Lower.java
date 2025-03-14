@@ -95,16 +95,23 @@ public class Lower {
     Let lowerLet(LetNode<Attributes> let) {
         var name = (LetName) let.meta().meta().name();
         var type = (Type) let.meta().meta().sort();
-        var body = lowerExpr(let.expr());
-        return new Let(name, type, body);
+        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        var body = lowerExpr(let.expr(), bindings);
+        return new Let(
+            name, type,
+            bindings.isEmpty() ? body : new Block(body.type(), bindings.toImmutableList(), body));
     }
 
     Let lowerLetFn(LetFnNode<Attributes> letFn) {
         var name = (LetName) letFn.meta().meta().name();
         var type = (Type) letFn.meta().meta().sort();
         var params = letFn.valueParams().collect(this::lowerParam);
-        var body = lowerExpr(letFn.expr());
-        return new Let(name, type, new Lambda(type, params, body));
+        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        var body = lowerExpr(letFn.expr(), bindings);
+        return new Let(
+            name, type,
+            new Lambda(type, params,
+                bindings.isEmpty() ? body : new Block(body.type(), bindings.toImmutableList(), body)));
     }
 
     Param lowerParam(ParamNode<Attributes> param) {
@@ -114,7 +121,7 @@ public class Lower {
     }
 
     Value lowerToValue(List<LocalBinding> bindings, ExprNode<Attributes> expr) {
-        var loweredExpr = lowerExpr(expr);
+        var loweredExpr = lowerExpr(expr, bindings);
 
         Value value;
         if (loweredExpr instanceof Value loweredValue) {
@@ -129,23 +136,23 @@ public class Lower {
         return value;
     }
 
-    Expression lowerExpr(ExprNode<Attributes> expr) {
+    Expression lowerExpr(ExprNode<Attributes> expr, List<LocalBinding> bindings) {
         if (expr instanceof ApplyNode<Attributes> apply) {
-            return lowerApply(apply);
+            return lowerApply(apply, bindings);
         } else if (expr instanceof SelectNode<Attributes> select) {
             return lowerSelect(select);
         } else if (expr instanceof BlockNode<Attributes> block) {
-            return lowerBlock(block);
+            return lowerBlock(block, bindings);
         } else if (expr instanceof IfNode<Attributes> ifExpr) {
-            return lowerIf(ifExpr);
+            return lowerIf(ifExpr, bindings);
         } else if (expr instanceof LambdaNode<Attributes> lambda) {
             return lowerLambda(lambda);
         } else if (expr instanceof MatchNode<Attributes> match) {
-            return lowerMatch(match);
+            return lowerMatch(match, bindings);
         } else if (expr instanceof UnaryOpNode<Attributes> unOp) {
-            return lowerUnaryOp(unOp);
+            return lowerUnaryOp(unOp, bindings);
         } else if (expr instanceof BinaryOpNode<Attributes> binOp) {
-            return lowerBinaryOp(binOp);
+            return lowerBinaryOp(binOp, bindings);
         } else if (expr instanceof ReferenceNode<Attributes> reference) {
             return lowerReference(reference);
         } else if (expr instanceof LiteralNode<Attributes> literal) {
@@ -155,7 +162,7 @@ public class Lower {
         return null;
     }
 
-    Expression lowerApply(ApplyNode<Attributes> apply) {
+    Expression lowerApply(ApplyNode<Attributes> apply, List<LocalBinding> bindings) {
         var applyType = (Type) apply.meta().meta().sort();
 
         // Eliminate selections that are applied immediately, replacing them with
@@ -172,8 +179,6 @@ public class Lower {
 
         var funType = (TypeApply) getUnderlyingType(appliedExpr);
         var returnType = funType.typeArguments().getLast();
-
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
 
         var loweredFn = lowerToValue(bindings, appliedExpr);
 
@@ -203,35 +208,33 @@ public class Lower {
             tailExpr = loweredApply;
         }
 
-        return bindings.isEmpty() ? tailExpr : new Block(applyType, bindings.toImmutableList(), tailExpr);
+        return tailExpr;
     }
 
-    Expression lowerBlock(BlockNode<Attributes> block) {
-        var type = (Type) block.meta().meta().sort();
-
-        var bindings = block.declarations().collect(let -> {
+    Expression lowerBlock(BlockNode<Attributes> block, List<LocalBinding> bindings) {
+        // Flatten nested blocks into the enclosing scope
+        block.declarations().forEach(let -> {
             var letName = (LocalName) let.meta().meta().name();
             var letType = (Type) let.meta().meta().sort();
-            var letExpr = lowerExpr(let.expr());
-            return (LocalBinding) new LetAssign(letName, letType, letExpr);
+            var letExpr = lowerExpr(let.expr(), bindings);
+            bindings.add(new LetAssign(letName, letType, letExpr));
         });
 
-        var result = block.result().map(this::lowerExpr).orElse(Unit.INSTANCE);
-
-        return new Block(type, bindings, result);
+        return block.result()
+            .map(result -> lowerExpr(result, bindings))
+            .orElse(Unit.INSTANCE);
     }
 
-    Expression lowerIf(IfNode<Attributes> ifExpr) {
+    Expression lowerIf(IfNode<Attributes> ifExpr, List<LocalBinding> bindings) {
         var type = (Type) ifExpr.meta().meta().sort();
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
 
         var condition = lowerToValue(bindings, ifExpr.condition());
-        var consequent = lowerExpr(ifExpr.consequent());
-        var alternative = lowerExpr(ifExpr.alternative());
+        MutableList<LocalBinding> consequentBindings = Lists.mutable.empty();
+        var consequent = lowerExpr(ifExpr.consequent(), consequentBindings);
+        MutableList<LocalBinding> alternativeBindings = Lists.mutable.empty();
+        var alternative = lowerExpr(ifExpr.alternative(), alternativeBindings);
 
-        var loweredIf = new If(type, condition, consequent, alternative);
-
-        return bindings.isEmpty() ? loweredIf : new Block(type, bindings.toImmutableList(), loweredIf);
+        return new If(type, condition, consequent, alternative);
     }
 
     Expression lowerSelect(SelectNode<Attributes> select) {
@@ -296,13 +299,15 @@ public class Lower {
     Expression lowerLambda(LambdaNode<Attributes> lambda) {
         var type = (Type) lambda.meta().meta().sort();
         var params = lambda.params().collect(this::lowerParam);
-        var body = lowerExpr(lambda.body());
-        return new Lambda(type, params, body);
+        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        var body = lowerExpr(lambda.body(), bindings);
+        return new Lambda(
+            type, params,
+            bindings.isEmpty() ? body : new Block(body.type(), bindings.toImmutableList(), body));
     }
 
-    Expression lowerMatch(MatchNode<Attributes> match) {
+    Expression lowerMatch(MatchNode<Attributes> match, List<LocalBinding> bindings) {
         var type = (Type) match.meta().meta().sort();
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
         var scrutinee = lowerToValue(bindings, match.scrutinee());
         var cases = match.cases().collect(this::lowerCase);
         return new Match(type, scrutinee, cases);
@@ -310,8 +315,11 @@ public class Lower {
 
     Case lowerCase(CaseNode<Attributes> cse) {
         var pattern = lowerPattern(cse.pattern());
-        var consequent = lowerExpr(cse.consequent());
-        return new Case(pattern, consequent);
+        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        var consequent = lowerExpr(cse.consequent(), bindings);
+        return new Case(
+            pattern,
+            bindings.isEmpty() ? consequent : new Block(consequent.type(), bindings.toImmutableList(), consequent));
     }
 
     Pattern lowerPattern(PatternNode<Attributes> pattern) {
@@ -330,8 +338,7 @@ public class Lower {
         } else if (pattern instanceof ConstructorPatternNode<Attributes> constr) {
             var name = (ConstructorName) constr.meta().meta().name();
             var type = (Type) constr.meta().meta().sort();
-            var fields = constr.fields()
-                .collect(field -> lowerFieldPattern(name, field));
+            var fields = constr.fields().collect(field -> lowerFieldPattern(name, field));
             return new ConstructorPattern(name, type, fields);
         }
 
@@ -348,21 +355,17 @@ public class Lower {
         return new FieldPattern(new FieldName(constrName, field.field()), type, pattern);
     }
 
-    Expression lowerUnaryOp(UnaryOpNode<Attributes> unOp) {
+    Expression lowerUnaryOp(UnaryOpNode<Attributes> unOp, List<LocalBinding> bindings) {
         var type = (Type) unOp.meta().meta().sort();
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
         var operand = lowerToValue(bindings, unOp.operand());
-        var loweredOp = new UnOp(type, unOp.operator(), operand);
-        return bindings.isEmpty() ? loweredOp : new Block(type, bindings.toImmutableList(), loweredOp);
+        return new UnOp(type, unOp.operator(), operand);
     }
 
-    Expression lowerBinaryOp(BinaryOpNode<Attributes> binOp) {
+    Expression lowerBinaryOp(BinaryOpNode<Attributes> binOp, List<LocalBinding> bindings) {
         var type = (Type) binOp.meta().meta().sort();
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
         var left = lowerToValue(bindings, binOp.leftOperand());
         var right = lowerToValue(bindings, binOp.rightOperand());
-        var loweredOp = new BinOp(type, left, binOp.operator(), right);
-        return bindings.isEmpty() ? loweredOp : new Block(type, bindings.toImmutableList(), loweredOp);
+        return new BinOp(type, left, binOp.operator(), right);
     }
 
     Reference lowerReference(ReferenceNode<Attributes> reference) {
