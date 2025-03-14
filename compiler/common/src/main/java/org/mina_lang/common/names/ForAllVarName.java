@@ -10,4 +10,9 @@ public record ForAllVarName(String name) implements TypeVarName {
     public void accept(NameVisitor visitor) {
         visitor.visitForAllVarName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitForAllVarName(this);
+    }
 }

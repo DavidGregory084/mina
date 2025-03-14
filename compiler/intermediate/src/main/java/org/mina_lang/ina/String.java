@@ -11,4 +11,9 @@ public record String(java.lang.String value) implements Literal {
     public Type type() {
         return Type.STRING;
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitString(value);
+    }
 }

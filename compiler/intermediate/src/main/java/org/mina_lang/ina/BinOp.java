@@ -8,4 +8,12 @@ import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.types.Type;
 
 public record BinOp(Type type, Value left, BinaryOp operator, Value right) implements Expression {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitBinOp(
+            type,
+            left.accept(visitor),
+            operator,
+            right.accept(visitor));
+    }
 }

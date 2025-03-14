@@ -16,4 +16,9 @@ public record Int(int value) implements Primitive {
     public Integer boxedValue() {
         return value;
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitInt(value);
+    }
 }

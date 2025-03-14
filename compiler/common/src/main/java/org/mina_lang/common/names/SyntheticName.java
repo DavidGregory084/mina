@@ -21,4 +21,9 @@ public record SyntheticName(int index) implements LocalBindingName {
     public void accept(NameVisitor visitor) {
         visitor.visitSyntheticName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitSyntheticName(this);
+    }
 }

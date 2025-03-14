@@ -20,4 +20,9 @@ public record LocalName(String name, int index) implements LocalBindingName {
     public void accept(NameVisitor visitor) {
         visitor.visitLocalName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitLocalName(this);
+    }
 }

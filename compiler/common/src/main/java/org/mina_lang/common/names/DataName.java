@@ -10,4 +10,9 @@ public record DataName(QualifiedName name) implements TypeName {
     public void accept(NameVisitor visitor) {
         visitor.visitDataName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitDataName(this);
+    }
 }

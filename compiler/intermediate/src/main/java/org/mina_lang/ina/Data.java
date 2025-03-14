@@ -9,4 +9,10 @@ import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.types.TypeVar;
 
 public record Data(DataName name, ImmutableList<TypeVar> typeParams, ImmutableList<Constructor> constructors) implements Declaration {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitData(
+            name, typeParams,
+            constructors.collect(constr -> constr.accept(visitor)));
+    }
 }

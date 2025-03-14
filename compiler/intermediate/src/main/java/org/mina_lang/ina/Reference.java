@@ -8,4 +8,8 @@ import org.mina_lang.common.names.ValueName;
 import org.mina_lang.common.types.Type;
 
 public record Reference(ValueName name, Type type) implements Value {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitReference(name, type);
+    }
 }

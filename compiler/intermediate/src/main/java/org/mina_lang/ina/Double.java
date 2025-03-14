@@ -16,4 +16,9 @@ public record Double(double value) implements Primitive {
     public java.lang.Double boxedValue() {
         return value;
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitDouble(value);
+    }
 }

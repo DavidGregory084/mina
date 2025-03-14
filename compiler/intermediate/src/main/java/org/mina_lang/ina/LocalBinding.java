@@ -4,5 +4,5 @@
  */
 package org.mina_lang.ina;
 
-public sealed interface LocalBinding permits Join, LetAssign {
+public sealed interface LocalBinding extends InaNode permits Join, LetAssign {
 }

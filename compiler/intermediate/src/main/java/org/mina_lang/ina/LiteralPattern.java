@@ -11,4 +11,9 @@ public record LiteralPattern(Literal literal) implements Pattern {
     public Type type() {
         return literal.type();
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitLiteralPattern(literal.accept(visitor));
+    }
 }

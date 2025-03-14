@@ -4,5 +4,6 @@
  */
 package org.mina_lang.ina;
 
-public sealed interface InaNode permits Case, Constructor, Declaration, Expression, Field, FieldPattern, Namespace, Param, Pattern {
+public sealed interface InaNode permits Case, Constructor, Declaration, Expression, Field, FieldPattern, LocalBinding, Namespace, Param, Pattern {
+    <A> A accept(InaNodeFolder<A> visitor);
 }

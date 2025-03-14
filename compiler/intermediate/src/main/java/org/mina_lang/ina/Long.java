@@ -16,4 +16,9 @@ public record Long(long value) implements Primitive {
     public java.lang.Long boxedValue() {
         return value;
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitLong(value);
+    }
 }
