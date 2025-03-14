@@ -11,7 +11,6 @@ import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticReporter;
-import org.mina_lang.syntax.NamespaceNode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
@@ -25,12 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public non-sealed abstract class GraphPhase<A, B>
         implements
-        Phase<ConcurrentHashMap<NamespaceName, NamespaceNode<B>>> {
+        Phase<ConcurrentHashMap<NamespaceName, B>> {
 
     protected Graph<NamespaceName, DefaultEdge> namespaceGraph;
 
-    protected ConcurrentHashMap<NamespaceName, NamespaceNode<A>> inputNodes;
-    protected ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedNodes;
+    protected ConcurrentHashMap<NamespaceName, A> inputNodes;
+    protected ConcurrentHashMap<NamespaceName, B> transformedNodes;
 
     protected ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics;
 
@@ -39,7 +38,7 @@ public non-sealed abstract class GraphPhase<A, B>
 
     GraphPhase(
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
-            ConcurrentHashMap<NamespaceName, NamespaceNode<A>> namespaceNodes,
+            ConcurrentHashMap<NamespaceName, A> namespaceNodes,
             ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         this.namespaceGraph = namespaceGraph;
         this.inputNodes = namespaceNodes;
@@ -57,14 +56,14 @@ public non-sealed abstract class GraphPhase<A, B>
         });
     }
 
-    abstract Mono<NamespaceNode<B>> transformNode(NamespaceNode<A> inputNode);
+    abstract Mono<B> transformNode(A inputNode);
 
-    ParallelFlux<NamespaceNode<B>> topoTraverseFrom(NamespaceName startNode) {
+    ParallelFlux<B> topoTraverseFrom(NamespaceName startNode) {
         return Optional.ofNullable(inputNodes.get(startNode))
                 .map(inputNode -> {
                     var nsDiagnostics = scopedDiagnostics.get(startNode);
                     if (nsDiagnostics.hasErrors()) {
-                        return Mono.<NamespaceNode<B>>empty();
+                        return Mono.<B>empty();
                     } else {
                         return transformNode(inputNode);
                     }
@@ -84,7 +83,7 @@ public non-sealed abstract class GraphPhase<A, B>
                                             .get(successorNode)
                                             .decrementAndGet();
                                     if (remaining > 0) {
-                                        return Flux.<NamespaceNode<B>>empty().parallel();
+                                        return Flux.<B>empty().parallel();
                                     } else {
                                         return topoTraverseFrom(successorNode);
                                     }
@@ -95,7 +94,7 @@ public non-sealed abstract class GraphPhase<A, B>
                 .runOn(Schedulers.parallel());
     }
 
-    public Mono<ConcurrentHashMap<NamespaceName, NamespaceNode<B>>> runPhase() {
+    public Mono<ConcurrentHashMap<NamespaceName, B>> runPhase() {
         return Flux.fromIterable(rootNodes)
                 .parallel()
                 .runOn(Schedulers.parallel())
@@ -104,7 +103,7 @@ public non-sealed abstract class GraphPhase<A, B>
                 .thenReturn(transformedData());
     }
 
-    public ConcurrentHashMap<NamespaceName, NamespaceNode<B>> transformedData() {
+    public ConcurrentHashMap<NamespaceName, B> transformedData() {
         return transformedNodes;
     }
 }

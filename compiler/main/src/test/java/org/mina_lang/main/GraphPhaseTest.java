@@ -64,7 +64,7 @@ public class GraphPhaseTest {
                             Lists.immutable.empty()));
         });
 
-        var phase = new GraphPhase<Void, Void>(graph, namespaceNodes, scopedDiagnostics) {
+        var phase = new GraphPhase<NamespaceNode<Void>, NamespaceNode<Void>>(graph, namespaceNodes, scopedDiagnostics) {
             @Override
             Mono<NamespaceNode<Void>> transformNode(NamespaceNode<Void> inputNode) {
                 visited.add(inputNode.getName());

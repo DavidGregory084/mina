@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RenamingPhase extends GraphPhase<Void, Name> implements ImportScopePopulation<Name, ImportedNamesScope> {
+public class RenamingPhase extends GraphPhase<NamespaceNode<Void>, NamespaceNode<Name>> implements ImportScopePopulation<Name, ImportedNamesScope> {
     private static final Logger logger = LoggerFactory.getLogger(RenamingPhase.class);
 
     private final Map<NamespaceName, Scope<Attributes>> classpathScopes;
