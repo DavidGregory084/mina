@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TypecheckingPhase extends GraphPhase<Name, Attributes> implements ImportScopePopulation<Attributes, ImportedTypesScope> {
+public class TypecheckingPhase extends GraphPhase<NamespaceNode<Name>, NamespaceNode<Attributes>> implements ImportScopePopulation<Attributes, ImportedTypesScope> {
     private static final Logger logger = LoggerFactory.getLogger(TypecheckingPhase.class);
 
     private final Map<NamespaceName, Scope<Attributes>> classpathScopes;
