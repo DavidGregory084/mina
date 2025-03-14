@@ -11,4 +11,9 @@ public enum Nameless implements Name {
     public void accept(NameVisitor visitor) {
         visitor.visitNameless(INSTANCE);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitNameless(this);
+    }
 }

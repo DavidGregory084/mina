@@ -8,4 +8,8 @@ import org.mina_lang.common.names.FieldName;
 import org.mina_lang.common.types.Type;
 
 public record Field(FieldName name, Type type) implements InaNode {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitField(name, type);
+    }
 }

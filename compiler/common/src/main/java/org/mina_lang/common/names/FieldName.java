@@ -21,4 +21,9 @@ public record FieldName(ConstructorName constructor, String name) implements Nam
         visitor.visitConstructorName(constructor);
         visitor.visitFieldName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitFieldName(this);
+    }
 }

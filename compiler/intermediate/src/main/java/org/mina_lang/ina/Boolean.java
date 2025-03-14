@@ -16,4 +16,9 @@ public record Boolean(boolean value) implements Primitive {
     public java.lang.Boolean boxedValue() {
         return value;
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitBoolean(value);
+    }
 }

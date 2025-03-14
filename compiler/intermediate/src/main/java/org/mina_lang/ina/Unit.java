@@ -13,4 +13,9 @@ public enum Unit implements Literal {
     public Type type() {
         return Type.UNIT;
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitUnit();
+    }
 }

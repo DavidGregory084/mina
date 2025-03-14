@@ -7,4 +7,7 @@ plugins {
 dependencies {
     // Common Definitions
     api(project(":compiler:mina-compiler-common"))
+
+    // String Escaping
+    implementation(libs.apacheCommonsText)
 }

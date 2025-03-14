@@ -11,4 +11,9 @@ public record Box(Value value) implements Value {
     public Type type() {
         return value.type();
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitBox(value.accept(visitor));
+    }
 }

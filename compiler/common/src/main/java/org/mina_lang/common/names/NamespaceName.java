@@ -24,4 +24,9 @@ public record NamespaceName(ImmutableList<String> pkg, String name) implements N
     public void accept(NameVisitor visitor) {
         visitor.visitNamespaceName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitNamespaceName(this);
+    }
 }

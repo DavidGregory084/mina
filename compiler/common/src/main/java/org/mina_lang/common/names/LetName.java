@@ -20,4 +20,9 @@ public record LetName(QualifiedName name) implements DeclarationName, ValueName 
     public void accept(NameVisitor visitor) {
         visitor.visitLetName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitLetName(this);
+    }
 }

@@ -7,5 +7,11 @@ package org.mina_lang.ina;
 import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.Type;
 
-public record UnOp(Type type, UnaryOp operator, Value expr) implements Expression {
+public record UnOp(Type type, UnaryOp operator, Value operand) implements Expression {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitUnOp(
+            type, operator,
+            operand.accept(visitor));
+    }
 }

@@ -8,4 +8,10 @@ import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.types.Type;
 
 public record Let(LetName name, Type type, Expression body) implements Declaration {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitLet(
+            name, type,
+            body.accept(visitor));
+    }
 }

@@ -11,4 +11,9 @@ public record Unbox(Value value) implements Value {
     public Type type() {
         return value.type();
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitUnbox(value.accept(visitor));
+    }
 }
