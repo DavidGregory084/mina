@@ -70,9 +70,11 @@ val npmBuild by
     tasks.registering(NpmTask::class) {
         dependsOn(":compiler:mina-compiler-common:publish")
         dependsOn(":compiler:mina-compiler-syntax:publish")
+        dependsOn(":compiler:mina-compiler-intermediate:publish")
         dependsOn(":compiler:mina-compiler-parser:publish")
         dependsOn(":compiler:mina-compiler-renamer:publish")
         dependsOn(":compiler:mina-compiler-typechecker:publish")
+        dependsOn(":compiler:mina-compiler-optimiser:publish")
         dependsOn(":compiler:mina-compiler-proto:publish")
         dependsOn(":compiler:mina-compiler-jvm:publish")
         dependsOn(":compiler:mina-compiler-main:publish")
