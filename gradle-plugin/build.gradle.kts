@@ -48,6 +48,7 @@ testing {
                         testTask.configure {
                             dependsOn(":compiler:mina-compiler-common:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-syntax:publishToMavenLocal")
+                            dependsOn(":compiler:mina-compiler-intermediate:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-parser:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-renamer:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-typechecker:publishToMavenLocal")
