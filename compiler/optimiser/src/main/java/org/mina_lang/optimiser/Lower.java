@@ -18,10 +18,13 @@ import org.mina_lang.ina.Long;
 import org.mina_lang.ina.String;
 import org.mina_lang.syntax.*;
 
+import java.io.IOException;
 import java.util.List;
 
 public class Lower {
     private final SyntheticNameSupply nameSupply;
+    private final MetaNodePrinter<Attributes> nodePrinter = new MetaNodePrinter<>();
+    private final InaNodePrinter printer = new InaNodePrinter();
 
     public Lower(SyntheticNameSupply nameSupply) {
         this.nameSupply = nameSupply;
@@ -229,12 +232,21 @@ public class Lower {
         var type = (Type) ifExpr.meta().meta().sort();
 
         var condition = lowerToValue(bindings, ifExpr.condition());
+
         MutableList<LocalBinding> consequentBindings = Lists.mutable.empty();
         var consequent = lowerExpr(ifExpr.consequent(), consequentBindings);
+
         MutableList<LocalBinding> alternativeBindings = Lists.mutable.empty();
         var alternative = lowerExpr(ifExpr.alternative(), alternativeBindings);
 
-        return new If(type, condition, consequent, alternative);
+        return new If(
+            type, condition,
+            consequentBindings.isEmpty()
+                ? consequent
+                : new Block(consequent.type(), consequentBindings.toImmutableList(), consequent),
+            alternativeBindings.isEmpty()
+                ? alternative
+                : new Block(alternative.type(), alternativeBindings.toImmutableList(), alternative));
     }
 
     Expression lowerSelect(SelectNode<Attributes> select) {
@@ -319,7 +331,9 @@ public class Lower {
         var consequent = lowerExpr(cse.consequent(), bindings);
         return new Case(
             pattern,
-            bindings.isEmpty() ? consequent : new Block(consequent.type(), bindings.toImmutableList(), consequent));
+            bindings.isEmpty()
+                ? consequent
+                : new Block(consequent.type(), bindings.toImmutableList(), consequent));
     }
 
     Pattern lowerPattern(PatternNode<Attributes> pattern) {
