@@ -292,228 +292,228 @@ public class Typechecker {
     }
 
     void instantiateAsSubType(UnsolvedType unsolved, Type superType) {
-        withScope(new InstantiateTypeScope(), () -> {
-            if (superType instanceof UnsolvedType otherUnsolved) {
-                // Complete and Easy's InstLReach rule
-                environment.solveType(otherUnsolved, unsolved);
-            } else if (superType instanceof ForAllVar forall) {
-                // Complete and Easy's InstLSolve rule
-                environment.solveType(unsolved, forall);
-            } else if (superType instanceof ExistsVar exists) {
-                environment.solveType(unsolved, exists);
-            } else if (superType instanceof BuiltInType builtInSup) {
-                environment.solveType(unsolved, builtInSup);
-            } else if (superType instanceof TypeConstructor tyConSup) {
-                environment.solveType(unsolved, tyConSup);
-            } else if (Type.isFunction(superType) &&
-                    superType instanceof TypeApply funTypeSup) {
-                // Complete and Easy's InstLArr rule
-                var funTypeArgs = funTypeSup
-                        .typeArguments()
-                        .take(funTypeSup.typeArguments().size() - 1)
-                        .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+        if (superType instanceof UnsolvedType otherUnsolved) {
+            // Complete and Easy's InstLReach rule
+            environment.solveType(otherUnsolved, unsolved);
+        } else if (superType instanceof ForAllVar forall) {
+            // Complete and Easy's InstLSolve rule
+            environment.solveType(unsolved, forall);
+        } else if (superType instanceof ExistsVar exists) {
+            environment.solveType(unsolved, exists);
+        } else if (superType instanceof BuiltInType builtInSup) {
+            environment.solveType(unsolved, builtInSup);
+        } else if (superType instanceof TypeConstructor tyConSup) {
+            environment.solveType(unsolved, tyConSup);
+        } else if (Type.isFunction(superType) &&
+                superType instanceof TypeApply funTypeSup) {
+            // Complete and Easy's InstLArr rule
+            var funTypeArgs = funTypeSup
+                    .typeArguments()
+                    .take(funTypeSup.typeArguments().size() - 1)
+                    .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
 
-                var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
+            var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
 
-                var funType = Type.function(
-                        funTypeArgs.collect(tyArg -> (Type) tyArg),
-                        funTypeReturn);
+            var funType = Type.function(
+                    funTypeArgs.collect(tyArg -> (Type) tyArg),
+                    funTypeReturn);
 
-                environment.solveType(unsolved, funType);
+            environment.solveType(unsolved, funType);
 
-                funTypeArgs
-                        .zip(funTypeSup.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSuperType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
+            funTypeArgs
+                    .zip(funTypeSup.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSuperType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
 
-                instantiateAsSubType(
-                        funTypeReturn,
-                        funTypeSup.typeArguments().getLast()
-                                .accept(sortTransformer.getTypeTransformer()));
+            instantiateAsSubType(
+                    funTypeReturn,
+                    funTypeSup.typeArguments().getLast()
+                            .accept(sortTransformer.getTypeTransformer()));
 
-            } else if (superType instanceof TypeApply tyAppSup) {
-                // Complete and Easy's InstLArr rule extended to other type constructors
-                var tyAppArgs = tyAppSup
-                        .typeArguments()
-                        .collect(arg -> newUnsolvedType());
+        } else if (superType instanceof TypeApply tyAppSup) {
+            // Complete and Easy's InstLArr rule extended to other type constructors
+            var tyAppArgs = tyAppSup
+                    .typeArguments()
+                    .collect(arg -> newUnsolvedType());
 
-                var tyAppSub = new TypeApply(
-                        tyAppSup.type(),
-                        tyAppArgs.collect(arg -> (Type) arg),
-                        tyAppSup.kind());
+            var tyAppSub = new TypeApply(
+                    tyAppSup.type(),
+                    tyAppArgs.collect(arg -> (Type) arg),
+                    tyAppSup.kind());
 
-                environment.solveType(unsolved, tyAppSub);
+            environment.solveType(unsolved, tyAppSub);
 
-                tyAppArgs
-                        .zip(tyAppSup.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSubType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
-            } else if (superType instanceof QuantifiedType quant) {
-                // Complete and Easy's InstLAllR rule
+            tyAppArgs
+                    .zip(tyAppSup.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSubType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
+        } else if (superType instanceof QuantifiedType quant) {
+            // Complete and Easy's InstLAllR rule
+            withScope(new InstantiateTypeScope(), () -> {
                 instantiateAsSubType(unsolved, quant.body().accept(superTypeInstantiation(quant)));
-            }
-        });
+            });
+        }
     }
 
     void instantiateAsSuperType(UnsolvedType unsolved, Type subType) {
-        withScope(new InstantiateTypeScope(), () -> {
-            if (subType instanceof UnsolvedType otherUnsolved) {
-                // Complete and Easy's InstRReach rule
-                environment.solveType(otherUnsolved, unsolved);
-            } else if (subType instanceof ForAllVar forall) {
-                // Complete and Easy's InstRSolve rule
-                environment.solveType(unsolved, forall);
-            } else if (subType instanceof ExistsVar exists) {
-                environment.solveType(unsolved, exists);
-            } else if (subType instanceof BuiltInType builtIn) {
-                environment.solveType(unsolved, builtIn);
-            } else if (subType instanceof TypeConstructor tyCon) {
-                environment.solveType(unsolved, tyCon);
-            } else if (Type.isFunction(subType) &&
-                    subType instanceof TypeApply funTypeSub) {
-                // Complete and Easy's InstLArr rule
-                var funTypeArgs = funTypeSub
-                        .typeArguments()
-                        .take(funTypeSub.typeArguments().size() - 1)
-                        .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+        if (subType instanceof UnsolvedType otherUnsolved) {
+            // Complete and Easy's InstRReach rule
+            environment.solveType(otherUnsolved, unsolved);
+        } else if (subType instanceof ForAllVar forall) {
+            // Complete and Easy's InstRSolve rule
+            environment.solveType(unsolved, forall);
+        } else if (subType instanceof ExistsVar exists) {
+            environment.solveType(unsolved, exists);
+        } else if (subType instanceof BuiltInType builtIn) {
+            environment.solveType(unsolved, builtIn);
+        } else if (subType instanceof TypeConstructor tyCon) {
+            environment.solveType(unsolved, tyCon);
+        } else if (Type.isFunction(subType) &&
+                subType instanceof TypeApply funTypeSub) {
+            // Complete and Easy's InstLArr rule
+            var funTypeArgs = funTypeSub
+                    .typeArguments()
+                    .take(funTypeSub.typeArguments().size() - 1)
+                    .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
 
-                var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
+            var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
 
-                var funType = Type.function(
-                        funTypeArgs.collect(tyArg -> (Type) tyArg),
-                        funTypeReturn);
+            var funType = Type.function(
+                    funTypeArgs.collect(tyArg -> (Type) tyArg),
+                    funTypeReturn);
 
-                environment.solveType(unsolved, funType);
+            environment.solveType(unsolved, funType);
 
-                funTypeArgs
-                        .zip(funTypeSub.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSubType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
+            funTypeArgs
+                    .zip(funTypeSub.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSubType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
 
-                instantiateAsSuperType(
-                        funTypeReturn,
-                        funTypeSub.typeArguments().getLast()
-                                .accept(sortTransformer.getTypeTransformer()));
+            instantiateAsSuperType(
+                    funTypeReturn,
+                    funTypeSub.typeArguments().getLast()
+                            .accept(sortTransformer.getTypeTransformer()));
 
-            } else if (subType instanceof TypeApply tyAppSub) {
-                // Complete and Easy's InstRArr rule extended to other type constructors
-                var tyAppArgs = tyAppSub
-                        .typeArguments()
-                        .collect(arg -> newUnsolvedType());
+        } else if (subType instanceof TypeApply tyAppSub) {
+            // Complete and Easy's InstRArr rule extended to other type constructors
+            var tyAppArgs = tyAppSub
+                    .typeArguments()
+                    .collect(arg -> newUnsolvedType());
 
-                var tyAppSup = new TypeApply(
-                        tyAppSub.type(),
-                        tyAppArgs.collect(arg -> (Type) arg),
-                        tyAppSub.kind());
+            var tyAppSup = new TypeApply(
+                    tyAppSub.type(),
+                    tyAppArgs.collect(arg -> (Type) arg),
+                    tyAppSub.kind());
 
-                environment.solveType(unsolved, tyAppSup);
+            environment.solveType(unsolved, tyAppSup);
 
-                tyAppArgs
-                        .zip(tyAppSub.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSuperType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
-            } else if (subType instanceof QuantifiedType quant) {
-                // Complete and Easy's InstRAllL rule
+            tyAppArgs
+                    .zip(tyAppSub.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSuperType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
+        } else if (subType instanceof QuantifiedType quant) {
+            // Complete and Easy's InstRAllL rule
+            withScope(new InstantiateTypeScope(), () -> {
                 instantiateAsSuperType(unsolved, quant.body().accept(subTypeInstantiation(quant)));
-            }
-        });
+            });
+        }
     }
 
     boolean checkSubType(Type subType, Type superType) {
-        return withScope(new CheckSubtypeScope(), () -> {
-            var solvedSubType = subType.accept(sortTransformer.getTypeTransformer());
-            var solvedSuperType = superType.accept(sortTransformer.getTypeTransformer());
+        var solvedSubType = subType.accept(sortTransformer.getTypeTransformer());
+        var solvedSuperType = superType.accept(sortTransformer.getTypeTransformer());
 
-            if (solvedSubType instanceof ForAllVar subTy &&
-                    solvedSuperType instanceof ForAllVar supTy &&
-                    subTy.name().equals(supTy.name())) {
-                // Complete and Easy's <:Var rule
-                return true;
-            } else if (solvedSubType instanceof ExistsVar subTy &&
-                    solvedSuperType instanceof ExistsVar supTy &&
-                    subTy.name().equals(supTy.name())) {
-                return true;
-            } else if (solvedSubType instanceof BuiltInType subTy &&
-                    solvedSuperType instanceof BuiltInType supTy &&
-                    subTy.equals(supTy)) {
-                return true;
-            } else if (solvedSubType instanceof TypeConstructor subTy &&
-                    solvedSuperType instanceof TypeConstructor supTy &&
-                    subTy.name().equals(supTy.name())) {
-                return true;
-            } else if (solvedSubType instanceof UnsolvedType unsolvedSub &&
-                    solvedSuperType instanceof UnsolvedType unsolvedSuper &&
-                    unsolvedSub.id() == unsolvedSuper.id()) {
-                // Complete and Easy's <:Exvar rule
-                return true;
-            } else if (solvedSubType instanceof UnsolvedType unsolvedSub
-                    && !unsolvedSub.isFreeIn(solvedSuperType)
-                    && kindchecker.checkSubKind(unsolvedSub.kind(), solvedSuperType.kind())) {
-                // Complete and Easy's <:InstantiateL rule
-                instantiateAsSubType(unsolvedSub, solvedSuperType);
+        if (solvedSubType instanceof ForAllVar subTy &&
+                solvedSuperType instanceof ForAllVar supTy &&
+                subTy.name().equals(supTy.name())) {
+            // Complete and Easy's <:Var rule
+            return true;
+        } else if (solvedSubType instanceof ExistsVar subTy &&
+                solvedSuperType instanceof ExistsVar supTy &&
+                subTy.name().equals(supTy.name())) {
+            return true;
+        } else if (solvedSubType instanceof BuiltInType subTy &&
+                solvedSuperType instanceof BuiltInType supTy &&
+                subTy.equals(supTy)) {
+            return true;
+        } else if (solvedSubType instanceof TypeConstructor subTy &&
+                solvedSuperType instanceof TypeConstructor supTy &&
+                subTy.name().equals(supTy.name())) {
+            return true;
+        } else if (solvedSubType instanceof UnsolvedType unsolvedSub &&
+                solvedSuperType instanceof UnsolvedType unsolvedSuper &&
+                unsolvedSub.id() == unsolvedSuper.id()) {
+            // Complete and Easy's <:Exvar rule
+            return true;
+        } else if (solvedSubType instanceof UnsolvedType unsolvedSub
+                && !unsolvedSub.isFreeIn(solvedSuperType)
+                && kindchecker.checkSubKind(unsolvedSub.kind(), solvedSuperType.kind())) {
+            // Complete and Easy's <:InstantiateL rule
+            instantiateAsSubType(unsolvedSub, solvedSuperType);
 
-                return true;
+            return true;
 
-            } else if (solvedSuperType instanceof UnsolvedType unsolvedSup
-                    && !unsolvedSup.isFreeIn(solvedSubType)
-                    && kindchecker.checkSubKind(solvedSubType.kind(), unsolvedSup.kind())) {
-                // Complete and Easy's <:InstantiateR rule
-                instantiateAsSuperType(unsolvedSup, solvedSubType);
+        } else if (solvedSuperType instanceof UnsolvedType unsolvedSup
+                && !unsolvedSup.isFreeIn(solvedSubType)
+                && kindchecker.checkSubKind(solvedSubType.kind(), unsolvedSup.kind())) {
+            // Complete and Easy's <:InstantiateR rule
+            instantiateAsSuperType(unsolvedSup, solvedSubType);
 
-                return true;
+            return true;
 
-            } else if (Type.isFunction(solvedSubType) && solvedSubType instanceof TypeApply tyAppSub &&
-                    Type.isFunction(solvedSuperType) && solvedSuperType instanceof TypeApply tyAppSup &&
-                    tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
-                // Complete and Easy's <:-> rule
-                var argsSubTyped = tyAppSub.typeArguments().take(tyAppSub.typeArguments().size() - 1)
-                        .zip(tyAppSup.typeArguments().take(tyAppSup.typeArguments().size() - 1))
-                        .allSatisfy(pair -> {
-                            return checkSubType(pair.getTwo(), pair.getOne());
-                        });
+        } else if (Type.isFunction(solvedSubType) && solvedSubType instanceof TypeApply tyAppSub &&
+                Type.isFunction(solvedSuperType) && solvedSuperType instanceof TypeApply tyAppSup &&
+                tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
+            // Complete and Easy's <:-> rule
+            var argsSubTyped = tyAppSub.typeArguments().take(tyAppSub.typeArguments().size() - 1)
+                    .zip(tyAppSup.typeArguments().take(tyAppSup.typeArguments().size() - 1))
+                    .allSatisfy(pair -> {
+                        return checkSubType(pair.getTwo(), pair.getOne());
+                    });
 
-                var resultSubTyped = checkSubType(
-                        tyAppSub.typeArguments().getLast(),
-                        tyAppSup.typeArguments().getLast());
+            var resultSubTyped = checkSubType(
+                    tyAppSub.typeArguments().getLast(),
+                    tyAppSup.typeArguments().getLast());
 
-                return argsSubTyped && resultSubTyped;
-            } else if (solvedSubType instanceof TypeApply tyAppSub &&
-                    solvedSuperType instanceof TypeApply tyAppSup &&
-                    tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
-                // Complete and Easy's <:-> rule extended to other type constructors
-                var tyConSubTyped = checkSubType(tyAppSub.type(), tyAppSup.type());
+            return argsSubTyped && resultSubTyped;
+        } else if (solvedSubType instanceof TypeApply tyAppSub &&
+                solvedSuperType instanceof TypeApply tyAppSup &&
+                tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
+            // Complete and Easy's <:-> rule extended to other type constructors
+            var tyConSubTyped = checkSubType(tyAppSub.type(), tyAppSup.type());
 
-                var tyArgsSubTyped = tyAppSub.typeArguments()
-                        .zip(tyAppSup.typeArguments())
-                        .allSatisfy(pair -> {
-                            return checkSubType(pair.getOne(), pair.getTwo());
-                        });
+            var tyArgsSubTyped = tyAppSub.typeArguments()
+                    .zip(tyAppSup.typeArguments())
+                    .allSatisfy(pair -> {
+                        return checkSubType(pair.getOne(), pair.getTwo());
+                    });
 
-                return tyConSubTyped && tyArgsSubTyped;
-            } else if (solvedSuperType instanceof QuantifiedType quant) {
-                // Complete and Easy's <:ForallR rule
+            return tyConSubTyped && tyArgsSubTyped;
+        } else if (solvedSuperType instanceof QuantifiedType quant) {
+            // Complete and Easy's <:ForallR rule
+            return withScope(new CheckSubtypeScope(), () -> {
                 return checkSubType(solvedSubType, instantiateAsSuperType(quant));
-
-            } else if (solvedSubType instanceof QuantifiedType quant) {
-                // Complete and Easy's <:ForallL rule
+            });
+        } else if (solvedSubType instanceof QuantifiedType quant) {
+            // Complete and Easy's <:ForallL rule
+            return withScope(new CheckSubtypeScope(), () -> {
                 return checkSubType(instantiateAsSubType(quant), solvedSuperType);
-
-            } else {
-                return false;
-            }
-        });
+            });
+        } else {
+            return false;
+        }
     }
 
     boolean checkSubType(Type subType, Type ...superTypeCandidates) {
@@ -632,14 +632,12 @@ public class Typechecker {
     }
 
     <A> A withPolyInstantiation(Type inferredType, Function<Type, A> fn) {
-        if (inferredType instanceof QuantifiedType quant) {
-            return withScope(new InstantiateTypeScope(), () -> {
-                // Keep instantiating binders until we have something else
-                return withPolyInstantiation(instantiateAsSubType(quant), fn);
-            });
-        } else {
-            return fn.apply(inferredType);
+        var type = inferredType;
+        while (type instanceof QuantifiedType quant) {
+            // Keep instantiating binders until we have something else
+            type = instantiateAsSubType(quant);
         }
+        return fn.apply(type);
     }
 
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {

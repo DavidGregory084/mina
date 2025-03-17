@@ -149,77 +149,72 @@ public class Kindchecker {
     }
 
     void instantiateAsSubKind(UnsolvedKind unsolved, Kind superKind) {
-        withScope(new InstantiateKindScope(), () -> {
-            if (superKind instanceof UnsolvedKind otherUnsolved) {
-                // Complete and Easy's InstLReach rule adapted to kinds
-                environment.solveKind(otherUnsolved, unsolved);
-            } else if (superKind instanceof TypeKind) {
-                // Complete and Easy's InstLSolve rule adapted to kinds
-                environment.solveKind(unsolved, TypeKind.INSTANCE);
-            } else if (superKind instanceof HigherKind higherSup) {
-                // Complete and Easy's InstLArr rule adapted to kinds
-                var newHkArgs = higherSup
-                        .argKinds()
-                        .collect(arg -> newUnsolvedKind());
+        if (superKind instanceof UnsolvedKind otherUnsolved) {
+            // Complete and Easy's InstLReach rule adapted to kinds
+            environment.solveKind(otherUnsolved, unsolved);
+        } else if (superKind instanceof TypeKind) {
+            // Complete and Easy's InstLSolve rule adapted to kinds
+            environment.solveKind(unsolved, TypeKind.INSTANCE);
+        } else if (superKind instanceof HigherKind higherSup) {
+            // Complete and Easy's InstLArr rule adapted to kinds
+            var newHkArgs = higherSup
+                    .argKinds()
+                    .collect(arg -> newUnsolvedKind());
 
-                var newHkResult = newUnsolvedKind();
+            var newHkResult = newUnsolvedKind();
 
-                var newHk = new HigherKind(
-                        newHkArgs.collect(arg -> (Kind) arg),
-                        newHkResult);
+            var newHk = new HigherKind(
+                    newHkArgs.collect(arg -> (Kind) arg),
+                    newHkResult);
 
-                environment.solveKind(unsolved, newHk);
+            environment.solveKind(unsolved, newHk);
 
-                newHkArgs
-                        .zip(higherSup.argKinds())
-                        .forEach(pair -> {
-                            instantiateAsSuperKind(pair.getOne(), pair.getTwo());
-                        });
+            newHkArgs
+                    .zip(higherSup.argKinds())
+                    .forEach(pair -> {
+                        instantiateAsSuperKind(pair.getOne(), pair.getTwo());
+                    });
 
-                instantiateAsSubKind(
-                        newHkResult,
-                        higherSup.resultKind().accept(sortTransformer.getKindTransformer()));
-            }
-        });
+            instantiateAsSubKind(
+                    newHkResult,
+                    higherSup.resultKind().accept(sortTransformer.getKindTransformer()));
+        }
     }
 
     void instantiateAsSuperKind(UnsolvedKind unsolved, Kind subKind) {
-        withScope(new InstantiateKindScope(), () -> {
-            if (subKind instanceof UnsolvedKind otherUnsolved) {
-                // Complete and Easy's InstRReach rule adapted to kinds
-                environment.solveKind(otherUnsolved, unsolved);
-            } else if (subKind instanceof TypeKind) {
-                // Complete and Easy's InstRSolve rule adapted to kinds
-                environment.solveKind(unsolved, TypeKind.INSTANCE);
-            } else if (subKind instanceof HigherKind higherSub) {
-                // Complete and Easy's InstRArr rule adapted to kinds
-                var newHkArgs = higherSub
-                        .argKinds()
-                        .collect(arg -> newUnsolvedKind());
+        if (subKind instanceof UnsolvedKind otherUnsolved) {
+            // Complete and Easy's InstRReach rule adapted to kinds
+            environment.solveKind(otherUnsolved, unsolved);
+        } else if (subKind instanceof TypeKind) {
+            // Complete and Easy's InstRSolve rule adapted to kinds
+            environment.solveKind(unsolved, TypeKind.INSTANCE);
+        } else if (subKind instanceof HigherKind higherSub) {
+            // Complete and Easy's InstRArr rule adapted to kinds
+            var newHkArgs = higherSub
+                    .argKinds()
+                    .collect(arg -> newUnsolvedKind());
 
-                var newHkResult = newUnsolvedKind();
+            var newHkResult = newUnsolvedKind();
 
-                var newHk = new HigherKind(
-                        newHkArgs.collect(arg -> (Kind) arg),
-                        newHkResult);
+            var newHk = new HigherKind(
+                    newHkArgs.collect(arg -> (Kind) arg),
+                    newHkResult);
 
-                environment.solveKind(unsolved, newHk);
+            environment.solveKind(unsolved, newHk);
 
-                newHkArgs
-                        .zip(higherSub.argKinds())
-                        .forEach(pair -> {
-                            instantiateAsSubKind(pair.getOne(), pair.getTwo());
-                        });
+            newHkArgs
+                    .zip(higherSub.argKinds())
+                    .forEach(pair -> {
+                        instantiateAsSubKind(pair.getOne(), pair.getTwo());
+                    });
 
-                instantiateAsSuperKind(
-                        newHkResult,
-                        higherSub.resultKind().accept(sortTransformer.getKindTransformer()));
-            }
-        });
+            instantiateAsSuperKind(
+                    newHkResult,
+                    higherSub.resultKind().accept(sortTransformer.getKindTransformer()));
+        }
     }
 
     boolean checkSubKind(Kind subKind, Kind superKind) {
-        return withScope(new CheckSubkindScope(), () -> {
             var solvedSubKind = subKind.accept(sortTransformer.getKindTransformer());
             var solvedSuperKind = superKind.accept(sortTransformer.getKindTransformer());
 
@@ -261,7 +256,6 @@ public class Kindchecker {
             } else {
                 return false;
             }
-        });
     }
 
     DataNode<Attributes> inferData(DataNode<Name> data) {
