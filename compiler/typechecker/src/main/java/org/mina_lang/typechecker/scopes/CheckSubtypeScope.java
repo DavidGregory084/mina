@@ -19,7 +19,7 @@ public record CheckSubtypeScope(
         MutableMap<String, Meta<Attributes>> types,
         MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
         MutableSet<UnsolvedKind> unsolvedKinds,
-        MutableSet<UnsolvedType> unsolvedTypes) implements TypingScope {
+        MutableSet<UnsolvedType> unsolvedTypes) implements TypeVariableScope {
     public CheckSubtypeScope() {
         this(
                 Maps.mutable.empty(),

@@ -19,6 +19,19 @@ public record TypeEnvironment(
         UnionFind<MonoType> typeSubstitution,
         UnionFind<Kind> kindSubstitution) implements Environment<Attributes, TypingScope> {
 
+    @Override
+    public void popScope(Class<?> expected) {
+        var poppedScope = scopes().pop();
+
+        if (poppedScope instanceof TypeVariableScope) {
+            poppedScope.unsolvedTypes().forEach(typeSubstitution::remove);
+        } else if (poppedScope instanceof KindVariableScope) {
+            poppedScope.unsolvedKinds().forEach(kindSubstitution::remove);
+        }
+
+        assert expected.isAssignableFrom(poppedScope.getClass());
+    }
+
     public Optional<NamespaceTypingScope> enclosingNamespace() {
         return scopes()
                 .detectOptional(scope -> scope instanceof NamespaceTypingScope)
@@ -67,9 +80,6 @@ public record TypeEnvironment(
 
     public void solveType(UnsolvedType unsolved, MonoType solution) {
         typeSubstitution().union(unsolved, solution);
-        scopes().forEach(scope -> {
-            scope.unsolvedTypes().removeIf(existing -> unsolved.equals(existing));
-        });
     }
 
     public void solveType(Named name, MonoType solution) {
@@ -86,9 +96,6 @@ public record TypeEnvironment(
 
     public void solveKind(UnsolvedKind unsolved, Kind solution) {
         kindSubstitution().union(unsolved, solution);
-        scopes().forEach(scope -> {
-            scope.unsolvedKinds().removeIf(existing -> unsolved.equals(existing));
-        });
     }
 
     public void solveKind(Named name, Kind solution) {
