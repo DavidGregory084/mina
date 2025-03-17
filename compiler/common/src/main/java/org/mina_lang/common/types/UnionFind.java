@@ -68,10 +68,54 @@ public class UnionFind<A> {
         }
     }
 
+    public void remove(A element) {
+        var root = root(element);
+
+        // Remove the element from the set
+        parent.remove(element);
+
+        var children = parent.flip();
+
+        // If it is a parent node, we need to figure out what to do with its children
+        if (rank.get(element) > 1)  {
+            var elementChildren = children.get(element);
+
+            if (!elementChildren.isEmpty()) {
+                // It's the root of a set
+                if (root.equals(element)) {
+                    // Find the child with highest rank and make it a new root
+                    var newRoot = elementChildren.maxBy(rank::get);
+                    elementChildren.forEach(child -> {
+                        parent.put(child, newRoot);
+                        if (!child.equals(newRoot)) {
+                            rank.updateValue(newRoot, 1, i -> i + rank.get(child));
+                        }
+                    });
+                } else {
+                    // Assign each child directly to the existing root
+                    elementChildren.forEach(child -> {
+                        parent.put(child, root);
+                        if (!child.equals(root)) {
+                            rank.updateValue(root, 1, i -> i + rank.get(child));
+                        }
+                    });
+                }
+            }
+        }
+
+        // If it is a representative of the set, choose a new rep
+        if (element.equals(representative.get(root))) {
+            representative.put(
+                root,
+                children.get(root).reduce(chooseRep).orElse(root));
+        }
+    }
+
     public A find(A element) {
         var elementParent = parent.getOrDefault(element, element);
         while (!element.equals(elementParent)) {
-            parent.put(element, parent.getOrDefault(elementParent, elementParent));
+            var elementGrandparent = parent.getOrDefault(elementParent, elementParent);
+            parent.put(element, elementGrandparent);
             element = elementParent;
             elementParent = parent.getOrDefault(element, element);
         }
