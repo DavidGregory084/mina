@@ -1389,52 +1389,52 @@ public class Typechecker {
         // TODO: Add an error type to place in Meta when we have a mismatch?
         if (literal instanceof BooleanNode<Name> bool) {
             var actualType = Type.BOOLEAN;
-            var updatedMeta = updateMetaWith(bool.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(bool.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(bool.meta(), expectedType);
             return boolNode(updatedMeta, bool.value());
         } else if (literal instanceof CharNode<Name> chr) {
             var actualType = Type.CHAR;
-            var updatedMeta = updateMetaWith(chr.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(chr.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(chr.meta(), expectedType);
             return charNode(updatedMeta, chr.value());
         } else if (literal instanceof StringNode<Name> str) {
             var actualType = Type.STRING;
-            var updatedMeta = updateMetaWith(str.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(str.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(str.meta(), expectedType);
             return stringNode(updatedMeta, str.value());
         } else if (literal instanceof IntNode<Name> intgr) {
             var actualType = Type.INT;
-            var updatedMeta = updateMetaWith(intgr.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(intgr.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(intgr.meta(), expectedType);
             return intNode(updatedMeta, intgr.value());
         } else if (literal instanceof LongNode<Name> lng) {
             var actualType = Type.LONG;
-            var updatedMeta = updateMetaWith(lng.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(lng.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(lng.meta(), expectedType);
             return longNode(updatedMeta, lng.value());
         } else if (literal instanceof FloatNode<Name> flt) {
             var actualType = Type.FLOAT;
-            var updatedMeta = updateMetaWith(flt.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(flt.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(flt.meta(), expectedType);
             return floatNode(updatedMeta, flt.value());
         } else if (literal instanceof DoubleNode<Name> dbl) {
             var actualType = Type.DOUBLE;
-            var updatedMeta = updateMetaWith(dbl.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(dbl.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(dbl.meta(), expectedType);
             return doubleNode(updatedMeta, dbl.value());
         }
 
