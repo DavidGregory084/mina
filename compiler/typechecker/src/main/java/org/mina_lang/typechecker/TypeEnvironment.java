@@ -120,7 +120,12 @@ public record TypeEnvironment(
                         rightDepth = i;
                     }
                 }
-                return leftDepth > rightDepth ? left : right;
+                // Pick kind variables defined in outer scopes
+                return leftDepth > rightDepth
+                    ? left
+                    // Pick kind variables with lower id
+                    : unsolvedLeft.id() < unsolvedRight.id()
+                    ? left : right ;
             } else {
                 return right;
             }
@@ -143,7 +148,12 @@ public record TypeEnvironment(
                         rightDepth = i;
                     }
                 }
-                return leftDepth > rightDepth ? left : right;
+                // Pick type variables defined in outer scopes
+                return leftDepth > rightDepth
+                    ? left
+                    // Pick type variables with lower id
+                    : unsolvedLeft.id() < unsolvedRight.id()
+                    ? left : right ;
             } else {
                 return right;
             }
