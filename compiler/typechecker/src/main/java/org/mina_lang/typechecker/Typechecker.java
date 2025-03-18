@@ -632,11 +632,13 @@ public class Typechecker {
     }
 
     <A> A withPolyInstantiation(Type inferredType, Function<Type, A> fn) {
-        var type = inferredType;
+        var type = inferredType.accept(sortTransformer.getTypeTransformer());
+
         while (type instanceof QuantifiedType quant) {
             // Keep instantiating binders until we have something else
             type = instantiateAsSubType(quant);
         }
+
         return fn.apply(type);
     }
 
