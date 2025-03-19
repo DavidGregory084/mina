@@ -28,7 +28,7 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
     }
 
     public boolean isFreeIn(Type type) {
-        return type.accept(new TypeFolder<Boolean>() {
+        return type.accept(new TypeFolder<>() {
             @Override
             public Boolean visitQuantifiedType(QuantifiedType quant) {
                 return quant.body().accept(this);
@@ -59,6 +59,11 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
 
             @Override
             public Boolean visitExistsVar(ExistsVar exists) {
+                return false;
+            }
+
+            @Override
+            public Boolean visitSyntheticVar(SyntheticVar syn) {
                 return false;
             }
 

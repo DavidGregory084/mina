@@ -74,6 +74,11 @@ public class SortSubstitutionTransformer implements SortFolder<Sort> {
     }
 
     @Override
+    public Sort visitSyntheticVar(SyntheticVar syn) {
+        return syn.accept(typeTransformer);
+    }
+
+    @Override
     public Sort visitUnsolvedType(UnsolvedType unsolved) {
         return unsolved.accept(typeTransformer);
     }

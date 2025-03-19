@@ -25,6 +25,7 @@ public record TypeEnvironment(
 
         if (poppedScope instanceof TypeVariableScope) {
             poppedScope.unsolvedTypes().forEach(typeSubstitution::remove);
+            poppedScope.syntheticVars().forEach(typeSubstitution::remove);
         } else if (poppedScope instanceof KindVariableScope) {
             poppedScope.unsolvedKinds().forEach(kindSubstitution::remove);
         }
@@ -76,6 +77,11 @@ public record TypeEnvironment(
     public void putUnsolvedType(UnsolvedType unsolved) {
         typeSubstitution().add(unsolved);
         topScope().unsolvedTypes().add(unsolved);
+    }
+
+    public void putSyntheticVar(SyntheticVar synthetic) {
+        typeSubstitution().add(synthetic);
+        topScope().syntheticVars().add(synthetic);
     }
 
     public void solveType(UnsolvedType unsolved, MonoType solution) {

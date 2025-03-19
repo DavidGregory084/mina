@@ -55,6 +55,13 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
     }
 
     @Override
+    public MonoType visitSyntheticVar(SyntheticVar syn) {
+        return new SyntheticVar(
+            syn.id(),
+            syn.kind().accept(kindTransformer));
+    }
+
+    @Override
     public TypeConstructor visitTypeConstructor(TypeConstructor tyCon) {
         return new TypeConstructor(
                 tyCon.name(),

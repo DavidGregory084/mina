@@ -12,6 +12,7 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.BuiltInName;
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.types.SyntheticVar;
 import org.mina_lang.common.types.Type;
 import org.mina_lang.common.types.UnsolvedKind;
 import org.mina_lang.common.types.UnsolvedType;
@@ -20,6 +21,7 @@ public record BuiltInTypingScope(
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,
         MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
+        MutableSet<SyntheticVar> syntheticVars,
         MutableSet<UnsolvedKind> unsolvedKinds,
         MutableSet<UnsolvedType> unsolvedTypes) implements TypingScope {
     public BuiltInTypingScope() {
@@ -27,6 +29,7 @@ public record BuiltInTypingScope(
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),
+                Sets.mutable.empty(),
                 Sets.mutable.empty(),
                 Sets.mutable.empty());
     }
@@ -41,6 +44,7 @@ public record BuiltInTypingScope(
                 Maps.mutable.empty(),
                 builtInTypes,
                 Maps.mutable.empty(),
+                Sets.mutable.empty(),
                 Sets.mutable.empty(),
                 Sets.mutable.empty());
     }

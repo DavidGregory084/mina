@@ -21,4 +21,12 @@ public class UnsolvedVariableSupply {
     public UnsolvedKind newUnsolvedKind() {
         return new UnsolvedKind(unsolvedKind.getAndIncrement());
     }
+
+    public SyntheticVar newSyntheticVar() {
+        return new SyntheticVar(unsolvedType.getAndIncrement(), newUnsolvedKind());
+    }
+
+    public SyntheticVar newSyntheticVar(Kind kind) {
+        return new SyntheticVar(unsolvedType.getAndIncrement(), kind);
+    }
 }

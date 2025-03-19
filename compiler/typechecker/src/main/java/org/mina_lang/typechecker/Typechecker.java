@@ -87,6 +87,12 @@ public class Typechecker {
         return newUnsolved;
     }
 
+    SyntheticVar newSyntheticVar(Kind kind) {
+        var newSynthetic = varSupply.newSyntheticVar(kind);
+        environment.putSyntheticVar(newSynthetic);
+        return newSynthetic;
+    }
+
     public NamespaceNode<Attributes> typecheck(NamespaceNode<Name> namespace) {
         var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
         return inferNamespace(namespace).accept(metaTransformer);
@@ -255,10 +261,8 @@ public class Typechecker {
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
                 instantiated.put(forall, newUnsolvedType(typeVarKind));
             } else if (tyParam instanceof ExistsVar exists) {
-                var typeVarName = new ExistsVarName(exists.name());
                 var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
-                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
-                environment.putType(exists.name(), Meta.of(typeVarAttrs));
+                instantiated.put(exists, newSyntheticVar(typeVarKind));
             }
         });
 
@@ -274,10 +278,8 @@ public class Typechecker {
 
         quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
-                var typeVarName = new ForAllVarName(forall.name());
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
-                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
-                environment.putType(forall.name(), Meta.of(typeVarAttrs));
+                instantiated.put(forall, newSyntheticVar(typeVarKind));
             } else if (tyParam instanceof ExistsVar exists) {
                 var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
                 instantiated.put(exists, newUnsolvedType(typeVarKind));
@@ -300,6 +302,8 @@ public class Typechecker {
             environment.solveType(unsolved, forall);
         } else if (superType instanceof ExistsVar exists) {
             environment.solveType(unsolved, exists);
+        } else if (superType instanceof SyntheticVar synth) {
+            environment.solveType(unsolved, synth);
         } else if (superType instanceof BuiltInType builtInSup) {
             environment.solveType(unsolved, builtInSup);
         } else if (superType instanceof TypeConstructor tyConSup) {
@@ -370,6 +374,8 @@ public class Typechecker {
             environment.solveType(unsolved, forall);
         } else if (subType instanceof ExistsVar exists) {
             environment.solveType(unsolved, exists);
+        } else if (subType instanceof SyntheticVar synth) {
+            environment.solveType(unsolved, synth);
         } else if (subType instanceof BuiltInType builtIn) {
             environment.solveType(unsolved, builtIn);
         } else if (subType instanceof TypeConstructor tyCon) {
@@ -443,6 +449,10 @@ public class Typechecker {
         } else if (solvedSubType instanceof ExistsVar subTy &&
                 solvedSuperType instanceof ExistsVar supTy &&
                 subTy.name().equals(supTy.name())) {
+            return true;
+        } else if (solvedSubType instanceof SyntheticVar subTy &&
+                solvedSuperType instanceof SyntheticVar supTy &&
+                subTy.id() == supTy.id()) {
             return true;
         } else if (solvedSubType instanceof BuiltInType subTy &&
                 solvedSuperType instanceof BuiltInType supTy &&

@@ -85,6 +85,11 @@ public class TypePrinter implements TypeFolder<Doc> {
     }
 
     @Override
+    public Doc visitSyntheticVar(SyntheticVar syn) {
+        return Doc.text(syn.name());
+    }
+
+    @Override
     public Doc visitUnsolvedType(UnsolvedType unsolved) {
         return Doc.text(unsolved.name());
     }

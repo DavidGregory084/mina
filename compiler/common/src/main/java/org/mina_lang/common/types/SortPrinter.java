@@ -62,6 +62,11 @@ public class SortPrinter implements SortFolder<Doc> {
     }
 
     @Override
+    public Doc visitSyntheticVar(SyntheticVar syn) {
+        return typePrint.visitSyntheticVar(syn);
+    }
+
+    @Override
     public Doc visitUnsolvedType(UnsolvedType unsolved) {
         return typePrint.visitUnsolvedType(unsolved);
     }

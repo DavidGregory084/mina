@@ -33,5 +33,7 @@ public interface TypeTransformer {
 
     MonoType visitExistsVar(ExistsVar exists);
 
+    MonoType visitSyntheticVar(SyntheticVar syn);
+
     MonoType visitUnsolvedType(UnsolvedType unsolved);
 }

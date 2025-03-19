@@ -119,7 +119,7 @@ public class UnionFind<A> {
             element = elementParent;
             elementParent = parent.getOrDefault(element, element);
         }
-        return representative.get(element);
+        return representative.getOrDefault(element, element);
     }
 
     private A root(A element) {
