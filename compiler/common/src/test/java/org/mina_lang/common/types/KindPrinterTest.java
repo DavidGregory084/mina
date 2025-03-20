@@ -25,15 +25,15 @@ public class KindPrinterTest {
         // Starts with A1
         var typeVar0 = new UnsolvedKind(0);
         var doc0 = typeVar0.accept(printer);
-        assertThat(doc0.render(80), is(equalTo("A1")));
+        assertThat(doc0.render(80), is(equalTo("?A1")));
         // Proceeds through alphabetic characters
         var typeVar1 = new UnsolvedKind(1);
         var doc1 = typeVar1.accept(printer);
-        assertThat(doc1.render(80), is(equalTo("B1")));
+        assertThat(doc1.render(80), is(equalTo("?B1")));
         // After Z1, increments suffix
         var typeVar26 = new UnsolvedKind(26);
         var doc26 = typeVar26.accept(printer);
-        assertThat(doc26.render(80), is(equalTo("A2")));
+        assertThat(doc26.render(80), is(equalTo("?A2")));
     }
 
     @Test

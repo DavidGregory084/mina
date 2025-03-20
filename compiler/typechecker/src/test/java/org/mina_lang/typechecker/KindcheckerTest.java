@@ -217,7 +217,7 @@ public class KindcheckerTest {
         assertDiagnostic(
                 collector.getDiagnostics(),
                 applyRange,
-                "Mismatched type application! Expected: *, Actual: * => B1");
+                "Mismatched type application! Expected: *, Actual: * => ?B1");
     }
 
     @Test

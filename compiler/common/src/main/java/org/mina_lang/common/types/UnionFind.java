@@ -4,6 +4,7 @@
  */
 package org.mina_lang.common.types;
 
+import org.eclipse.collections.api.block.function.Function2;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.collector.Collectors2;
@@ -68,6 +69,12 @@ public class UnionFind<A> {
         }
     }
 
+    public void updateWith(Function2<? super A, ? super A, ? extends A> func) {
+        representative.forEachKeyValue((k, v) -> {
+            representative.updateValueWith(k, () -> v, func, k);
+        });
+    }
+
     public void remove(A element) {
         var root = root(element);
 
@@ -102,6 +109,8 @@ public class UnionFind<A> {
                 }
             }
         }
+
+        rank.remove(element);
 
         // If it is a representative of the set, choose a new rep
         if (element.equals(representative.get(root))) {

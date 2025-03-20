@@ -601,6 +601,7 @@ public class TypecheckerTest {
     @DisplayName("Annotated polymorphic identity function typechecks successfully")
     void typecheckAnnotatedPolyIdLet() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var instTyVarA = new SyntheticVar(0, TypeKind.INSTANCE);
         var tyVarAName = new ForAllVarName("A");
         var tyVarAMeta = Meta.of(tyVarAName, TypeKind.INSTANCE);
 
@@ -610,6 +611,9 @@ public class TypecheckerTest {
                 Lists.immutable.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 TypeKind.INSTANCE);
+
+        // A1 -> A1
+        var lambdaType = Type.function(instTyVarA, instTyVarA);
 
         var letMeta = Meta.of(letName, letType);
 
@@ -640,9 +644,9 @@ public class TypecheckerTest {
                                 Lists.immutable.of(typeRefNode(tyVarAMeta, "A")),
                                 typeRefNode(tyVarAMeta, "A"))),
                 lambdaNode(
-                        ExampleNodes.namelessMeta(letType.body()),
-                        Lists.immutable.of(ExampleNodes.Param.typedNode("a", tyVarA)),
-                        ExampleNodes.LocalVar.typedNode("a", tyVarA)));
+                        ExampleNodes.namelessMeta(lambdaType),
+                        Lists.immutable.of(ExampleNodes.Param.typedNode("a", instTyVarA)),
+                        ExampleNodes.LocalVar.typedNode("a", instTyVarA)));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -651,10 +655,12 @@ public class TypecheckerTest {
     @DisplayName("Annotated polymorphic const function typechecks successfully")
     void typecheckAnnotatedPolyConstLet() {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var instTyVarA = new SyntheticVar(0, TypeKind.INSTANCE);
         var tyVarAName = new ForAllVarName("A");
         var tyVarAMeta = Meta.of(tyVarAName, TypeKind.INSTANCE);
 
         var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
+        var instTyVarB = new SyntheticVar(1, TypeKind.INSTANCE);
         var tyVarBName = new ForAllVarName("B");
         var tyVarBMeta = Meta.of(tyVarBName, TypeKind.INSTANCE);
 
@@ -664,6 +670,9 @@ public class TypecheckerTest {
                 Lists.immutable.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
                 TypeKind.INSTANCE);
+
+        // A1 -> B1 -> A1
+        var lambdaType = Type.function(instTyVarA, instTyVarB, instTyVarA);
 
         var letMeta = Meta.of(letName, letType);
 
@@ -704,11 +713,11 @@ public class TypecheckerTest {
                                         typeRefNode(tyVarBMeta, "B")),
                                 typeRefNode(tyVarAMeta, "A"))),
                 lambdaNode(
-                        ExampleNodes.namelessMeta(letType.body()),
+                        ExampleNodes.namelessMeta(lambdaType),
                         Lists.immutable.of(
-                                ExampleNodes.Param.typedNode("a", tyVarA),
-                                ExampleNodes.Param.typedNode("b", tyVarB)),
-                        ExampleNodes.LocalVar.typedNode("a", tyVarA)));
+                                ExampleNodes.Param.typedNode("a", instTyVarA),
+                                ExampleNodes.Param.typedNode("b", instTyVarB)),
+                        ExampleNodes.LocalVar.typedNode("a", instTyVarA)));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }

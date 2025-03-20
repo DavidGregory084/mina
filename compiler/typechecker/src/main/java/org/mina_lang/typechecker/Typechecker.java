@@ -28,26 +28,20 @@ import java.util.function.Supplier;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Typechecker {
-    private LocalDiagnosticReporter diagnostics;
-    private TypeEnvironment environment;
-    private UnsolvedVariableSupply varSupply;
-    private Kindchecker kindchecker;
-    private TypeAnnotationFolder typeFolder;
-    private SortSubstitutionTransformer sortTransformer;
-    private SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
+    private final LocalDiagnosticReporter diagnostics;
+    private final TypeEnvironment environment;
+    private final UnsolvedVariableSupply varSupply;
+    private final Kindchecker kindchecker;
+    private final TypeAnnotationFolder typeFolder;
+    private final SortSubstitutionTransformer sortTransformer;
+    private final SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
 
     public Typechecker(LocalDiagnosticReporter diagnostics, TypeEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
-
         this.varSupply = new UnsolvedVariableSupply();
-
         this.typeFolder = new TypeAnnotationFolder(environment);
-
-        this.sortTransformer = new SortSubstitutionTransformer(
-                environment.typeSubstitution(),
-                environment.kindSubstitution());
-
+        this.sortTransformer = environment.sortTransformer();
         this.kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
     }
 
@@ -66,7 +60,6 @@ public class Typechecker {
         environment.pushScope(scope);
         fn.run();
         environment.popScope(scope.getClass());
-        return;
     }
 
     UnsolvedKind newUnsolvedKind() {
@@ -131,28 +124,24 @@ public class Typechecker {
         var name = (Named) meta.meta().name();
         scope.putType(name.localName(), meta);
         scope.putType(name.canonicalName(), meta);
-        return;
     }
 
     void putValueDeclaration(Scope<Attributes> scope, Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         scope.putValue(name.localName(), meta);
         scope.putValue(name.canonicalName(), meta);
-        return;
     }
 
     void putTypeDeclaration(Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         environment.putType(name.localName(), meta);
         environment.putType(name.canonicalName(), meta);
-        return;
     }
 
     void putValueDeclaration(Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         environment.putValue(name.localName(), meta);
         environment.putValue(name.canonicalName(), meta);
-        return;
     }
 
     void mismatchedType(Range range, Type actualType, Type expectedType) {
@@ -259,10 +248,12 @@ public class Typechecker {
         quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
-                instantiated.put(forall, newUnsolvedType(typeVarKind));
+                var newUnsolved = newUnsolvedType(typeVarKind);
+                instantiated.put(forall, newUnsolved);
             } else if (tyParam instanceof ExistsVar exists) {
                 var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
-                instantiated.put(exists, newSyntheticVar(typeVarKind));
+                var newSynthetic = newSyntheticVar(typeVarKind);
+                instantiated.put(exists, newSynthetic);
             }
         });
 
@@ -279,10 +270,12 @@ public class Typechecker {
         quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
-                instantiated.put(forall, newSyntheticVar(typeVarKind));
+                var newSynthetic = newSyntheticVar(typeVarKind);
+                instantiated.put(forall, newSynthetic);
             } else if (tyParam instanceof ExistsVar exists) {
                 var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
-                instantiated.put(exists, newUnsolvedType(typeVarKind));
+                var newUnsolved = newUnsolvedType(typeVarKind);
+                instantiated.put(exists, newUnsolved);
             }
         });
 
@@ -467,6 +460,16 @@ public class Typechecker {
                 unsolvedSub.id() == unsolvedSuper.id()) {
             // Complete and Easy's <:Exvar rule
             return true;
+        } else if (solvedSuperType instanceof QuantifiedType quant) {
+            // Complete and Easy's <:ForallR rule
+            return withScope(new CheckSubtypeScope(), () -> {
+                return checkSubType(solvedSubType, instantiateAsSuperType(quant));
+            });
+        } else if (solvedSubType instanceof QuantifiedType quant) {
+            // Complete and Easy's <:ForallL rule
+            return withScope(new CheckSubtypeScope(), () -> {
+                return checkSubType(instantiateAsSubType(quant), solvedSuperType);
+            });
         } else if (solvedSubType instanceof UnsolvedType unsolvedSub
                 && !unsolvedSub.isFreeIn(solvedSuperType)
                 && kindchecker.checkSubKind(unsolvedSub.kind(), solvedSuperType.kind())) {
@@ -511,16 +514,6 @@ public class Typechecker {
                     });
 
             return tyConSubTyped && tyArgsSubTyped;
-        } else if (solvedSuperType instanceof QuantifiedType quant) {
-            // Complete and Easy's <:ForallR rule
-            return withScope(new CheckSubtypeScope(), () -> {
-                return checkSubType(solvedSubType, instantiateAsSuperType(quant));
-            });
-        } else if (solvedSubType instanceof QuantifiedType quant) {
-            // Complete and Easy's <:ForallL rule
-            return withScope(new CheckSubtypeScope(), () -> {
-                return checkSubType(instantiateAsSubType(quant), solvedSuperType);
-            });
         } else {
             return false;
         }
@@ -618,7 +611,7 @@ public class Typechecker {
             return new QuantifiedType(
                     typeParamTypes,
                     functionType,
-                    new HigherKind(typeParamTypes.collect(param -> param.kind()), TypeKind.INSTANCE));
+                    new HigherKind(typeParamTypes.collect(Type::kind), TypeKind.INSTANCE));
         }
     }
 
@@ -811,7 +804,7 @@ public class Typechecker {
 
     ParamNode<Attributes> inferParam(ParamNode<Name> param) {
         var checkedAnnotation = param.typeAnnotation()
-                .map(tyAnn -> kindchecker.kindcheck(tyAnn));
+            .map(kindchecker::kindcheck);
 
         var paramType = checkedAnnotation
                 .map(kindedAnn -> kindedAnn.accept(typeFolder))
@@ -1126,67 +1119,13 @@ public class Typechecker {
         });
     }
 
-    PatternNode<Attributes> inferPattern(PatternNode<Name> pattern) {
-        var enclosingCase = environment.enclosingCase().get();
-
-        if (pattern instanceof IdPatternNode<Name> idPat) {
-            var unsolvedType = newUnsolvedType(TypeKind.INSTANCE);
-            var updatedMeta = updateMetaWith(idPat.meta(), unsolvedType);
-            enclosingCase.putValue(idPat.name(), updatedMeta);
-
-            return idPatternNode(updatedMeta, idPat.name());
-
-        } else if (pattern instanceof AliasPatternNode<Name> aliasPat) {
-            var inferredPattern = inferPattern(aliasPat.pattern());
-            var inferredType = getType(inferredPattern);
-            var updatedMeta = updateMetaWith(aliasPat.meta(), inferredType);
-            enclosingCase.putValue(aliasPat.alias(), updatedMeta);
-
-            return aliasPatternNode(updatedMeta, aliasPat.alias(), inferredPattern);
-
-        } else if (pattern instanceof LiteralPatternNode<Name> litPat) {
-            var inferredLiteral = inferLiteral(litPat.literal());
-            var inferredType = getType(inferredLiteral);
-            var updatedMeta = updateMetaWith(litPat.meta(), inferredType);
-
-            return literalPatternNode(updatedMeta, inferredLiteral);
-
-        } else if (pattern instanceof ConstructorPatternNode<Name> constrPat) {
-            var constrMeta = environment.lookupValue(constrPat.id().canonicalName()).get();
-            var constrName = (ConstructorName) constrMeta.meta().name();
-            var constrType = (Type) constrMeta.meta().sort();
-
-            // We need to keep this instantiation to use with our field patterns
-            var instantiator = (constrType instanceof QuantifiedType quant)
-                    ? Optional.of(subTypeInstantiation(quant))
-                    : Optional.<TypeInstantiationTransformer>empty();
-
-            if (constrType instanceof QuantifiedType quant) {
-                constrType = quant.body().accept(instantiator.get());
-            }
-
-            if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
-                constrType = tyApp.typeArguments().getLast();
-            }
-
-            var inferredFields = constrPat.fields()
-                    .collect(field -> inferFieldPattern(constrName, field, instantiator));
-
-            var updatedMeta = updateMetaWith(constrPat.meta(), constrType);
-
-            return constructorPatternNode(updatedMeta, constrPat.id(), inferredFields);
-        }
-
-        return null;
-    }
-
     FieldPatternNode<Attributes> inferFieldPattern(ConstructorName constrName, FieldPatternNode<Name> fieldPat,
             Optional<TypeInstantiationTransformer> instantiator) {
         var enclosingCase = environment.enclosingCase().get();
 
         var fieldMeta = environment.lookupField(constrName, fieldPat.field()).get();
         var fieldType = (Type) fieldMeta.meta().sort();
-        var instantiatedFieldType = instantiator.map(inst -> fieldType.accept(inst)).orElse(fieldType);
+        var instantiatedFieldType = instantiator.map(fieldType::accept).orElse(fieldType);
 
         var inferredPattern = fieldPat.pattern().map(pattern -> checkPattern(pattern, instantiatedFieldType));
 
@@ -1286,12 +1225,11 @@ public class Typechecker {
             var scrutineeType = getType(scrutinee);
 
             var cases = match.cases()
-                    .collect(cse -> checkCase(cse, scrutineeType, expectedType));
+                .collect(cse -> checkCase(cse, scrutineeType, expectedType));
 
             var updatedMeta = updateMetaWith(match.meta(), expectedType);
 
             return matchNode(updatedMeta, scrutinee, cases);
-
         } else if (expr instanceof LiteralNode<Name> literal) {
             return checkLiteral(literal, expectedType);
         } else {

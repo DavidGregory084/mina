@@ -9,7 +9,7 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
         var div = (id / 26) + 1;
         var rem = id % 26;
         var prefixChar = (char) ('A' + rem);
-        return String.valueOf(prefixChar) + String.valueOf(div);
+        return "?" + prefixChar + div;
     }
 
     @Override
