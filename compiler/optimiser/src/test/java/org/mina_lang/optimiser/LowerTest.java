@@ -30,7 +30,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 import static org.mina_lang.testing.ExampleNodes.*;
@@ -792,6 +793,23 @@ public class LowerTest {
     }
 
     @Test
+    void lowersPlainAndNestedBlockWithTailTheSame() {
+        withLowering(plainLower -> {
+            // Make sure that we use different synthetic var counters
+            withLowering(nestedLower -> {
+                List<LocalBinding> plainBindings = Lists.mutable.empty();
+                List<LocalBinding> nestedBindings = Lists.mutable.empty();
+
+                var plainTail = plainLower.lowerExpr(MIXED_BLOCK_NODE, plainBindings);
+                var nestedTail = nestedLower.lowerExpr(MIXED_NESTED_BLOCK_NODE, nestedBindings);
+
+                assertThat(plainBindings, is(nestedBindings));
+                assertThat(plainTail, is(nestedTail));
+            });
+        });
+    }
+
+    @Test
     void lowersBlockNodeWithMixedBindingsAndNoTail() {
         withLowering(lower -> {
             List<LocalBinding> bindings = Lists.mutable.empty();
@@ -840,4 +858,22 @@ public class LowerTest {
             assertThat(tail, is(expectedTail));
         });
     }
+
+    @Test
+    void lowersPlainAndNestedBlockWithNoTailTheSame() {
+        withLowering(plainLower -> {
+            // Make sure that we use different synthetic var counters
+            withLowering(nestedLower -> {
+                List<LocalBinding> plainBindings = Lists.mutable.empty();
+                List<LocalBinding> nestedBindings = Lists.mutable.empty();
+
+                var plainTail = plainLower.lowerExpr(MIXED_BLOCK_NO_TAIL_NODE, plainBindings);
+                var nestedTail = nestedLower.lowerExpr(MIXED_NESTED_BLOCK_NO_TAIL_NODE, nestedBindings);
+
+                assertThat(plainBindings, is(nestedBindings));
+                assertThat(plainTail, is(nestedTail));
+            });
+        });
+    }
+
 }
