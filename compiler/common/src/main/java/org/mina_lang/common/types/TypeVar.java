@@ -4,7 +4,7 @@
  */
 package org.mina_lang.common.types;
 
-public sealed interface TypeVar extends MonoType permits ExistsVar, ForAllVar {
+public sealed interface TypeVar extends MonoType permits ExistsVar, ForAllVar, SyntheticVar {
 
     String name();
 

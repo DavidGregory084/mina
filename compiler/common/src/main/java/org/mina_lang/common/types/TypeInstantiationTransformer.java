@@ -29,15 +29,20 @@ public class TypeInstantiationTransformer implements TypeTransformer {
     @Override
     public MonoType visitForAllVar(ForAllVar forall) {
         return Optional
-                .<MonoType>ofNullable(instantiatedVariables.get(forall))
+                .ofNullable(instantiatedVariables.get(forall))
                 .orElse(forall);
     }
 
     @Override
     public MonoType visitExistsVar(ExistsVar exists) {
         return Optional
-                .<MonoType>ofNullable(instantiatedVariables.get(exists))
+                .ofNullable(instantiatedVariables.get(exists))
                 .orElse(exists);
+    }
+
+    @Override
+    public MonoType visitSyntheticVar(SyntheticVar synVar) {
+        return synVar;
     }
 
     @Override

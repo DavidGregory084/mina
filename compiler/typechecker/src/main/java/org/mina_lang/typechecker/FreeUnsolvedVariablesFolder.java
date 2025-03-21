@@ -52,6 +52,11 @@ public class FreeUnsolvedVariablesFolder implements TypeFolder<ImmutableSortedSe
     }
 
     @Override
+    public ImmutableSortedSet<UnsolvedType> visitSyntheticVar(SyntheticVar syn) {
+        return SortedSets.immutable.empty(COMPARATOR);
+    }
+
+    @Override
     public ImmutableSortedSet<UnsolvedType> visitUnsolvedType(UnsolvedType unsolved) {
         var substituted = unsolved.accept(typeTransformer);
 

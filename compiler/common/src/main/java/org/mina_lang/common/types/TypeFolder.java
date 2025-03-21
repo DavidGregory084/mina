@@ -33,5 +33,7 @@ public interface TypeFolder<A> {
 
     A visitExistsVar(ExistsVar exists);
 
+    A visitSyntheticVar(SyntheticVar syn);
+
     A visitUnsolvedType(UnsolvedType unsolved);
 }

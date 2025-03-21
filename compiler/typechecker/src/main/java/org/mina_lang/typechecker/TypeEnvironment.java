@@ -17,7 +17,33 @@ import java.util.Optional;
 public record TypeEnvironment(
         MutableStack<TypingScope> scopes,
         UnionFind<MonoType> typeSubstitution,
-        UnionFind<Kind> kindSubstitution) implements Environment<Attributes, TypingScope> {
+        UnionFind<Kind> kindSubstitution,
+        SortSubstitutionTransformer sortTransformer) implements Environment<Attributes, TypingScope> {
+
+    @Override
+    public void popScope(Class<?> expected) {
+        var poppedScope = scopes().pop();
+
+        if (poppedScope instanceof TypeVariableScope) {
+            // Ensure that we apply any solutions to complex types in the substitution before we drop this scope
+            typeSubstitution.updateWith((type, solution) -> {
+                return solution.equals(type)
+                    ? solution
+                    : solution.accept(sortTransformer.getTypeTransformer());
+            });
+            poppedScope.unsolvedTypes().forEach(typeSubstitution::remove);
+            poppedScope.syntheticVars().forEach(typeSubstitution::remove);
+        } else if (poppedScope instanceof KindVariableScope) {
+            kindSubstitution.updateWith((kind, solution) -> {
+                return solution.equals(kind)
+                    ? solution
+                    : solution.accept(sortTransformer.getKindTransformer());
+            });
+            poppedScope.unsolvedKinds().forEach(kindSubstitution::remove);
+        }
+
+        assert expected.isAssignableFrom(poppedScope.getClass());
+    }
 
     public Optional<NamespaceTypingScope> enclosingNamespace() {
         return scopes()
@@ -65,11 +91,13 @@ public record TypeEnvironment(
         topScope().unsolvedTypes().add(unsolved);
     }
 
+    public void putSyntheticVar(SyntheticVar synthetic) {
+        typeSubstitution().add(synthetic);
+        topScope().syntheticVars().add(synthetic);
+    }
+
     public void solveType(UnsolvedType unsolved, MonoType solution) {
         typeSubstitution().union(unsolved, solution);
-        scopes().forEach(scope -> {
-            scope.unsolvedTypes().removeIf(existing -> unsolved.equals(existing));
-        });
     }
 
     public void solveType(Named name, MonoType solution) {
@@ -86,9 +114,6 @@ public record TypeEnvironment(
 
     public void solveKind(UnsolvedKind unsolved, Kind solution) {
         kindSubstitution().union(unsolved, solution);
-        scopes().forEach(scope -> {
-            scope.unsolvedKinds().removeIf(existing -> unsolved.equals(existing));
-        });
     }
 
     public void solveKind(Named name, Kind solution) {
@@ -113,7 +138,12 @@ public record TypeEnvironment(
                         rightDepth = i;
                     }
                 }
-                return leftDepth > rightDepth ? left : right;
+                // Pick kind variables defined in outer scopes
+                return leftDepth > rightDepth
+                    ? left
+                    // Pick kind variables with lower id
+                    : unsolvedLeft.id() < unsolvedRight.id()
+                    ? left : right ;
             } else {
                 return right;
             }
@@ -136,7 +166,12 @@ public record TypeEnvironment(
                         rightDepth = i;
                     }
                 }
-                return leftDepth > rightDepth ? left : right;
+                // Pick type variables defined in outer scopes
+                return leftDepth > rightDepth
+                    ? left
+                    // Pick type variables with lower id
+                    : unsolvedLeft.id() < unsolvedRight.id()
+                    ? left : right ;
             } else {
                 return right;
             }
@@ -147,19 +182,16 @@ public record TypeEnvironment(
 
     public static TypeEnvironment empty() {
         var scopes = Stacks.mutable.<TypingScope>empty();
-        return new TypeEnvironment(
-                scopes,
-                UnionFind.<MonoType>of((l, r) -> pickTypeConstant(scopes, l, r)),
-                UnionFind.<Kind>of((l, r) -> pickKindConstant(scopes, l, r)));
+        var typeSubst = UnionFind.<MonoType>of((l, r) -> pickTypeConstant(scopes, l, r));
+        var kindSubst = UnionFind.<Kind>of((l, r) -> pickKindConstant(scopes, l, r));
+        var sortTransformer = new SortSubstitutionTransformer(typeSubst, kindSubst);
+        return new TypeEnvironment(scopes, typeSubst, kindSubst, sortTransformer);
     }
 
     public static TypeEnvironment of(TypingScope scope) {
-        var scopes = Stacks.mutable.<TypingScope>empty();
-        scopes.push(scope);
-        return new TypeEnvironment(
-                scopes,
-                UnionFind.<MonoType>of((l, r) -> pickTypeConstant(scopes, l, r)),
-                UnionFind.<Kind>of((l, r) -> pickKindConstant(scopes, l, r)));
+        var env = TypeEnvironment.empty();
+        env.scopes.push(scope);
+        return env;
     }
 
     public static TypeEnvironment withBuiltInTypes() {

@@ -6,8 +6,8 @@ package org.mina_lang.common.types;
 
 public class TypeSubstitutionTransformer implements TypeTransformer {
 
-    private UnionFind<MonoType> typeSubstitution;
-    private KindSubstitutionTransformer kindTransformer;
+    protected UnionFind<MonoType> typeSubstitution;
+    protected KindSubstitutionTransformer kindTransformer;
 
     public TypeSubstitutionTransformer(KindSubstitutionTransformer kindTransformer) {
         this.kindTransformer = kindTransformer;
@@ -52,6 +52,13 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
         return new ExistsVar(
                 exists.name(),
                 exists.kind().accept(kindTransformer));
+    }
+
+    @Override
+    public MonoType visitSyntheticVar(SyntheticVar syn) {
+        return new SyntheticVar(
+            syn.id(),
+            syn.kind().accept(kindTransformer));
     }
 
     @Override

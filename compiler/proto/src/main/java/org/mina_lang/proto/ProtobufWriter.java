@@ -11,6 +11,7 @@ import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.NameVisitor;
 import org.mina_lang.common.types.SortVisitor;
+import org.mina_lang.common.types.SyntheticVar;
 import org.mina_lang.proto.names.*;
 import org.mina_lang.proto.types.*;
 
@@ -302,6 +303,11 @@ public class ProtobufWriter {
         @Override
         public void visitUnsolvedType(org.mina_lang.common.types.UnsolvedType unsolved) {
             // We shouldn't have any unsolved types in the top-level scope
+        }
+
+        @Override
+        public void visitSyntheticVar(SyntheticVar syn) {
+            // We shouldn't have any synthetic vars in the top-level scope
         }
 
         @Override

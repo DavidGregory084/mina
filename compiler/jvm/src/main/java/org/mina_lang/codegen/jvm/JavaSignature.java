@@ -263,6 +263,11 @@ public class JavaSignature {
         }
 
         @Override
+        public void visitSyntheticVar(SyntheticVar syn) {
+            visitor.visitTypeVariable(syn.name());
+        }
+
+        @Override
         public void visitUnsolvedType(UnsolvedType unsolved) {
             visitor.visitTypeVariable(unsolved.name());
         }

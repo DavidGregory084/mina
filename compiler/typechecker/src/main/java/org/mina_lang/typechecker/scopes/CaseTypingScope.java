@@ -11,6 +11,7 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.types.SyntheticVar;
 import org.mina_lang.common.types.UnsolvedKind;
 import org.mina_lang.common.types.UnsolvedType;
 
@@ -18,6 +19,7 @@ public record CaseTypingScope(
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,
         MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
+        MutableSet<SyntheticVar> syntheticVars,
         MutableSet<UnsolvedKind> unsolvedKinds,
         MutableSet<UnsolvedType> unsolvedTypes) implements TypingScope {
     public CaseTypingScope() {
@@ -25,6 +27,7 @@ public record CaseTypingScope(
             Maps.mutable.empty(),
             Maps.mutable.empty(),
             Maps.mutable.empty(),
+            Sets.mutable.empty(),
             Sets.mutable.empty(),
             Sets.mutable.empty());
     }

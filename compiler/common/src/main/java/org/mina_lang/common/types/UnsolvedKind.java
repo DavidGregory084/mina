@@ -9,7 +9,7 @@ public record UnsolvedKind(int id) implements Kind {
         var div = (id / 26) + 1;
         var rem = id % 26;
         var prefixChar = (char) ('A' + rem);
-        return String.valueOf(prefixChar) + String.valueOf(div);
+        return "?" + prefixChar + div;
     }
 
     @Override

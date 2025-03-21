@@ -12,6 +12,7 @@ import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
+import org.mina_lang.common.types.SyntheticVar;
 import org.mina_lang.common.types.UnsolvedKind;
 import org.mina_lang.common.types.UnsolvedType;
 
@@ -21,6 +22,7 @@ public record DataTypingScope(
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,
         MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
+        MutableSet<SyntheticVar> syntheticVars,
         MutableSet<UnsolvedKind> unsolvedKinds,
         MutableSet<UnsolvedType> unsolvedTypes) implements TypingScope {
     public DataTypingScope(DataName data) {
@@ -29,6 +31,7 @@ public record DataTypingScope(
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),
                 Maps.mutable.empty(),
+                Sets.mutable.empty(),
                 Sets.mutable.empty(),
                 Sets.mutable.empty());
     }

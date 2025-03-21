@@ -33,5 +33,7 @@ public interface TypeVisitor {
 
     void visitExistsVar(ExistsVar exists);
 
+    void visitSyntheticVar(SyntheticVar syn);
+
     void visitUnsolvedType(UnsolvedType unsolved);
 }

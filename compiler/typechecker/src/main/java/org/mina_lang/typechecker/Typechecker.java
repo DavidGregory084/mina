@@ -28,26 +28,20 @@ import java.util.function.Supplier;
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
 public class Typechecker {
-    private LocalDiagnosticReporter diagnostics;
-    private TypeEnvironment environment;
-    private UnsolvedVariableSupply varSupply;
-    private Kindchecker kindchecker;
-    private TypeAnnotationFolder typeFolder;
-    private SortSubstitutionTransformer sortTransformer;
-    private SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
+    private final LocalDiagnosticReporter diagnostics;
+    private final TypeEnvironment environment;
+    private final UnsolvedVariableSupply varSupply;
+    private final Kindchecker kindchecker;
+    private final TypeAnnotationFolder typeFolder;
+    private final SortSubstitutionTransformer sortTransformer;
+    private final SortPrinter sortPrinter = new SortPrinter(new KindPrinter(), new TypePrinter());
 
     public Typechecker(LocalDiagnosticReporter diagnostics, TypeEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
-
         this.varSupply = new UnsolvedVariableSupply();
-
         this.typeFolder = new TypeAnnotationFolder(environment);
-
-        this.sortTransformer = new SortSubstitutionTransformer(
-                environment.typeSubstitution(),
-                environment.kindSubstitution());
-
+        this.sortTransformer = environment.sortTransformer();
         this.kindchecker = new Kindchecker(diagnostics, environment, varSupply, sortTransformer);
     }
 
@@ -66,7 +60,6 @@ public class Typechecker {
         environment.pushScope(scope);
         fn.run();
         environment.popScope(scope.getClass());
-        return;
     }
 
     UnsolvedKind newUnsolvedKind() {
@@ -85,6 +78,12 @@ public class Typechecker {
         var newUnsolved = varSupply.newUnsolvedType(kind);
         environment.putUnsolvedType(newUnsolved);
         return newUnsolved;
+    }
+
+    SyntheticVar newSyntheticVar(Kind kind) {
+        var newSynthetic = varSupply.newSyntheticVar(kind);
+        environment.putSyntheticVar(newSynthetic);
+        return newSynthetic;
     }
 
     public NamespaceNode<Attributes> typecheck(NamespaceNode<Name> namespace) {
@@ -125,28 +124,24 @@ public class Typechecker {
         var name = (Named) meta.meta().name();
         scope.putType(name.localName(), meta);
         scope.putType(name.canonicalName(), meta);
-        return;
     }
 
     void putValueDeclaration(Scope<Attributes> scope, Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         scope.putValue(name.localName(), meta);
         scope.putValue(name.canonicalName(), meta);
-        return;
     }
 
     void putTypeDeclaration(Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         environment.putType(name.localName(), meta);
         environment.putType(name.canonicalName(), meta);
-        return;
     }
 
     void putValueDeclaration(Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         environment.putValue(name.localName(), meta);
         environment.putValue(name.canonicalName(), meta);
-        return;
     }
 
     void mismatchedType(Range range, Type actualType, Type expectedType) {
@@ -253,12 +248,12 @@ public class Typechecker {
         quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
-                instantiated.put(forall, newUnsolvedType(typeVarKind));
+                var newUnsolved = newUnsolvedType(typeVarKind);
+                instantiated.put(forall, newUnsolved);
             } else if (tyParam instanceof ExistsVar exists) {
-                var typeVarName = new ExistsVarName(exists.name());
                 var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
-                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
-                environment.putType(exists.name(), Meta.of(typeVarAttrs));
+                var newSynthetic = newSyntheticVar(typeVarKind);
+                instantiated.put(exists, newSynthetic);
             }
         });
 
@@ -274,13 +269,13 @@ public class Typechecker {
 
         quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
-                var typeVarName = new ForAllVarName(forall.name());
                 var typeVarKind = forall.kind().accept(sortTransformer.getKindTransformer());
-                var typeVarAttrs = new Attributes(typeVarName, typeVarKind);
-                environment.putType(forall.name(), Meta.of(typeVarAttrs));
+                var newSynthetic = newSyntheticVar(typeVarKind);
+                instantiated.put(forall, newSynthetic);
             } else if (tyParam instanceof ExistsVar exists) {
                 var typeVarKind = exists.kind().accept(sortTransformer.getKindTransformer());
-                instantiated.put(exists, newUnsolvedType(typeVarKind));
+                var newUnsolved = newUnsolvedType(typeVarKind);
+                instantiated.put(exists, newUnsolved);
             }
         });
 
@@ -292,228 +287,236 @@ public class Typechecker {
     }
 
     void instantiateAsSubType(UnsolvedType unsolved, Type superType) {
-        withScope(new InstantiateTypeScope(), () -> {
-            if (superType instanceof UnsolvedType otherUnsolved) {
-                // Complete and Easy's InstLReach rule
-                environment.solveType(otherUnsolved, unsolved);
-            } else if (superType instanceof ForAllVar forall) {
-                // Complete and Easy's InstLSolve rule
-                environment.solveType(unsolved, forall);
-            } else if (superType instanceof ExistsVar exists) {
-                environment.solveType(unsolved, exists);
-            } else if (superType instanceof BuiltInType builtInSup) {
-                environment.solveType(unsolved, builtInSup);
-            } else if (superType instanceof TypeConstructor tyConSup) {
-                environment.solveType(unsolved, tyConSup);
-            } else if (Type.isFunction(superType) &&
-                    superType instanceof TypeApply funTypeSup) {
-                // Complete and Easy's InstLArr rule
-                var funTypeArgs = funTypeSup
-                        .typeArguments()
-                        .take(funTypeSup.typeArguments().size() - 1)
-                        .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+        if (superType instanceof UnsolvedType otherUnsolved) {
+            // Complete and Easy's InstLReach rule
+            environment.solveType(otherUnsolved, unsolved);
+        } else if (superType instanceof ForAllVar forall) {
+            // Complete and Easy's InstLSolve rule
+            environment.solveType(unsolved, forall);
+        } else if (superType instanceof ExistsVar exists) {
+            environment.solveType(unsolved, exists);
+        } else if (superType instanceof SyntheticVar synth) {
+            environment.solveType(unsolved, synth);
+        } else if (superType instanceof BuiltInType builtInSup) {
+            environment.solveType(unsolved, builtInSup);
+        } else if (superType instanceof TypeConstructor tyConSup) {
+            environment.solveType(unsolved, tyConSup);
+        } else if (Type.isFunction(superType) &&
+                superType instanceof TypeApply funTypeSup) {
+            // Complete and Easy's InstLArr rule
+            var funTypeArgs = funTypeSup
+                    .typeArguments()
+                    .take(funTypeSup.typeArguments().size() - 1)
+                    .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
 
-                var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
+            var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
 
-                var funType = Type.function(
-                        funTypeArgs.collect(tyArg -> (Type) tyArg),
-                        funTypeReturn);
+            var funType = Type.function(
+                    funTypeArgs.collect(tyArg -> (Type) tyArg),
+                    funTypeReturn);
 
-                environment.solveType(unsolved, funType);
+            environment.solveType(unsolved, funType);
 
-                funTypeArgs
-                        .zip(funTypeSup.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSuperType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
+            funTypeArgs
+                    .zip(funTypeSup.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSuperType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
 
-                instantiateAsSubType(
-                        funTypeReturn,
-                        funTypeSup.typeArguments().getLast()
-                                .accept(sortTransformer.getTypeTransformer()));
+            instantiateAsSubType(
+                    funTypeReturn,
+                    funTypeSup.typeArguments().getLast()
+                            .accept(sortTransformer.getTypeTransformer()));
 
-            } else if (superType instanceof TypeApply tyAppSup) {
-                // Complete and Easy's InstLArr rule extended to other type constructors
-                var tyAppArgs = tyAppSup
-                        .typeArguments()
-                        .collect(arg -> newUnsolvedType());
+        } else if (superType instanceof TypeApply tyAppSup) {
+            // Complete and Easy's InstLArr rule extended to other type constructors
+            var tyAppArgs = tyAppSup
+                    .typeArguments()
+                    .collect(arg -> newUnsolvedType());
 
-                var tyAppSub = new TypeApply(
-                        tyAppSup.type(),
-                        tyAppArgs.collect(arg -> (Type) arg),
-                        tyAppSup.kind());
+            var tyAppSub = new TypeApply(
+                    tyAppSup.type(),
+                    tyAppArgs.collect(arg -> (Type) arg),
+                    tyAppSup.kind());
 
-                environment.solveType(unsolved, tyAppSub);
+            environment.solveType(unsolved, tyAppSub);
 
-                tyAppArgs
-                        .zip(tyAppSup.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSubType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
-            } else if (superType instanceof QuantifiedType quant) {
-                // Complete and Easy's InstLAllR rule
+            tyAppArgs
+                    .zip(tyAppSup.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSubType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
+        } else if (superType instanceof QuantifiedType quant) {
+            // Complete and Easy's InstLAllR rule
+            withScope(new InstantiateTypeScope(), () -> {
                 instantiateAsSubType(unsolved, quant.body().accept(superTypeInstantiation(quant)));
-            }
-        });
+            });
+        }
     }
 
     void instantiateAsSuperType(UnsolvedType unsolved, Type subType) {
-        withScope(new InstantiateTypeScope(), () -> {
-            if (subType instanceof UnsolvedType otherUnsolved) {
-                // Complete and Easy's InstRReach rule
-                environment.solveType(otherUnsolved, unsolved);
-            } else if (subType instanceof ForAllVar forall) {
-                // Complete and Easy's InstRSolve rule
-                environment.solveType(unsolved, forall);
-            } else if (subType instanceof ExistsVar exists) {
-                environment.solveType(unsolved, exists);
-            } else if (subType instanceof BuiltInType builtIn) {
-                environment.solveType(unsolved, builtIn);
-            } else if (subType instanceof TypeConstructor tyCon) {
-                environment.solveType(unsolved, tyCon);
-            } else if (Type.isFunction(subType) &&
-                    subType instanceof TypeApply funTypeSub) {
-                // Complete and Easy's InstLArr rule
-                var funTypeArgs = funTypeSub
-                        .typeArguments()
-                        .take(funTypeSub.typeArguments().size() - 1)
-                        .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+        if (subType instanceof UnsolvedType otherUnsolved) {
+            // Complete and Easy's InstRReach rule
+            environment.solveType(otherUnsolved, unsolved);
+        } else if (subType instanceof ForAllVar forall) {
+            // Complete and Easy's InstRSolve rule
+            environment.solveType(unsolved, forall);
+        } else if (subType instanceof ExistsVar exists) {
+            environment.solveType(unsolved, exists);
+        } else if (subType instanceof SyntheticVar synth) {
+            environment.solveType(unsolved, synth);
+        } else if (subType instanceof BuiltInType builtIn) {
+            environment.solveType(unsolved, builtIn);
+        } else if (subType instanceof TypeConstructor tyCon) {
+            environment.solveType(unsolved, tyCon);
+        } else if (Type.isFunction(subType) &&
+                subType instanceof TypeApply funTypeSub) {
+            // Complete and Easy's InstLArr rule
+            var funTypeArgs = funTypeSub
+                    .typeArguments()
+                    .take(funTypeSub.typeArguments().size() - 1)
+                    .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
 
-                var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
+            var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
 
-                var funType = Type.function(
-                        funTypeArgs.collect(tyArg -> (Type) tyArg),
-                        funTypeReturn);
+            var funType = Type.function(
+                    funTypeArgs.collect(tyArg -> (Type) tyArg),
+                    funTypeReturn);
 
-                environment.solveType(unsolved, funType);
+            environment.solveType(unsolved, funType);
 
-                funTypeArgs
-                        .zip(funTypeSub.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSubType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
+            funTypeArgs
+                    .zip(funTypeSub.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSubType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
 
-                instantiateAsSuperType(
-                        funTypeReturn,
-                        funTypeSub.typeArguments().getLast()
-                                .accept(sortTransformer.getTypeTransformer()));
+            instantiateAsSuperType(
+                    funTypeReturn,
+                    funTypeSub.typeArguments().getLast()
+                            .accept(sortTransformer.getTypeTransformer()));
 
-            } else if (subType instanceof TypeApply tyAppSub) {
-                // Complete and Easy's InstRArr rule extended to other type constructors
-                var tyAppArgs = tyAppSub
-                        .typeArguments()
-                        .collect(arg -> newUnsolvedType());
+        } else if (subType instanceof TypeApply tyAppSub) {
+            // Complete and Easy's InstRArr rule extended to other type constructors
+            var tyAppArgs = tyAppSub
+                    .typeArguments()
+                    .collect(arg -> newUnsolvedType());
 
-                var tyAppSup = new TypeApply(
-                        tyAppSub.type(),
-                        tyAppArgs.collect(arg -> (Type) arg),
-                        tyAppSub.kind());
+            var tyAppSup = new TypeApply(
+                    tyAppSub.type(),
+                    tyAppArgs.collect(arg -> (Type) arg),
+                    tyAppSub.kind());
 
-                environment.solveType(unsolved, tyAppSup);
+            environment.solveType(unsolved, tyAppSup);
 
-                tyAppArgs
-                        .zip(tyAppSub.typeArguments())
-                        .forEach(pair -> {
-                            instantiateAsSuperType(
-                                    pair.getOne(),
-                                    pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                        });
-            } else if (subType instanceof QuantifiedType quant) {
-                // Complete and Easy's InstRAllL rule
+            tyAppArgs
+                    .zip(tyAppSub.typeArguments())
+                    .forEach(pair -> {
+                        instantiateAsSuperType(
+                                pair.getOne(),
+                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
+                    });
+        } else if (subType instanceof QuantifiedType quant) {
+            // Complete and Easy's InstRAllL rule
+            withScope(new InstantiateTypeScope(), () -> {
                 instantiateAsSuperType(unsolved, quant.body().accept(subTypeInstantiation(quant)));
-            }
-        });
+            });
+        }
     }
 
     boolean checkSubType(Type subType, Type superType) {
-        return withScope(new CheckSubtypeScope(), () -> {
-            var solvedSubType = subType.accept(sortTransformer.getTypeTransformer());
-            var solvedSuperType = superType.accept(sortTransformer.getTypeTransformer());
+        var solvedSubType = subType.accept(sortTransformer.getTypeTransformer());
+        var solvedSuperType = superType.accept(sortTransformer.getTypeTransformer());
 
-            if (solvedSubType instanceof ForAllVar subTy &&
-                    solvedSuperType instanceof ForAllVar supTy &&
-                    subTy.name().equals(supTy.name())) {
-                // Complete and Easy's <:Var rule
-                return true;
-            } else if (solvedSubType instanceof ExistsVar subTy &&
-                    solvedSuperType instanceof ExistsVar supTy &&
-                    subTy.name().equals(supTy.name())) {
-                return true;
-            } else if (solvedSubType instanceof BuiltInType subTy &&
-                    solvedSuperType instanceof BuiltInType supTy &&
-                    subTy.equals(supTy)) {
-                return true;
-            } else if (solvedSubType instanceof TypeConstructor subTy &&
-                    solvedSuperType instanceof TypeConstructor supTy &&
-                    subTy.name().equals(supTy.name())) {
-                return true;
-            } else if (solvedSubType instanceof UnsolvedType unsolvedSub &&
-                    solvedSuperType instanceof UnsolvedType unsolvedSuper &&
-                    unsolvedSub.id() == unsolvedSuper.id()) {
-                // Complete and Easy's <:Exvar rule
-                return true;
-            } else if (solvedSubType instanceof UnsolvedType unsolvedSub
-                    && !unsolvedSub.isFreeIn(solvedSuperType)
-                    && kindchecker.checkSubKind(unsolvedSub.kind(), solvedSuperType.kind())) {
-                // Complete and Easy's <:InstantiateL rule
-                instantiateAsSubType(unsolvedSub, solvedSuperType);
-
-                return true;
-
-            } else if (solvedSuperType instanceof UnsolvedType unsolvedSup
-                    && !unsolvedSup.isFreeIn(solvedSubType)
-                    && kindchecker.checkSubKind(solvedSubType.kind(), unsolvedSup.kind())) {
-                // Complete and Easy's <:InstantiateR rule
-                instantiateAsSuperType(unsolvedSup, solvedSubType);
-
-                return true;
-
-            } else if (Type.isFunction(solvedSubType) && solvedSubType instanceof TypeApply tyAppSub &&
-                    Type.isFunction(solvedSuperType) && solvedSuperType instanceof TypeApply tyAppSup &&
-                    tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
-                // Complete and Easy's <:-> rule
-                var argsSubTyped = tyAppSub.typeArguments().take(tyAppSub.typeArguments().size() - 1)
-                        .zip(tyAppSup.typeArguments().take(tyAppSup.typeArguments().size() - 1))
-                        .allSatisfy(pair -> {
-                            return checkSubType(pair.getTwo(), pair.getOne());
-                        });
-
-                var resultSubTyped = checkSubType(
-                        tyAppSub.typeArguments().getLast(),
-                        tyAppSup.typeArguments().getLast());
-
-                return argsSubTyped && resultSubTyped;
-            } else if (solvedSubType instanceof TypeApply tyAppSub &&
-                    solvedSuperType instanceof TypeApply tyAppSup &&
-                    tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
-                // Complete and Easy's <:-> rule extended to other type constructors
-                var tyConSubTyped = checkSubType(tyAppSub.type(), tyAppSup.type());
-
-                var tyArgsSubTyped = tyAppSub.typeArguments()
-                        .zip(tyAppSup.typeArguments())
-                        .allSatisfy(pair -> {
-                            return checkSubType(pair.getOne(), pair.getTwo());
-                        });
-
-                return tyConSubTyped && tyArgsSubTyped;
-            } else if (solvedSuperType instanceof QuantifiedType quant) {
-                // Complete and Easy's <:ForallR rule
+        if (solvedSubType instanceof ForAllVar subTy &&
+                solvedSuperType instanceof ForAllVar supTy &&
+                subTy.name().equals(supTy.name())) {
+            // Complete and Easy's <:Var rule
+            return true;
+        } else if (solvedSubType instanceof ExistsVar subTy &&
+                solvedSuperType instanceof ExistsVar supTy &&
+                subTy.name().equals(supTy.name())) {
+            return true;
+        } else if (solvedSubType instanceof SyntheticVar subTy &&
+                solvedSuperType instanceof SyntheticVar supTy &&
+                subTy.id() == supTy.id()) {
+            return true;
+        } else if (solvedSubType instanceof BuiltInType subTy &&
+                solvedSuperType instanceof BuiltInType supTy &&
+                subTy.equals(supTy)) {
+            return true;
+        } else if (solvedSubType instanceof TypeConstructor subTy &&
+                solvedSuperType instanceof TypeConstructor supTy &&
+                subTy.name().equals(supTy.name())) {
+            return true;
+        } else if (solvedSubType instanceof UnsolvedType unsolvedSub &&
+                solvedSuperType instanceof UnsolvedType unsolvedSuper &&
+                unsolvedSub.id() == unsolvedSuper.id()) {
+            // Complete and Easy's <:Exvar rule
+            return true;
+        } else if (solvedSuperType instanceof QuantifiedType quant) {
+            // Complete and Easy's <:ForallR rule
+            return withScope(new CheckSubtypeScope(), () -> {
                 return checkSubType(solvedSubType, instantiateAsSuperType(quant));
-
-            } else if (solvedSubType instanceof QuantifiedType quant) {
-                // Complete and Easy's <:ForallL rule
+            });
+        } else if (solvedSubType instanceof QuantifiedType quant) {
+            // Complete and Easy's <:ForallL rule
+            return withScope(new CheckSubtypeScope(), () -> {
                 return checkSubType(instantiateAsSubType(quant), solvedSuperType);
+            });
+        } else if (solvedSubType instanceof UnsolvedType unsolvedSub
+                && !unsolvedSub.isFreeIn(solvedSuperType)
+                && kindchecker.checkSubKind(unsolvedSub.kind(), solvedSuperType.kind())) {
+            // Complete and Easy's <:InstantiateL rule
+            instantiateAsSubType(unsolvedSub, solvedSuperType);
 
-            } else {
-                return false;
-            }
-        });
+            return true;
+
+        } else if (solvedSuperType instanceof UnsolvedType unsolvedSup
+                && !unsolvedSup.isFreeIn(solvedSubType)
+                && kindchecker.checkSubKind(solvedSubType.kind(), unsolvedSup.kind())) {
+            // Complete and Easy's <:InstantiateR rule
+            instantiateAsSuperType(unsolvedSup, solvedSubType);
+
+            return true;
+
+        } else if (Type.isFunction(solvedSubType) && solvedSubType instanceof TypeApply tyAppSub &&
+                Type.isFunction(solvedSuperType) && solvedSuperType instanceof TypeApply tyAppSup &&
+                tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
+            // Complete and Easy's <:-> rule
+            var argsSubTyped = tyAppSub.typeArguments().take(tyAppSub.typeArguments().size() - 1)
+                    .zip(tyAppSup.typeArguments().take(tyAppSup.typeArguments().size() - 1))
+                    .allSatisfy(pair -> {
+                        return checkSubType(pair.getTwo(), pair.getOne());
+                    });
+
+            var resultSubTyped = checkSubType(
+                    tyAppSub.typeArguments().getLast(),
+                    tyAppSup.typeArguments().getLast());
+
+            return argsSubTyped && resultSubTyped;
+        } else if (solvedSubType instanceof TypeApply tyAppSub &&
+                solvedSuperType instanceof TypeApply tyAppSup &&
+                tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
+            // Complete and Easy's <:-> rule extended to other type constructors
+            var tyConSubTyped = checkSubType(tyAppSub.type(), tyAppSup.type());
+
+            var tyArgsSubTyped = tyAppSub.typeArguments()
+                    .zip(tyAppSup.typeArguments())
+                    .allSatisfy(pair -> {
+                        return checkSubType(pair.getOne(), pair.getTwo());
+                    });
+
+            return tyConSubTyped && tyArgsSubTyped;
+        } else {
+            return false;
+        }
     }
 
     boolean checkSubType(Type subType, Type ...superTypeCandidates) {
@@ -608,7 +611,7 @@ public class Typechecker {
             return new QuantifiedType(
                     typeParamTypes,
                     functionType,
-                    new HigherKind(typeParamTypes.collect(param -> param.kind()), TypeKind.INSTANCE));
+                    new HigherKind(typeParamTypes.collect(Type::kind), TypeKind.INSTANCE));
         }
     }
 
@@ -632,14 +635,14 @@ public class Typechecker {
     }
 
     <A> A withPolyInstantiation(Type inferredType, Function<Type, A> fn) {
-        if (inferredType instanceof QuantifiedType quant) {
-            return withScope(new InstantiateTypeScope(), () -> {
-                // Keep instantiating binders until we have something else
-                return withPolyInstantiation(instantiateAsSubType(quant), fn);
-            });
-        } else {
-            return fn.apply(inferredType);
+        var type = inferredType.accept(sortTransformer.getTypeTransformer());
+
+        while (type instanceof QuantifiedType quant) {
+            // Keep instantiating binders until we have something else
+            type = instantiateAsSubType(quant);
         }
+
+        return fn.apply(type);
     }
 
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
@@ -655,7 +658,8 @@ public class Typechecker {
         var inferredGroup = declarationGroup
                 .collect(this::inferDeclaration)
                 .collect(this::defaultKinds)
-                .collect(this::checkPrincipalTypes);
+                .collect(this::checkPrincipalTypes)
+                .collect(this::defaultUnsolvedTypes);
 
         inferredGroup.forEach(this::updateTopLevel);
 
@@ -669,6 +673,17 @@ public class Typechecker {
             return data.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
         } else {
             return declaration;
+        }
+    }
+
+    DeclarationNode<Attributes> defaultUnsolvedTypes(DeclarationNode<Attributes> declaration) {
+        if (declaration instanceof DataNode<Attributes> data) {
+            return data;
+        } else {
+            var kindTransformer = sortTransformer.getKindTransformer();
+            var typeDefaulting = new TypeDefaultingTransformer(environment.typeSubstitution(), kindTransformer, varSupply);
+            var sortTransformer = new SortSubstitutionTransformer(typeDefaulting, kindTransformer);
+            return declaration.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
         }
     }
 
@@ -801,7 +816,7 @@ public class Typechecker {
 
     ParamNode<Attributes> inferParam(ParamNode<Name> param) {
         var checkedAnnotation = param.typeAnnotation()
-                .map(tyAnn -> kindchecker.kindcheck(tyAnn));
+            .map(kindchecker::kindcheck);
 
         var paramType = checkedAnnotation
                 .map(kindedAnn -> kindedAnn.accept(typeFolder))
@@ -1116,67 +1131,13 @@ public class Typechecker {
         });
     }
 
-    PatternNode<Attributes> inferPattern(PatternNode<Name> pattern) {
-        var enclosingCase = environment.enclosingCase().get();
-
-        if (pattern instanceof IdPatternNode<Name> idPat) {
-            var unsolvedType = newUnsolvedType(TypeKind.INSTANCE);
-            var updatedMeta = updateMetaWith(idPat.meta(), unsolvedType);
-            enclosingCase.putValue(idPat.name(), updatedMeta);
-
-            return idPatternNode(updatedMeta, idPat.name());
-
-        } else if (pattern instanceof AliasPatternNode<Name> aliasPat) {
-            var inferredPattern = inferPattern(aliasPat.pattern());
-            var inferredType = getType(inferredPattern);
-            var updatedMeta = updateMetaWith(aliasPat.meta(), inferredType);
-            enclosingCase.putValue(aliasPat.alias(), updatedMeta);
-
-            return aliasPatternNode(updatedMeta, aliasPat.alias(), inferredPattern);
-
-        } else if (pattern instanceof LiteralPatternNode<Name> litPat) {
-            var inferredLiteral = inferLiteral(litPat.literal());
-            var inferredType = getType(inferredLiteral);
-            var updatedMeta = updateMetaWith(litPat.meta(), inferredType);
-
-            return literalPatternNode(updatedMeta, inferredLiteral);
-
-        } else if (pattern instanceof ConstructorPatternNode<Name> constrPat) {
-            var constrMeta = environment.lookupValue(constrPat.id().canonicalName()).get();
-            var constrName = (ConstructorName) constrMeta.meta().name();
-            var constrType = (Type) constrMeta.meta().sort();
-
-            // We need to keep this instantiation to use with our field patterns
-            var instantiator = (constrType instanceof QuantifiedType quant)
-                    ? Optional.of(subTypeInstantiation(quant))
-                    : Optional.<TypeInstantiationTransformer>empty();
-
-            if (constrType instanceof QuantifiedType quant) {
-                constrType = quant.body().accept(instantiator.get());
-            }
-
-            if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
-                constrType = tyApp.typeArguments().getLast();
-            }
-
-            var inferredFields = constrPat.fields()
-                    .collect(field -> inferFieldPattern(constrName, field, instantiator));
-
-            var updatedMeta = updateMetaWith(constrPat.meta(), constrType);
-
-            return constructorPatternNode(updatedMeta, constrPat.id(), inferredFields);
-        }
-
-        return null;
-    }
-
     FieldPatternNode<Attributes> inferFieldPattern(ConstructorName constrName, FieldPatternNode<Name> fieldPat,
             Optional<TypeInstantiationTransformer> instantiator) {
         var enclosingCase = environment.enclosingCase().get();
 
         var fieldMeta = environment.lookupField(constrName, fieldPat.field()).get();
         var fieldType = (Type) fieldMeta.meta().sort();
-        var instantiatedFieldType = instantiator.map(inst -> fieldType.accept(inst)).orElse(fieldType);
+        var instantiatedFieldType = instantiator.map(fieldType::accept).orElse(fieldType);
 
         var inferredPattern = fieldPat.pattern().map(pattern -> checkPattern(pattern, instantiatedFieldType));
 
@@ -1276,12 +1237,11 @@ public class Typechecker {
             var scrutineeType = getType(scrutinee);
 
             var cases = match.cases()
-                    .collect(cse -> checkCase(cse, scrutineeType, expectedType));
+                .collect(cse -> checkCase(cse, scrutineeType, expectedType));
 
             var updatedMeta = updateMetaWith(match.meta(), expectedType);
 
             return matchNode(updatedMeta, scrutinee, cases);
-
         } else if (expr instanceof LiteralNode<Name> literal) {
             return checkLiteral(literal, expectedType);
         } else {
@@ -1391,52 +1351,52 @@ public class Typechecker {
         // TODO: Add an error type to place in Meta when we have a mismatch?
         if (literal instanceof BooleanNode<Name> bool) {
             var actualType = Type.BOOLEAN;
-            var updatedMeta = updateMetaWith(bool.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(bool.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(bool.meta(), expectedType);
             return boolNode(updatedMeta, bool.value());
         } else if (literal instanceof CharNode<Name> chr) {
             var actualType = Type.CHAR;
-            var updatedMeta = updateMetaWith(chr.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(chr.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(chr.meta(), expectedType);
             return charNode(updatedMeta, chr.value());
         } else if (literal instanceof StringNode<Name> str) {
             var actualType = Type.STRING;
-            var updatedMeta = updateMetaWith(str.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(str.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(str.meta(), expectedType);
             return stringNode(updatedMeta, str.value());
         } else if (literal instanceof IntNode<Name> intgr) {
             var actualType = Type.INT;
-            var updatedMeta = updateMetaWith(intgr.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(intgr.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(intgr.meta(), expectedType);
             return intNode(updatedMeta, intgr.value());
         } else if (literal instanceof LongNode<Name> lng) {
             var actualType = Type.LONG;
-            var updatedMeta = updateMetaWith(lng.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(lng.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(lng.meta(), expectedType);
             return longNode(updatedMeta, lng.value());
         } else if (literal instanceof FloatNode<Name> flt) {
             var actualType = Type.FLOAT;
-            var updatedMeta = updateMetaWith(flt.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(flt.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(flt.meta(), expectedType);
             return floatNode(updatedMeta, flt.value());
         } else if (literal instanceof DoubleNode<Name> dbl) {
             var actualType = Type.DOUBLE;
-            var updatedMeta = updateMetaWith(dbl.meta(), expectedType);
             if (!checkSubType(actualType, expectedType)) {
                 mismatchedType(dbl.range(), actualType, expectedType);
             }
+            var updatedMeta = updateMetaWith(dbl.meta(), expectedType);
             return doubleNode(updatedMeta, dbl.value());
         }
 
