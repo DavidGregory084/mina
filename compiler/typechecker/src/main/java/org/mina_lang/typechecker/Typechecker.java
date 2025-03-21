@@ -658,7 +658,8 @@ public class Typechecker {
         var inferredGroup = declarationGroup
                 .collect(this::inferDeclaration)
                 .collect(this::defaultKinds)
-                .collect(this::checkPrincipalTypes);
+                .collect(this::checkPrincipalTypes)
+                .collect(this::defaultUnsolvedTypes);
 
         inferredGroup.forEach(this::updateTopLevel);
 
@@ -672,6 +673,17 @@ public class Typechecker {
             return data.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
         } else {
             return declaration;
+        }
+    }
+
+    DeclarationNode<Attributes> defaultUnsolvedTypes(DeclarationNode<Attributes> declaration) {
+        if (declaration instanceof DataNode<Attributes> data) {
+            return data;
+        } else {
+            var kindTransformer = sortTransformer.getKindTransformer();
+            var typeDefaulting = new TypeDefaultingTransformer(environment.typeSubstitution(), kindTransformer, varSupply);
+            var sortTransformer = new SortSubstitutionTransformer(typeDefaulting, kindTransformer);
+            return declaration.accept(new MetaNodeSubstitutionTransformer(sortTransformer));
         }
     }
 

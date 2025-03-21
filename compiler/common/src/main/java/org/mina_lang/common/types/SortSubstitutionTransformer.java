@@ -10,6 +10,11 @@ public class SortSubstitutionTransformer implements SortFolder<Sort> {
 
     private KindSubstitutionTransformer kindTransformer;
 
+    public SortSubstitutionTransformer(TypeSubstitutionTransformer typeTransformer, KindSubstitutionTransformer kindTransformer) {
+        this.kindTransformer = kindTransformer;
+        this.typeTransformer = typeTransformer;
+    }
+
     public SortSubstitutionTransformer(UnionFind<MonoType> typeSubstitution, KindSubstitutionTransformer kindTransformer) {
         this.kindTransformer = kindTransformer;
         this.typeTransformer = new TypeSubstitutionTransformer(typeSubstitution, kindTransformer);
