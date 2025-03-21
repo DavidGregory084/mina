@@ -12,6 +12,7 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
+import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.names.SyntheticName;
 import org.mina_lang.common.names.SyntheticNameSupply;
 import org.mina_lang.common.operators.BinaryOp;
@@ -639,6 +640,201 @@ public class LowerTest {
                 new Unbox(new Reference(new SyntheticName(0), Type.INT)),
                 BinaryOp.ADD,
                 new Unbox(new Reference(new SyntheticName(1), Type.INT)));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersIfNodeWithImmediateOperands() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // if true then 1 else 2
+            var tail = lower.lowerExpr(IF_TRUE_THEN_ONE_ELSE_TWO_NODE, bindings);
+
+            // if true then 1 else 2
+            var expectedTail = new If(Type.INT, new Boolean(true), new Int(1), new Int(2));
+
+            assertThat(tail, is(expectedTail));
+            assertThat(bindings, is(empty()));
+        });
+    }
+
+    @Test
+    void lowersIfNodeWithIdCondition() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // if id(true) then 1 else 2
+            var tail = lower.lowerExpr(IF_ID_TRUE_THEN_ONE_ELSE_TWO_NODE, bindings);
+
+            // let $0 = id(box(true))
+            // if unbox($0) then 1 else 2
+            var expectedBindings = List.of(
+                new LetAssign(
+                    new SyntheticName(0),
+                    Type.BOOLEAN,
+                    new Apply(Type.BOOLEAN, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Boolean(true)))))
+            );
+            var expectedTail = new If(
+                Type.INT,
+                new Unbox(new Reference(new SyntheticName(0), Type.BOOLEAN)),
+                new Int(1),
+                new Int(2));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersIfNodeWithIdConditionAndBranches() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // if id(true) then id(1) else id(2)
+            var tail = lower.lowerExpr(IF_ID_TRUE_THEN_ID_ONE_ELSE_ID_TWO_NODE, bindings);
+
+            // let $0 = id(box(true))
+            // if unbox($0) then {
+            //   let $1 = id(box(1))
+            //   unbox($1)
+            // } else {
+            //   let $2 = id(box(2))
+            //   unbox($2)
+            // }
+            var expectedBindings = List.of(
+                new LetAssign(
+                    new SyntheticName(0),
+                    Type.BOOLEAN,
+                    new Apply(Type.BOOLEAN, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Boolean(true)))))
+            );
+            var expectedTail = new If(
+                Type.INT,
+                new Unbox(new Reference(new SyntheticName(0), Type.BOOLEAN)),
+                new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        new LetAssign(
+                            new SyntheticName(1),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1)))))),
+                    new Unbox(new Reference(new SyntheticName(1), Type.INT))
+                ),
+                new Block(
+                    Type.INT,
+                    Lists.immutable.of(
+                        new LetAssign(
+                            new SyntheticName(2),
+                            Type.INT,
+                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2)))))),
+                    new Unbox(new Reference(new SyntheticName(2), Type.INT))));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersBlockNodeWithMixedBindings() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // {
+            //   let a = 1
+            //   let b = id(2)
+            //   let c = magic(3)
+            //   let d = true
+            //   inc(c)
+            // }
+            var tail = lower.lowerExpr(MIXED_BLOCK_NODE, bindings);
+
+            // {
+            //   let a = 1
+            //   let $0 = id(box(2))
+            //   let b = unbox($0)
+            //   let c = magic(box(3))
+            //   let d = true
+            //   inc(c)
+            // }
+            var expectedBindings = List.of(
+                new LetAssign(
+                    new LocalName("a", 0),
+                    Type.INT,
+                    new Int(1)),
+                new LetAssign(
+                    new SyntheticName(0),
+                    Type.INT,
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2))))),
+                new LetAssign(
+                    new LocalName("b", 1),
+                    Type.INT,
+                    new Unbox(new Reference(new SyntheticName(0), Type.INT))),
+                new LetAssign(
+                    new LocalName("c", 2),
+                    Type.INT,
+                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(3))))),
+                new LetAssign(
+                    new LocalName("d", 3),
+                    Type.BOOLEAN,
+                    new Boolean(true))
+            );
+            var expectedTail = new Apply(
+                Type.INT,
+                new Reference(LET_INC_NAME, LET_INC_TYPE),
+                Lists.immutable.of(new Reference(new LocalName("c", 2), Type.INT)));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersBlockNodeWithMixedBindingsAndNoTail() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // {
+            //   let a = 1
+            //   let b = id(2)
+            //   let c = magic(3)
+            //   let d = true
+            // }
+            var tail = lower.lowerExpr(MIXED_BLOCK_NO_TAIL_NODE, bindings);
+
+            // {
+            //   let a = 1
+            //   let $0 = id(box(2))
+            //   let b = unbox($0)
+            //   let c = magic(box(3))
+            //   let d = true
+            //   {}
+            // }
+            var expectedBindings = List.of(
+                new LetAssign(
+                    new LocalName("a", 0),
+                    Type.INT,
+                    new Int(1)),
+                new LetAssign(
+                    new SyntheticName(0),
+                    Type.INT,
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2))))),
+                new LetAssign(
+                    new LocalName("b", 1),
+                    Type.INT,
+                    new Unbox(new Reference(new SyntheticName(0), Type.INT))),
+                new LetAssign(
+                    new LocalName("c", 2),
+                    Type.INT,
+                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(3))))),
+                new LetAssign(
+                    new LocalName("d", 3),
+                    Type.BOOLEAN,
+                    new Boolean(true))
+            );
+            var expectedTail = Unit.INSTANCE;
 
             assertThat(bindings, is(expectedBindings));
             assertThat(tail, is(expectedTail));

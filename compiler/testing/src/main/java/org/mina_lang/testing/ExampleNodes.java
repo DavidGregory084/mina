@@ -579,4 +579,127 @@ public interface ExampleNodes {
         applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
         BinaryOp.ADD,
         applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
+
+    /**
+     * A typed example node for an if expression with a constant boolean condition and branches.
+     * <pre><code>if true then 1 else 2</code></pre>
+     */
+    IfNode<Attributes> IF_TRUE_THEN_ONE_ELSE_TWO_NODE = ifNode(
+        Meta.nameless(Type.INT),
+        boolNode(Meta.nameless(Type.BOOLEAN), true),
+        intNode(Meta.nameless(Type.INT), 1),
+        intNode(Meta.nameless(Type.INT), 2));
+
+    /**
+     * A typed example node for an if expression with a condition that calls identity and constant branches.
+     * <pre><code>if id(true) then 1 else 2</code></pre>
+     */
+    IfNode<Attributes> IF_ID_TRUE_THEN_ONE_ELSE_TWO_NODE = ifNode(
+        Meta.nameless(Type.INT),
+        applyNode(
+            Meta.nameless(Type.BOOLEAN),
+            refNode(LET_ID_META, "id"),
+            Lists.immutable.of(boolNode(Meta.nameless(Type.BOOLEAN), true))),
+        intNode(Meta.nameless(Type.INT), 1),
+        intNode(Meta.nameless(Type.INT), 2));
+
+    /**
+     * A typed example node for an if expression with a condition that calls identity and branches that call identity.
+     * <pre><code>if id(true) then id(1) else id(2)</code></pre>
+     */
+    IfNode<Attributes> IF_ID_TRUE_THEN_ID_ONE_ELSE_ID_TWO_NODE = ifNode(
+        Meta.nameless(Type.INT),
+        applyNode(
+            Meta.nameless(Type.BOOLEAN),
+            refNode(LET_ID_META, "id"),
+            Lists.immutable.of(boolNode(Meta.nameless(Type.BOOLEAN), true))),
+        applyNode(
+            Meta.nameless(Type.INT),
+            refNode(LET_ID_META, "id"),
+            Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
+        applyNode(
+            Meta.nameless(Type.INT),
+            refNode(LET_ID_META, "id"),
+            Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
+
+    /**
+     * A typed example node for a block that declares a mixture of constant bindings and computations
+     * <pre><code>
+     * {
+     *     let a = 1
+     *     let b = id(2)
+     *     let c = magic(3)
+     *     let d = true
+     *     inc(c)
+     * }
+     * </code></pre>
+     */
+    BlockNode<Attributes> MIXED_BLOCK_NODE = blockNode(
+        Meta.nameless(Type.INT),
+        Lists.immutable.of(
+            letNode(
+                Meta.of(new LocalName("a", 0), Type.INT),
+                "a",
+                intNode(Meta.nameless(Type.INT), 1)),
+            letNode(
+                Meta.of(new LocalName("b", 1), Type.INT),
+                "b",
+                applyNode(
+                    Meta.nameless(Type.INT),
+                    refNode(LET_ID_META, "id"),
+                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2)))),
+            letNode(
+                Meta.of(new LocalName("c", 2), Type.INT),
+                "c",
+                applyNode(
+                    Meta.nameless(Type.INT),
+                    refNode(LET_MAGIC_META, "magic"),
+                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 3)))),
+            letNode(
+                Meta.of(new LocalName("d", 3), Type.BOOLEAN),
+                "d",
+                boolNode(Meta.nameless(Type.BOOLEAN), true))),
+        applyNode(
+            Meta.nameless(Type.INT),
+            refNode(LET_INC_META, "inc"),
+            Lists.immutable.of(refNode(Meta.of(new LocalName("c", 2), Type.INT), "c"))));
+
+    /**
+     * A typed example node for a block that declares a mixture of constant bindings and computations
+     * and does not have a tail expression.
+     * <pre><code>
+     * {
+     *     let a = 1
+     *     let b = id(2)
+     *     let c = magic(3)
+     *     let d = true
+     * }
+     * </code></pre>
+     */
+    BlockNode<Attributes> MIXED_BLOCK_NO_TAIL_NODE = blockNode(
+        Meta.nameless(Type.INT),
+        Lists.immutable.of(
+            letNode(
+                Meta.of(new LocalName("a", 0), Type.INT),
+                "a",
+                intNode(Meta.nameless(Type.INT), 1)),
+            letNode(
+                Meta.of(new LocalName("b", 1), Type.INT),
+                "b",
+                applyNode(
+                    Meta.nameless(Type.INT),
+                    refNode(LET_ID_META, "id"),
+                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2)))),
+            letNode(
+                Meta.of(new LocalName("c", 2), Type.INT),
+                "c",
+                applyNode(
+                    Meta.nameless(Type.INT),
+                    refNode(LET_MAGIC_META, "magic"),
+                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 3)))),
+            letNode(
+                Meta.of(new LocalName("d", 3), Type.BOOLEAN),
+                "d",
+                boolNode(Meta.nameless(Type.BOOLEAN), true))),
+        Optional.empty());
 }

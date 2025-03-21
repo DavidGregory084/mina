@@ -18,7 +18,6 @@ import org.mina_lang.ina.Long;
 import org.mina_lang.ina.String;
 import org.mina_lang.syntax.*;
 
-import java.io.IOException;
 import java.util.List;
 
 public class Lower {
