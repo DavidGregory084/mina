@@ -796,4 +796,20 @@ public interface ExampleNodes {
                 "d",
                 boolNode(Meta.nameless(Type.BOOLEAN), true))),
         Optional.empty());
+
+    /**
+     * A typed example node for a match node which scrutinises an integer with an identifier pattern.
+     * <pre><code>
+     * match 1 with {
+     *    case x -> x
+     * }
+     * </code></pre>
+     */
+    MatchNode<Attributes> MATCH_NODE_INT_ID_PATTERN = matchNode(
+        Meta.nameless(Type.INT),
+        intNode(Meta.nameless(Type.INT), 1),
+        Lists.immutable.of(caseNode(
+            Meta.nameless(Type.INT),
+            idPatternNode(Meta.of(new LocalName("x", 0), Type.INT), "x"),
+            refNode(Meta.of(new LocalName("x", 0), Type.INT), "x"))));
 }

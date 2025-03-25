@@ -876,4 +876,24 @@ public class LowerTest {
         });
     }
 
+    @Test
+    void lowersMatchNodeWithIdPattern() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            var tail = lower.lowerExpr(MATCH_NODE_INT_ID_PATTERN, bindings);
+
+            var expectedBindings = Lists.mutable.empty();
+            var expectedTail = new Match(
+                Type.INT,
+                new Int(1),
+                Lists.immutable.of(
+                    new Case(
+                        new IdPattern(new LocalName("x", 0), Type.INT),
+                        new Reference(new LocalName("x", 0), Type.INT))));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
 }
