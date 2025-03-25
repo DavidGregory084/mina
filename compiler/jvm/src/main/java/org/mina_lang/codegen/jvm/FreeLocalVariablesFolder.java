@@ -282,7 +282,7 @@ public class FreeLocalVariablesFolder implements MetaNodeFolder<Attributes, Immu
 
     @Override
     public ImmutableList<ReferenceNode<Attributes>> visitFieldPattern(Meta<Attributes> meta, String field,
-            Optional<ImmutableList<ReferenceNode<Attributes>>> pattern) {
+            ImmutableList<ReferenceNode<Attributes>> pattern) {
         return Lists.immutable.empty();
     }
 

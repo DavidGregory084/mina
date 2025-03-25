@@ -350,19 +350,22 @@ public class SyntaxNodeVisitorTest {
                         new Range(0, 5, 0, 33),
                         idNode(new Range(0, 5, 0, 9), "Cons"),
                         Lists.immutable.of(
-                                fieldPatternNode(new Range(0, 12, 0, 16), "head",
-                                        Optional.empty()),
-                                fieldPatternNode(new Range(0, 18, 0, 30), "tail", Optional.of(
+                                fieldPatternNode(
+                                    new Range(0, 12, 0, 16), "head",
+                                    idPatternNode(new Range(0, 12, 0, 16), "head")),
+                                fieldPatternNode(new Range(0, 18, 0, 30), "tail",
                                         constructorPatternNode(
                                                 new Range(0, 24, 0, 30),
                                                 idNode(new Range(0, 24, 0, 27), "Nil"),
-                                                Lists.immutable.empty()))))),
+                                                Lists.immutable.empty())))),
                 refNode(new Range(0, 37, 0, 41), "head"));
 
         var expected = contains(
                 // Cons
                 new Entry(QualifiedIdNode.class, new Range(0, 5, 0, 9)),
                 // head
+                new Entry(IdPatternNode.class, new Range(0, 12, 0, 16)),
+                // head:
                 new Entry(FieldPatternNode.class, new Range(0, 12, 0, 16)),
                 // Nil
                 new Entry(QualifiedIdNode.class, new Range(0, 24, 0, 27)),

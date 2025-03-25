@@ -4,6 +4,7 @@
  */
 package org.mina_lang.testing;
 
+import com.opencastsoftware.yvette.Range;
 import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -812,4 +813,75 @@ public interface ExampleNodes {
             Meta.nameless(Type.INT),
             idPatternNode(Meta.of(new LocalName("x", 0), Type.INT), "x"),
             refNode(Meta.of(new LocalName("x", 0), Type.INT), "x"))));
+
+    /**
+     * A typed example node for a match node which scrutinises an integer with a literal pattern.
+     * <pre><code>
+     * match 1 with {
+     *    case 1 -> true
+     * }
+     * </code></pre>
+     */
+    MatchNode<Attributes> MATCH_NODE_INT_LITERAL_PATTERN = matchNode(
+        Meta.nameless(Type.BOOLEAN),
+        intNode(Meta.nameless(Type.INT), 1),
+        Lists.immutable.of(caseNode(
+            Meta.nameless(Type.BOOLEAN),
+            literalPatternNode(Meta.nameless(Type.INT), intNode(Meta.nameless(Type.INT), 1)),
+            boolNode(Meta.nameless(Type.BOOLEAN), true))));
+
+    /**
+     * A typed example node for a match node which scrutinises an integer with a literal and alias pattern.
+     * <pre><code>
+     * match 1 with {
+     *    case x @ 1 -> x
+     * }
+     * </code></pre>
+     */
+    MatchNode<Attributes> MATCH_NODE_INT_ALIAS_PATTERN = matchNode(
+        Meta.nameless(Type.INT),
+        intNode(Meta.nameless(Type.INT), 1),
+        Lists.immutable.of(caseNode(
+            Meta.nameless(Type.INT),
+            aliasPatternNode(
+                Meta.of(new LocalName("x", 0), Type.INT),
+                "x",
+                literalPatternNode(Meta.nameless(Type.INT), intNode(Meta.nameless(Type.INT), 1))),
+            refNode(Meta.of(new LocalName("x", 0), Type.INT), "x"))));
+
+    /**
+     * A typed example node for a match node which scrutinises a reference to a List with constructor and field identifier patterns.
+     * <pre><code>
+     * match list with {
+     *    case Nil {} -> 0
+     *    case Cons { head, tail } -> 1
+     * }
+     * </code></pre>
+     */
+    MatchNode<Attributes> MATCH_NODE_LIST_CONSTRUCTOR_ID_PATTERN = matchNode(
+        Meta.nameless(Type.INT),
+        refNode(Meta.of(new LocalName("list", 0), LIST_A_TYPE), "list"),
+        Lists.immutable.of(
+            caseNode(
+                Meta.nameless(Type.INT),
+                constructorPatternNode(
+                    Meta.of(NIL_CONSTRUCTOR_NAME, LIST_A_TYPE),
+                    idNode(Range.EMPTY, "Nil"),
+                    Lists.immutable.empty()),
+                intNode(Meta.nameless(Type.INT), 0)),
+            caseNode(
+                Meta.nameless(Type.INT),
+                constructorPatternNode(
+                    Meta.of(CONS_CONSTRUCTOR_NAME, LIST_A_TYPE),
+                    idNode(Range.EMPTY, "Cons"),
+                    Lists.immutable.of(
+                        fieldPatternNode(
+                            Meta.of(HEAD_FIELD_NAME, TYPE_VAR_A),
+                            "head",
+                            idPatternNode(Meta.of(new LocalName("head", 1), TYPE_VAR_A), "head")),
+                        fieldPatternNode(
+                            Meta.of(TAIL_FIELD_NAME, LIST_A_TYPE),
+                            "tail",
+                            idPatternNode(Meta.of(new LocalName("tail", 2), LIST_A_TYPE), "tail")))),
+                intNode(Meta.nameless(Type.INT), 1))));
 }

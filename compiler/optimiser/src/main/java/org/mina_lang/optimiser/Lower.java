@@ -358,14 +358,11 @@ public class Lower {
         return null;
     }
 
-    // TODO: Think about desugaring field pattern to IdPatternNode earlier to avoid this wrangling
     FieldPattern lowerFieldPattern(ConstructorName constrName, FieldPatternNode<Attributes> field) {
+        var name = (FieldName) field.meta().meta().name();
         var type = (Type) field.meta().meta().sort();
-        var pattern = field.pattern().map(this::lowerPattern).orElseGet(() -> {
-            var name = (LocalName) field.meta().meta().name();
-            return new IdPattern(name, type);
-        });
-        return new FieldPattern(new FieldName(constrName, field.field()), type, pattern);
+        var pattern = lowerPattern(field.pattern());
+        return new FieldPattern(name, type, pattern);
     }
 
     Expression lowerUnaryOp(UnaryOpNode<Attributes> unOp, List<LocalBinding> bindings) {

@@ -13,7 +13,6 @@ import org.mina_lang.common.names.Name;
 import org.mina_lang.syntax.PatternNodeFolder;
 import org.mina_lang.syntax.QualifiedIdNode;
 
-import java.util.Optional;
 
 public class PatternVariablesFolder implements PatternNodeFolder<Attributes, ImmutableSet<Name>> {
 
@@ -64,9 +63,8 @@ public class PatternVariablesFolder implements PatternNodeFolder<Attributes, Imm
     }
 
     @Override
-    public ImmutableSet<Name> visitFieldPattern(Meta<Attributes> meta, String field,
-            Optional<ImmutableSet<Name>> pattern) {
-        return pattern.orElseGet(() -> Sets.immutable.of(meta.meta().name()));
+    public ImmutableSet<Name> visitFieldPattern(Meta<Attributes> meta, String field, ImmutableSet<Name> pattern) {
+        return pattern;
     }
 
     @Override

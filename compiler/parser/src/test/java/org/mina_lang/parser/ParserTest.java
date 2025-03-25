@@ -1811,8 +1811,9 @@ public class ParserTest {
                                 new Range(0, 5, 0, 18),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
                                 Lists.immutable.of(
-                                        fieldPatternNode(new Range(0, 12, 0, 16), "head",
-                                                Optional.empty()))),
+                                        fieldPatternNode(
+                                            new Range(0, 12, 0, 16), "head",
+                                            idPatternNode(new Range(0, 12, 0, 16), "head")))),
                         refNode(new Range(0, 22, 0, 26), "head")));
     }
 
@@ -1827,8 +1828,9 @@ public class ParserTest {
                                         new Range(0, 12, 0, 25),
                                         idNode(new Range(0, 12, 0, 16), "Cons"),
                                         Lists.immutable.of(
-                                                fieldPatternNode(new Range(0, 19, 0, 23), "head",
-                                                        Optional.empty())))),
+                                                fieldPatternNode(
+                                                    new Range(0, 19, 0, 23), "head",
+                                                    idPatternNode(new Range(0, 19, 0, 23), "head"))))),
                         refNode(new Range(0, 29, 0, 33), "head")));
     }
 
@@ -1842,13 +1844,15 @@ public class ParserTest {
                                 new Range(0, 5, 0, 33),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
                                 Lists.immutable.of(
-                                        fieldPatternNode(new Range(0, 12, 0, 16), "head",
-                                                Optional.empty()),
-                                        fieldPatternNode(new Range(0, 18, 0, 30), "tail", Optional.of(
+                                        fieldPatternNode(
+                                            new Range(0, 12, 0, 16), "head",
+                                            idPatternNode(new Range(0, 12, 0, 16), "head")),
+                                        fieldPatternNode(
+                                            new Range(0, 18, 0, 30), "tail",
                                                 constructorPatternNode(
                                                         new Range(0, 24, 0, 30),
                                                         idNode(new Range(0, 24, 0, 27), "Nil"),
-                                                        Lists.immutable.empty()))))),
+                                                        Lists.immutable.empty())))),
                         refNode(new Range(0, 37, 0, 41), "head")));
     }
 
@@ -1862,14 +1866,15 @@ public class ParserTest {
                                 new Range(0, 5, 0, 39),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
                                 Lists.immutable.of(
-                                        fieldPatternNode(new Range(0, 12, 0, 16), "head",
-                                                Optional.empty()),
-                                        fieldPatternNode(new Range(0, 18, 0, 36), "tail", Optional.of(
+                                        fieldPatternNode(
+                                            new Range(0, 12, 0, 16), "head",
+                                            idPatternNode(new Range(0, 12, 0, 16), "head")),
+                                        fieldPatternNode(new Range(0, 18, 0, 36), "tail",
                                                 aliasPatternNode(new Range(0, 24, 0, 36), "nil",
                                                         constructorPatternNode(
                                                                 new Range(0, 30, 0, 36),
                                                                 idNode(new Range(0, 30, 0, 33), "Nil"),
-                                                                Lists.immutable.empty())))))),
+                                                                Lists.immutable.empty()))))),
                         refNode(new Range(0, 43, 0, 47), "head")));
     }
 

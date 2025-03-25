@@ -1769,7 +1769,9 @@ public class RenamerTest {
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
-                                                        fieldPatternNode(Range.EMPTY, "head", Optional.empty()))),
+                                                        fieldPatternNode(
+                                                            Range.EMPTY, "head",
+                                                            idPatternNode(Range.EMPTY, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
@@ -1811,8 +1813,9 @@ public class RenamerTest {
                                                 consMeta,
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
-                                                        fieldPatternNode(Meta.of(fieldPatName), "head",
-                                                                Optional.empty()))),
+                                                        fieldPatternNode(
+                                                            headMeta, "head",
+                                                            idPatternNode(Meta.of(fieldPatName), "head")))),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(someMeta, "Some"),
@@ -1865,7 +1868,7 @@ public class RenamerTest {
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
                                                         fieldPatternNode(Range.EMPTY, "head",
-                                                                Optional.of(idPatternNode(Range.EMPTY, "first"))))),
+                                                                idPatternNode(Range.EMPTY, "first")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
@@ -1908,9 +1911,8 @@ public class RenamerTest {
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
                                                         fieldPatternNode(
-                                                                Meta.of(Nameless.INSTANCE), "head",
-                                                                Optional.of(idPatternNode(Meta.of(idPatName),
-                                                                        "first"))))),
+                                                                headMeta, "head",
+                                                                idPatternNode(Meta.of(idPatName), "first")))),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(someMeta, "Some"),
@@ -1962,8 +1964,9 @@ public class RenamerTest {
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
-                                                        fieldPatternNode(Range.EMPTY, "head",
-                                                                Optional.of(idPatternNode(Range.EMPTY, "head"))))),
+                                                        fieldPatternNode(
+                                                            Range.EMPTY, "head",
+                                                            idPatternNode(Range.EMPTY, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
@@ -2006,9 +2009,8 @@ public class RenamerTest {
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
                                                         fieldPatternNode(
-                                                                Meta.of(Nameless.INSTANCE), "head",
-                                                                Optional.of(idPatternNode(Meta.of(idPatName),
-                                                                        "head"))))),
+                                                                headMeta, "head",
+                                                                idPatternNode(Meta.of(idPatName), "head")))),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(someMeta, "Some"),
@@ -2061,7 +2063,9 @@ public class RenamerTest {
                                                 unknownConstructorRange,
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
-                                                        fieldPatternNode(Range.EMPTY, "head", Optional.empty()))),
+                                                        fieldPatternNode(
+                                                            Range.EMPTY, "head",
+                                                            idPatternNode(Range.EMPTY, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
@@ -2098,7 +2102,9 @@ public class RenamerTest {
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Cons"),
                                                 Lists.immutable.of(
-                                                        fieldPatternNode(unknownFieldRange, "hed", Optional.empty()))),
+                                                        fieldPatternNode(
+                                                            unknownFieldRange, "hed",
+                                                            idPatternNode(unknownFieldRange, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),

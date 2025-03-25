@@ -881,8 +881,14 @@ public class LowerTest {
         withLowering(lower -> {
             List<LocalBinding> bindings = Lists.mutable.empty();
 
+            // match 1 with {
+            //    case x -> x
+            // }
             var tail = lower.lowerExpr(MATCH_NODE_INT_ID_PATTERN, bindings);
 
+            // match 1 with {
+            //    case x -> x
+            // }
             var expectedBindings = Lists.mutable.empty();
             var expectedTail = new Match(
                 Type.INT,
@@ -891,6 +897,102 @@ public class LowerTest {
                     new Case(
                         new IdPattern(new LocalName("x", 0), Type.INT),
                         new Reference(new LocalName("x", 0), Type.INT))));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersMatchNodeWithLiteralPattern() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // match 1 with {
+            //    case 1 -> true
+            // }
+            var tail = lower.lowerExpr(MATCH_NODE_INT_LITERAL_PATTERN, bindings);
+
+            // match 1 with {
+            //    case 1 -> true
+            // }
+            var expectedBindings = Lists.mutable.empty();
+            var expectedTail = new Match(
+                Type.BOOLEAN,
+                new Int(1),
+                Lists.immutable.of(
+                    new Case(
+                        new LiteralPattern(new Int(1)),
+                        new Boolean(true))));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersMatchNodeWithLiteralAndAliasPattern() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // match 1 with {
+            //    case x @ 1 -> x
+            // }
+            var tail = lower.lowerExpr(MATCH_NODE_INT_ALIAS_PATTERN, bindings);
+
+            // match 1 with {
+            //    case x @ 1 -> x
+            // }
+            var expectedBindings = Lists.mutable.empty();
+            var expectedTail = new Match(
+                Type.INT,
+                new Int(1),
+                Lists.immutable.of(
+                    new Case(
+                        new AliasPattern(new LocalName("x", 0), Type.INT, new LiteralPattern(new Int(1))),
+                        new Reference(new LocalName("x", 0), Type.INT))));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersMatchNodeWithConstructorPatternAndIdPatterns() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // match list with {
+            //    case Nil {} -> 0
+            //    case Cons { head, tail } -> 1
+            // }
+            var tail = lower.lowerExpr(MATCH_NODE_LIST_CONSTRUCTOR_ID_PATTERN, bindings);
+
+            // match list with {
+            //    case Nil {} -> 0
+            //    case Cons { head, tail } -> 1
+            // }
+            var expectedBindings = Lists.mutable.empty();
+            var expectedTail = new Match(
+                Type.INT,
+                new Reference(new LocalName("list", 0), LIST_A_TYPE),
+                Lists.immutable.of(
+                    new Case(
+                        new ConstructorPattern(
+                            NIL_CONSTRUCTOR_NAME,
+                            LIST_A_TYPE, Lists.immutable.empty()),
+                        new Int(0)),
+                    new Case(
+                        new ConstructorPattern(
+                            CONS_CONSTRUCTOR_NAME,
+                            LIST_A_TYPE, Lists.immutable.of(
+                            new FieldPattern(
+                                HEAD_FIELD_NAME,
+                                TYPE_VAR_A, new IdPattern(new LocalName("head", 1), TYPE_VAR_A)),
+                            new FieldPattern(
+                                TAIL_FIELD_NAME,
+                                LIST_A_TYPE, new IdPattern(new LocalName("tail", 2), LIST_A_TYPE)))),
+                        new Int(1))));
 
             assertThat(bindings, is(expectedBindings));
             assertThat(tail, is(expectedTail));

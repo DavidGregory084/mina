@@ -851,9 +851,12 @@ public class Parser {
 
         @Override
         public FieldPatternNode<Void> visitFieldPattern(FieldPatternContext ctx) {
+            var range = contextRange(ctx);
             var id = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var pattern = Optional.ofNullable(patternVisitor.visitNullable(ctx.pattern()));
-            return fieldPatternNode(contextRange(ctx), id, pattern);
+            var pattern = Optional
+                .ofNullable(patternVisitor.visitNullable(ctx.pattern()))
+                .orElseGet(() -> idPatternNode(range, id));
+            return fieldPatternNode(range, id, pattern);
         }
     }
 
