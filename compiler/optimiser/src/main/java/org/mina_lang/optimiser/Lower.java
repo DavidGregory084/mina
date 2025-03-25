@@ -40,6 +40,30 @@ public class Lower {
         return getUnderlyingType((Type) node.meta().meta().sort());
     }
 
+    public Value boxArgValue(Value loweredArg, Type argType) {
+        // Box primitive arguments to polymorphic functions
+        if (loweredArg.type().isPrimitive() && !argType.isPrimitive()) {
+            return new Box(loweredArg);
+        } else {
+            return loweredArg;
+        }
+    }
+
+    public Expression unboxReturnValue(List<LocalBinding> bindings, Apply loweredApply, Type applyType, Type returnType) {
+        Expression tailExpr;
+
+        // Unbox primitive return values of polymorphic functions
+        if (applyType.isPrimitive() && !returnType.isPrimitive()) {
+            var applyName = nameSupply.newSyntheticName();
+            bindings.add(new LetAssign(applyName, applyType, loweredApply));
+            tailExpr = new Unbox(new Reference(applyName, applyType));
+        } else {
+            tailExpr = loweredApply;
+        }
+
+        return tailExpr;
+    }
+
     public Namespace lower(NamespaceNode<Attributes> namespace) {
         var name = (NamespaceName) namespace.meta().meta().name();
         var declarations = namespace.declarationGroups().flatCollect(this::lowerDeclarationGroup);
@@ -189,28 +213,12 @@ public class Lower {
             .collect(pair -> {
                 var loweredArg = lowerToValue(bindings, pair.getOne());
                 var funArgType = pair.getTwo();
-                // Box primitive arguments to polymorphic functions
-                if (loweredArg.type().isPrimitive() && !funArgType.isPrimitive()) {
-                    return new Box(loweredArg);
-                } else {
-                    return loweredArg;
-                }
+                return boxArgValue(loweredArg, funArgType);
             });
 
         var loweredApply = new Apply(applyType, loweredFn, args);
 
-        Expression tailExpr;
-
-        // Unbox primitive return values of polymorphic functions
-        if (applyType.isPrimitive() && !returnType.isPrimitive()) {
-            var applyName = nameSupply.newSyntheticName();
-            bindings.add(new LetAssign(applyName, applyType, loweredApply));
-            tailExpr = new Unbox(new Reference(applyName, applyType));
-        } else {
-            tailExpr = loweredApply;
-        }
-
-        return tailExpr;
+        return unboxReturnValue(bindings, loweredApply, applyType, returnType);
     }
 
     Expression lowerBlock(BlockNode<Attributes> block, List<LocalBinding> bindings) {
@@ -281,26 +289,12 @@ public class Lower {
             .collect(pair -> {
                 var loweredArg = pair.getOne();
                 var underlyingArgType = pair.getTwo();
-                // Box primitive arguments to polymorphic functions
-                if (loweredArg.type().isPrimitive() && !underlyingArgType.isPrimitive()) {
-                    return new Box(loweredArg);
-                } else {
-                    return loweredArg;
-                }
+                return boxArgValue(loweredArg, underlyingArgType);
             });
 
         var loweredApply = new Apply(adaptedReturnType, selection, args);
 
-        Expression tailExpr;
-
-        // Unbox primitive return values of polymorphic functions
-        if (adaptedReturnType.isPrimitive() && !underlyingReturnType.isPrimitive()) {
-            var applyName = nameSupply.newSyntheticName();
-            bindings.add(new LetAssign(applyName, adaptedReturnType, loweredApply));
-            tailExpr = new Unbox(new Reference(applyName, adaptedReturnType));
-        } else {
-            tailExpr = loweredApply;
-        }
+        var tailExpr = unboxReturnValue(bindings, loweredApply, adaptedReturnType, underlyingReturnType);
 
         var body = bindings.isEmpty() ? tailExpr : new Block(adaptedReturnType, bindings.toImmutableList(), tailExpr);
 
