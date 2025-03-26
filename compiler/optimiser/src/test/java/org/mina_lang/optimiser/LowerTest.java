@@ -998,4 +998,76 @@ public class LowerTest {
             assertThat(tail, is(expectedTail));
         });
     }
+
+    @Test
+    void lowersMatchNodeWithComputationInScrutinee() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // match id(1) with {
+            //    case x -> x
+            // }
+            var tail = lower.lowerExpr(MATCH_NODE_ID_INT_ID_PATTERN, bindings);
+
+            // {
+            //    let $0 = id(box(1))
+            //    match unbox($0) with {
+            //       case x -> x
+            //    }
+            // }
+            var expectedBindings = Lists.mutable.of(
+                new LetAssign(
+                    new SyntheticName(0), Type.INT,
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1))))));
+            var expectedTail = new Match(
+                Type.INT,
+                new Unbox(new Reference(new SyntheticName(0), Type.INT)),
+                Lists.immutable.of(
+                    new Case(
+                        new IdPattern(new LocalName("x", 0), Type.INT),
+                        new Reference(new LocalName("x", 0), Type.INT))));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
+
+    @Test
+    void lowersMatchNodeWithComputationInCaseConsequent() {
+        withLowering(lower -> {
+            List<LocalBinding> bindings = Lists.mutable.empty();
+
+            // match 1 with {
+            //    case 1 -> id(true)
+            // }
+            var tail = lower.lowerExpr(MATCH_NODE_INT_LITERAL_PATTERN_ID, bindings);
+
+            // match 1 with {
+            //    case 1 -> {
+            //       let $0 = id(box(true))
+            //       unbox($0)
+            //    }
+            // }
+            var expectedBindings = Lists.mutable.empty();
+            var expectedTail = new Match(
+                Type.BOOLEAN,
+                new Int(1),
+                Lists.immutable.of(
+                    new Case(
+                        new LiteralPattern(new Int(1)),
+                        new Block(
+                            Type.BOOLEAN,
+                            Lists.immutable.of(
+                                new LetAssign(
+                                    new SyntheticName(0), Type.BOOLEAN,
+                                    new Apply(
+                                        Type.BOOLEAN,
+                                        new Reference(LET_ID_NAME, LET_ID_TYPE),
+                                        Lists.immutable.of(new Box(new Boolean(true)))))),
+                            new Unbox(new Reference(new SyntheticName(0), Type.BOOLEAN))))));
+
+            assertThat(bindings, is(expectedBindings));
+            assertThat(tail, is(expectedTail));
+        });
+    }
 }

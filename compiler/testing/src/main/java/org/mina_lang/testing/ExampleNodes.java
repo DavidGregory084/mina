@@ -884,4 +884,42 @@ public interface ExampleNodes {
                             "tail",
                             idPatternNode(Meta.of(new LocalName("tail", 2), LIST_A_TYPE), "tail")))),
                 intNode(Meta.nameless(Type.INT), 1))));
+
+    /**
+     * A typed example node for a match node which calls identity on its scrutinee integer before matching it with an identifier pattern.
+     * <pre><code>
+     * match id(1) with {
+     *    case x -> x
+     * }
+     * </code></pre>
+     */
+    MatchNode<Attributes> MATCH_NODE_ID_INT_ID_PATTERN = matchNode(
+        Meta.nameless(Type.INT),
+        applyNode(
+            Meta.nameless(Type.INT),
+            refNode(LET_ID_META, "id"),
+            Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
+        Lists.immutable.of(caseNode(
+            Meta.nameless(Type.INT),
+            idPatternNode(Meta.of(new LocalName("x", 0), Type.INT), "x"),
+            refNode(Meta.of(new LocalName("x", 0), Type.INT), "x"))));
+
+    /**
+     * A typed example node for a match node which scrutinises an integer with a literal pattern before calling identity on its consequent boolean.
+     * <pre><code>
+     * match 1 with {
+     *    case 1 -> id(true)
+     * }
+     * </code></pre>
+     */
+    MatchNode<Attributes> MATCH_NODE_INT_LITERAL_PATTERN_ID = matchNode(
+        Meta.nameless(Type.BOOLEAN),
+        intNode(Meta.nameless(Type.INT), 1),
+        Lists.immutable.of(caseNode(
+            Meta.nameless(Type.BOOLEAN),
+            literalPatternNode(Meta.nameless(Type.INT), intNode(Meta.nameless(Type.INT), 1)),
+            applyNode(
+                Meta.nameless(Type.BOOLEAN),
+                refNode(LET_ID_META, "id"),
+                Lists.immutable.of(boolNode(Meta.nameless(Type.BOOLEAN), true))))));
 }
