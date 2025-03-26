@@ -17,7 +17,6 @@ import org.mina_lang.common.types.UnsolvedKind;
 import org.mina_lang.common.types.UnsolvedType;
 
 public record DataTypingScope(
-        // TODO: Think about what we can put into these scopes to simplify typing
         DataName data,
         MutableMap<String, Meta<Attributes>> values,
         MutableMap<String, Meta<Attributes>> types,

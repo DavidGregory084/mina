@@ -216,11 +216,12 @@ public class Main {
                             return new TypecheckingPhase(namespaceGraph, classpathScopes, renamedNodes, scopedDiagnostics);
                         });
 
-                        var codegenPhase = Phase.andThen(typecheckingPhase, typecheckedNodes -> {
-                            return new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                        // For now, we just run the optimiser alongside codegen, since codegen uses unoptimised trees
+                        return Phase.runMono(typecheckingPhase).flatMap(typecheckedNodes -> {
+                            var optimiserPhase = new OptimiserPhase(namespaceGraph, typecheckedNodes, scopedDiagnostics);
+                            var codegenPhase = new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                            return optimiserPhase.runPhase().and(codegenPhase.runPhase());
                         });
-
-                        return Phase.runMono(codegenPhase);
                     });
                 }, classLoader -> {
                     try { classLoader.close(); }

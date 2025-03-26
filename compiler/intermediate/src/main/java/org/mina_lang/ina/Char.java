@@ -16,4 +16,9 @@ public record Char(char value) implements Primitive {
     public Character boxedValue() {
         return value;
     }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitChar(value);
+    }
 }

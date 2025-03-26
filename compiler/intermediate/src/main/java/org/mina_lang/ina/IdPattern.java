@@ -8,4 +8,8 @@ import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.types.Type;
 
 public record IdPattern(LocalName name, Type type) implements Pattern {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitIdPattern(name, type);
+    }
 }

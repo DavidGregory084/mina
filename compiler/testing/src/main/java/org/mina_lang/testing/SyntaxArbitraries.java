@@ -271,15 +271,8 @@ public class SyntaxArbitraries {
 
     private static Arbitrary<FieldPatternNode<Attributes>> fieldPatternNode(GenEnvironment env, GenScope scope, String fieldName, Meta<Attributes> fieldMeta) {
         var fieldType = getType(fieldMeta);
-        return patternNode(env, scope, fieldType).optional().map(pat -> {
-            Meta<Attributes> fieldPatMeta;
-            if (pat.isEmpty()) {
-                var fieldPatName = new LocalName(fieldName, env.localVarIndex().getAndIncrement());
-                fieldPatMeta = Meta.of(fieldPatName, fieldMeta.meta().sort());
-                scope.putValue(fieldName, fieldPatMeta);
-            } else {
-                fieldPatMeta = Meta.nameless(fieldMeta.meta().sort());
-            }
+        return patternNode(env, scope, fieldType).map(pat -> {
+            var fieldPatMeta = Meta.of(fieldMeta.meta().name(), fieldMeta.meta().sort());
             return SyntaxNodes.fieldPatternNode(fieldPatMeta, fieldName, pat);
         });
     }

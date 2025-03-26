@@ -8,7 +8,11 @@ public record ConstructorName(DataName enclosing, QualifiedName name) implements
 
     @Override
     public void accept(NameVisitor visitor) {
-        visitor.visitDataName(enclosing);
         visitor.visitConstructorName(this);
+    }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitConstructorName(this);
     }
 }

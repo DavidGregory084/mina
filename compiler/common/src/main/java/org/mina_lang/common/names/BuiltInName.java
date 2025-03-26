@@ -20,4 +20,9 @@ public record BuiltInName(String name) implements Named {
     public void accept(NameVisitor visitor) {
         visitor.visitBuiltInName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitBuiltInName(this);
+    }
 }

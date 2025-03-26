@@ -8,4 +8,8 @@ import org.mina_lang.common.names.LocalBindingName;
 import org.mina_lang.common.types.Type;
 
 public record Param(LocalBindingName name, Type type) implements InaNode {
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitParam(name, type);
+    }
 }

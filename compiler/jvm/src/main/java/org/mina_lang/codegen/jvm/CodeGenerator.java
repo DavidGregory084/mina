@@ -878,9 +878,7 @@ public class CodeGenerator {
                 var getterDescriptor = Type.getMethodDescriptor(fieldType);
                 var getterMethod = new Method(fieldPat.field(), getterDescriptor);
 
-                var nestedPatLocal = fieldPat.pattern()
-                        .map(nestedPat -> method.methodWriter().newLocal(patType))
-                        .orElseGet(() -> caseScope.putLocalVar(fieldPat));
+                var nestedPatLocal = method.methodWriter().newLocal(patType);
 
                 method.methodWriter().loadLocal(scrutineeLocal);
                 method.methodWriter().checkCast(constrType);
@@ -890,9 +888,7 @@ public class CodeGenerator {
 
                 method.methodWriter().storeLocal(nestedPatLocal);
 
-                fieldPat.pattern().ifPresent(nestedPattern -> {
-                    generatePattern(nestedPattern, nestedPatLocal);
-                });
+                generatePattern(fieldPat.pattern(), nestedPatLocal);
             });
         }
 

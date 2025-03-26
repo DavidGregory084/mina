@@ -635,35 +635,23 @@ public class Renamer {
 
         @Override
         public void preVisitFieldPattern(FieldPatternNode<Void> fieldPat) {
-            var enclosingCase = environment.enclosingCase().get();
             var enclosingConstructorPattern = environment.enclosingConstructorPattern();
 
             enclosingConstructorPattern.flatMap(ConstructorPatternNamingScope::constr).ifPresent(constr -> {
                 if (environment.lookupField(constr, fieldPat.field()).isEmpty()) {
                     unknownConstructorField(constr, fieldPat.field(), fieldPat.meta());
                 }
-
-                if (fieldPat.pattern().isEmpty()) {
-                    var patName = new LocalName(fieldPat.field(), localVarIndex++);
-                    var patMeta = new Meta<Name>(fieldPat.range(), patName);
-
-                    // Only check the current case scope because pattern bindings can shadow outer
-                    // definitions
-                    enclosingCase.putValueIfAbsentOrElse(
-                            fieldPat.field(), patMeta,
-                            Renamer.this::duplicateValueDefinition);
-                }
             });
         }
 
         @Override
-        public FieldPatternNode<Name> visitFieldPattern(Meta<Void> meta, String field,
-                Optional<PatternNode<Name>> pattern) {
-            var fieldPatternMeta = pattern
-                    // There's a nested pattern, so don't introduce a name for this field
-                    .map(pat -> new Meta<Name>(meta.range(), Nameless.INSTANCE))
-                    .or(() -> environment.lookupValue(field))
-                    .orElseGet(() -> new Meta<Name>(meta.range(), Nameless.INSTANCE));
+        public FieldPatternNode<Name> visitFieldPattern(Meta<Void> meta, String field, PatternNode<Name> pattern) {
+            var enclosingConstructorPattern = environment.enclosingConstructorPattern();
+            var fieldName = enclosingConstructorPattern
+                .flatMap(ConstructorPatternNamingScope::constr)
+                .flatMap(constr -> environment.lookupField(constr, field))
+                .map(Meta::meta);
+            var fieldPatternMeta = new Meta<>(meta.range(), fieldName.orElse(Nameless.INSTANCE));
             return fieldPatternNode(fieldPatternMeta, field, pattern);
         }
 

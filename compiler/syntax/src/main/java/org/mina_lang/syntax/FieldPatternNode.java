@@ -6,13 +6,12 @@ package org.mina_lang.syntax;
 
 import org.mina_lang.common.Meta;
 
-import java.util.Optional;
 
-public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternNode<A>> pattern)
+public record FieldPatternNode<A> (Meta<A> meta, String field, PatternNode<A> pattern)
         implements MetaNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
-        pattern.ifPresent(pat -> pat.accept(visitor));
+        pattern.accept(visitor);
         visitor.visitFieldPattern(this);
     }
 
@@ -27,7 +26,7 @@ public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternN
         var result = visitor.visitFieldPattern(
                 meta(),
                 field(),
-                pattern().map(visitor::visitPattern));
+                pattern().accept(visitor));
 
         visitor.postVisitFieldPattern(this);
 
@@ -45,7 +44,7 @@ public record FieldPatternNode<A> (Meta<A> meta, String field, Optional<PatternN
         var result = visitor.visitFieldPattern(
                 meta(),
                 field(),
-                pattern().map(visitor::visitPattern));
+                pattern().accept(visitor));
 
         visitor.postVisitFieldPattern(result);
 

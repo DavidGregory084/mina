@@ -13,4 +13,6 @@ public sealed interface Name permits Named, Nameless {
     }
 
     void accept(NameVisitor visitor);
+
+    <A> A accept(NameFolder<A> visitor);
 }

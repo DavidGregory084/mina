@@ -10,4 +10,9 @@ public record ExistsVarName(String name) implements TypeVarName {
     public void accept(NameVisitor visitor) {
         visitor.visitExistsVarName(this);
     }
+
+    @Override
+    public <A> A accept(NameFolder<A> visitor) {
+        return visitor.visitExistsVarName(this);
+    }
 }

@@ -330,10 +330,8 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitFieldPattern(Meta<A> meta, String field, Optional<Doc> pattern) {
-        return pattern
-            .map(pat -> Doc.text(field).append(COLON).appendSpace(pat))
-            .orElseGet(() -> Doc.text(field));
+    public Doc visitFieldPattern(Meta<A> meta, String field, Doc pattern) {
+        return Doc.text(field).append(COLON).appendSpace(pattern);
     }
 
     @Override

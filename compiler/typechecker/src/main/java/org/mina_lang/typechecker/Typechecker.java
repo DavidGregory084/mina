@@ -1133,21 +1133,15 @@ public class Typechecker {
 
     FieldPatternNode<Attributes> inferFieldPattern(ConstructorName constrName, FieldPatternNode<Name> fieldPat,
             Optional<TypeInstantiationTransformer> instantiator) {
-        var enclosingCase = environment.enclosingCase().get();
-
         var fieldMeta = environment.lookupField(constrName, fieldPat.field()).get();
         var fieldType = (Type) fieldMeta.meta().sort();
         var instantiatedFieldType = instantiator.map(fieldType::accept).orElse(fieldType);
 
-        var inferredPattern = fieldPat.pattern().map(pattern -> checkPattern(pattern, instantiatedFieldType));
+        var checkedPattern = checkPattern(fieldPat.pattern(), instantiatedFieldType);
 
         var updatedMeta = updateMetaWith(fieldPat.meta(), instantiatedFieldType);
 
-        if (fieldPat.pattern().isEmpty()) {
-            enclosingCase.putValue(fieldPat.field(), updatedMeta);
-        }
-
-        return fieldPatternNode(updatedMeta, fieldPat.field(), inferredPattern);
+        return fieldPatternNode(updatedMeta, fieldPat.field(), checkedPattern);
     }
 
     LiteralNode<Attributes> inferLiteral(LiteralNode<Name> literal) {

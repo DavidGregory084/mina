@@ -9,11 +9,16 @@ import org.mina_lang.common.types.Type;
 public record Float(float value) implements Primitive {
     @Override
     public Type type() {
-        return null;
+        return Type.FLOAT;
     }
 
     @Override
     public java.lang.Float boxedValue() {
-        return null;
+        return value;
+    }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitFloat(value);
     }
 }

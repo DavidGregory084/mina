@@ -716,14 +716,14 @@ public class SyntaxNodes {
     public static FieldPatternNode<Void> fieldPatternNode(
             Range range,
             String field,
-            Optional<PatternNode<Void>> pattern) {
+            PatternNode<Void> pattern) {
         return new FieldPatternNode<>(Meta.of(range), field, pattern);
     }
 
     public static <A> FieldPatternNode<A> fieldPatternNode(
             Meta<A> meta,
             String field,
-            Optional<PatternNode<A>> pattern) {
+            PatternNode<A> pattern) {
         return new FieldPatternNode<>(meta, field, pattern);
     }
 

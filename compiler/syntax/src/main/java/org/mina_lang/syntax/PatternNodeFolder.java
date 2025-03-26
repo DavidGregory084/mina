@@ -7,7 +7,6 @@ package org.mina_lang.syntax;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-import java.util.Optional;
 
 public interface PatternNodeFolder<A, B> extends LiteralNodeFolder<A, B> {
     default B visitPattern(PatternNode<A> pat) {
@@ -30,7 +29,7 @@ public interface PatternNodeFolder<A, B> extends LiteralNodeFolder<A, B> {
 
     default void preVisitFieldPattern(FieldPatternNode<A> fieldPat) {}
 
-    B visitFieldPattern(Meta<A> meta, String field, Optional<B> pattern);
+    B visitFieldPattern(Meta<A> meta, String field, B pattern);
 
     default void postVisitFieldPattern(FieldPatternNode<A> fieldPat) {}
 

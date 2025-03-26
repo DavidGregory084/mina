@@ -6,9 +6,14 @@ package org.mina_lang.ina;
 
 import org.mina_lang.common.types.Type;
 
-public record Box(Expression expr, Type primitive) implements Expression {
+public record Box(Value value) implements Value {
     @Override
     public Type type() {
-        return primitive;
+        return value.type();
+    }
+
+    @Override
+    public <A> A accept(InaNodeFolder<A> visitor) {
+        return visitor.visitBox(value.accept(visitor));
     }
 }

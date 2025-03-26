@@ -7,6 +7,15 @@ package org.mina_lang.common.types;
 import com.opencastsoftware.prettier4j.Doc;
 
 public class TypePrinter implements TypeFolder<Doc> {
+    private static final Doc LSQUARE = Doc.text("[");
+    private static final Doc RSQUARE = Doc.text("]");
+    private static final Doc LPAREN = Doc.text("(");
+    private static final Doc RPAREN = Doc.text(")");
+    private static final Doc LBRACE = Doc.text("{");
+    private static final Doc RBRACE = Doc.text("}");
+    private static final Doc COMMA = Doc.text(",").append(Doc.lineOrSpace());
+    private static final Doc ARROW = Doc.text("->");
+
     private static final int DEFAULT_INDENT = 3;
 
     private final int indent;
@@ -22,19 +31,17 @@ public class TypePrinter implements TypeFolder<Doc> {
     @Override
     public Doc visitQuantifiedType(QuantifiedType quant) {
         var argDoc = Doc.intersperse(
-                Doc.text(",").append(Doc.lineOrSpace()),
+                COMMA,
                 quant.args().stream().map(this::visitType))
-                .bracket(this.indent, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
+                .bracket(this.indent, Doc.lineOrEmpty(), LSQUARE, RSQUARE);
 
         return argDoc.appendSpace(
                     visitType(quant.body())
-                        .bracket(this.indent, Doc.text("{"), Doc.text("}")));
+                        .bracket(this.indent, LBRACE, RBRACE));
     }
 
     @Override
     public Doc visitTypeConstructor(TypeConstructor tyCon) {
-        // TODO: Disambiguate names properly by accepting import environment in
-        // constructor
         return Doc.text(tyCon.name().name());
     }
 
@@ -51,16 +58,16 @@ public class TypePrinter implements TypeFolder<Doc> {
 
             var argDoc = argTypes.size() == 1
                     ? Type.isFunction(argTypes.get(0))
-                            ? visitType(argTypes.get(0)).bracket(this.indent, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"))
+                            ? visitType(argTypes.get(0)).bracket(this.indent, Doc.lineOrEmpty(), LPAREN, RPAREN)
                             : visitType(argTypes.get(0))
                     : Doc.intersperse(
-                            Doc.text(",").append(Doc.lineOrSpace()),
+                            COMMA,
                             argTypes.stream().map(this::visitType))
-                            .bracket(this.indent, Doc.lineOrEmpty(), Doc.text("("), Doc.text(")"));
+                            .bracket(this.indent, Doc.lineOrEmpty(), LPAREN, RPAREN);
 
             return Doc.group(
                     argDoc
-                            .appendSpace(Doc.text("->"))
+                            .appendSpace(ARROW)
                             .append(Doc.lineOrSpace().append(visitType(returnType)).indent(this.indent)));
         } else {
             var appliedType = tyApp.type().accept(this);
@@ -68,7 +75,7 @@ public class TypePrinter implements TypeFolder<Doc> {
             Doc typeArgs = Doc.intersperse(
                     Doc.text(",").append(Doc.lineOrSpace()),
                     tyApp.typeArguments().stream().map(this::visitType))
-                    .bracket(this.indent, Doc.lineOrEmpty(), Doc.text("["), Doc.text("]"));
+                    .bracket(this.indent, Doc.lineOrEmpty(), LSQUARE, RSQUARE);
 
             return appliedType.append(typeArgs);
         }
