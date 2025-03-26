@@ -62,17 +62,17 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public static BuiltInType BOOLEAN = new BuiltInType("Boolean", TypeKind.INSTANCE);
 
-    public static BuiltInType CHAR = new BuiltInType("Char", TypeKind.INSTANCE);
-
     public static BuiltInType STRING = new BuiltInType("String", TypeKind.INSTANCE);
 
-    public static BuiltInType INT = new BuiltInType("Int", TypeKind.INSTANCE);
-
-    public static BuiltInType LONG = new BuiltInType("Long", TypeKind.INSTANCE);
-
-    public static BuiltInType FLOAT = new BuiltInType("Float", TypeKind.INSTANCE);
-
     public static BuiltInType DOUBLE = new BuiltInType("Double", TypeKind.INSTANCE);
+
+    public static BuiltInType FLOAT = new BuiltInType("Float", TypeKind.INSTANCE, Type.DOUBLE);
+
+    public static BuiltInType LONG = new BuiltInType("Long", TypeKind.INSTANCE, Type.FLOAT);
+
+    public static BuiltInType INT = new BuiltInType("Int", TypeKind.INSTANCE, Type.LONG);
+
+    public static BuiltInType CHAR = new BuiltInType("Char", TypeKind.INSTANCE, Type.INT);
 
     public static BuiltInType NAMESPACE = new BuiltInType("Namespace", TypeKind.INSTANCE);
 

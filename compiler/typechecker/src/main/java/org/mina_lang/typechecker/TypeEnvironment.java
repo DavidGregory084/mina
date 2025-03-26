@@ -15,10 +15,10 @@ import org.mina_lang.typechecker.scopes.*;
 import java.util.Optional;
 
 public record TypeEnvironment(
-        MutableStack<TypingScope> scopes,
-        UnionFind<MonoType> typeSubstitution,
-        UnionFind<Kind> kindSubstitution,
-        SortSubstitutionTransformer sortTransformer) implements Environment<Attributes, TypingScope> {
+    MutableStack<TypingScope> scopes,
+    UnionFind<MonoType> typeSubstitution,
+    UnionFind<Kind> kindSubstitution,
+    SortSubstitutionTransformer sortTransformer) implements Environment<Attributes, TypingScope> {
 
     @Override
     public void popScope(Class<?> expected) {
@@ -47,38 +47,38 @@ public record TypeEnvironment(
 
     public Optional<NamespaceTypingScope> enclosingNamespace() {
         return scopes()
-                .detectOptional(scope -> scope instanceof NamespaceTypingScope)
-                .map(scope -> (NamespaceTypingScope) scope);
+            .detectOptional(scope -> scope instanceof NamespaceTypingScope)
+            .map(scope -> (NamespaceTypingScope) scope);
     }
 
     public Optional<DataTypingScope> enclosingData() {
         return scopes()
-                .detectOptional(scope -> scope instanceof DataTypingScope)
-                .map(scope -> (DataTypingScope) scope);
+            .detectOptional(scope -> scope instanceof DataTypingScope)
+            .map(scope -> (DataTypingScope) scope);
     }
 
     public Optional<ConstructorTypingScope> enclosingConstructor() {
         return scopes()
-                .detectOptional(scope -> scope instanceof ConstructorTypingScope)
-                .map(scope -> (ConstructorTypingScope) scope);
+            .detectOptional(scope -> scope instanceof ConstructorTypingScope)
+            .map(scope -> (ConstructorTypingScope) scope);
     }
 
     public Optional<LambdaTypingScope> enclosingLambda() {
         return scopes()
-                .detectOptional(scope -> scope instanceof LambdaTypingScope)
-                .map(scope -> (LambdaTypingScope) scope);
+            .detectOptional(scope -> scope instanceof LambdaTypingScope)
+            .map(scope -> (LambdaTypingScope) scope);
     }
 
     public Optional<CaseTypingScope> enclosingCase() {
         return scopes()
-                .detectOptional(scope -> scope instanceof CaseTypingScope)
-                .map(scope -> (CaseTypingScope) scope);
+            .detectOptional(scope -> scope instanceof CaseTypingScope)
+            .map(scope -> (CaseTypingScope) scope);
     }
 
     public Optional<BlockTypingScope> enclosingBlock() {
         return scopes()
-                .detectOptional(scope -> scope instanceof BlockTypingScope)
-                .map(scope -> (BlockTypingScope) scope);
+            .detectOptional(scope -> scope instanceof BlockTypingScope)
+            .map(scope -> (BlockTypingScope) scope);
     }
 
     public void putUnsolvedKind(UnsolvedKind unsolved) {
@@ -143,14 +143,16 @@ public record TypeEnvironment(
                     ? left
                     // Pick kind variables with lower id
                     : unsolvedLeft.id() < unsolvedRight.id()
-                    ? left : right ;
+                    ? left : right;
             } else {
                 return right;
             }
         } else {
             return left;
         }
-    };
+    }
+
+    ;
 
     public static MonoType pickTypeConstant(MutableStack<TypingScope> scopes, MonoType left, MonoType right) {
         if (left instanceof UnsolvedType unsolvedLeft) {
@@ -171,14 +173,19 @@ public record TypeEnvironment(
                     ? left
                     // Pick type variables with lower id
                     : unsolvedLeft.id() < unsolvedRight.id()
-                    ? left : right ;
+                    ? left : right;
             } else {
                 return right;
             }
+        } else if (left instanceof BuiltInType builtInLeft && right instanceof BuiltInType builtInRight) {
+            // Pick the most specific subtype of a built-in type
+            return builtInRight.isSubtypeOf(builtInLeft) ? builtInRight : builtInLeft;
         } else {
             return left;
         }
-    };
+    }
+
+    ;
 
     public static TypeEnvironment empty() {
         var scopes = Stacks.mutable.<TypingScope>empty();

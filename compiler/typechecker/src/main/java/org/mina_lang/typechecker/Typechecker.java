@@ -449,7 +449,7 @@ public class Typechecker {
             return true;
         } else if (solvedSubType instanceof BuiltInType subTy &&
                 solvedSuperType instanceof BuiltInType supTy &&
-                subTy.equals(supTy)) {
+                subTy.isSubtypeOf(supTy)) {
             return true;
         } else if (solvedSubType instanceof TypeConstructor subTy &&
                 solvedSuperType instanceof TypeConstructor supTy &&
@@ -860,12 +860,13 @@ public class Typechecker {
         } else if (expr instanceof IfNode<Name> ifExpr) {
             var condition = checkExpr(ifExpr.condition(), Type.BOOLEAN);
 
-            var consequent = inferExpr(ifExpr.consequent());
-            var consequentType = getType(consequent);
+            var branchesType = newUnsolvedType(TypeKind.INSTANCE);
 
-            var alternative = checkExpr(ifExpr.alternative(), consequentType);
+            var consequent = checkExpr(ifExpr.consequent(), branchesType);
 
-            var updatedMeta = updateMetaWith(ifExpr.meta(), consequentType);
+            var alternative = checkExpr(ifExpr.alternative(), branchesType);
+
+            var updatedMeta = updateMetaWith(ifExpr.meta(), branchesType);
 
             return ifNode(updatedMeta, condition, consequent, alternative);
 
@@ -873,34 +874,13 @@ public class Typechecker {
             var scrutinee = inferExpr(match.scrutinee());
             var scrutineeType = getType(scrutinee);
 
-            var firstCase = match.cases()
-                    .getFirstOptional()
-                    .map(cse -> inferCase(cse, scrutineeType));
+            var casesType = newUnsolvedType(TypeKind.INSTANCE);
 
-            var firstCaseType = firstCase
-                    .map(this::getType);
+            var inferredCases = match.cases().collect(cse -> checkCase(cse, scrutineeType, casesType));
 
-            var restCases = firstCaseType
-                    .map(inferredType -> {
-                        return match.cases()
-                                .drop(1)
-                                .collect(restCase -> checkCase(restCase, scrutineeType, inferredType));
-                    });
+            var updatedMeta = updateMetaWith(match.meta(), casesType);
 
-            var cases = firstCase.flatMap(first -> {
-                return restCases.map(rest -> {
-                    return Lists.immutable
-                            .of(first)
-                            .newWithAll(rest);
-                });
-            }).orElseGet(Lists.immutable::empty);
-
-            var matchType = firstCaseType
-                    .orElseGet(() -> newUnsolvedType(TypeKind.INSTANCE));
-
-            var updatedMeta = updateMetaWith(match.meta(), matchType);
-
-            return matchNode(updatedMeta, scrutinee, cases);
+            return matchNode(updatedMeta, scrutinee, inferredCases);
 
         } else if (expr instanceof UnaryOpNode<Name> unOp) {
             var inferredOperand = inferExpr(unOp.operand());
@@ -918,7 +898,7 @@ public class Typechecker {
                 }
                 // Integral operand
                 case BITWISE_NOT -> {
-                    var operandValid = checkSubType(operandType, Type.INT, Type.LONG);
+                    var operandValid = checkSubType(operandType, Type.LONG);
                     if (!operandValid) {
                         mismatchedOperandType(inferredOperand.range(), operandType, ExpectedOperandType.INTEGRAL);
                         // We don't know what the result type should be as the operand is not of integral type
@@ -927,7 +907,7 @@ public class Typechecker {
                 }
                 // Numeric operand
                 case NEGATE -> {
-                    var operandValid = checkSubType(operandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    var operandValid = checkSubType(operandType, Type.DOUBLE);
                     if (!operandValid) {
                         mismatchedOperandType(inferredOperand.range(), operandType, ExpectedOperandType.NUMERIC);
                         // We don't know what the result type should be as the operand is not of numeric type
@@ -949,12 +929,12 @@ public class Typechecker {
             Type resultType = leftOperandType;
 
             if (BinaryOp.ARITHMETIC_OPERATORS.contains(binOp.operator())) {
-                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                var leftValid = checkSubType(leftOperandType, Type.DOUBLE);
                 if (!leftValid) {
                     mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
                     inferredRightOperand = inferExpr(binOp.rightOperand());
                     var rightOperandType = getType(inferredRightOperand);
-                    var rightValid = checkSubType(rightOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    var rightValid = checkSubType(rightOperandType, Type.DOUBLE);
                     if (!rightValid) {
                         mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
                         resultType = newUnsolvedType(TypeKind.INSTANCE);
@@ -963,13 +943,13 @@ public class Typechecker {
                     inferredRightOperand = checkExpr(binOp.rightOperand(), leftOperandType);
                 }
             } else if (BinaryOp.RELATIONAL_OPERATORS.contains(binOp.operator())) {
-                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                var leftValid = checkSubType(leftOperandType, Type.DOUBLE);
                 resultType = Type.BOOLEAN;
                 if (!leftValid) {
                     mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
                     inferredRightOperand = inferExpr(binOp.rightOperand());
                     var rightOperandType = getType(inferredRightOperand);
-                    var rightValid = checkSubType(rightOperandType, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
+                    var rightValid = checkSubType(rightOperandType, Type.DOUBLE);
                     if (!rightValid) {
                         mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
                     }
@@ -977,7 +957,7 @@ public class Typechecker {
                     inferredRightOperand = checkExpr(binOp.rightOperand(), leftOperandType);
                 }
             } else if (BinaryOp.SHIFT_OPERATORS.contains(binOp.operator())) {
-                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG);
+                var leftValid = checkSubType(leftOperandType, Type.LONG);
                 if (!leftValid) {
                     mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
                     inferredRightOperand = inferExpr(binOp.rightOperand());
@@ -991,12 +971,12 @@ public class Typechecker {
                     inferredRightOperand = checkExpr(binOp.rightOperand(), Type.INT);
                 }
             } else if (BinaryOp.BITWISE_OPERATORS.contains(binOp.operator())) {
-                var leftValid = checkSubType(leftOperandType, Type.INT, Type.LONG, Type.BOOLEAN);
+                var leftValid = checkSubType(leftOperandType, Type.LONG, Type.BOOLEAN);
                 if (!leftValid) {
                     mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
                     inferredRightOperand = inferExpr(binOp.rightOperand());
                     var rightOperandType = getType(inferredRightOperand);
-                    var rightValid = checkSubType(rightOperandType, Type.INT, Type.LONG, Type.BOOLEAN);
+                    var rightValid = checkSubType(rightOperandType, Type.LONG, Type.BOOLEAN);
                     if (!rightValid) {
                         mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
                         resultType = newUnsolvedType(TypeKind.INSTANCE);
@@ -1206,9 +1186,6 @@ public class Typechecker {
                         knownParams.collect(this::getType),
                         getType(checkedReturn));
 
-                // We could make this error more local by checking the expected types of the
-                // params against their annotations above, but I think this gives more context
-                // to the error
                 if (!checkSubType(appliedType, expectedType)) {
                     mismatchedType(lambda.range(), appliedType, expectedType);
                 }
