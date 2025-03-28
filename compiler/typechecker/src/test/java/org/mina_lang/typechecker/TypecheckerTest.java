@@ -1457,7 +1457,7 @@ public class TypecheckerTest {
         assertDiagnostic(
             collector.getDiagnostics(),
             longOperandMeta.range(),
-            "Mismatched type! Expected: Int, Actual: Long");
+            "Mismatched operand type! Expected: Int, Actual: Long");
     }
 
     @ParameterizedTest(name = "Boolean binary operators typecheck successfully - {0}")
