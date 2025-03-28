@@ -571,7 +571,7 @@ public class KindcheckerTest {
 
         var expectedNode = ExampleNodes.List.KINDED_NODE;
 
-        testSuccessfulKindcheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -583,7 +583,7 @@ public class KindcheckerTest {
 
         var expectedNode = ExampleNodes.Fix.KINDED_NODE;
 
-        testSuccessfulKindcheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulKindcheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Property

@@ -387,7 +387,7 @@ public class TypecheckerTest {
     Arbitrary<Tuple3<LiteralNode<Name>, BuiltInType, BuiltInType>> illTypedLiterals() {
         return Arbitraries.lazy(() -> literals().flatMap(tuple -> {
             return builtIns()
-                    .filter(builtIn -> !builtIn.equals(tuple.get2()))
+                    .filter(builtIn -> !tuple.get2().isSubtypeOf(builtIn))
                     .map(builtIn -> Tuple.of(tuple.get1(), tuple.get2(), builtIn));
         }));
 
@@ -884,7 +884,7 @@ public class TypecheckerTest {
                 ExampleNodes.Int.typedNode(1),
                 ExampleNodes.Int.typedNode(2));
 
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -899,7 +899,7 @@ public class TypecheckerTest {
                 ExampleNodes.Int.namedNode(1),
                 ExampleNodes.Int.namedNode(2));
 
-        var collector = testFailedTypecheck(TypeEnvironment.empty(), originalNode);
+        var collector = testFailedTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -919,7 +919,7 @@ public class TypecheckerTest {
                 ExampleNodes.Int.namedNode(1),
                 stringNode(new Meta<>(elseRange, Nameless.INSTANCE), "a"));
 
-        var collector = testFailedTypecheck(TypeEnvironment.empty(), originalNode);
+        var collector = testFailedTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode);
 
         assertDiagnostic(
                 collector.getDiagnostics(),
@@ -1554,7 +1554,7 @@ public class TypecheckerTest {
         /* true */
         var originalNode = ExampleNodes.Boolean.namedNode(true);
         var expectedNode = ExampleNodes.Boolean.typedNode(true);
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -1563,7 +1563,7 @@ public class TypecheckerTest {
         /* 'c' */
         var originalNode = ExampleNodes.Char.namedNode('c');
         var expectedNode = ExampleNodes.Char.typedNode('c');
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -1572,7 +1572,7 @@ public class TypecheckerTest {
         /* "foo" */
         var originalNode = ExampleNodes.String.namedNode("foo");
         var expectedNode = ExampleNodes.String.typedNode("foo");
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -1581,7 +1581,7 @@ public class TypecheckerTest {
         /* 1 */
         var originalNode = ExampleNodes.Int.namedNode(1);
         var expectedNode = ExampleNodes.Int.typedNode(1);
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -1590,7 +1590,7 @@ public class TypecheckerTest {
         /* 1L */
         var originalNode = ExampleNodes.Long.namedNode(1L);
         var expectedNode = ExampleNodes.Long.typedNode(1L);
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -1599,7 +1599,7 @@ public class TypecheckerTest {
         /* 0.1F */
         var originalNode = ExampleNodes.Float.namedNode(0.1F);
         var expectedNode = ExampleNodes.Float.typedNode(0.1F);
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     @Test
@@ -1608,7 +1608,7 @@ public class TypecheckerTest {
         /* 0.1 */
         var originalNode = ExampleNodes.Double.namedNode(0.1);
         var expectedNode = ExampleNodes.Double.typedNode(0.1);
-        testSuccessfulTypecheck(TypeEnvironment.empty(), originalNode, expectedNode);
+        testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
 
     // Subtype checking

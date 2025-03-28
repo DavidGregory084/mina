@@ -876,11 +876,11 @@ public class Typechecker {
 
             var casesType = newUnsolvedType(TypeKind.INSTANCE);
 
-            var inferredCases = match.cases().collect(cse -> checkCase(cse, scrutineeType, casesType));
+            var checkedCases = match.cases().collect(cse -> checkCase(cse, scrutineeType, casesType));
 
             var updatedMeta = updateMetaWith(match.meta(), casesType);
 
-            return matchNode(updatedMeta, scrutinee, inferredCases);
+            return matchNode(updatedMeta, scrutinee, checkedCases);
 
         } else if (expr instanceof UnaryOpNode<Name> unOp) {
             var inferredOperand = inferExpr(unOp.operand());
@@ -1111,8 +1111,7 @@ public class Typechecker {
         });
     }
 
-    FieldPatternNode<Attributes> inferFieldPattern(ConstructorName constrName, FieldPatternNode<Name> fieldPat,
-            Optional<TypeInstantiationTransformer> instantiator) {
+    FieldPatternNode<Attributes> inferFieldPattern(ConstructorName constrName, FieldPatternNode<Name> fieldPat, Optional<TypeInstantiationTransformer> instantiator) {
         var fieldMeta = environment.lookupField(constrName, fieldPat.field()).get();
         var fieldType = (Type) fieldMeta.meta().sort();
         var instantiatedFieldType = instantiator.map(fieldType::accept).orElse(fieldType);
@@ -1213,6 +1212,161 @@ public class Typechecker {
             var updatedMeta = updateMetaWith(match.meta(), expectedType);
 
             return matchNode(updatedMeta, scrutinee, cases);
+
+        } else if (expr instanceof UnaryOpNode<Name> unOp) {
+            switch (unOp.operator()) {
+                // Boolean operand
+                case BOOLEAN_NOT -> {
+                    var checkedOperand = inferExpr(unOp.operand());
+                    var operandType = getType(checkedOperand);
+
+                    if (!checkSubType(operandType, Type.BOOLEAN)) {
+                        mismatchedOperandType(unOp.operand().range(), operandType, ExpectedOperandType.BOOLEAN);
+                    }
+
+                    var updatedMeta = updateMetaWith(unOp.meta(), Type.BOOLEAN);
+
+                    return unaryOpNode(updatedMeta, unOp.operator(), checkedOperand);
+                }
+                // Integral operand
+                case BITWISE_NOT -> {
+                    var checkedOperand = inferExpr(unOp.operand());
+                    var operandType = getType(checkedOperand);
+
+                    if (!checkSubType(operandType, Type.LONG)) {
+                        mismatchedOperandType(unOp.operand().range(), operandType, ExpectedOperandType.INTEGRAL);
+                    }
+
+                    var updatedMeta = updateMetaWith(unOp.meta(), operandType);
+
+                    return unaryOpNode(updatedMeta, unOp.operator(), checkedOperand);
+                }
+                // Numeric operand
+                case NEGATE -> {
+                    var checkedOperand = inferExpr(unOp.operand());
+                    var operandType = getType(checkedOperand);
+
+                    if (!checkSubType(operandType, Type.DOUBLE)) {
+                        mismatchedOperandType(unOp.operand().range(), operandType, ExpectedOperandType.NUMERIC);
+                    }
+
+                    var updatedMeta = updateMetaWith(unOp.meta(), operandType);
+
+                    return unaryOpNode(updatedMeta, unOp.operator(), checkedOperand);
+                }
+            }
+
+            return null;
+
+        } else if (expr instanceof BinaryOpNode<Name> binOp) {
+            if (BinaryOp.ARITHMETIC_OPERATORS.contains(binOp.operator())) {
+                var checkedLeft = checkExpr(binOp.leftOperand(), expectedType);
+                var leftOperandType = getType(checkedLeft);
+
+                // Check that the expected type is compatible with Double
+                if (!checkSubType(leftOperandType, Type.DOUBLE)) {
+                    mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.NUMERIC);
+                }
+
+                var checkedRight = checkExpr(binOp.rightOperand(), leftOperandType);
+                var rightOperandType = getType(checkedRight);
+
+                // Check that the expected type is compatible with Double
+                if (!checkSubType(rightOperandType, Type.DOUBLE)) {
+                    mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.NUMERIC);
+                }
+
+                var updatedMeta = updateMetaWith(binOp.meta(), leftOperandType);
+
+                return binaryOpNode(updatedMeta, checkedLeft, binOp.operator(), checkedRight);
+
+            } else if (BinaryOp.RELATIONAL_OPERATORS.contains(binOp.operator())) {
+                var checkedLeft = checkExpr(binOp.leftOperand(), Type.DOUBLE);
+                var checkedRight = checkExpr(binOp.rightOperand(), getType(checkedLeft));
+
+                // Check that the expected type is compatible with Boolean
+                if (!checkSubType(Type.BOOLEAN, expectedType)) {
+                    mismatchedType(binOp.range(), Type.BOOLEAN, expectedType);
+                }
+
+                var updatedMeta = updateMetaWith(binOp.meta(), Type.BOOLEAN);
+
+                return binaryOpNode(updatedMeta, checkedLeft, binOp.operator(), checkedRight);
+
+            } else if (BinaryOp.SHIFT_OPERATORS.contains(binOp.operator())) {
+                var checkedLeft = checkExpr(binOp.leftOperand(), expectedType);
+                var leftOperandType = getType(checkedLeft);
+
+                // Check that the operand type is allowed for shift operators
+                if (!checkSubType(leftOperandType, Type.LONG)) {
+                    mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.INTEGRAL);
+                }
+
+                var checkedRight = checkExpr(binOp.rightOperand(), Type.INT);
+
+                var updatedMeta = updateMetaWith(binOp.meta(), leftOperandType);
+
+                return binaryOpNode(updatedMeta, checkedLeft, binOp.operator(), checkedRight);
+
+            } else if (BinaryOp.BITWISE_OPERATORS.contains(binOp.operator())) {
+                var checkedLeft = checkExpr(binOp.leftOperand(), expectedType);
+                var leftOperandType = getType(checkedLeft);
+
+                var checkedRight = checkExpr(binOp.rightOperand(), leftOperandType);
+                var rightOperandType = getType(checkedRight);
+
+                var bothOperandsBoolean = Type.BOOLEAN.equals(leftOperandType) && Type.BOOLEAN.equals(rightOperandType);
+
+                // Check that the operand type is allowed for bitwise operators
+                if (!bothOperandsBoolean) {
+                    if (!checkSubType(leftOperandType, Type.LONG)) {
+                        mismatchedOperandType(binOp.leftOperand().range(), leftOperandType, ExpectedOperandType.INTEGRAL_OR_BOOLEAN);
+                    }
+                    if (!checkSubType(rightOperandType, Type.LONG)) {
+                        mismatchedOperandType(binOp.rightOperand().range(), rightOperandType, ExpectedOperandType.INTEGRAL_OR_BOOLEAN);
+                    }
+                }
+
+                var updatedMeta = updateMetaWith(binOp.meta(), leftOperandType);
+
+                return binaryOpNode(updatedMeta, checkedLeft, binOp.operator(), checkedRight);
+
+            } else if (BinaryOp.EQUALITY_OPERATORS.contains(binOp.operator())) {
+                var inferredLeft = inferExpr(binOp.leftOperand());
+                var inferredRight = inferExpr(binOp.rightOperand());
+                var leftOperandType = getType(inferredLeft);
+                var rightOperandType = getType(inferredRight);
+
+                var leftSubRight = checkSubType(leftOperandType, rightOperandType);
+                var rightSubLeft = checkSubType(rightOperandType, leftOperandType);
+
+                if (!leftSubRight && !rightSubLeft) {
+                    mismatchedEqualityOperandType(binOp.range(), leftOperandType, rightOperandType);
+                }
+
+                if (!checkSubType(Type.BOOLEAN, expectedType)) {
+                    mismatchedType(binOp.range(), Type.BOOLEAN, expectedType);
+                }
+
+                var updatedMeta = updateMetaWith(binOp.meta(), Type.BOOLEAN);
+
+                return binaryOpNode(updatedMeta, inferredLeft, binOp.operator(), inferredRight);
+
+            } else if (BinaryOp.LOGICAL_OPERATORS.contains(binOp.operator())) {
+                var checkedLeft = checkExpr(binOp.leftOperand(), Type.BOOLEAN);
+                var checkedRight = checkExpr(binOp.rightOperand(), Type.BOOLEAN);
+
+                if (!checkSubType(Type.BOOLEAN, expectedType)) {
+                    mismatchedType(binOp.range(), Type.BOOLEAN, expectedType);
+                }
+
+                var updatedMeta = updateMetaWith(binOp.meta(), Type.BOOLEAN);
+
+                return binaryOpNode(updatedMeta, checkedLeft, binOp.operator(), checkedRight);
+            }
+
+            return null;
+
         } else if (expr instanceof LiteralNode<Name> literal) {
             return checkLiteral(literal, expectedType);
         } else {
