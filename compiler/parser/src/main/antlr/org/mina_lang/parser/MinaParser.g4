@@ -84,11 +84,14 @@ existsVar: QUESTION ID?;
 
 // Expressions
 expr:
-    blockExpr
-    | ifExpr
+    // If and lambda cannot be used with operators without parentheses because they are not guaranteed to have a closing delimiter for their trailing expressions.
+    // It would be ambiguous whether a trailing application belonged to the final expression inside a lambda's body or to the entire lambda.
+    // The same problem exists for the `else` expression in an if.
+    // We place `match` at the same level for uniformity with other control flow expressions.
+    ifExpr
     | lambdaExpr
     | matchExpr
-    | applicableExpr;
+    | orExpr;
 
 blockExpr: LBRACE letDeclaration* expr? RBRACE;
 
@@ -120,40 +123,54 @@ fieldPatterns: fieldPattern (COMMA fieldPattern)*;
 
 fieldPattern: ID (COLON pattern)?;
 
-applicableExpr:
-    // Atoms
+// Operator precedence hierarchy, left factored
+orExpr:
+    leftOperand = andExpr (DOUBLE_PIPE rightOperand += andExpr)*;
+
+andExpr:
+    leftOperand = eqExpr (DOUBLE_AMPERSAND rightOperand += eqExpr)*;
+
+eqExpr:
+    leftOperand = relExpr (operator += (DOUBLE_EQUAL | NOT_EQUAL) rightOperand += relExpr)*;
+
+relExpr:
+    leftOperand = bitOrExpr (operator += (LESS_THAN | LESS_THAN_EQUAL | GREATER_THAN | GREATER_THAN_EQUAL) rightOperand += bitOrExpr)*;
+
+bitOrExpr:
+    leftOperand = bitAndExpr (operator += (CARET | PIPE) rightOperand += bitAndExpr)*;
+
+bitAndExpr:
+    leftOperand = shiftExpr (AMPERSAND rightOperand += shiftExpr)*;
+
+shiftExpr:
+    leftOperand = addExpr (operator += (LEFT_SHIFT | RIGHT_SHIFT | UNSIGNED_RIGHT_SHIFT) rightOperand += addExpr)*;
+
+addExpr:
+    leftOperand = multExpr (operator += (PLUS | MINUS) rightOperand += multExpr)*;
+
+multExpr:
+    leftOperand = unaryExpr (operator += (ASTERISK | RSLASH | PERCENT) rightOperand += unaryExpr)*;
+
+unaryExpr:
+    postfixExpr
+    | operator = (MINUS | EXCLAMATION | TILDE) unaryOperand = unaryExpr;
+
+postfixExpr:
+    primaryExpr (postfixOp)*;
+
+postfixOp:
+    DOT selection = ID
+    | application;
+
+primaryExpr:
     id = ID
     | literal
-    // Parentheses
     | parenExpr
-    // Member selection
-    | receiver = applicableExpr DOT selection = ID
-    // Function application
-    | function = applicableExpr application
-    // Prefix operators
-    | operator = (MINUS | EXCLAMATION | TILDE) unaryOperand = applicableExpr
-    // Multiplicative arithmetic operators
-    | leftOperand = applicableExpr operator = (ASTERISK | RSLASH | PERCENT) rightOperand = applicableExpr
-    // Additive arithmetic operators
-    | leftOperand = applicableExpr operator = (PLUS | MINUS) rightOperand = applicableExpr
-    // Bitwise shift operators
-    | leftOperand = applicableExpr operator = (LEFT_SHIFT | RIGHT_SHIFT | UNSIGNED_RIGHT_SHIFT) rightOperand = applicableExpr
-    // Bitwise and
-    | leftOperand = applicableExpr operator = AMPERSAND rightOperand = applicableExpr
-    // Bitwise or and xor
-    | leftOperand = applicableExpr operator = (CARET | PIPE) rightOperand = applicableExpr
-    // Relational operators
-    | leftOperand = applicableExpr operator = (LESS_THAN | LESS_THAN_EQUAL | GREATER_THAN | GREATER_THAN_EQUAL) rightOperand = applicableExpr
-    // Equality operators
-    | leftOperand = applicableExpr operator = (DOUBLE_EQUAL | NOT_EQUAL) rightOperand = applicableExpr
-    // Logical operators
-    | leftOperand = applicableExpr operator = DOUBLE_AMPERSAND rightOperand = applicableExpr
-    | leftOperand = applicableExpr operator = DOUBLE_PIPE rightOperand = applicableExpr
-    ;
-
-application: LPAREN RPAREN | LPAREN expr (COMMA expr)* RPAREN;
+    | blockExpr;
 
 parenExpr: LPAREN expr RPAREN;
+
+application: LPAREN RPAREN | LPAREN expr (COMMA expr)* RPAREN;
 
 // Literals
 literal:
