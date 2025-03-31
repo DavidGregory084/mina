@@ -533,7 +533,7 @@ public class Parser {
 
         @Override
         public ExprNode<Void> visitExpr(ExprContext ctx) {
-            return visitAlternatives(ctx.blockExpr(), ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.applicableExpr());
+            return visitAlternatives(ctx.ifExpr(), ctx.lambdaExpr(), ctx.matchExpr(), ctx.applicableExpr());
         }
 
         @Override
@@ -594,6 +594,12 @@ public class Parser {
 
             if (parenExpr != null) {
                 return parenExpr;
+            }
+
+            var blockExpr = visitNullable(ctx.blockExpr());
+
+            if (blockExpr != null) {
+                return blockExpr;
             }
 
             var receiver = ctx.receiver;

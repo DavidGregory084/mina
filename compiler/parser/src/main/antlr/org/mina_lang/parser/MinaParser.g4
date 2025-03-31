@@ -84,8 +84,11 @@ existsVar: QUESTION ID?;
 
 // Expressions
 expr:
-    blockExpr
-    | ifExpr
+    // If and lambda are not applicable, because the resulting syntax tree would be ambiguous.
+    // It would be unclear whether a trailing application should apply to the body of a lambda
+    // or the entire lambda, or to the else of an if or the entire if expression.
+    // Match expressions are in the same category so that all control expressions are treated the same.
+    ifExpr
     | lambdaExpr
     | matchExpr
     | applicableExpr;
@@ -126,6 +129,8 @@ applicableExpr:
     | literal
     // Parentheses
     | parenExpr
+    // Blocks
+    | blockExpr
     // Member selection
     | receiver = applicableExpr DOT selection = ID
     // Function application

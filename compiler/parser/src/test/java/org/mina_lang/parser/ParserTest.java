@@ -548,6 +548,30 @@ public class ParserTest {
                         intNode(new Range(5, 4, 5, 5), 2)));
     }
 
+    @Test
+    void parseBlockApply() {
+        testSuccessfulParse("{}(1)", Parser::getExprVisitor, MinaParser::expr,
+            applyNode(
+                new Range(0, 0, 0, 5),
+                blockNode(
+                    new Range(0, 0, 0, 2),
+                    Lists.immutable.empty(),
+                    Optional.empty()),
+            Lists.immutable.of(intNode(new Range(0, 3, 0, 4), 1))));
+    }
+
+    @Test
+    void parseBlockSelect() {
+        testSuccessfulParse("{}.id", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 5),
+                blockNode(
+                    new Range(0, 0, 0, 2),
+                    Lists.immutable.empty(),
+                    Optional.empty()),
+                refNode(new Range(0, 3, 0, 5), "id")));
+    }
+
     // Lambda expressions
     @Test
     void parseNullaryLambda() {
