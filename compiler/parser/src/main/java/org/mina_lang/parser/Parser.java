@@ -24,10 +24,7 @@ import org.mina_lang.syntax.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -41,12 +38,14 @@ public class Parser {
     private NamespaceIdVisitor namespaceIdVisitor = new NamespaceIdVisitor();
     private NamespaceVisitor namespaceVisitor = new NamespaceVisitor();
     private ImportVisitor importVisitor = new ImportVisitor();
+    private ImportedSymbolsVisitor importedSymbolsVisitor = new ImportedSymbolsVisitor();
     private ImporteeVisitor importeeVisitor = new ImporteeVisitor();
     private DeclarationVisitor declarationVisitor = new DeclarationVisitor();
     private ConstructorVisitor constructorVisitor = new ConstructorVisitor();
     private ConstructorParamVisitor constructorParamVisitor = new ConstructorParamVisitor();
     private TypeVisitor typeVisitor = new TypeVisitor();
     private ExprVisitor exprVisitor = new ExprVisitor();
+    private LocalLetVisitor localLetVisitor = new LocalLetVisitor();
     private ParamVisitor paramVisitor = new ParamVisitor();
     private LiteralVisitor literalVisitor = new LiteralVisitor();
     private MatchCaseVisitor matchCaseVisitor = new MatchCaseVisitor();
@@ -86,6 +85,10 @@ public class Parser {
         return importVisitor;
     }
 
+    ImportedSymbolsVisitor getImportedSymbolsVisitor() {
+        return importedSymbolsVisitor;
+    }
+
     ImporteeVisitor getImporteeVisitor() {
         return importeeVisitor;
     }
@@ -108,6 +111,10 @@ public class Parser {
 
     ExprVisitor getExprVisitor() {
         return exprVisitor;
+    }
+
+    LocalLetVisitor getLocalLetVisitor() {
+        return localLetVisitor;
     }
 
     ParamVisitor getParamVisitor() {
@@ -218,14 +225,14 @@ public class Parser {
         public <C extends ParserRuleContext, D> ImmutableList<D> visitRepeated(List<C> contexts,
                 Visitor<C, D> visitor) {
             return contexts.stream()
-                    .map(ctx -> visitor.visit(ctx))
+                    .map(visitor::visit)
                     .collect(Collectors2.toImmutableList());
         }
 
         public <C extends ParserRuleContext, D> ImmutableList<D> visitRepeated(List<C> contexts,
                 Function<C, D> visitorMethod) {
             return contexts.stream()
-                    .map(ctx -> visitorMethod.apply(ctx))
+                    .map(visitorMethod)
                     .collect(Collectors2.toImmutableList());
         }
 
@@ -234,7 +241,7 @@ public class Parser {
                 Visitor<D, E> visitor) {
             return context == null ? Lists.immutable.<E>empty()
                     : rule.apply(context).stream()
-                            .map(ctx -> visitor.visit(ctx))
+                            .map(visitor::visit)
                             .collect(Collectors2.toImmutableList());
         }
 
@@ -243,15 +250,15 @@ public class Parser {
                 Function<D, E> visitorMethod) {
             return context == null ? Lists.immutable.<E>empty()
                     : rule.apply(context).stream()
-                            .map(ctx -> visitorMethod.apply(ctx))
+                            .map(visitorMethod)
                             .collect(Collectors2.toImmutableList());
         }
 
         public B visitAlternatives(ParseTree... tree) {
             return Stream.of(tree)
-                    .filter(t -> t != null)
+                    .filter(Objects::nonNull)
                     .findFirst()
-                    .map(t -> visit(t))
+                    .map(this::visit)
                     .orElse(null);
         }
 
@@ -333,40 +340,31 @@ public class Parser {
 
         @Override
         public ImportNode visitImportDeclaration(ImportDeclarationContext ctx) {
-            return visitAlternatives(ctx.importQualified(), ctx.importSymbols());
-        }
-
-        @Override
-        public ImportNode visitImportQualified(ImportQualifiedContext ctx) {
             var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
-
             var alias = Optional.ofNullable(ctx.alias).map(Token::getText);
+            var importedSymbols = ctx.importedSymbols();
 
-            if (ctx.alias != null) {
-                qualifiedNamespaces.add(ctx.alias.getText());
+            alias.ifPresentOrElse(
+                a -> qualifiedNamespaces.add(a),
+                ()  -> qualifiedNamespaces.add(ns.ns()));
+
+            if (importedSymbols != null) {
+                var symbols = importedSymbolsVisitor.visitNullable(ctx.importedSymbols());
+                return importSymbolsNode(contextRange(ctx), ns, symbols);
             } else {
-                qualifiedNamespaces.add(ns.ns());
+                return importQualifiedNode(contextRange(ctx), ns, alias);
             }
-
-            return importQualifiedNode(contextRange(ctx), ns, alias);
         }
+    }
 
+    class ImportedSymbolsVisitor extends Visitor<ImportedSymbolsContext, ImmutableList<ImporteeNode>> {
         @Override
-        public ImportNode visitImportSymbols(ImportSymbolsContext ctx) {
-            var ns = namespaceIdVisitor.visitNullable(ctx.namespaceId());
-
-            var singleImportee = Optional.ofNullable(ctx.id)
-                .map(id -> importeeNode(tokenRange(id), id.getText()))
-                .map(Lists.immutable::of);
-
-            var multiImportees = Optional.ofNullable(ctx.importee())
-                .map(importees -> visitRepeated(importees, importeeVisitor));
-
-            return importSymbolsNode(
-                contextRange(ctx), ns,
-                singleImportee
-                    .or(() -> multiImportees)
-                    .orElseGet(Lists.immutable::empty));
+        public ImmutableList<ImporteeNode> visitImportedSymbols(ImportedSymbolsContext ctx) {
+            if (ctx.id != null) {
+                return Lists.immutable.of(importeeNode(tokenRange(ctx.id), ctx.id.getText()));
+            } else {
+                return visitNullableRepeated(ctx, ImportedSymbolsContext::importee, importeeVisitor);
+            }
         }
     }
 
@@ -391,28 +389,25 @@ public class Parser {
         }
 
         @Override
-        public LetFnNode<Void> visitLetFnDeclaration(LetFnDeclarationContext ctx) {
+        public DeclarationNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
             var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar,
-                    typeVisitor::visitTypeVar);
-            var valueParams = visitNullableRepeated(ctx.lambdaParams(), LambdaParamsContext::lambdaParam,
-                    paramVisitor::visitLambdaParam);
-            var expr = exprVisitor.visitNullable(ctx.expr());
-            var type = typeVisitor.visitNullable(ctx.typeAnnotation());
-            return letFnNode(contextRange(ctx), name, typeParams, valueParams, type, expr);
-        }
 
-        @Override
-        public LetNode<Void> visitLetDeclaration(LetDeclarationContext ctx) {
-            var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
-            var expr = exprVisitor.visitNullable(ctx.expr());
             var type = typeVisitor.visitNullable(ctx.typeAnnotation());
+            var expr = exprVisitor.visitNullable(ctx.expr());
+
+            var lambdaParams = ctx.lambdaParams();
+            if (lambdaParams != null) {
+                var typeParams = visitNullableRepeated(ctx.typeParams(), TypeParamsContext::typeVar, typeVisitor::visitTypeVar);
+                var valueParams = visitNullableRepeated(lambdaParams, LambdaParamsContext::lambdaParam, paramVisitor::visitLambdaParam);
+                return letFnNode(contextRange(ctx), name, typeParams, valueParams, type, expr);
+            }
+
             return letNode(contextRange(ctx), name, type, expr);
         }
 
         @Override
         public DeclarationNode<Void> visitDeclaration(DeclarationContext ctx) {
-            return visitAlternatives(ctx.dataDeclaration(), ctx.letFnDeclaration(), ctx.letDeclaration());
+            return visitAlternatives(ctx.dataDeclaration(), ctx.letDeclaration());
         }
     }
 
@@ -448,7 +443,17 @@ public class Parser {
 
         @Override
         public TypeNode<Void> visitType(TypeContext ctx) {
-            return visitAlternatives(ctx.quantifiedType(), ctx.funType(), ctx.applicableType());
+            var headType = visitAlternatives(ctx.quantifiedType(), ctx.applicableType());
+            var bodyType = visitNullable(ctx.type());
+            var funTypeParams = ctx.funTypeParams();
+            if (funTypeParams != null) {
+                var typeParams = visitNullableRepeated(funTypeParams, FunTypeParamsContext::type, this);
+                return funTypeNode(contextRange(ctx), typeParams, bodyType);
+            } else if (bodyType != null) {
+                return funTypeNode(contextRange(ctx), Lists.immutable.of(headType), bodyType);
+            } else {
+                return headType;
+            }
         }
 
         @Override
@@ -458,26 +463,6 @@ public class Parser {
             var bodyNode = visitNullable(ctx.type());
 
             return quantifiedTypeNode(contextRange(ctx), typeParams, bodyNode);
-        }
-
-        @Override
-        public FunTypeNode<Void> visitFunType(FunTypeContext ctx) {
-            var quantifiedTypeNode = Optional.ofNullable(ctx.quantifiedType())
-                .map(this::visitQuantifiedType)
-                .map(Lists.immutable::of);
-
-            var applicableTypeNode = Optional.ofNullable(ctx.applicableType())
-                    .map(this::visitApplicableType)
-                    .map(Lists.immutable::of);
-
-            var paramTypeNodes = quantifiedTypeNode
-                .or(() -> applicableTypeNode)
-                .orElse(
-                    visitNullableRepeated(ctx.funTypeParams(), FunTypeParamsContext::type, this));
-
-            var returnTypeNode = visitNullable(ctx.type());
-
-            return funTypeNode(contextRange(ctx), paramTypeNodes, returnTypeNode);
         }
 
         @Override
@@ -538,7 +523,7 @@ public class Parser {
 
         @Override
         public BlockNode<Void> visitBlockExpr(BlockExprContext ctx) {
-            var declarationNodes = visitRepeated(ctx.letDeclaration(), declarationVisitor::visitLetDeclaration);
+            var declarationNodes = visitRepeated(ctx.localLet(), localLetVisitor);
             var resultNode = Optional.ofNullable(visitNullable(ctx.expr()));
             return blockNode(contextRange(ctx), declarationNodes, resultNode);
         }
@@ -668,6 +653,16 @@ public class Parser {
         public LiteralNode<Void> visitLiteral(LiteralContext ctx) {
             return literalVisitor.visitAlternatives(ctx.literalBoolean(), ctx.literalChar(), ctx.literalString(),
                     ctx.literalInt(), ctx.literalFloat());
+        }
+    }
+
+    class LocalLetVisitor extends Visitor<LocalLetContext, LetNode<Void>> {
+        @Override
+        public LetNode<Void> visitLocalLet(LocalLetContext ctx) {
+            var name = Optional.ofNullable(ctx.ID()).map(TerminalNode::getText).orElse(null);
+            var type = typeVisitor.visitNullable(ctx.typeAnnotation());
+            var expr = exprVisitor.visitNullable(ctx.expr());
+            return letNode(contextRange(ctx), name, type, expr);
         }
     }
 
@@ -811,29 +806,21 @@ public class Parser {
 
         @Override
         public PatternNode<Void> visitPattern(PatternContext ctx) {
-            return visitAlternatives(
-                    ctx.aliasPattern(), ctx.idPattern(),
-                    ctx.literalPattern(), ctx.constructorPattern());
+            return visitAlternatives(ctx.idPattern(), ctx.literalPattern(), ctx.constructorPattern());
         }
 
         @Override
-        public AliasPatternNode<Void> visitAliasPattern(AliasPatternContext ctx) {
-            var alias = Optional.ofNullable(ctx.ID())
+        public PatternNode<Void> visitIdPattern(IdPatternContext ctx) {
+            var id = Optional.ofNullable(ctx.ID())
                     .map(TerminalNode::getText)
                     .orElse(null);
 
             var pattern = visitNullable(ctx.pattern());
 
-            return aliasPatternNode(contextRange(ctx), alias, pattern);
-        }
 
-        @Override
-        public IdPatternNode<Void> visitIdPattern(IdPatternContext ctx) {
-            var id = Optional.ofNullable(ctx.ID())
-                    .map(TerminalNode::getText)
-                    .orElse(null);
-
-            return idPatternNode(contextRange(ctx), id);
+            return pattern != null
+                ? aliasPatternNode(contextRange(ctx), id, pattern)
+                : idPatternNode(contextRange(ctx), id);
         }
 
         @Override
@@ -870,8 +857,9 @@ public class Parser {
 
         @Override
         public NamespaceIdNode visitNamespaceId(NamespaceIdContext ctx) {
-            var pkg = Lists.immutable.ofAll(ctx.pkg).collect(Token::getText);
-            var ns = Optional.ofNullable(ctx.ns).map(Token::getText).orElse(null);
+            var elements = Lists.immutable.ofAll(ctx.ID()).collect(TerminalNode::getText);
+            var pkg = elements.take(elements.size() - 1);
+            var ns = elements.getLast();
             return nsIdNode(contextRange(ctx), pkg, ns);
         }
     }
@@ -880,11 +868,17 @@ public class Parser {
 
         @Override
         public QualifiedIdNode visitQualifiedId(QualifiedIdContext ctx) {
-            var ns = Optional.ofNullable(ctx.ns).map(token -> {
-                return nsIdNode(tokenRange(token), Lists.immutable.empty(), token.getText());
-            });
-            var id = Optional.ofNullable(ctx.id).map(Token::getText).orElse(null);
-            return idNode(contextRange(ctx), ns, id);
+            var elements = Lists.immutable.ofAll(ctx.ID()).collect(TerminalNode::getSymbol);
+            if (elements.size() > 1) {
+                var ns = elements.getFirstOptional().map(token -> {
+                    return nsIdNode(tokenRange(token), Lists.immutable.empty(), token.getText());
+                }).orElse(null);
+                var id = elements.getLastOptional().map(Token::getText).orElse(null);
+                return idNode(contextRange(ctx), ns, id);
+            } else {
+                var id = elements.getLastOptional().map(Token::getText).orElse(null);
+                return idNode(contextRange(ctx), Optional.empty(), id);
+            }
         }
     }
 }

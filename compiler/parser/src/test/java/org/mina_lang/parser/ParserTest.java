@@ -121,7 +121,7 @@ public class ParserTest {
     void parseNamespaceHeaderMissingName() {
         var errors = testFailedParse("namespace {}");
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("mismatched input '{' expecting ID"));
+        assertThat(errors.get(0), startsWith("missing ID at '{'"));
     }
 
     @Test
@@ -237,7 +237,7 @@ public class ParserTest {
     @Test
     void parseImportNoSelector() {
         var errors = testFailedParse("import", Parser::getImportVisitor, MinaParser::importDeclaration);
-        assertThat(errors.get(0), startsWith("no viable alternative at input 'import'"));
+        assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
     }
 
     // Types
@@ -292,7 +292,7 @@ public class ParserTest {
     void parseQuantifiedTypeMissingBody() {
         var errors = testFailedParse("[A] {}", Parser::getTypeVisitor, MinaParser::type);
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("no viable alternative at input '[A] {}'"));
+        assertThat(errors.get(0), startsWith("mismatched input '}' expecting {'(', '[', '?', ID}"));
     }
 
     @Test
