@@ -134,10 +134,12 @@ parenExpr: LPAREN expr RPAREN;
  *  {
  *    let a = 1
  *    let b = 2
- *    a + b
+ *    return a + b
  *  }
+ *
+ * { a + b }
  */
-blockExpr: LBRACE localLet* expr? RBRACE;
+blockExpr: LBRACE ((localLet+ (RETURN expr)?) | expr?) RBRACE;
 
 /** Local let bindings - this rule currently disallows the function syntax for let bindings */
 localLet: LET ID typeAnnotation? EQUAL expr;
@@ -155,12 +157,12 @@ localLet: LET ID typeAnnotation? EQUAL expr;
 ifExpr: IF expr THEN expr ELSE expr;
 
 /** Lambda expressions:
- *  a -> a
- *  (a) -> a
- *  () -> 1
- *  (l: Int, r: Int) -> l + r
+ *  fun a -> a
+ *  fun (a) -> a
+ *  fun () -> 1
+ *  fun (l: Int, r: Int) -> l + r
  */
-lambdaExpr: (ID | lambdaParams) ARROW expr;
+lambdaExpr: FUN (ID | lambdaParams) ARROW expr;
 
 lambdaParams: LPAREN (lambdaParam (COMMA lambdaParam)* COMMA?)? RPAREN;
 

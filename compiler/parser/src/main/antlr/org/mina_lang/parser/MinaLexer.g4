@@ -45,6 +45,10 @@ MATCH: 'match';
 WITH: 'with';
 CASE: 'case';
 
+FUN: 'fun';
+
+RETURN: 'return';
+
 AS: 'as';
 
 // Block and application delimiters
