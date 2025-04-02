@@ -121,7 +121,7 @@ public class ParserTest {
     void parseNamespaceHeaderMissingName() {
         var errors = testFailedParse("namespace {}");
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("mismatched input '{' expecting ID"));
+        assertThat(errors.get(0), startsWith("missing ID at '{'"));
     }
 
     @Test
@@ -237,7 +237,7 @@ public class ParserTest {
     @Test
     void parseImportNoSelector() {
         var errors = testFailedParse("import", Parser::getImportVisitor, MinaParser::importDeclaration);
-        assertThat(errors.get(0), startsWith("no viable alternative at input 'import'"));
+        assertThat(errors.get(0), startsWith("missing ID at '<EOF>'"));
     }
 
     // Types
@@ -292,7 +292,7 @@ public class ParserTest {
     void parseQuantifiedTypeMissingBody() {
         var errors = testFailedParse("[A] {}", Parser::getTypeVisitor, MinaParser::type);
         assertThat(errors, hasSize(1));
-        assertThat(errors.get(0), startsWith("no viable alternative at input '[A] {}'"));
+        assertThat(errors.get(0), startsWith("mismatched input '}' expecting {'(', '[', '?', ID}"));
     }
 
     @Test
@@ -546,6 +546,30 @@ public class ParserTest {
                                 letNode(new Range(2, 4, 4, 5), "y",
                                         blockNode(new Range(2, 12, 4, 5), charNode(new Range(3, 8, 3, 11), 'a')))),
                         intNode(new Range(5, 4, 5, 5), 2)));
+    }
+
+    @Test
+    void parseBlockApply() {
+        testSuccessfulParse("{}(1)", Parser::getExprVisitor, MinaParser::expr,
+            applyNode(
+                new Range(0, 0, 0, 5),
+                blockNode(
+                    new Range(0, 0, 0, 2),
+                    Lists.immutable.empty(),
+                    Optional.empty()),
+            Lists.immutable.of(intNode(new Range(0, 3, 0, 4), 1))));
+    }
+
+    @Test
+    void parseBlockSelect() {
+        testSuccessfulParse("{}.id", Parser::getExprVisitor, MinaParser::expr,
+            selectNode(
+                new Range(0, 0, 0, 5),
+                blockNode(
+                    new Range(0, 0, 0, 2),
+                    Lists.immutable.empty(),
+                    Optional.empty()),
+                refNode(new Range(0, 3, 0, 5), "id")));
     }
 
     // Lambda expressions

@@ -16,152 +16,239 @@ public MinaParser(TokenStream input, ThreadLocal<DFA[]> decisionToDFA, ThreadLoc
 }
 }
 
-// Namespaces
+/** Namespaces:
+  * namespace Mina/Parser/Example {
+  *   import Mina/Parser/Example2.{id as id2}
+  *   data Void {}
+  *   let one: Int = id2(1)
+  * }
+  */
 namespace: NAMESPACE namespaceId LBRACE importDeclaration* declaration* RBRACE EOF;
 
-// Imports
-importDeclaration: importQualified | importSymbols;
+/** Imports:
+  * import Mina/Parser/Example1
+  * import Mina/Parser/Example2 as Ex2
+  * import Mina/Parser/Example1.id
+  * import Mina/Parser/Example2.{id as id2}
+  * import Mina/Parser/Example2.{const as const2, compose}
+  */
+importDeclaration: IMPORT namespaceId (AS alias = ID | DOT importedSymbols)?;
 
-importQualified:
-    IMPORT namespaceId (AS alias = ID)?;
+importedSymbols:
+    id = ID
+    | LBRACE importee (COMMA importee)* COMMA? RBRACE
+    ;
 
-importSymbols:
-    IMPORT namespaceId DOT id = ID
-    | IMPORT namespaceId DOT LBRACE importee (COMMA importee)* RBRACE;
+importee: id = ID (AS alias = ID)?;
 
-importee:
-    id = ID (AS alias = ID)?;
+/** Declarations */
+declaration: dataDeclaration | letDeclaration;
 
-// Declarations
-declaration: dataDeclaration | letFnDeclaration | letDeclaration;
+/** Let declarations:
+ *  let id: [A] { A -> A } = a -> a
+ *  let id[A](a: A): A = a
+ */
+letDeclaration: LET ID (typeParams? lambdaParams)? typeAnnotation? EQUAL expr;
 
-dataDeclaration:
-    DATA ID typeParams? LBRACE dataConstructor* RBRACE;
+/** Data declarations:
+ *  data List[A] {
+ *    case Cons(head: A, tail: List[A])
+ *    case Nil()
+ *  }
+ */
+dataDeclaration: DATA ID typeParams? LBRACE dataConstructor* RBRACE;
 
-letFnDeclaration: LET ID typeParams? lambdaParams typeAnnotation? EQUAL expr;
-
-letDeclaration: LET ID typeAnnotation? EQUAL expr;
-
-// Data constructors
 dataConstructor: CASE ID constructorParams typeAnnotation?;
 
-constructorParams:
-    LPAREN RPAREN
-    | LPAREN constructorParam (COMMA constructorParam)* RPAREN;
+constructorParams: LPAREN (constructorParam (COMMA constructorParam)* COMMA?)? RPAREN;
 
 constructorParam: ID typeAnnotation;
 
-// Types
+/** Type annotation:
+ *  : List[A]
+ */
 typeAnnotation: COLON type;
 
-type: quantifiedType | funType | applicableType;
+/** Types */
+type:
+    // Factor out the common prefix between e.g. A and A -> A by
+    // parsing unary function types via an optional suffix
+    (applicableType | quantifiedType) (ARROW type)?
+    // Multi-argument and nullary function types (A, B) -> A and () -> A
+    | funTypeParams ARROW type
+    ;
 
+/** Quantified types:
+ *  [A] { A -> A }
+ *  [?A] { Pair[?A, ?A -> String] }
+ */
 quantifiedType: typeParams LBRACE type RBRACE;
 
-typeParams: LSQUARE typeVar (COMMA typeVar)* RSQUARE;
+typeParams: LSQUARE typeVar (COMMA typeVar)* COMMA? RSQUARE;
 
-funType: (quantifiedType | applicableType | funTypeParams) ARROW type;
+funTypeParams: LPAREN (type (COMMA type)* COMMA?)? RPAREN;
 
-funTypeParams: LPAREN RPAREN | LPAREN type (COMMA type)* RPAREN;
-
+/** Types that can be applied with type parameters:
+ *  List[A]
+ *  F[G[A]]
+ */
 applicableType:
-    parenType
-    | typeReference
-    | applicableType typeApplication;
+    typeReference
+    | parenType
+    | applicableType typeApplication
+    ;
 
-typeApplication:
-    LSQUARE type (COMMA type)* RSQUARE;
+typeApplication: LSQUARE type (COMMA type)* COMMA? RSQUARE;
 
+/** Grouping for types, useful for curried functions e.g.
+ *  [A -> B] -> A -> B
+ */
 parenType: LSQUARE type RSQUARE;
 
+/** References to known types, e.g.
+ *  Int, List, A, ?A
+ *
+ * Note that `qualifiedId` subsumes `forAllVar`.
+ */
 typeReference: qualifiedId | existsVar;
 
+/** Type variables: A, ?A */
 typeVar: forAllVar | existsVar;
 
 forAllVar: ID;
 
 existsVar: QUESTION ID?;
 
-// Expressions
+/** Expressions */
 expr:
-    blockExpr
+    applicableExpr
     | ifExpr
-    | lambdaExpr
     | matchExpr
-    | applicableExpr;
+    | lambdaExpr
+    ;
 
-blockExpr: LBRACE letDeclaration* expr? RBRACE;
+/** Grouping for expressions: a && (b || c) */
+parenExpr: LPAREN expr RPAREN;
 
+/** Blocks:
+ *  {
+ *    let a = 1
+ *    let b = 2
+ *    a + b
+ *  }
+ */
+blockExpr: LBRACE localLet* expr? RBRACE;
+
+/** Local let bindings - this rule currently disallows the function syntax for let bindings */
+localLet: LET ID typeAnnotation? EQUAL expr;
+
+/** If expressions:
+ *
+ *  if true then 1 else 2
+ *
+ *  if a && b then {
+ *    1
+ *  } else {
+ *    2
+ *  }
+ */
 ifExpr: IF expr THEN expr ELSE expr;
 
+/** Lambda expressions:
+ *  a -> a
+ *  (a) -> a
+ *  () -> 1
+ *  (l: Int, r: Int) -> l + r
+ */
 lambdaExpr: (ID | lambdaParams) ARROW expr;
 
-lambdaParams:
-    LPAREN RPAREN
-    | LPAREN lambdaParam (COMMA lambdaParam)* RPAREN;
+lambdaParams: LPAREN (lambdaParam (COMMA lambdaParam)* COMMA?)? RPAREN;
 
 lambdaParam: ID typeAnnotation?;
 
+/** Match expressions:
+ *  match list with {
+ *    case Cons { head: last, tail: Nil{} } -> Some(last)
+ *    case Cons { tail: rest } -> lastOption(rest)
+ *    case Nil {} -> None()
+ *  }
+ */
 matchExpr: MATCH expr WITH LBRACE matchCase* RBRACE;
 
 matchCase: CASE pattern ARROW expr;
 
-pattern: aliasPattern | idPattern | literalPattern | constructorPattern;
+/** Patterns */
+pattern: idPattern | literalPattern | constructorPattern;
 
-aliasPattern: ID AT pattern;
+/** Identifier and alias patterns
+ *  head
+ *  rest @ Cons {}
+ */
+idPattern: ID (AT pattern)?;
 
-idPattern: ID;
-
+/** Literal patterns:
+ *  1
+ *  "hello"
+ */
 literalPattern: literal;
 
+/** Constructor patterns
+ *  Cons { head, tail: Nil {} }
+ *  Cons { head: first }
+ */
 constructorPattern: qualifiedId LBRACE fieldPatterns? RBRACE;
 
-fieldPatterns: fieldPattern (COMMA fieldPattern)*;
+fieldPatterns: fieldPattern (COMMA fieldPattern)* COMMA?;
 
 fieldPattern: ID (COLON pattern)?;
 
+/** Expressions that can be applied with arguments and operators.
+ *  This rule encodes the operator precedence hierarchy.
+ */
 applicableExpr:
-    // Atoms
+    // Identifiers: x
     id = ID
+    // Literals: 1, 'a', "hello"
     | literal
     // Parentheses
     | parenExpr
-    // Member selection
+    // Blocks
+    | blockExpr
+    // Member selection: x.id
     | receiver = applicableExpr DOT selection = ID
-    // Function application
+    // Function application: id(x)
     | function = applicableExpr application
-    // Prefix operators
+    // Prefix operators: -x, !x, ~x
     | operator = (MINUS | EXCLAMATION | TILDE) unaryOperand = applicableExpr
-    // Multiplicative arithmetic operators
+    // Multiplicative arithmetic operators: a * b, a / b, a % b
     | leftOperand = applicableExpr operator = (ASTERISK | RSLASH | PERCENT) rightOperand = applicableExpr
-    // Additive arithmetic operators
+    // Additive arithmetic operators: a + b, a - b
     | leftOperand = applicableExpr operator = (PLUS | MINUS) rightOperand = applicableExpr
-    // Bitwise shift operators
+    // Bitwise shift operators: a << b, a >> b, a >>> b
     | leftOperand = applicableExpr operator = (LEFT_SHIFT | RIGHT_SHIFT | UNSIGNED_RIGHT_SHIFT) rightOperand = applicableExpr
-    // Bitwise and
+    // Bitwise and: a & b
     | leftOperand = applicableExpr operator = AMPERSAND rightOperand = applicableExpr
-    // Bitwise or and xor
+    // Bitwise or and xor: a ^ b, a | b
     | leftOperand = applicableExpr operator = (CARET | PIPE) rightOperand = applicableExpr
-    // Relational operators
+    // Relational operators: a < b, a <= b, a > b, a >= b
     | leftOperand = applicableExpr operator = (LESS_THAN | LESS_THAN_EQUAL | GREATER_THAN | GREATER_THAN_EQUAL) rightOperand = applicableExpr
-    // Equality operators
+    // Equality operators: a == b, a != b
     | leftOperand = applicableExpr operator = (DOUBLE_EQUAL | NOT_EQUAL) rightOperand = applicableExpr
-    // Logical operators
+    // Logical operators: a && b, a || b
     | leftOperand = applicableExpr operator = DOUBLE_AMPERSAND rightOperand = applicableExpr
     | leftOperand = applicableExpr operator = DOUBLE_PIPE rightOperand = applicableExpr
     ;
 
-application: LPAREN RPAREN | LPAREN expr (COMMA expr)* RPAREN;
+application: LPAREN (expr (COMMA expr)* COMMA?)? RPAREN;
 
-parenExpr: LPAREN expr RPAREN;
-
-// Literals
+/** Literals */
 literal:
     literalBoolean
     | literalInt
     | literalFloat
     | literalChar
-    | literalString;
+    | literalString
+    ;
 
 literalBoolean: TRUE | FALSE;
 literalInt: LITERAL_INT;
@@ -169,6 +256,6 @@ literalFloat: LITERAL_FLOAT;
 literalChar: LITERAL_CHAR;
 literalString: LITERAL_STRING;
 
-// Identifiers
-namespaceId: (pkg += ID RSLASH)* ns = ID;
-qualifiedId: (ns = ID DOT)? id = ID;
+/** Identifiers */
+namespaceId: ID (RSLASH ID)*;
+qualifiedId: ID (DOT ID)?;
