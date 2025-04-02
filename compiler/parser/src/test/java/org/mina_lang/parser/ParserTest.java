@@ -503,13 +503,13 @@ public class ParserTest {
         testSuccessfulParse("""
                 {
                     let x = 1
-                    2
+                    return 2
                 }""", Parser::getExprVisitor, MinaParser::expr,
                 blockNode(
                         new Range(0, 0, 3, 1),
                         Lists.immutable.of(
                                 letNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1))),
-                        intNode(new Range(2, 4, 2, 5), 2)));
+                        intNode(new Range(2, 11, 2, 12), 2)));
     }
 
     @Test
@@ -518,7 +518,7 @@ public class ParserTest {
                 {
                     let x = 1
                     let y = 'a'
-                    2
+                    return 2
                 }""", Parser::getExprVisitor, MinaParser::expr,
                 blockNode(
                         new Range(0, 0, 4, 1),
@@ -526,7 +526,7 @@ public class ParserTest {
                                 letNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1)),
                                 letNode(new Range(2, 4, 2, 15), "y",
                                         charNode(new Range(2, 12, 2, 15), 'a'))),
-                        intNode(new Range(3, 4, 3, 5), 2)));
+                        intNode(new Range(3, 11, 3, 12), 2)));
     }
 
     @Test
@@ -537,7 +537,7 @@ public class ParserTest {
                     let y = {
                         'a'
                     }
-                    2
+                    return 2
                 }""", Parser::getExprVisitor, MinaParser::expr,
                 blockNode(
                         new Range(0, 0, 6, 1),
@@ -545,7 +545,7 @@ public class ParserTest {
                                 letNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1)),
                                 letNode(new Range(2, 4, 4, 5), "y",
                                         blockNode(new Range(2, 12, 4, 5), charNode(new Range(3, 8, 3, 11), 'a')))),
-                        intNode(new Range(5, 4, 5, 5), 2)));
+                        intNode(new Range(5, 11, 5, 12), 2)));
     }
 
     @Test
@@ -575,67 +575,67 @@ public class ParserTest {
     // Lambda expressions
     @Test
     void parseNullaryLambda() {
-        testSuccessfulParse("() -> 1", Parser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("fun () -> 1", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
-                        new Range(0, 0, 0, 7),
+                        new Range(0, 0, 0, 11),
                         Lists.immutable.empty(),
-                        intNode(new Range(0, 6, 0, 7), 1)));
+                        intNode(new Range(0, 10, 0, 11), 1)));
     }
 
     @Test
     void parseIdentityLambda() {
-        testSuccessfulParse("a -> a", Parser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("fun a -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
-                        new Range(0, 0, 0, 6),
-                        Lists.immutable.of(paramNode(new Range(0, 0, 0, 1), "a")),
-                        refNode(new Range(0, 5, 0, 6), "a")));
+                        new Range(0, 0, 0, 10),
+                        Lists.immutable.of(paramNode(new Range(0, 4, 0, 5), "a")),
+                        refNode(new Range(0, 9, 0, 10), "a")));
     }
 
     @Test
     void parseParenthesizedIdentityLambda() {
-        testSuccessfulParse("(a) -> a", Parser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("fun (a) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
-                        new Range(0, 0, 0, 8),
-                        Lists.immutable.of(paramNode(new Range(0, 1, 0, 2), "a")),
-                        refNode(new Range(0, 7, 0, 8), "a")));
+                        new Range(0, 0, 0, 12),
+                        Lists.immutable.of(paramNode(new Range(0, 5, 0, 6), "a")),
+                        refNode(new Range(0, 11, 0, 12), "a")));
     }
 
     @Test
     void parseAnnotatedIdentityLambda() {
-        testSuccessfulParse("(a: Int) -> a", Parser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("fun (a: Int) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
-                        new Range(0, 0, 0, 13),
+                        new Range(0, 0, 0, 17),
                         Lists.immutable.of(
-                                paramNode(new Range(0, 1, 0, 7), "a", typeRefNode(new Range(0, 4, 0, 7), "Int"))),
-                        refNode(new Range(0, 12, 0, 13), "a")));
+                                paramNode(new Range(0, 5, 0, 11), "a", typeRefNode(new Range(0, 8, 0, 11), "Int"))),
+                        refNode(new Range(0, 16, 0, 17), "a")));
     }
 
     @Test
     void parseMultiArgLambda() {
-        testSuccessfulParse("(a, b) -> a", Parser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("fun (a, b) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
-                        new Range(0, 0, 0, 11),
+                        new Range(0, 0, 0, 15),
                         Lists.immutable.of(
-                                paramNode(new Range(0, 1, 0, 2), "a"),
-                                paramNode(new Range(0, 4, 0, 5), "b")),
-                        refNode(new Range(0, 10, 0, 11), "a")));
+                                paramNode(new Range(0, 5, 0, 6), "a"),
+                                paramNode(new Range(0, 8, 0, 9), "b")),
+                        refNode(new Range(0, 14, 0, 15), "a")));
     }
 
     @Test
     void parseAnnotatedMultiArgLambda() {
-        testSuccessfulParse("(a: Int, b: Boolean) -> a", Parser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("fun (a: Int, b: Boolean) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
-                        new Range(0, 0, 0, 25),
+                        new Range(0, 0, 0, 29),
                         Lists.immutable.of(
-                                paramNode(new Range(0, 1, 0, 7), "a", typeRefNode(new Range(0, 4, 0, 7), "Int")),
-                                paramNode(new Range(0, 9, 0, 19), "b",
-                                        typeRefNode(new Range(0, 12, 0, 19), "Boolean"))),
-                        refNode(new Range(0, 24, 0, 25), "a")));
+                                paramNode(new Range(0, 5, 0, 11), "a", typeRefNode(new Range(0, 8, 0, 11), "Int")),
+                                paramNode(new Range(0, 13, 0, 23), "b",
+                                        typeRefNode(new Range(0, 16, 0, 23), "Boolean"))),
+                        refNode(new Range(0, 28, 0, 29), "a")));
     }
 
     @Test
     void parseLambdaMissingBody() {
-        var errors = testFailedParse("a ->", Parser::getExprVisitor, MinaParser::expr);
+        var errors = testFailedParse("fun a ->", Parser::getExprVisitor, MinaParser::expr);
         assertThat(errors, hasSize(1));
         assertThat(errors.get(0), startsWith("mismatched input '<EOF>'"));
     }
@@ -740,14 +740,14 @@ public class ParserTest {
 
     @Test
     void parseRedex() {
-        testSuccessfulParse("(x -> x)(1)", Parser::getExprVisitor, MinaParser::expr,
+        testSuccessfulParse("(fun x -> x)(1)", Parser::getExprVisitor, MinaParser::expr,
                 applyNode(
-                        new Range(0, 0, 0, 11),
+                        new Range(0, 0, 0, 15),
                         lambdaNode(
-                                new Range(0, 1, 0, 7),
-                                Lists.immutable.of(paramNode(new Range(0, 1, 0, 2), "x")),
-                                refNode(new Range(0, 6, 0, 7), "x")),
-                        Lists.immutable.of(intNode(new Range(0, 9, 0, 10), 1))));
+                                new Range(0, 1, 0, 11),
+                                Lists.immutable.of(paramNode(new Range(0, 5, 0, 6), "x")),
+                                refNode(new Range(0, 10, 0, 11), "x")),
+                        Lists.immutable.of(intNode(new Range(0, 13, 0, 14), 1))));
     }
 
     // Member selection
