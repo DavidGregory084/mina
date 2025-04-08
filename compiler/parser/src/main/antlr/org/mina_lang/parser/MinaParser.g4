@@ -73,10 +73,15 @@ typeAnnotation: COLON type;
 type:
     // Factor out the common prefix between e.g. A and A -> A by
     // parsing unary function types via an optional suffix
-    (applicableType | quantifiedType) (ARROW type)?
+    (applicableType | parenType | quantifiedType) (ARROW type)?
     // Multi-argument and nullary function types (A, B) -> A and () -> A
     | funTypeParams ARROW type
     ;
+
+/** Grouping for types, useful for curried functions e.g.
+ *  [A -> B] -> A -> B
+ */
+parenType: LSQUARE type RSQUARE;
 
 /** Quantified types:
  *  [A] { A -> A }
@@ -94,16 +99,10 @@ funTypeParams: LPAREN (type (COMMA type)* COMMA?)? RPAREN;
  */
 applicableType:
     typeReference
-    | parenType
     | applicableType typeApplication
     ;
 
 typeApplication: LSQUARE type (COMMA type)* COMMA? RSQUARE;
-
-/** Grouping for types, useful for curried functions e.g.
- *  [A -> B] -> A -> B
- */
-parenType: LSQUARE type RSQUARE;
 
 /** References to known types, e.g.
  *  Int, List, A, ?A
