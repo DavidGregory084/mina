@@ -13,9 +13,6 @@
       "include": "#literals"
     },
     {
-      "include": "#types"
-    },
-    {
       "include": "#declarations"
     },
     {
@@ -72,12 +69,20 @@
           "name": "keyword.other.let.mina"
         },
         {
+          "match": "\\b(fun)\\b",
+          "name": "keyword.other.fun.mina"
+        },
+        {
           "match": "\\b(if|then|else)\\b",
           "name": "keyword.control.conditional.mina"
         },
         {
           "match": "\\b(match|with|case)\\b",
           "name": "keyword.control.matching.mina"
+        },
+        {
+          "match": "\\b(return)\\b",
+          "name": "keyword.control.return.mina"
         }
       ]
     },
@@ -117,30 +122,16 @@
         }
       ]
     },
-    "types": {
+    "declarations": {
       "patterns": [
         {
-          "match": "(?<=:\\s*)(\\p{XID_Start}\\p{XID_Continue}*)",
+          "match": "(?<=\\b(namespace)\\b\\s+)(\\p{XID_Start}\\p{XID_Continue}*)",
           "captures": {
-            "1": {
-              "name": "storage.type.mina"
+            "2": {
+              "name": "entity.name.namespace.mina"
             }
           }
         },
-        {
-          "begin": "\\[",
-          "end": "\\]",
-          "patterns": [
-            {
-              "match": "(\\??\\p{XID_Start}\\p{XID_Continue}*)",
-              "name": "storage.type.mina"
-            }
-          ]
-        }
-      ]
-    },
-    "declarations": {
-      "patterns": [
         {
           "match": "(?<=\\b(data)\\b\\s+)(\\p{XID_Start}\\p{XID_Continue}*)",
           "captures": {
@@ -161,7 +152,7 @@
           "match": "(?<=\\b(case)\\b\\s+)(\\p{XID_Start}\\p{XID_Continue}*)",
           "captures": {
             "2": {
-              "name": "entity.name.type.mina"
+              "name": "entity.name.function.mina"
             }
           }
         }
@@ -178,16 +169,40 @@
           "name": "storage.type.function.fatarrow.mina"
         },
         {
-          "match": "=",
-          "name": "keyword.operator.assignment.mina"
-        },
-        {
           "match": ":",
           "name": "keyword.operator.type.assignment.mina"
         },
         {
           "match": "@",
           "name": "keyword.operator.matching.alias.mina"
+        },
+        {
+          "match": "(&&|\\|\\|)",
+          "name": "keyword.operator.logical.mina"
+        },
+        {
+          "match": "([*%+-])",
+          "name": "keyword.operator.arithmetic.mina"
+        },
+        {
+          "match": "([~^|&]|<<|>>>?)",
+          "name": "keyword.operator.bitwise.mina"
+        },
+        {
+          "match": "(<=?|>=?)",
+          "name": "keyword.operator.relational.mina"
+        },
+        {
+          "match": "(!=|==)",
+          "name": "keyword.operator.equality.mina"
+        },
+        {
+          "match": "!",
+          "name": "keyword.operator.logical.mina"
+        },
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment.mina"
         },
         {
           "match": "\\{",
@@ -206,14 +221,6 @@
           "name": "punctuation.brackets.square.mina"
         },
         {
-          "match": "<",
-          "name": "punctuation.brackets.angle.mina"
-        },
-        {
-          "match": ">",
-          "name": "punctuation.brackets.angle.mina"
-        },
-        {
           "match": "\\(",
           "name": "punctuation.brackets.round.mina"
         },
@@ -224,13 +231,17 @@
         {
           "match": "/",
           "name": "punctuation.separator.package.mina"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.list.mina"
         }
       ]
     },
     "names": {
       "patterns": [
         {
-          "match": "(\\p{XID_Start}\\p{XID_Continue}*)(?=\\s*/)",
+          "match": "(?<=/\\s*)(\\p{XID_Start}\\p{XID_Continue}*)",
           "captures": {
             "1": {
               "name": "entity.name.namespace.mina"
@@ -238,23 +249,15 @@
           }
         },
         {
-          "match": "(?<=/\\s*)(\\p{XID_Start}\\p{XID_Continue}*)",
-          "captures": {
-            "1": {
-              "name": "entity.name.class.mina"
-            }
-          }
-        },
-        {
-          "match": "(?<=\\.\\s*)(\\p{XID_Start}\\p{XID_Continue}*)",
-          "captures": {
-            "1": {
-              "name": "entity.name.function.mina"
-            }
-          }
-        },
-        {
           "match": "(?<=^|\\s|\\p{Pattern_Syntax})(\\p{XID_Start}\\p{XID_Continue}*)(?=$|\\s|\\p{Pattern_Syntax})",
+          "captures": {
+            "1": {
+              "name": "variable.other.mina"
+            }
+          }
+        },
+        {
+          "match": "(?<=^|\\s|\\p{Pattern_Syntax})(_\\p{XID_Continue}+)(?=$|\\s|\\p{Pattern_Syntax})",
           "captures": {
             "1": {
               "name": "variable.other.mina"
