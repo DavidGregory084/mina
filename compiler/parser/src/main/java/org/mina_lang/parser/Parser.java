@@ -467,7 +467,7 @@ public class Parser {
 
         @Override
         public TypeNode<Void> visitApplicableType(ApplicableTypeContext ctx) {
-            var typeNode = visitAlternatives(ctx.parenType(), ctx.typeReference());
+            var typeNode = visitNullable(ctx.typeReference());
 
             if (typeNode != null) {
                 return typeNode;
