@@ -1,7 +1,7 @@
 namespace Mina/Examples/LetBlock {
     let intBlock = {
         let inner = 1
-        2
+        return 2
     }
 
     let unitBlock = {
@@ -11,7 +11,7 @@ namespace Mina/Examples/LetBlock {
     let doublyNested = {
         let first = {
             let inner = 1
-            2
+            return 2
         }
 
         let second = {
