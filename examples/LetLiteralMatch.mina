@@ -9,31 +9,31 @@ namespace Mina/Examples/LetLiteralMatch {
         case Nil()
     }
 
-    let testString = str -> match str with {
+    let testString = fun str -> match str with {
         case bla @ "a" -> 1
         case "b" -> 2
         case otherwise -> 3
     }
 
-    let testOptionString = opt -> match opt with {
+    let testOptionString = fun opt -> match opt with {
         case Some { value: "a" } -> 1
         case Some { value: "b" } -> 2
         case otherwise -> 3
     }
 
-    let testLong = lng -> match lng with {
+    let testLong = fun lng -> match lng with {
         case bla @ 1L -> 1
         case 2L -> 2
         case otherwise -> 3
     }
 
-    let testOptionLong = opt -> match opt with {
+    let testOptionLong = fun opt -> match opt with {
         case Some { value: 1L } -> 1
         case Some { value: 2L } -> 2
         case otherwise -> 3
     }
 
-    let testOneTwoThree = list -> match list with {
+    let testOneTwoThree = fun list -> match list with {
         case Cons { head: 1, tail: Cons { head: 2, tail: Cons { head: 3 }}} ->
             true
         case otherwise ->

@@ -1,7 +1,4 @@
 namespace Mina/Examples/DeclareOption {
-    import Mina/Examples/DeclareList
-    import Mina/Examples/DeclareTree
-
     data Option[A] {
         case Some(value: A)
         case None()

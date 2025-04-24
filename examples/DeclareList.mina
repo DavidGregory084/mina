@@ -1,6 +1,4 @@
 namespace Mina/Examples/DeclareList {
-    import Mina/Examples/DeclareBool
-
     data Option[A] {
         case Some(value: A)
         case None()

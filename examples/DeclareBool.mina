@@ -1,6 +1,4 @@
 namespace Mina/Examples/DeclareBool {
-    import Mina/Examples/DeclareOption
-
     data Bool {
         case True()
         case False()
