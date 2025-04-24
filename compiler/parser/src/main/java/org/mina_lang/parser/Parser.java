@@ -443,7 +443,7 @@ public class Parser {
 
         @Override
         public TypeNode<Void> visitType(TypeContext ctx) {
-            var headType = visitAlternatives(ctx.quantifiedType(), ctx.applicableType());
+            var headType = visitAlternatives(ctx.applicableType(), ctx.parenType(), ctx.quantifiedType());
             var bodyType = visitNullable(ctx.type());
             var funTypeParams = ctx.funTypeParams();
             if (funTypeParams != null) {

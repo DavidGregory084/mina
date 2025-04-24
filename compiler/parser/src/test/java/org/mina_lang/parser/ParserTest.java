@@ -289,6 +289,16 @@ public class ParserTest {
     }
 
     @Test
+    void parseParenType() {
+        testSuccessfulParse("[A -> B]", Parser::getTypeVisitor, MinaParser::type,
+            funTypeNode(
+                new Range(0, 1, 0, 7),
+                Lists.immutable.of(typeRefNode(new Range(0, 1, 0, 2), "A")),
+                typeRefNode(new Range(0, 6, 0, 7), "B")));
+
+    }
+
+    @Test
     void parseQuantifiedTypeMissingBody() {
         var errors = testFailedParse("[A] {}", Parser::getTypeVisitor, MinaParser::type);
         assertThat(errors, hasSize(1));
