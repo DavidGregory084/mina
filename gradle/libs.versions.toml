@@ -1,7 +1,7 @@
 [versions]
 antlr = "4.13.2"
 apacheCommonsLang = "3.18.0"
-apacheCommonsText = "1.13.0"
+apacheCommonsText = "1.13.1"
 asciiDoctorGradle = "4.0.4"
 asm = "9.7.1"
 bsp4j = "2.1.1"
