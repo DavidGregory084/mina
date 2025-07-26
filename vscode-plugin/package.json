@@ -31,7 +31,7 @@
     "format-check": "npx prettier --check src",
     "pretest": "npm run clean && npm run compile",
     "test": "node ./out/test/runTest.js",
-    "test-linux": "xvfb-run -a npm run test"
+    "test-xvfb": "xvfb-run -a npm run test"
   },
   "dependencies": {
     "jdk-utils": "^0.5.1",
