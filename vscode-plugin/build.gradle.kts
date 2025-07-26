@@ -81,7 +81,13 @@ val npmBuild by
         dependsOn(":mina-lang-server:publish")
         dependsOn(tasks.npmInstall)
         npmCommand.set(
-            if (OperatingSystem.current().isLinux) listOf("run", "test-linux")
+            if (
+                // Run with xvfb-run if we aren't running in a display server
+                OperatingSystem.current().isLinux &&
+                    System.getenv("WAYLAND_DISPLAY").isNullOrBlank() &&
+                    System.getenv("DISPLAY").isNullOrBlank()
+            )
+                listOf("run", "test-xvfb")
             else listOf("run", "test")
         )
         inputs.dir("src").withPathSensitivity(PathSensitivity.RELATIVE)
