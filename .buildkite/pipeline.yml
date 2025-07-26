@@ -12,7 +12,7 @@ steps:
 
   - label: ":junit: Collect JUnit Results"
     plugins:
-      - junit-annotate#v2.6.0:
+      - junit-annotate#v2.7.0:
           artifacts: "**/build/test-results/*/TEST-*.xml"
 
   - label: ":test-analytics: Test Analytics"
