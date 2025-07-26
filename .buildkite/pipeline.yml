@@ -3,7 +3,7 @@ steps:
     command: "./.buildkite/ci.sh"
     artifact_paths: "**/build/test-results/*/TEST-*.xml"
     plugins:
-      - docker#v5.12.0:
+      - docker#v5.13.0:
           image: "timbru31/java-node:17-jdk-18"
           memory: 3g
 
