@@ -31,7 +31,7 @@
     "format-check": "npx prettier --check src",
     "pretest": "npm run clean && npm run compile",
     "test": "node ./out/test/runTest.js",
-    "test-linux": "xvfb-run -a npm run test"
+    "test-xvfb": "xvfb-run -a npm run test"
   },
   "dependencies": {
     "jdk-utils": "^0.5.1",
@@ -44,7 +44,7 @@
     "@tsconfig/recommended": "^1.0.10",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^18.19.118",
+    "@types/node": "^18.19.120",
     "@types/vscode": "^1.82.0",
     "@typescript-eslint/eslint-plugin": "^8.23.0",
     "@typescript-eslint/parser": "^8.23.0",
