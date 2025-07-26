@@ -3,6 +3,10 @@
   "extends": ["local>mina-lang/renovate-config"],
   "packageRules": [
     {
+      "matchPackageNames": "gradle",
+      "allowedVersions": "<8.14"
+    },
+    {
       "matchPackageNames": "node",
       "allowedVersions": "<19"
     },
