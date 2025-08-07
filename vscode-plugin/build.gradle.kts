@@ -38,14 +38,14 @@ spotless {
                 mapOf(
                     "op" to "replace",
                     "path" to languageServerVersionPath,
-                    "value" to rootProject.project("mina-lang-server").version.toString()
+                    "value" to rootProject.project("mina-lang-server").version.toString(),
                 ),
                 // Replace VS code default configuration for profiling agent version
                 mapOf(
                     "op" to "replace",
                     "path" to profilingAgentVersionPath,
-                    "value" to libs.versions.pyroscopeAgent.get()
-                )
+                    "value" to libs.versions.pyroscopeAgent.get(),
+                ),
             )
         )
 
@@ -61,7 +61,7 @@ val npmVersion by
                 "version",
                 "--no-git-tag-version",
                 "--allow-same-version",
-                project.version.toString()
+                project.version.toString(),
             )
         )
     }
