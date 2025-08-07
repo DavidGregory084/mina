@@ -52,7 +52,7 @@ val generateMinaLexer by
                 antlrOutDir.absolutePath,
                 "-package",
                 "org.mina_lang.parser",
-                lexerSrcFile.absolutePath
+                lexerSrcFile.absolutePath,
             )
         )
     }
@@ -74,7 +74,7 @@ val generateMinaParser by
                 antlrOutDir.absolutePath,
                 "-package",
                 "org.mina_lang.parser",
-                parserSrcFile.absolutePath
+                parserSrcFile.absolutePath,
             )
         )
     }

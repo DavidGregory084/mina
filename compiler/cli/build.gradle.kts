@@ -34,7 +34,7 @@ tasks.register<JavaExec>("generateManpageAsciiDoc") {
             listOf(
                 configurations.compileClasspath,
                 configurations.annotationProcessor,
-                sourceSets.main.get().runtimeClasspath
+                sourceSets.main.get().runtimeClasspath,
             )
         )
     mainClass.set("picocli.codegen.docgen.manpage.ManPageGenerator")
@@ -42,7 +42,7 @@ tasks.register<JavaExec>("generateManpageAsciiDoc") {
         listOf(
             application.mainClass.get(),
             "--outdir=${project.buildDir}/generated-picocli-docs",
-            "-v"
+            "-v",
         )
 }
 
