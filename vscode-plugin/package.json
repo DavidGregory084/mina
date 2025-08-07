@@ -136,7 +136,7 @@
           },
           "mina.languageServer.profiling.agentVersion": {
             "type": "string",
-            "default": "0.14.0",
+            "default": "2.1.2",
             "description": "The version of the Pyroscope agent to use."
           }
         }
