@@ -52,16 +52,24 @@ public class Conversions {
 
     public static Diagnostic toLspDiagnostic(ch.epfl.scala.bsp4j.Diagnostic bspDiagnostic) {
         Diagnostic diagnostic = new Diagnostic();
-        diagnostic.setCode(bspDiagnostic.getCode());
-        diagnostic.setSource(bspDiagnostic.getSource());
         diagnostic.setRange(toLspRange(bspDiagnostic.getRange()));
-        diagnostic.setSeverity(toLspSeverity(bspDiagnostic.getSeverity()));
         diagnostic.setMessage(bspDiagnostic.getMessage());
-        diagnostic.setRelatedInformation(
-            bspDiagnostic.getRelatedInformation()
-                .stream()
-                .map(Conversions::toLspRelatedInformation)
-                .toList());
+        if (bspDiagnostic.getCode() != null) {
+            diagnostic.setCode(bspDiagnostic.getCode());
+        }
+        if (bspDiagnostic.getSource() != null) {
+            diagnostic.setSource(bspDiagnostic.getSource());
+        }
+        if (bspDiagnostic.getSeverity() != null) {
+            diagnostic.setSeverity(toLspSeverity(bspDiagnostic.getSeverity()));
+        }
+        if (bspDiagnostic.getRelatedInformation() != null) {
+            diagnostic.setRelatedInformation(
+                bspDiagnostic.getRelatedInformation()
+                    .stream()
+                    .map(Conversions::toLspRelatedInformation)
+                    .toList());
+        }
         return diagnostic;
     }
 

@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class BaseDiagnosticCollector implements DiagnosticCollector, DiagnosticReporter, DiagnosticEnumerator {
-    ConcurrentLinkedQueue<Diagnostic> diagnostics = new ConcurrentLinkedQueue<>();
+    protected ConcurrentLinkedQueue<Diagnostic> diagnostics = new ConcurrentLinkedQueue<>();
     AtomicInteger errorCount = new AtomicInteger(0);
     AtomicInteger warningCount = new AtomicInteger(0);
 
