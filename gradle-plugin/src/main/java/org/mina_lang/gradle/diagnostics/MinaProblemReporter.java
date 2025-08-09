@@ -4,82 +4,70 @@
  */
 package org.mina_lang.gradle.diagnostics;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.gradle.api.problems.ProblemReporter;
-import org.gradle.api.problems.Problems;
-import org.gradle.api.problems.Severity;
-import org.mina_lang.common.Location;
+import com.opencastsoftware.yvette.handlers.ReportHandler;
+import com.opencastsoftware.yvette.handlers.graphical.GraphicalReportHandler;
+import org.gradle.api.problems.*;
+import org.gradle.internal.UncheckedException;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
-import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
-import org.mina_lang.gradle.BuildInfo;
+import org.mina_lang.common.diagnostics.Diagnostic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
+import java.io.IOException;
 
 public class MinaProblemReporter extends BaseDiagnosticCollector {
+    private static Logger logger = LoggerFactory.getLogger(MinaProblemReporter.class);
+    private static ProblemGroup COMPILATION = ProblemGroup.create("compilation", "Compilation");
+    private static ProblemId MINA = ProblemId.create("mina", "Mina Compilation", COMPILATION);
     private ProblemReporter reporter;
+    private ReportHandler reportHandler;
+    private StringBuilder stringBuilder;
 
     public MinaProblemReporter(Problems problems) {
-        this.reporter = problems.forNamespace(BuildInfo.pluginId);
+        this.reporter = problems.getReporter();
+        this.stringBuilder = new StringBuilder();
+        this.reportHandler = GraphicalReportHandler.builder()
+            .withColours(true)
+            .withUnicode(false)
+            .buildFor(stringBuilder);
     }
 
-    @Override
-    public void reportError(Location location, String message) {
-        super.reportError(location, message);
-        reportProblem(Severity.ERROR, location, message);
-    }
-
-    @Override
-    public void reportError(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        // TODO: handle related info
-        reportError(location, message);
-    }
-
-    @Override
-    public void reportWarning(Location location, String message) {
-        super.reportWarning(location, message);
-        reportProblem(Severity.WARNING, location, message);
-    }
-
-    @Override
-    public void reportWarning(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        // TODO: handle related info
-        reportWarning(location, message);
-    }
-
-    @Override
-    public void reportInfo(Location location, String message) {
-        super.reportInfo(location, message);
-        reportProblem(Severity.ADVICE, location, message);
-    }
-
-    @Override
-    public void reportInfo(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        // TODO: handle related info
-        reportInfo(location, message);
-    }
-
-    @Override
-    public void reportHint(Location location, String message) {
-        super.reportHint(location, message);
-        reportProblem(Severity.ADVICE, location, message);
-    }
-
-    @Override
-    public void reportHint(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
-        // TODO: handle related info
-        reportHint(location, message);
-    }
-
-    void reportProblem(Severity severity, Location location, String message) {
-        reporter.reporting(spec -> {
+    public void reportProblems() {
+        Diagnostic diagnostic;
+        while ((diagnostic = diagnostics.poll()) != null) {
+            // Report diagnostic via the Problems API
+            var location = diagnostic.location();
+            var message = diagnostic.message();
             var startLocation = location.range().start();
-            spec.category("compilation", "mina")
-                .label(message)
-                .severity(severity)
-                .lineInFileLocation(
-                    Paths.get(location.uri()).toString(),
-                    startLocation.line() + 1,
-                    startLocation.character() + 1);
-        });
+            var severity = switch (diagnostic.severity()) {
+                case Error -> Severity.ERROR;
+                case Warning -> Severity.WARNING;
+                case Information, Hint -> Severity.ADVICE;
+            };
+
+            reporter.report(MINA, spec -> {
+                spec.severity(severity)
+                    .contextualLabel(message)
+                    .lineInFileLocation(
+                        location.uri().toString(),
+                        startLocation.line() + 1,
+                        startLocation.character() + 1);
+            });
+
+            // Report diagnostic to the Gradle CLI log
+            stringBuilder.setLength(0);
+
+            try {
+                reportHandler.display(diagnostic, stringBuilder);
+
+                switch (diagnostic.severity()) {
+                    case Error -> logger.error(stringBuilder.toString());
+                    case Warning -> logger.warn(stringBuilder.toString());
+                    case Information, Hint -> logger.info(stringBuilder.toString());
+                }
+            } catch (IOException e) {
+                UncheckedException.throwAsUncheckedException(e);
+            }
+        }
     }
 }
