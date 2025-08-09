@@ -41,9 +41,8 @@ public record UnsolvedKind(int id) implements Kind {
 
             @Override
             public Boolean visitHigherKind(HigherKind higher) {
-                var occursInArgs = higher
-                        .argKinds()
-                        .anySatisfy(arg -> arg.accept(this));
+                var occursInArgs = higher.argKinds().stream()
+                        .anyMatch(arg -> arg.accept(this));
                 var occursInResult = higher
                         .resultKind()
                         .accept(this);

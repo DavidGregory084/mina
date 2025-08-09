@@ -4,11 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, PatternNodeTransformer<A, B> {
@@ -16,8 +16,8 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
     // Namespaces
     default void preVisitNamespace(NamespaceNode<A> namespace) {}
 
-    NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-            ImmutableList<ImmutableList<DeclarationNode<B>>> declarationGroups);
+    NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode id, List<ImportNode> imports,
+            List<List<DeclarationNode<B>>> declarationGroups);
 
     default void postVisitNamespace(NamespaceNode<B> namespace) {}
 
@@ -35,8 +35,8 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
 
     default void preVisitLetFn(LetFnNode<A> letFn) {}
 
-    LetFnNode<B> visitLetFn(Meta<A> meta, String name, ImmutableList<TypeVarNode<B>> typeParams,
-            ImmutableList<ParamNode<B>> valueParams, Optional<TypeNode<B>> returnType, ExprNode<B> expr);
+    LetFnNode<B> visitLetFn(Meta<A> meta, String name, List<TypeVarNode<B>> typeParams,
+            List<ParamNode<B>> valueParams, Optional<TypeNode<B>> returnType, ExprNode<B> expr);
 
     default void postVisitLetFn(LetFnNode<B> letFn) {}
 
@@ -54,7 +54,7 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
 
     default void preVisitBlock(BlockNode<A> block) {}
 
-    BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, Optional<ExprNode<B>> result);
+    BlockNode<B> visitBlock(Meta<A> meta, List<LetNode<B>> declarations, Optional<ExprNode<B>> result);
 
     default void postVisitBlock(BlockNode<B> block) {}
 
@@ -68,21 +68,21 @@ public interface MetaNodeTransformer<A, B> extends DataNodeTransformer<A, B>, Pa
 
     default void preVisitLambda(LambdaNode<A> lambda) {}
 
-    LambdaNode<B> visitLambda(Meta<A> meta, ImmutableList<ParamNode<B>> params, ExprNode<B> body);
+    LambdaNode<B> visitLambda(Meta<A> meta, List<ParamNode<B>> params, ExprNode<B> body);
 
     default void postVisitLambda(LambdaNode<B> lambda) {}
 
 
     default void preVisitMatch(MatchNode<A> match) {}
 
-    MatchNode<B> visitMatch(Meta<A> meta, ExprNode<B> scrutinee, ImmutableList<CaseNode<B>> cases);
+    MatchNode<B> visitMatch(Meta<A> meta, ExprNode<B> scrutinee, List<CaseNode<B>> cases);
 
     default void postVisitMatch(MatchNode<B> match) {}
 
 
     default void preVisitApply(ApplyNode<A> apply) {}
 
-    ApplyNode<B> visitApply(Meta<A> meta, ExprNode<B> expr, ImmutableList<ExprNode<B>> args);
+    ApplyNode<B> visitApply(Meta<A> meta, ExprNode<B> expr, List<ExprNode<B>> args);
 
     default void postVisitApply(ApplyNode<B> apply) {}
 

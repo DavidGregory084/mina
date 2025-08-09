@@ -5,7 +5,6 @@
 package org.mina_lang.renamer;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Meta;
@@ -83,7 +82,7 @@ public class RenamerTest {
         var firstDiagnostic = diagnostics.get(0);
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
         assertThat(firstDiagnostic.location().range(), is(equalTo(range)));
-        assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
+        assertThat(firstDiagnostic.relatedInformation(), is(empty()));
     }
 
     void assertDiagnosticWithRelatedInfo(List<Diagnostic> diagnostics, Range diagnosticRange, String diagnosticMessage,
@@ -94,7 +93,7 @@ public class RenamerTest {
         assertThat(firstDiagnostic.message(), is(equalTo(diagnosticMessage)));
         assertThat(firstDiagnostic.location().range(), is(equalTo(diagnosticRange)));
 
-        assertThat(firstDiagnostic.relatedInformation().toList(), is(not(empty())));
+        assertThat(firstDiagnostic.relatedInformation(), is(not(empty())));
 
         var firstRelatedInfo = firstDiagnostic.relatedInformation().get(0);
         assertThat(firstRelatedInfo.message(), startsWith(relatedInfoMessage));
@@ -130,16 +129,16 @@ public class RenamerTest {
     // Namespaces
     @Test
     void renameNamespace() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
 
         // namespace Mina/Test/Renamer {}
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.empty());
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of());
 
         var expectedNode = namespaceNode(Meta.of(namespaceName), idNode,
-                Lists.immutable.empty(), Lists.immutable.empty());
+                List.of(), List.of());
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
@@ -147,9 +146,9 @@ public class RenamerTest {
     // Declarations
     @Test
     void renameEmptyData() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var dataName = new DataName(new QualifiedName(namespaceName, "Void"));
 
         /*-
@@ -158,21 +157,21 @@ public class RenamerTest {
          * }
          */
         var originalNode = namespaceNode(
-                Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        dataNode(Range.EMPTY, "Void", Lists.immutable.empty(), Lists.immutable.empty())));
+                Range.EMPTY, idNode, List.of(),
+                List.of(
+                        dataNode(Range.EMPTY, "Void", List.of(), List.of())));
 
         var expectedNode = namespaceNode(
-                Meta.of(namespaceName), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(dataNode(Meta.of(dataName), "Void",
-                        Lists.immutable.empty(), Lists.immutable.empty())));
+                Meta.of(namespaceName), idNode, List.of(),
+                List.of(dataNode(Meta.of(dataName), "Void",
+                        List.of(), List.of())));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameEmptyDataDuplicateDeclaration() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalDataRange = new Range(1, 2, 1, 13);
         var duplicateDataRange = new Range(2, 2, 2, 13);
@@ -183,10 +182,10 @@ public class RenamerTest {
          * }
          */
         var originalNode = namespaceNode(
-                Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        dataNode(originalDataRange, "Void", Lists.immutable.empty(), Lists.immutable.empty()),
-                        dataNode(duplicateDataRange, "Void", Lists.immutable.empty(), Lists.immutable.empty())));
+                Range.EMPTY, idNode, List.of(),
+                List.of(
+                        dataNode(originalDataRange, "Void", List.of(), List.of()),
+                        dataNode(duplicateDataRange, "Void", List.of(), List.of())));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
@@ -197,9 +196,9 @@ public class RenamerTest {
 
     @Test
     void renameSimpleData() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var dataName = new DataName(new QualifiedName(namespaceName, "Boolean"));
         var trueName = new ConstructorName(dataName, new QualifiedName(namespaceName, "True"));
         var falseName = new ConstructorName(dataName, new QualifiedName(namespaceName, "False"));
@@ -213,24 +212,24 @@ public class RenamerTest {
          * }
          */
         var originalNode = namespaceNode(
-                Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        dataNode(Range.EMPTY, "Boolean", Lists.immutable.empty(), Lists.immutable.of(
-                                constructorNode(Range.EMPTY, "True", Lists.immutable.empty(),
+                Range.EMPTY, idNode, List.of(),
+                List.of(
+                        dataNode(Range.EMPTY, "Boolean", List.of(), List.of(
+                                constructorNode(Range.EMPTY, "True", List.of(),
                                         Optional.empty()),
-                                constructorNode(Range.EMPTY, "False", Lists.immutable.empty(),
+                                constructorNode(Range.EMPTY, "False", List.of(),
                                         Optional.empty())))));
 
         var expectedNode = namespaceNode(
-                Meta.of(namespaceName), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        dataNode(Meta.of(dataName), "Boolean", Lists.immutable.empty(),
-                                Lists.immutable.of(
+                Meta.of(namespaceName), idNode, List.of(),
+                List.of(
+                        dataNode(Meta.of(dataName), "Boolean", List.of(),
+                                List.of(
                                         constructorNode(Meta.of(trueName), "True",
-                                                Lists.immutable.empty(),
+                                                List.of(),
                                                 Optional.empty()),
                                         constructorNode(Meta.of(falseName), "False",
-                                                Lists.immutable.empty(),
+                                                List.of(),
                                                 Optional.empty())))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
@@ -238,9 +237,9 @@ public class RenamerTest {
 
     @Test
     void renameDataMutualRecursion() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
 
         var dataCName = new DataName(new QualifiedName(namespaceName, "C"));
         var dataBName = new DataName(new QualifiedName(namespaceName, "B"));
@@ -271,71 +270,71 @@ public class RenamerTest {
          *   }
          * }
          */
-        var originalNode = new NamespaceNode<>(Meta.of(Range.EMPTY), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        Lists.immutable.of(
+        var originalNode = new NamespaceNode<>(Meta.of(Range.EMPTY), idNode, List.of(),
+                List.of(
+                        List.of(
                                 dataNode(dataCRange, "C",
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.of(
+                                        List.of(),
+                                        List.of(
                                                 constructorNode(
                                                         Range.EMPTY, "MkC",
-                                                        Lists.immutable.of(
+                                                        List.of(
                                                                 constructorParamNode(Range.EMPTY, "b",
                                                                         typeRefNode(Range.EMPTY, "B"))),
                                                         Optional.empty()))),
                                 dataNode(dataBRange, "B",
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.of(
+                                        List.of(),
+                                        List.of(
                                                 constructorNode(
                                                         Range.EMPTY, "MkB",
-                                                        Lists.immutable.of(
+                                                        List.of(
                                                                 constructorParamNode(Range.EMPTY, "a",
                                                                         typeRefNode(Range.EMPTY, "A"))),
                                                         Optional.empty()))),
                                 dataNode(dataARange, "A",
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.of(
+                                        List.of(),
+                                        List.of(
                                                 constructorNode(
                                                         Range.EMPTY, "MkA",
-                                                        Lists.immutable.of(
+                                                        List.of(
                                                                 constructorParamNode(Range.EMPTY, "b",
                                                                         typeRefNode(Range.EMPTY, "B"))),
                                                         Optional.empty()))))));
 
         var expectedNode = new NamespaceNode<>(
                 Meta.of(namespaceName), idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         // `A` and `B` end up in the same declaration group,
                         // sorted in their original declaration ordering
-                        Lists.immutable.of(
+                        List.of(
                                 dataNode(new Meta<>(dataBRange, dataBName), "B",
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.of(
+                                        List.of(),
+                                        List.of(
                                                 constructorNode(
                                                         Meta.of(mkBName), "MkB",
-                                                        Lists.immutable.of(
+                                                        List.of(
                                                                 constructorParamNode(Meta.of(mkBFieldName), "a",
                                                                         typeRefNode(Meta.of(dataAName), "A"))),
                                                         Optional.empty()))),
                                 dataNode(new Meta<>(dataARange, dataAName), "A",
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.of(
+                                        List.of(),
+                                        List.of(
                                                 constructorNode(
                                                         Meta.of(mkAName), "MkA",
-                                                        Lists.immutable.of(
+                                                        List.of(
                                                                 constructorParamNode(Meta.of(mkAFieldName), "b",
                                                                         typeRefNode(Meta.of(dataBName), "B"))),
                                                         Optional.empty())))),
                         // `C` is in a later group as it depends on `B`
-                        Lists.immutable.of(
+                        List.of(
                                 dataNode(
                                         new Meta<>(dataCRange, dataCName), "C",
-                                        Lists.immutable.empty(),
-                                        Lists.immutable.of(
+                                        List.of(),
+                                        List.of(
                                                 constructorNode(
                                                         Meta.of(mkCName), "MkC",
-                                                        Lists.immutable.of(
+                                                        List.of(
                                                                 constructorParamNode(Meta.of(mkCFieldName), "b",
                                                                         typeRefNode(Meta.of(dataBName), "B"))),
                                                         Optional.empty()))))));
@@ -345,7 +344,7 @@ public class RenamerTest {
 
     @Test
     void renameSimpleDataDuplicateConstructor() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalConstructorRange = new Range(2, 4, 2, 14);
         var duplicateConstructorRange = new Range(4, 4, 4, 14);
@@ -360,14 +359,14 @@ public class RenamerTest {
          * }
          */
         var originalNode = namespaceNode(
-                Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        dataNode(Range.EMPTY, "Boolean", Lists.immutable.empty(), Lists.immutable.of(
-                                constructorNode(originalConstructorRange, "True", Lists.immutable.empty(),
+                Range.EMPTY, idNode, List.of(),
+                List.of(
+                        dataNode(Range.EMPTY, "Boolean", List.of(), List.of(
+                                constructorNode(originalConstructorRange, "True", List.of(),
                                         Optional.empty()),
-                                constructorNode(Range.EMPTY, "False", Lists.immutable.empty(),
+                                constructorNode(Range.EMPTY, "False", List.of(),
                                         Optional.empty()),
-                                constructorNode(duplicateConstructorRange, "True", Lists.immutable.empty(),
+                                constructorNode(duplicateConstructorRange, "True", List.of(),
                                         Optional.empty())))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
@@ -386,7 +385,7 @@ public class RenamerTest {
     @Disabled("At present constructors do not introduce a new type")
     @Test
     void renameDataCollidingWithConstructor() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalDataRange = new Range(1, 7, 1, 13);
         var collidingConstructorRange = new Range(6, 9, 6, 15);
@@ -404,17 +403,17 @@ public class RenamerTest {
          * }
          */
         var originalNode = namespaceNode(
-                Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        dataNode(originalDataRange, "Boolean", Lists.immutable.empty(), Lists.immutable.of(
-                                constructorNode(Range.EMPTY, "True", Lists.immutable.empty(),
+                Range.EMPTY, idNode, List.of(),
+                List.of(
+                        dataNode(originalDataRange, "Boolean", List.of(), List.of(
+                                constructorNode(Range.EMPTY, "True", List.of(),
                                         Optional.empty()),
-                                constructorNode(Range.EMPTY, "False", Lists.immutable.empty(),
+                                constructorNode(Range.EMPTY, "False", List.of(),
                                         Optional.empty()))),
-                        dataNode(Range.EMPTY, "ValueType", Lists.immutable.empty(), Lists.immutable.of(
-                                constructorNode(collidingConstructorRange, "Boolean", Lists.immutable.empty(),
+                        dataNode(Range.EMPTY, "ValueType", List.of(), List.of(
+                                constructorNode(collidingConstructorRange, "Boolean", List.of(),
                                         Optional.empty()),
-                                constructorNode(Range.EMPTY, "Number", Lists.immutable.empty(),
+                                constructorNode(Range.EMPTY, "Number", List.of(),
                                         Optional.empty())))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
@@ -426,9 +425,9 @@ public class RenamerTest {
 
     @Test
     void renameListDataType() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var dataName = new DataName(new QualifiedName(namespaceName, "List"));
         var tyVarName = new ForAllVarName("A");
         var consName = new ConstructorName(dataName, new QualifiedName(namespaceName, "Cons"));
@@ -437,17 +436,17 @@ public class RenamerTest {
         var nilName = new ConstructorName(dataName, new QualifiedName(namespaceName, "Nil"));
 
         var originalConsNode = constructorNode(
-                Range.EMPTY, "Cons", Lists.immutable.of(
+                Range.EMPTY, "Cons", List.of(
                         constructorParamNode(
                                 Range.EMPTY, "head", typeRefNode(Range.EMPTY, "A")),
                         constructorParamNode(
                                 Range.EMPTY, "tail",
                                 typeApplyNode(Range.EMPTY,
                                         typeRefNode(Range.EMPTY, "List"),
-                                        Lists.immutable.of(typeRefNode(Range.EMPTY, "A"))))),
+                                        List.of(typeRefNode(Range.EMPTY, "A"))))),
                 Optional.empty());
 
-        var originalNilNode = constructorNode(Range.EMPTY, "Nil", Lists.immutable.empty(), Optional.empty());
+        var originalNilNode = constructorNode(Range.EMPTY, "Nil", List.of(), Optional.empty());
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -460,16 +459,16 @@ public class RenamerTest {
         var originalNode = namespaceNode(
                 Range.EMPTY,
                 idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         dataNode(Range.EMPTY, "List",
-                                Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
-                                Lists.immutable.of(originalConsNode, originalNilNode))));
+                                List.of(forAllVarNode(Range.EMPTY, "A")),
+                                List.of(originalConsNode, originalNilNode))));
 
         var expectedConsNode = constructorNode(
                 Meta.<Name>of(consName),
                 "Cons",
-                Lists.immutable.of(
+                List.of(
                         constructorParamNode(
                                 Meta.<Name>of(headName),
                                 "head",
@@ -479,42 +478,42 @@ public class RenamerTest {
                                 typeApplyNode(
                                         Meta.of(Nameless.INSTANCE),
                                         typeRefNode(Meta.of(dataName), "List"),
-                                        Lists.immutable.of(
+                                        List.of(
                                                 typeRefNode(Meta.of(tyVarName), "A"))))),
                 Optional.empty());
 
         var expectedNilNode = constructorNode(
                 Meta.<Name>of(nilName),
-                "Nil", Lists.immutable.empty(), Optional.empty());
+                "Nil", List.of(), Optional.empty());
 
         var expectedNode = namespaceNode(
-                Meta.<Name>of(namespaceName), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+                Meta.<Name>of(namespaceName), idNode, List.of(),
+                List.of(
                         dataNode(Meta.<Name>of(dataName), "List",
-                                Lists.immutable.of(forAllVarNode(Meta.<Name>of(tyVarName), "A")),
-                                Lists.immutable.of(expectedConsNode, expectedNilNode))));
+                                List.of(forAllVarNode(Meta.<Name>of(tyVarName), "A")),
+                                List.of(expectedConsNode, expectedNilNode))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameListDataTypeUnknownTypeParam() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var unknownTyParamRange = new Range(2, 20, 2, 21);
 
         var originalConsNode = constructorNode(
-                Range.EMPTY, "Cons", Lists.immutable.of(
+                Range.EMPTY, "Cons", List.of(
                         constructorParamNode(
                                 Range.EMPTY, "head", typeRefNode(unknownTyParamRange, "B")),
                         constructorParamNode(
                                 Range.EMPTY, "tail",
                                 typeApplyNode(Range.EMPTY,
                                         typeRefNode(Range.EMPTY, "List"),
-                                        Lists.immutable.of(typeRefNode(Range.EMPTY, "A"))))),
+                                        List.of(typeRefNode(Range.EMPTY, "A"))))),
                 Optional.empty());
 
-        var originalNilNode = constructorNode(Range.EMPTY, "Nil", Lists.immutable.empty(), Optional.empty());
+        var originalNilNode = constructorNode(Range.EMPTY, "Nil", List.of(), Optional.empty());
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -527,11 +526,11 @@ public class RenamerTest {
         var originalNode = namespaceNode(
                 Range.EMPTY,
                 idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         dataNode(Range.EMPTY, "List",
-                                Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
-                                Lists.immutable.of(originalConsNode, originalNilNode))));
+                                List.of(forAllVarNode(Range.EMPTY, "A")),
+                                List.of(originalConsNode, originalNilNode))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
@@ -543,20 +542,20 @@ public class RenamerTest {
 
     @Test
     void renameListDataTypeDuplicateTypeParam() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalConsNode = constructorNode(
-                Range.EMPTY, "Cons", Lists.immutable.of(
+                Range.EMPTY, "Cons", List.of(
                         constructorParamNode(
                                 Range.EMPTY, "head", typeRefNode(Range.EMPTY, "A")),
                         constructorParamNode(
                                 Range.EMPTY, "tail",
                                 typeApplyNode(Range.EMPTY,
                                         typeRefNode(Range.EMPTY, "List"),
-                                        Lists.immutable.of(typeRefNode(Range.EMPTY, "A"))))),
+                                        List.of(typeRefNode(Range.EMPTY, "A"))))),
                 Optional.empty());
 
-        var originalNilNode = constructorNode(Range.EMPTY, "Nil", Lists.immutable.empty(), Optional.empty());
+        var originalNilNode = constructorNode(Range.EMPTY, "Nil", List.of(), Optional.empty());
 
         var originalTyParamRange = new Range(1, 12, 1, 13);
         var duplicateTyParamRange = new Range(1, 15, 1, 16);
@@ -572,13 +571,13 @@ public class RenamerTest {
         var originalNode = namespaceNode(
                 Range.EMPTY,
                 idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         dataNode(Range.EMPTY, "List",
-                                Lists.immutable.of(
+                                List.of(
                                         forAllVarNode(originalTyParamRange, "A"),
                                         forAllVarNode(duplicateTyParamRange, "A")),
-                                Lists.immutable.of(originalConsNode, originalNilNode))));
+                                List.of(originalConsNode, originalNilNode))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
@@ -589,13 +588,13 @@ public class RenamerTest {
 
     @Test
     void renameListDataTypeDuplicateConstrParam() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalParamRange = new Range(2, 14, 2, 21);
         var duplicateParamRange = new Range(2, 23, 2, 30);
 
         var originalConsNode = constructorNode(
-                Range.EMPTY, "Cons", Lists.immutable.of(
+                Range.EMPTY, "Cons", List.of(
                         constructorParamNode(
                                 originalParamRange, "head", typeRefNode(Range.EMPTY, "A")),
                         constructorParamNode(
@@ -604,10 +603,10 @@ public class RenamerTest {
                                 Range.EMPTY, "tail",
                                 typeApplyNode(Range.EMPTY,
                                         typeRefNode(Range.EMPTY, "List"),
-                                        Lists.immutable.of(typeRefNode(Range.EMPTY, "A"))))),
+                                        List.of(typeRefNode(Range.EMPTY, "A"))))),
                 Optional.empty());
 
-        var originalNilNode = constructorNode(Range.EMPTY, "Nil", Lists.immutable.empty(), Optional.empty());
+        var originalNilNode = constructorNode(Range.EMPTY, "Nil", List.of(), Optional.empty());
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -620,11 +619,11 @@ public class RenamerTest {
         var originalNode = namespaceNode(
                 Range.EMPTY,
                 idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         dataNode(Range.EMPTY, "List",
-                                Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
-                                Lists.immutable.of(originalConsNode, originalNilNode))));
+                                List.of(forAllVarNode(Range.EMPTY, "A")),
+                                List.of(originalConsNode, originalNilNode))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
@@ -635,9 +634,9 @@ public class RenamerTest {
 
     @Test
     void renameLetDeclaration() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var letName = new LetName(new QualifiedName(namespaceName, "one"));
 
         /*-
@@ -645,18 +644,18 @@ public class RenamerTest {
          *   let one = 1
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(letNode(Range.EMPTY, "one", intNode(Range.EMPTY, 1))));
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(letNode(Range.EMPTY, "one", intNode(Range.EMPTY, 1))));
 
-        var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(letNode(Meta.of(letName), "one", intNode(Meta.of(Nameless.INSTANCE), 1))));
+        var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, List.of(),
+                List.of(letNode(Meta.of(letName), "one", intNode(Meta.of(Nameless.INSTANCE), 1))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLetDuplicateDefinition() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalLetRange = new Range(1, 2, 1, 12);
         var duplicateLetRange = new Range(2, 2, 2, 12);
@@ -667,8 +666,8 @@ public class RenamerTest {
          *   let one = 2
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letNode(originalLetRange, "one", intNode(Range.EMPTY, 1)),
                         letNode(duplicateLetRange, "one", intNode(Range.EMPTY, 2))));
 
@@ -681,9 +680,9 @@ public class RenamerTest {
 
     @Test
     void renameLetWithType() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var letName = new LetName(new QualifiedName(namespaceName, "id"));
         var typeVarAName = new ForAllVarName("A");
         var paramAName = new LocalName("a", 0);
@@ -693,32 +692,32 @@ public class RenamerTest {
          *   let id: [A] { A -> A } = a -> a
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letNode(Range.EMPTY, "id",
                                 quantifiedTypeNode(
                                         Range.EMPTY,
-                                        Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
+                                        List.of(forAllVarNode(Range.EMPTY, "A")),
                                         funTypeNode(Range.EMPTY,
-                                                Lists.immutable.of(typeRefNode(Range.EMPTY, "A")),
+                                                List.of(typeRefNode(Range.EMPTY, "A")),
                                                 typeRefNode(Range.EMPTY, "A"))),
                                 lambdaNode(
                                         Range.EMPTY,
-                                        Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                                        List.of(paramNode(Range.EMPTY, "a")),
                                         refNode(Range.EMPTY, "a")))));
 
-        var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, List.of(),
+                List.of(
                         letNode(Meta.of(letName), "id",
                                 quantifiedTypeNode(
                                         Meta.of(Nameless.INSTANCE),
-                                        Lists.immutable.of(forAllVarNode(Meta.of(typeVarAName), "A")),
+                                        List.of(forAllVarNode(Meta.of(typeVarAName), "A")),
                                         funTypeNode(Meta.of(Nameless.INSTANCE),
-                                                Lists.immutable.of(typeRefNode(Meta.of(typeVarAName), "A")),
+                                                List.of(typeRefNode(Meta.of(typeVarAName), "A")),
                                                 typeRefNode(Meta.of(typeVarAName), "A"))),
                                 lambdaNode(
                                         Meta.of(Nameless.INSTANCE),
-                                        Lists.immutable.of(paramNode(Meta.of(paramAName), "a")),
+                                        List.of(paramNode(Meta.of(paramAName), "a")),
                                         refNode(Meta.of(paramAName), "a")))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
@@ -726,9 +725,9 @@ public class RenamerTest {
 
     @Test
     void renameLetWithReference() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var fooName = new LetName(new QualifiedName(namespaceName, "foo"));
         var barName = new LetName(new QualifiedName(namespaceName, "bar"));
 
@@ -738,22 +737,22 @@ public class RenamerTest {
          *   let foo = bar
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1)),
                         letNode(Range.EMPTY, "foo", refNode(Range.EMPTY, "bar"))));
 
-        var expectedNode = new NamespaceNode<>(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        Lists.immutable.of(letNode(Meta.of(barName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
-                        Lists.immutable.of(letNode(Meta.of(fooName), "foo", refNode(Meta.of(barName), "bar")))));
+        var expectedNode = new NamespaceNode<>(Meta.of(namespaceName), idNode, List.of(),
+                List.of(
+                        List.of(letNode(Meta.of(barName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
+                        List.of(letNode(Meta.of(fooName), "foo", refNode(Meta.of(barName), "bar")))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
 
     @Test
     void renameLetInvalidReference() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var unknownReferenceRange = new Range(2, 12, 2, 15);
 
@@ -763,8 +762,8 @@ public class RenamerTest {
          *   let foo = baz
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1)),
                         letNode(Range.EMPTY, "foo", refNode(unknownReferenceRange, "baz"))));
 
@@ -778,9 +777,9 @@ public class RenamerTest {
 
     @Test
     void renameLetFnDeclaration() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var letName = new LetName(new QualifiedName(namespaceName, "const"));
         var paramAName = new LocalName("a", 0);
         var paramBName = new LocalName("b", 1);
@@ -792,25 +791,25 @@ public class RenamerTest {
          *   let const[A, B](a: A, b: B): A = a
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letFnNode(Range.EMPTY, "const",
-                                Lists.immutable.of(
+                                List.of(
                                         forAllVarNode(Range.EMPTY, "A"),
                                         forAllVarNode(Range.EMPTY, "B")),
-                                Lists.immutable.of(
+                                List.of(
                                         paramNode(Range.EMPTY, "a", typeRefNode(Range.EMPTY, "A")),
                                         paramNode(Range.EMPTY, "b", typeRefNode(Range.EMPTY, "B"))),
                                 typeRefNode(Range.EMPTY, "A"),
                                 refNode(Range.EMPTY, "a"))));
 
-        var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var expectedNode = namespaceNode(Meta.of(namespaceName), idNode, List.of(),
+                List.of(
                         letFnNode(Meta.of(letName), "const",
-                                Lists.immutable.of(
+                                List.of(
                                         forAllVarNode(Meta.of(typeVarAName), "A"),
                                         forAllVarNode(Meta.of(typeVarBName), "B")),
-                                Lists.immutable.of(
+                                List.of(
                                         paramNode(Meta.of(paramAName), "a", typeRefNode(Meta.of(typeVarAName), "A")),
                                         paramNode(Meta.of(paramBName), "b", typeRefNode(Meta.of(typeVarBName), "B"))),
                                 typeRefNode(Meta.of(typeVarAName), "A"),
@@ -821,7 +820,7 @@ public class RenamerTest {
 
     @Test
     void renameLetFnUnknownTypeVar() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var unknownTypeVarRange = new Range(1, 24, 1, 25);
 
@@ -830,11 +829,11 @@ public class RenamerTest {
          *   let const[A](a: A, b: B): A = a
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letFnNode(Range.EMPTY, "const",
-                                Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
-                                Lists.immutable.of(
+                                List.of(forAllVarNode(Range.EMPTY, "A")),
+                                List.of(
                                         paramNode(Range.EMPTY, "a", typeRefNode(Range.EMPTY, "A")),
                                         paramNode(Range.EMPTY, "b", typeRefNode(unknownTypeVarRange, "B"))),
                                 typeRefNode(Range.EMPTY, "A"),
@@ -850,7 +849,7 @@ public class RenamerTest {
 
     @Test
     void renameLetFnDuplicateTypeVar() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalTypeVarRange = new Range(1, 12, 1, 13);
         var duplicateTypeVarRange = new Range(1, 15, 1, 16);
@@ -860,13 +859,13 @@ public class RenamerTest {
          *   let const[A, A](a: A, b: A): A = a
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letFnNode(Range.EMPTY, "const",
-                                Lists.immutable.of(
+                                List.of(
                                         forAllVarNode(originalTypeVarRange, "A"),
                                         forAllVarNode(duplicateTypeVarRange, "A")),
-                                Lists.immutable.of(
+                                List.of(
                                         paramNode(Range.EMPTY, "a", typeRefNode(Range.EMPTY, "A")),
                                         paramNode(Range.EMPTY, "b", typeRefNode(Range.EMPTY, "A"))),
                                 typeRefNode(Range.EMPTY, "A"),
@@ -881,7 +880,7 @@ public class RenamerTest {
 
     @Test
     void renameLetFnUnknownParam() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var unknownParamRange = new Range(1, 35, 1, 36);
 
@@ -890,13 +889,13 @@ public class RenamerTest {
          *   let const[A, B](a: A, b: B): A = x
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letFnNode(Range.EMPTY, "const",
-                                Lists.immutable.of(
+                                List.of(
                                         forAllVarNode(Range.EMPTY, "A"),
                                         forAllVarNode(Range.EMPTY, "B")),
-                                Lists.immutable.of(
+                                List.of(
                                         paramNode(Range.EMPTY, "a", typeRefNode(Range.EMPTY, "A")),
                                         paramNode(Range.EMPTY, "b", typeRefNode(Range.EMPTY, "B"))),
                                 typeRefNode(Range.EMPTY, "A"),
@@ -912,7 +911,7 @@ public class RenamerTest {
 
     @Test
     void renameLetFnDuplicateParam() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var originalParamRange = new Range(1, 18, 1, 19);
         var duplicateParamRange = new Range(1, 24, 1, 25);
@@ -922,13 +921,13 @@ public class RenamerTest {
          *   let const[A, B](a: A, a: B): A = a
          * }
          */
-        var originalNode = namespaceNode(Range.EMPTY, idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
+        var originalNode = namespaceNode(Range.EMPTY, idNode, List.of(),
+                List.of(
                         letFnNode(Range.EMPTY, "const",
-                                Lists.immutable.of(
+                                List.of(
                                         forAllVarNode(Range.EMPTY, "A"),
                                         forAllVarNode(Range.EMPTY, "B")),
-                                Lists.immutable.of(
+                                List.of(
                                         paramNode(originalParamRange, "a", typeRefNode(Range.EMPTY, "A")),
                                         paramNode(duplicateParamRange, "a", typeRefNode(Range.EMPTY, "B"))),
                                 typeRefNode(Range.EMPTY, "A"),
@@ -943,9 +942,9 @@ public class RenamerTest {
 
     @Test
     void renameLetMutualRecursion() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
 
         var letAName = new LetName(new QualifiedName(namespaceName, "a"));
         var letBName = new LetName(new QualifiedName(namespaceName, "b"));
@@ -962,37 +961,37 @@ public class RenamerTest {
          *   let b = () -> a
          * }
          */
-        var originalNode = new NamespaceNode<>(Meta.of(Range.EMPTY), idNode, Lists.immutable.empty(),
-                Lists.immutable.of(
-                        Lists.immutable.of(
+        var originalNode = new NamespaceNode<>(Meta.of(Range.EMPTY), idNode, List.of(),
+                List.of(
+                        List.of(
                                 letNode(letCRange, "c",
                                         refNode(Range.EMPTY, "b")),
                                 letNode(letARange, "a",
-                                        lambdaNode(Range.EMPTY, Lists.immutable.empty(), refNode(Range.EMPTY, "b"))),
+                                        lambdaNode(Range.EMPTY, List.of(), refNode(Range.EMPTY, "b"))),
                                 letNode(letBRange, "b",
-                                        lambdaNode(Range.EMPTY, Lists.immutable.empty(), refNode(Range.EMPTY, "a"))))));
+                                        lambdaNode(Range.EMPTY, List.of(), refNode(Range.EMPTY, "a"))))));
 
         var expectedNode = new NamespaceNode<>(
                 Meta.of(namespaceName), idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         // `a` and `b` end up in the same declaration group,
                         // sorted in their original declaration ordering
-                        Lists.immutable.of(
+                        List.of(
                                 letNode(
                                         new Meta<>(letARange, letAName), "a",
                                         lambdaNode(
                                                 Meta.of(Nameless.INSTANCE),
-                                                Lists.immutable.empty(),
+                                                List.of(),
                                                 refNode(Meta.of(letBName), "b"))),
                                 letNode(
                                         new Meta<>(letBRange, letBName), "b",
                                         lambdaNode(
                                                 Meta.of(Nameless.INSTANCE),
-                                                Lists.immutable.empty(),
+                                                List.of(),
                                                 refNode(Meta.of(letAName), "a")))),
                         // `c` is in a later group as it depends on `b`
-                        Lists.immutable.of(
+                        List.of(
                                 letNode(
                                         new Meta<>(letCRange, letCName), "c",
                                         refNode(Meta.of(letBName), "b")))));
@@ -1009,14 +1008,14 @@ public class RenamerTest {
         /*- [A, B] { A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(Range.EMPTY, "A"),
                         forAllVarNode(Range.EMPTY, "B")),
                 typeRefNode(Range.EMPTY, "A"));
 
         var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(Meta.of(typeVarAName), "A"),
                         forAllVarNode(Meta.of(typeVarBName), "B")),
                 typeRefNode(Meta.of(typeVarAName), "A"));
@@ -1032,14 +1031,14 @@ public class RenamerTest {
         /*- [?A, ?B] { ?A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         existsVarNode(Range.EMPTY, "?A"),
                         existsVarNode(Range.EMPTY, "?B")),
                 typeRefNode(Range.EMPTY, "?A"));
 
         var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         existsVarNode(Meta.of(typeVarAName), "?A"),
                         existsVarNode(Meta.of(typeVarBName), "?B")),
                 typeRefNode(Meta.of(typeVarAName), "?A"));
@@ -1055,7 +1054,7 @@ public class RenamerTest {
         /*- [A, A] { A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(originalTypeVarRange, "A"),
                         forAllVarNode(duplicateTypeVarRange, "A")),
                 typeRefNode(Range.EMPTY, "A"));
@@ -1075,24 +1074,24 @@ public class RenamerTest {
         /*- [A, B] { (A, B) -> A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(Range.EMPTY, "A"),
                         forAllVarNode(Range.EMPTY, "B")),
                 funTypeNode(
                         Range.EMPTY,
-                        Lists.immutable.of(
+                        List.of(
                                 typeRefNode(Range.EMPTY, "A"),
                                 typeRefNode(Range.EMPTY, "B")),
                         typeRefNode(Range.EMPTY, "A")));
 
         var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(Meta.of(typeVarAName), "A"),
                         forAllVarNode(Meta.of(typeVarBName), "B")),
                 funTypeNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable.of(
+                        List.of(
                                 typeRefNode(Meta.of(typeVarAName), "A"),
                                 typeRefNode(Meta.of(typeVarBName), "B")),
                         typeRefNode(Meta.of(typeVarAName), "A")));
@@ -1107,10 +1106,10 @@ public class RenamerTest {
         /*- [A] { (A, B) -> A } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
-                Lists.immutable.of(forAllVarNode(Range.EMPTY, "A")),
+                List.of(forAllVarNode(Range.EMPTY, "A")),
                 funTypeNode(
                         Range.EMPTY,
-                        Lists.immutable.of(
+                        List.of(
                                 typeRefNode(Range.EMPTY, "A"),
                                 typeRefNode(unknownTypeVarRange, "B")),
                         typeRefNode(Range.EMPTY, "A")));
@@ -1131,23 +1130,23 @@ public class RenamerTest {
         /*- [F, A] { F[A] } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(Range.EMPTY, "F"),
                         forAllVarNode(Range.EMPTY, "A")),
                 typeApplyNode(
                         Range.EMPTY,
                         typeRefNode(Range.EMPTY, "F"),
-                        Lists.immutable.of(typeRefNode(Range.EMPTY, "A"))));
+                        List.of(typeRefNode(Range.EMPTY, "A"))));
 
         var expectedNode = quantifiedTypeNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(Meta.of(typeVarFName), "F"),
                         forAllVarNode(Meta.of(typeVarAName), "A")),
                 typeApplyNode(
                         Meta.of(Nameless.INSTANCE),
                         typeRefNode(Meta.of(typeVarFName), "F"),
-                        Lists.immutable.of(typeRefNode(Meta.of(typeVarAName), "A"))));
+                        List.of(typeRefNode(Meta.of(typeVarAName), "A"))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
@@ -1159,11 +1158,11 @@ public class RenamerTest {
         /*- [F] { F[A] } */
         var originalNode = quantifiedTypeNode(
                 Range.EMPTY,
-                Lists.immutable.of(forAllVarNode(Range.EMPTY, "F")),
+                List.of(forAllVarNode(Range.EMPTY, "F")),
                 typeApplyNode(
                         Range.EMPTY,
                         typeRefNode(Range.EMPTY, "F"),
-                        Lists.immutable.of(typeRefNode(unknownTypeVarRange, "A"))));
+                        List.of(typeRefNode(unknownTypeVarRange, "A"))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
@@ -1181,12 +1180,12 @@ public class RenamerTest {
         /* a -> a */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                List.of(paramNode(Range.EMPTY, "a")),
                 refNode(Range.EMPTY, "a"));
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         paramNode(Meta.of(paramName), "a")),
                 refNode(Meta.of(paramName), "a"));
 
@@ -1204,19 +1203,19 @@ public class RenamerTest {
         /* a -> a -> a */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(outerParamRange, "a")),
+                List.of(paramNode(outerParamRange, "a")),
                 lambdaNode(
                         Range.EMPTY,
-                        Lists.immutable.of(paramNode(innerParamRange, "a")),
+                        List.of(paramNode(innerParamRange, "a")),
                         refNode(Range.EMPTY, "a")));
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         paramNode(new Meta<>(outerParamRange, outerParamName), "a")),
                 lambdaNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable.of(paramNode(new Meta<>(innerParamRange, innerParamName), "a")),
+                        List.of(paramNode(new Meta<>(innerParamRange, innerParamName), "a")),
                         refNode(Meta.of(innerParamName), "a")));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
@@ -1229,7 +1228,7 @@ public class RenamerTest {
         /* a -> x */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                List.of(paramNode(Range.EMPTY, "a")),
                 refNode(unknownVariableRange, "x"));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
@@ -1252,13 +1251,13 @@ public class RenamerTest {
          */
         var originalNode = blockNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1))),
                 refNode(Range.EMPTY, "bar"));
 
         var expectedNode = blockNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         letNode(Meta.of(localLetName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
                 refNode(Meta.of(localLetName), "bar"));
 
@@ -1279,7 +1278,7 @@ public class RenamerTest {
          */
         var originalNode = blockNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         letNode(originalLetRange, "bar", intNode(Range.EMPTY, 1)),
                         letNode(duplicateLetRange, "bar", intNode(Range.EMPTY, 1))),
                 refNode(Range.EMPTY, "bar"));
@@ -1304,7 +1303,7 @@ public class RenamerTest {
          */
         var originalNode = blockNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         letNode(Range.EMPTY, "foo", refNode(invalidRefRange, "bar")),
                         letNode(invalidRefRange, "bar", intNode(Range.EMPTY, 1))),
                 refNode(Range.EMPTY, "bar"));
@@ -1320,9 +1319,9 @@ public class RenamerTest {
 
     @Test
     void renameBlockLocalLetShadowsOuter() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var outerFooName = new LetName(new QualifiedName(namespaceName, "foo"));
         var outerBarName = new LetName(new QualifiedName(namespaceName, "bar"));
         var localBarName = new LocalName("bar", 0);
@@ -1338,23 +1337,23 @@ public class RenamerTest {
          */
         var originalNode = namespaceNode(
                 Range.EMPTY, idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1)),
                         letNode(Range.EMPTY, "foo", blockNode(
                                 Range.EMPTY,
-                                Lists.immutable.of(
+                                List.of(
                                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1))),
                                 refNode(Range.EMPTY, "bar")))));
 
         var expectedNode = namespaceNode(
                 Meta.of(namespaceName), idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         letNode(Meta.of(outerBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1)),
                         letNode(Meta.of(outerFooName), "foo", blockNode(
                                 Meta.of(Nameless.INSTANCE),
-                                Lists.immutable.of(
+                                List.of(
                                         letNode(Meta.of(localBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
                                 refNode(Meta.of(localBarName), "bar")))));
 
@@ -1363,9 +1362,9 @@ public class RenamerTest {
 
     @Test
     void renameBlockLocalLetReferencesOuter() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var outerFooName = new LetName(new QualifiedName(namespaceName, "foo"));
         var outerBarName = new LetName(new QualifiedName(namespaceName, "bar"));
         var localBazName = new LocalName("baz", 0);
@@ -1381,24 +1380,23 @@ public class RenamerTest {
          */
         var originalNode = namespaceNode(
                 Range.EMPTY, idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1)),
                         letNode(Range.EMPTY, "foo", blockNode(
                                 Range.EMPTY,
-                                Lists.immutable.of(
+                                List.of(
                                         letNode(Range.EMPTY, "baz", refNode(Range.EMPTY, "bar"))),
                                 refNode(Range.EMPTY, "baz")))));
 
         var expectedNode = new NamespaceNode<>(
                 Meta.of(namespaceName), idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
-                        Lists.immutable
-                                .of(letNode(Meta.of(outerBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
-                        Lists.immutable.of(letNode(Meta.of(outerFooName), "foo", blockNode(
+                List.of(),
+                List.of(
+                        List.of(letNode(Meta.of(outerBarName), "bar", intNode(Meta.of(Nameless.INSTANCE), 1))),
+                        List.of(letNode(Meta.of(outerFooName), "foo", blockNode(
                                 Meta.of(Nameless.INSTANCE),
-                                Lists.immutable.of(
+                                List.of(
                                         letNode(Meta.of(localBazName), "baz", refNode(Meta.of(outerBarName), "bar"))),
                                 refNode(Meta.of(localBazName), "baz"))))));
 
@@ -1407,7 +1405,7 @@ public class RenamerTest {
 
     @Test
     void renameBlockLocalLetInvisibleToOuter() {
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
         var invalidRefRange = new Range(5, 12, 5, 15);
 
@@ -1422,11 +1420,11 @@ public class RenamerTest {
          */
         var originalNode = namespaceNode(
                 Range.EMPTY, idNode,
-                Lists.immutable.empty(),
-                Lists.immutable.of(
+                List.of(),
+                List.of(
                         letNode(Range.EMPTY, "foo", blockNode(
                                 Range.EMPTY,
-                                Lists.immutable.of(
+                                List.of(
                                         letNode(Range.EMPTY, "bar", intNode(Range.EMPTY, 1))),
                                 refNode(Range.EMPTY, "bar"))),
                         letNode(Range.EMPTY, "baz", refNode(invalidRefRange, "bar"))));
@@ -1477,11 +1475,11 @@ public class RenamerTest {
                 boolNode(Range.EMPTY, true),
                 blockNode(
                         Range.EMPTY,
-                        Lists.immutable.of(letNode(Range.EMPTY, "foo", intNode(Range.EMPTY, 1))),
+                        List.of(letNode(Range.EMPTY, "foo", intNode(Range.EMPTY, 1))),
                         refNode(Range.EMPTY, "foo")),
                 blockNode(
                         Range.EMPTY,
-                        Lists.immutable.of(letNode(Range.EMPTY, "foo", intNode(Range.EMPTY, 2))),
+                        List.of(letNode(Range.EMPTY, "foo", intNode(Range.EMPTY, 2))),
                         refNode(Range.EMPTY, "foo")));
 
         var expectedNode = ifNode(
@@ -1489,13 +1487,11 @@ public class RenamerTest {
                 boolNode(Meta.of(Nameless.INSTANCE), true),
                 blockNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable
-                                .of(letNode(Meta.of(firstLocalFooName), "foo", intNode(Meta.of(Nameless.INSTANCE), 1))),
+                        List.of(letNode(Meta.of(firstLocalFooName), "foo", intNode(Meta.of(Nameless.INSTANCE), 1))),
                         refNode(Meta.of(firstLocalFooName), "foo")),
                 blockNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable
-                                .of(letNode(Meta.of(secondLocalFooName), "foo",
+                        List.of(letNode(Meta.of(secondLocalFooName), "foo",
                                         intNode(Meta.of(Nameless.INSTANCE), 2))),
                         refNode(Meta.of(secondLocalFooName), "foo")));
 
@@ -1519,7 +1515,7 @@ public class RenamerTest {
                 boolNode(Range.EMPTY, true),
                 blockNode(
                         Range.EMPTY,
-                        Lists.immutable.of(letNode(Range.EMPTY, "foo", intNode(Range.EMPTY, 1))),
+                        List.of(letNode(Range.EMPTY, "foo", intNode(Range.EMPTY, 1))),
                         refNode(Range.EMPTY, "foo")),
                 blockNode(
                         Range.EMPTY,
@@ -1541,20 +1537,20 @@ public class RenamerTest {
         /* (f, a) -> f(a) */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         paramNode(Range.EMPTY, "f"),
                         paramNode(Range.EMPTY, "a")),
-                applyNode(Range.EMPTY, refNode(Range.EMPTY, "f"), Lists.immutable.of(refNode(Range.EMPTY, "a"))));
+                applyNode(Range.EMPTY, refNode(Range.EMPTY, "f"), List.of(refNode(Range.EMPTY, "a"))));
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         paramNode(Meta.of(paramFName), "f"),
                         paramNode(Meta.of(paramAName), "a")),
                 applyNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(paramFName), "f"),
-                        Lists.immutable.of(refNode(Meta.of(paramAName), "a"))));
+                        List.of(refNode(Meta.of(paramAName), "a"))));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
@@ -1566,11 +1562,11 @@ public class RenamerTest {
         /* a -> f(a) */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                List.of(paramNode(Range.EMPTY, "a")),
                 applyNode(
                         Range.EMPTY,
                         refNode(invalidRefRange, "f"),
-                        Lists.immutable.of(refNode(Range.EMPTY, "a"))));
+                        List.of(refNode(Range.EMPTY, "a"))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
@@ -1587,19 +1583,19 @@ public class RenamerTest {
         /* a -> match a with {} */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                List.of(paramNode(Range.EMPTY, "a")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "a"),
-                        Lists.immutable.empty()));
+                        List.of()));
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(paramNode(Meta.of(paramAName), "a")),
+                List.of(paramNode(Meta.of(paramAName), "a")),
                 matchNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(paramAName), "a"),
-                        Lists.immutable.empty()));
+                        List.of()));
 
         testSuccessfulRename(NameEnvironment.empty(), originalNode, expectedNode);
     }
@@ -1616,11 +1612,11 @@ public class RenamerTest {
          */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "int")),
+                List.of(paramNode(Range.EMPTY, "int")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "int"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         literalPatternNode(Range.EMPTY, intNode(Range.EMPTY, 0)),
@@ -1632,11 +1628,11 @@ public class RenamerTest {
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(paramNode(Meta.of(paramIntName), "int")),
+                List.of(paramNode(Meta.of(paramIntName), "int")),
                 matchNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(paramIntName), "int"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         literalPatternNode(Meta.of(Nameless.INSTANCE),
@@ -1662,11 +1658,11 @@ public class RenamerTest {
         /* a -> match a with { case a @ x -> a } */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                List.of(paramNode(Range.EMPTY, "a")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "a"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         aliasPatternNode(Range.EMPTY, "a", idPatternNode(Range.EMPTY, "x")),
@@ -1674,11 +1670,11 @@ public class RenamerTest {
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(paramNode(Meta.of(outerParamName), "a")),
+                List.of(paramNode(Meta.of(outerParamName), "a")),
                 matchNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(outerParamName), "a"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         aliasPatternNode(Meta.of(aliasParamName), "a",
@@ -1696,11 +1692,11 @@ public class RenamerTest {
         /* a -> match a with { case a @ a -> a } */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                List.of(paramNode(Range.EMPTY, "a")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "a"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         aliasPatternNode(originalVarRange, "a", idPatternNode(duplicateVarRange, "a")),
@@ -1722,11 +1718,11 @@ public class RenamerTest {
         /* a -> match a with { case a -> a } */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(paramNode(Range.EMPTY, "a")),
+                List.of(paramNode(Range.EMPTY, "a")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "a"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         idPatternNode(Range.EMPTY, "a"),
@@ -1734,11 +1730,11 @@ public class RenamerTest {
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(paramNode(Meta.of(outerParamName), "a")),
+                List.of(paramNode(Meta.of(outerParamName), "a")),
                 matchNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(outerParamName), "a"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         idPatternNode(Meta.of(innerParamName), "a"),
@@ -1757,37 +1753,37 @@ public class RenamerTest {
          */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         paramNode(Range.EMPTY, "list")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(
                                                             Range.EMPTY, "head",
                                                             idPatternNode(Range.EMPTY, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
-                                                Lists.immutable.of(refNode(Range.EMPTY, "head")))),
+                                                List.of(refNode(Range.EMPTY, "head")))),
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Nil"),
-                                                Lists.immutable.empty()),
+                                                List.of()),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "None"),
-                                                Lists.immutable.empty())))));
+                                                List.of())))));
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var lambdaParamName = new LocalName("list", 0);
         var fieldPatName = new LocalName("head", 1);
 
@@ -1801,35 +1797,35 @@ public class RenamerTest {
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         paramNode(Meta.of(lambdaParamName), "list")),
                 matchNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(lambdaParamName), "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         constructorPatternNode(
                                                 consMeta,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(
                                                             headMeta, "head",
                                                             idPatternNode(Meta.of(fieldPatName), "head")))),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(someMeta, "Some"),
-                                                Lists.immutable.of(refNode(Meta.of(fieldPatName), "head")))),
+                                                List.of(refNode(Meta.of(fieldPatName), "head")))),
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         constructorPatternNode(
                                                 nilMeta,
                                                 idNode(Range.EMPTY, "Nil"),
-                                                Lists.immutable.empty()),
+                                                List.of()),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(noneMeta, "None"),
-                                                Lists.immutable.empty())))));
+                                                List.of())))));
 
         var imports = new ImportedNamesScope();
 
@@ -1855,36 +1851,36 @@ public class RenamerTest {
          */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         paramNode(Range.EMPTY, "list")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(Range.EMPTY, "head",
                                                                 idPatternNode(Range.EMPTY, "first")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
-                                                Lists.immutable.of(refNode(Range.EMPTY, "first")))),
+                                                List.of(refNode(Range.EMPTY, "first")))),
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Nil"),
-                                                Lists.immutable.empty()),
+                                                List.of()),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "None"),
-                                                Lists.immutable.empty())))));
+                                                List.of())))));
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var lambdaParamName = new LocalName("list", 0);
         var idPatName = new LocalName("first", 1);
 
@@ -1898,35 +1894,35 @@ public class RenamerTest {
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         paramNode(Meta.of(lambdaParamName), "list")),
                 matchNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(lambdaParamName), "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         constructorPatternNode(
                                                 consMeta,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(
                                                                 headMeta, "head",
                                                                 idPatternNode(Meta.of(idPatName), "first")))),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(someMeta, "Some"),
-                                                Lists.immutable.of(refNode(Meta.of(idPatName), "first")))),
+                                                List.of(refNode(Meta.of(idPatName), "first")))),
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         constructorPatternNode(
                                                 nilMeta,
                                                 idNode(Range.EMPTY, "Nil"),
-                                                Lists.immutable.empty()),
+                                                List.of()),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(noneMeta, "None"),
-                                                Lists.immutable.empty())))));
+                                                List.of())))));
 
         var imports = new ImportedNamesScope();
 
@@ -1952,37 +1948,37 @@ public class RenamerTest {
          */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         paramNode(Range.EMPTY, "list")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(
                                                             Range.EMPTY, "head",
                                                             idPatternNode(Range.EMPTY, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
-                                                Lists.immutable.of(refNode(Range.EMPTY, "head")))),
+                                                List.of(refNode(Range.EMPTY, "head")))),
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Nil"),
-                                                Lists.immutable.empty()),
+                                                List.of()),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "None"),
-                                                Lists.immutable.empty())))));
+                                                List.of())))));
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var lambdaParamName = new LocalName("list", 0);
         var idPatName = new LocalName("head", 1);
 
@@ -1996,35 +1992,35 @@ public class RenamerTest {
 
         var expectedNode = lambdaNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(
+                List.of(
                         paramNode(Meta.of(lambdaParamName), "list")),
                 matchNode(
                         Meta.of(Nameless.INSTANCE),
                         refNode(Meta.of(lambdaParamName), "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         constructorPatternNode(
                                                 consMeta,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(
                                                                 headMeta, "head",
                                                                 idPatternNode(Meta.of(idPatName), "head")))),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(someMeta, "Some"),
-                                                Lists.immutable.of(refNode(Meta.of(idPatName), "head")))),
+                                                List.of(refNode(Meta.of(idPatName), "head")))),
                                 caseNode(
                                         Meta.of(Nameless.INSTANCE),
                                         constructorPatternNode(
                                                 nilMeta,
                                                 idNode(Range.EMPTY, "Nil"),
-                                                Lists.immutable.empty()),
+                                                List.of()),
                                         applyNode(
                                                 Meta.of(Nameless.INSTANCE),
                                                 refNode(noneMeta, "None"),
-                                                Lists.immutable.empty())))));
+                                                List.of())))));
 
         var imports = new ImportedNamesScope();
 
@@ -2051,25 +2047,25 @@ public class RenamerTest {
          */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         paramNode(Range.EMPTY, "list")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 unknownConstructorRange,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(
                                                             Range.EMPTY, "head",
                                                             idPatternNode(Range.EMPTY, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
-                                                Lists.immutable.of(refNode(Range.EMPTY, "head")))))));
+                                                List.of(refNode(Range.EMPTY, "head")))))));
 
         var collector = testFailedRename(NameEnvironment.empty(), originalNode);
 
@@ -2090,27 +2086,27 @@ public class RenamerTest {
          */
         var originalNode = lambdaNode(
                 Range.EMPTY,
-                Lists.immutable.of(
+                List.of(
                         paramNode(Range.EMPTY, "list")),
                 matchNode(
                         Range.EMPTY,
                         refNode(Range.EMPTY, "list"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         Range.EMPTY,
                                         constructorPatternNode(
                                                 Range.EMPTY,
                                                 idNode(Range.EMPTY, "Cons"),
-                                                Lists.immutable.of(
+                                                List.of(
                                                         fieldPatternNode(
                                                             unknownFieldRange, "hed",
                                                             idPatternNode(unknownFieldRange, "head")))),
                                         applyNode(
                                                 Range.EMPTY,
                                                 refNode(Range.EMPTY, "Some"),
-                                                Lists.immutable.of(refNode(Range.EMPTY, "hed")))))));
+                                                List.of(refNode(Range.EMPTY, "hed")))))));
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var listMeta = Meta.of(new DataName(new QualifiedName(namespaceName, "List")));
         var consMeta = Meta.<Name>of(new ConstructorName(listMeta.meta(), new QualifiedName(namespaceName, "Cons")));
         var nilMeta = Meta.<Name>of(new ConstructorName(listMeta.meta(), new QualifiedName(namespaceName, "Nil")));
@@ -2143,13 +2139,13 @@ public class RenamerTest {
         var importedSymbolRange = new Range(1, 25, 1, 27);
         var localDeclarationRange = new Range(2, 2, 2, 12);
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var letName = new LetName(new QualifiedName(namespaceName, "one"));
 
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNamespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNamespaceName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolName = new LetName(new QualifiedName(importedNamespaceName, "one"));
 
         /*-
@@ -2160,13 +2156,13 @@ public class RenamerTest {
          */
         var originalNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one"))),
-            Lists.immutable.of(letNode(localDeclarationRange, "one", intNode(Range.EMPTY, 1))));
+            List.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one"))),
+            List.of(letNode(localDeclarationRange, "one", intNode(Range.EMPTY, 1))));
 
         var expectedNode = namespaceNode(
             Meta.of(namespaceName), idNode,
-            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one"))),
-            Lists.immutable.of(letNode(new Meta<>(localDeclarationRange, letName), "one", intNode(Meta.of(Nameless.INSTANCE), 1))));
+            List.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one"))),
+            List.of(letNode(new Meta<>(localDeclarationRange, letName), "one", intNode(Meta.of(Nameless.INSTANCE), 1))));
 
         var environment = NameEnvironment.withBuiltInNames();
 
@@ -2187,13 +2183,13 @@ public class RenamerTest {
         var importedSymbolRange = new Range(1, 25, 1, 28);
         var localDeclarationRange = new Range(2, 2, 2, 13);
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
 
-        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var namespaceName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var dataName = new DataName(new QualifiedName(namespaceName, "Void"));
 
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNamespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNamespaceName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolName = new DataName(new QualifiedName(importedNamespaceName, "Void"));
 
         /*-
@@ -2204,13 +2200,13 @@ public class RenamerTest {
          */
         var originalNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
-            Lists.immutable.of(dataNode(localDeclarationRange, "Void", Lists.immutable.empty(), Lists.immutable.empty())));
+            List.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
+            List.of(dataNode(localDeclarationRange, "Void", List.of(), List.of())));
 
         var expectedNode = namespaceNode(
             Meta.of(namespaceName), idNode,
-            Lists.immutable.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
-            Lists.immutable.of(dataNode(new Meta<Name>(localDeclarationRange, dataName), "Void", Lists.immutable.empty(), Lists.immutable.empty())));
+            List.of(importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void"))),
+            List.of(dataNode(new Meta<Name>(localDeclarationRange, dataName), "Void", List.of(), List.of())));
 
         var environment = NameEnvironment.withBuiltInNames();
 

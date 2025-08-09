@@ -5,10 +5,11 @@
 package org.mina_lang.syntax;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.names.NamespaceName;
 
-public record NamespaceIdNode (Range range, ImmutableList<String> pkg, String ns) implements SyntaxNode {
+import java.util.List;
+
+public record NamespaceIdNode (Range range, List<String> pkg, String ns) implements SyntaxNode {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         visitor.visitNamespaceId(this);

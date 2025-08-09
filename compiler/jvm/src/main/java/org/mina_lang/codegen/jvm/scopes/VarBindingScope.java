@@ -4,7 +4,6 @@
  */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.codegen.jvm.JavaSignature;
 import org.mina_lang.codegen.jvm.LocalVar;
 import org.mina_lang.codegen.jvm.Names;
@@ -15,6 +14,7 @@ import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
+import java.util.Map;
 import java.util.Optional;
 
 public interface VarBindingScope extends CodegenScope {
@@ -24,7 +24,7 @@ public interface VarBindingScope extends CodegenScope {
 
     Label endLabel();
 
-    MutableMap<Named, LocalVar> localVars();
+    Map<Named, LocalVar> localVars();
 
     default public boolean hasLocalVar(Named varName) {
         return localVars().containsKey(varName);
@@ -60,7 +60,7 @@ public interface VarBindingScope extends CodegenScope {
     }
 
     default public void visitLocalVars() {
-        localVars().forEachKeyValue((name, localVar) -> {
+        localVars().forEach((name, localVar) -> {
             // We use the underlying MethodVisitor because inexplicably, the indices
             // provided by GeneratorAdapter's newLocal method are not compatible with its
             // own implementation of visitLocalVariable

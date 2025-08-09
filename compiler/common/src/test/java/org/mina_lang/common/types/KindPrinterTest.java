@@ -4,8 +4,9 @@
  */
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -38,17 +39,17 @@ public class KindPrinterTest {
 
     @Test
     void testHigherKindPrinting() {
-        var unaryKind = new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE);
+        var unaryKind = new HigherKind(List.of(TypeKind.INSTANCE), TypeKind.INSTANCE);
         assertThat(unaryKind.accept(printer).render(80), is(equalTo("* => *")));
         assertThat(unaryKind.accept(printer).render(4), is(equalTo(String.format("* =>%n  *"))));
 
-        var binaryKind = new HigherKind(Lists.immutable.of(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
+        var binaryKind = new HigherKind(List.of(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE);
         assertThat(binaryKind.accept(printer).render(80), is(equalTo("[*, *] => *")));
         assertThat(binaryKind.accept(printer).render(10), is(equalTo(String.format("[*, *] =>%n  *"))));
         assertThat(binaryKind.accept(printer).render(4), is(equalTo(String.format("[%n  *,%n  *%n] =>%n  *"))));
 
         var higherKind = new HigherKind(
-                Lists.immutable.of(new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE)),
+                List.of(new HigherKind(List.of(TypeKind.INSTANCE), TypeKind.INSTANCE)),
                 TypeKind.INSTANCE);
 
         assertThat(higherKind.accept(printer).render(80), is(equalTo("[* => *] => *")));

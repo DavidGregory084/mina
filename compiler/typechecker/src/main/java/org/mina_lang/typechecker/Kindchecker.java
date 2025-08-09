@@ -6,7 +6,6 @@ package org.mina_lang.typechecker;
 
 import com.opencastsoftware.prettier4j.Doc;
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.LocalDiagnosticReporter;
@@ -17,8 +16,10 @@ import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 import org.mina_lang.typechecker.scopes.*;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
@@ -85,12 +86,13 @@ public class Kindchecker {
     Type createConstructorType(
             DataName dataName,
             Kind dataKind,
-            ImmutableList<Type> typeParamTypes,
-            ImmutableList<ConstructorParamNode<Attributes>> constrParamNodes,
+            List<Type> typeParamTypes,
+            List<ConstructorParamNode<Attributes>> constrParamNodes,
             Optional<TypeNode<Attributes>> constrReturnTypeNode) {
 
-        var constrParamTypes = constrParamNodes
-                .collect(param -> typeFolder.visitType(param.typeAnnotation()));
+        var constrParamTypes = constrParamNodes.stream()
+            .map(param -> typeFolder.visitType(param.typeAnnotation()))
+            .toList();
 
         var constrReturnType = constrReturnTypeNode
                 .map(typ -> typeFolder.visitType(typ))
@@ -106,9 +108,9 @@ public class Kindchecker {
             return constrFnType;
         } else {
             return new QuantifiedType(
-                    typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
-                    constrFnType,
-                    dataKind);
+                typeParamTypes.stream().map(tyParam -> (TypeVar) tyParam).toList(),
+                constrFnType,
+                dataKind);
         }
     }
 
@@ -157,23 +159,21 @@ public class Kindchecker {
             environment.solveKind(unsolved, TypeKind.INSTANCE);
         } else if (superKind instanceof HigherKind higherSup) {
             // Complete and Easy's InstLArr rule adapted to kinds
-            var newHkArgs = higherSup
-                    .argKinds()
-                    .collect(arg -> newUnsolvedKind());
+            var newHkArgs = higherSup.argKinds().stream()
+                .map(arg -> newUnsolvedKind())
+                .toList();
 
             var newHkResult = newUnsolvedKind();
 
             var newHk = new HigherKind(
-                    newHkArgs.collect(arg -> (Kind) arg),
+                    newHkArgs.stream().map(arg -> (Kind) arg).toList(),
                     newHkResult);
 
             environment.solveKind(unsolved, newHk);
 
-            newHkArgs
-                    .zip(higherSup.argKinds())
-                    .forEach(pair -> {
-                        instantiateAsSuperKind(pair.getOne(), pair.getTwo());
-                    });
+            IntStream.range(0, Math.min(newHkArgs.size(), higherSup.argKinds().size())).forEach(index -> {
+                instantiateAsSuperKind(newHkArgs.get(index), higherSup.argKinds().get(index));
+            });
 
             instantiateAsSubKind(
                     newHkResult,
@@ -190,23 +190,21 @@ public class Kindchecker {
             environment.solveKind(unsolved, TypeKind.INSTANCE);
         } else if (subKind instanceof HigherKind higherSub) {
             // Complete and Easy's InstRArr rule adapted to kinds
-            var newHkArgs = higherSub
-                    .argKinds()
-                    .collect(arg -> newUnsolvedKind());
+            var newHkArgs = higherSub.argKinds().stream()
+                .map(arg -> newUnsolvedKind())
+                .toList();
 
             var newHkResult = newUnsolvedKind();
 
             var newHk = new HigherKind(
-                    newHkArgs.collect(arg -> (Kind) arg),
-                    newHkResult);
+                newHkArgs.stream().map(arg -> (Kind) arg).toList(),
+                newHkResult);
 
             environment.solveKind(unsolved, newHk);
 
-            newHkArgs
-                    .zip(higherSub.argKinds())
-                    .forEach(pair -> {
-                        instantiateAsSubKind(pair.getOne(), pair.getTwo());
-                    });
+            IntStream.range(0, Math.min(newHkArgs.size(), higherSub.argKinds().size())).forEach(index -> {
+                instantiateAsSubKind(newHkArgs.get(index), higherSub.argKinds().get(index));
+            });
 
             instantiateAsSuperKind(
                     newHkResult,
@@ -244,11 +242,9 @@ public class Kindchecker {
                     solvedSuperKind instanceof HigherKind higherSup &&
                     higherSub.argKinds().size() == higherSup.argKinds().size()) {
                 // Complete and Easy's <:-> rule adapted to kinds
-                var argsSubKinded = higherSub.argKinds()
-                        .zip(higherSup.argKinds())
-                        .allSatisfy(pair -> {
-                            return checkSubKind(pair.getTwo(), pair.getOne());
-                        });
+                var argsSubKinded = IntStream.range(0, higherSub.argKinds().size()).allMatch(index -> {
+                    return checkSubKind(higherSup.argKinds().get(index), higherSub.argKinds().get(index));
+                });
 
                 var resultSubKinded = checkSubKind(higherSub.resultKind(), higherSup.resultKind());
 
@@ -262,12 +258,13 @@ public class Kindchecker {
         var dataName = (DataName) data.meta().meta();
 
         return withScope(new DataTypingScope(dataName), () -> {
-            var inferredParams = data.typeParams()
-                    .collect(tyParam -> (TypeVarNode<Attributes>) inferType(tyParam));
+            var inferredParams = data.typeParams().stream()
+                .map(tyParam -> (TypeVarNode<Attributes>) inferType(tyParam))
+                .toList();
 
             var inferredKind = data.typeParams().isEmpty() ? TypeKind.INSTANCE
                     : new HigherKind(
-                            inferredParams.collect(param -> (Kind) param.meta().meta().sort()),
+                            inferredParams.stream().map(param -> (Kind) param.meta().meta().sort()).toList(),
                             TypeKind.INSTANCE);
 
             var updatedMeta = updateMetaWith(data.meta(), inferredKind);
@@ -276,11 +273,11 @@ public class Kindchecker {
 
             environment.putType(dataName.canonicalName(), updatedMeta);
 
-            var dataTypeParams = inferredParams
-                    .collect(tyParam -> tyParam.accept(typeFolder));
+            var dataTypeParams = inferredParams.stream().map(tyParam -> tyParam.accept(typeFolder)).toList();
 
-            var inferredConstrs = data.constructors()
-                    .collect(constr -> inferConstructor(dataName, inferredKind, dataTypeParams, constr));
+            var inferredConstrs = data.constructors().stream()
+                .map(constr -> inferConstructor(dataName, inferredKind, dataTypeParams, constr))
+                .toList();
 
             return dataNode(updatedMeta, data.name(), inferredParams, inferredConstrs);
         });
@@ -289,15 +286,16 @@ public class Kindchecker {
     ConstructorNode<Attributes> inferConstructor(
             DataName dataName,
             Kind dataKind,
-            ImmutableList<Type> dataTypeParams,
+            List<Type> dataTypeParams,
             ConstructorNode<Name> constr) {
         var constrName = (ConstructorName) constr.meta().meta();
 
         return withScope(new ConstructorTypingScope(constrName), () -> {
-            var inferredParams = constr.params()
-                    .collect(param -> inferConstructorParam(param));
+            var inferredParams = constr.params().stream()
+                .map(param -> inferConstructorParam(param))
+                .toList();
             var checkedReturn = constr.type()
-                    .map(returnType -> checkType(returnType, TypeKind.INSTANCE));
+                .map(returnType -> checkType(returnType, TypeKind.INSTANCE));
 
             var constructorType = createConstructorType(
                     dataName,
@@ -324,8 +322,9 @@ public class Kindchecker {
     TypeNode<Attributes> inferType(TypeNode<Name> typ) {
         if (typ instanceof QuantifiedTypeNode<Name> quant) {
             return withScope(new QuantifiedTypingScope(), () -> {
-                var inferredArgs = quant.args()
-                        .collect(tyArg -> (TypeVarNode<Attributes>) inferType(tyArg));
+                var inferredArgs = quant.args().stream()
+                    .map(tyArg -> (TypeVarNode<Attributes>) inferType(tyArg))
+                    .toList();
 
                 var checkedReturn = checkType(quant.body(), TypeKind.INSTANCE);
 
@@ -342,23 +341,24 @@ public class Kindchecker {
             if (inferredKind instanceof HigherKind hk &&
                     hk.argKinds().size() == tyApp.args().size()) {
 
-                var checkedArgs = tyApp.args()
-                        .zip(hk.argKinds())
-                        .collect(pair -> checkType(pair.getOne(), pair.getTwo()));
+                var checkedArgs = IntStream.range(0, Math.min(tyApp.args().size(), hk.argKinds().size()))
+                    .mapToObj(index -> checkType(tyApp.args().get(index), hk.argKinds().get(index)))
+                    .toList();
 
                 var updatedMeta = updateMetaWith(tyApp.meta(), TypeKind.INSTANCE);
 
                 return typeApplyNode(updatedMeta, inferredType, checkedArgs);
 
             } else {
-                var unsolvedArgs = tyApp.args()
-                        .collect(arg -> newUnsolvedKind());
+                var unsolvedArgs = tyApp.args().stream()
+                    .map(arg -> newUnsolvedKind())
+                    .toList();
 
                 var unsolvedReturn = newUnsolvedKind();
 
                 var appliedKind = new HigherKind(
-                        unsolvedArgs.collect(arg -> (Kind) arg),
-                        unsolvedReturn);
+                    unsolvedArgs.stream().map(arg -> (Kind) arg).toList(),
+                    unsolvedReturn);
 
                 if (inferredKind instanceof UnsolvedKind unsolved) {
                     instantiateAsSubKind(unsolved, appliedKind);
@@ -366,9 +366,9 @@ public class Kindchecker {
                     instantiateAsSubKind(unsolvedReturn, hk.resultKind());
                 }
 
-                var checkedArgs = tyApp.args()
-                        .zip(unsolvedArgs)
-                        .collect(pair -> checkType(pair.getOne(), pair.getTwo()));
+                var checkedArgs = IntStream.range(0, Math.min(tyApp.args().size(), unsolvedArgs.size()))
+                    .mapToObj(index -> checkType(tyApp.args().get(index), unsolvedArgs.get(index)))
+                    .toList();
 
                 if (!(inferredKind instanceof UnsolvedKind)) {
                     mismatchedTypeApplication(tyApp.range(), appliedKind, inferredKind);
@@ -379,8 +379,9 @@ public class Kindchecker {
                 return typeApplyNode(updatedMeta, inferredType, checkedArgs);
             }
         } else if (typ instanceof FunTypeNode<Name> funTy) {
-            var inferredArgs = funTy.argTypes()
-                    .collect(argTy -> checkType(argTy, TypeKind.INSTANCE));
+            var inferredArgs = funTy.argTypes().stream()
+                .map(argTy -> checkType(argTy, TypeKind.INSTANCE))
+                .toList();
 
             var inferredReturn = checkType(funTy.returnType(), TypeKind.INSTANCE);
 
@@ -421,18 +422,17 @@ public class Kindchecker {
                 expectedKind instanceof HigherKind hk &&
                 quant.args().size() == hk.argKinds().size()) {
             return withScope(new QuantifiedTypingScope(), () -> {
-                var knownArgs = quant.args()
-                        .zip(hk.argKinds())
-                        .collect(pair -> {
-                            var tyArg = pair.getOne();
-                            var updatedMeta = updateMetaWith(tyArg.meta(), pair.getTwo());
-                            environment.putType(tyArg.name(), updatedMeta);
-                            if (tyArg instanceof ForAllVarNode) {
-                                return (TypeVarNode<Attributes>) forAllVarNode(updatedMeta, tyArg.name());
-                            } else {
-                                return (TypeVarNode<Attributes>) existsVarNode(updatedMeta, tyArg.name());
-                            }
-                        });
+                var knownArgs = IntStream.range(0, quant.args().size())
+                    .mapToObj(index -> {
+                        var tyArg = quant.args().get(index);
+                        var updatedMeta = updateMetaWith(tyArg.meta(), hk.argKinds().get(index));
+                        environment.putType(tyArg.name(), updatedMeta);
+                        if (tyArg instanceof ForAllVarNode) {
+                            return (TypeVarNode<Attributes>) forAllVarNode(updatedMeta, tyArg.name());
+                        } else {
+                            return (TypeVarNode<Attributes>) existsVarNode(updatedMeta, tyArg.name());
+                        }
+                    });
 
                 var inferredReturn = checkType(quant.body(), TypeKind.INSTANCE);
 
@@ -442,7 +442,7 @@ public class Kindchecker {
 
                 var updatedMeta = updateMetaWith(quant.meta(), TypeKind.INSTANCE);
 
-                return quantifiedTypeNode(updatedMeta, knownArgs, inferredReturn);
+                return quantifiedTypeNode(updatedMeta, knownArgs.toList(), inferredReturn);
             });
         } else {
             var inferredType = inferType(typ);

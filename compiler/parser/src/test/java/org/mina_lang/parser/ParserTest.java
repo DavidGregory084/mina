@@ -7,7 +7,6 @@ package org.mina_lang.parser;
 import com.opencastsoftware.yvette.Range;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
@@ -102,9 +101,9 @@ public class ParserTest {
         testSuccessfulParse("namespace Mina/Test/Parser {}",
                 namespaceNode(
                         new Range(0, 0, 0, 34),
-                        nsIdNode(new Range(0, 10, 0, 26), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.empty(),
-                        Lists.immutable.empty()));
+                        nsIdNode(new Range(0, 10, 0, 26), List.of("Mina", "Test"), "Parser"),
+                        List.of(),
+                        List.of()));
     }
 
     @Test
@@ -113,8 +112,8 @@ public class ParserTest {
                 namespaceNode(
                         new Range(0, 0, 0, 24),
                         nsIdNode(new Range(0, 10, 0, 16), "Parser"),
-                        Lists.immutable.empty(),
-                        Lists.immutable.empty()));
+                        List.of(),
+                        List.of()));
     }
 
     @Test
@@ -145,7 +144,7 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importQualifiedNode(
                         new Range(0, 0, 0, 23),
-                        nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser")));
+                        nsIdNode(new Range(0, 7, 0, 23), List.of("Mina", "Test"), "Parser")));
     }
 
     @Test
@@ -154,7 +153,7 @@ public class ParserTest {
             MinaParser::importDeclaration,
             importQualifiedNode(
                 new Range(0, 0, 0, 28),
-                nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
+                nsIdNode(new Range(0, 7, 0, 23), List.of("Mina", "Test"), "Parser"),
                 "P"));
     }
 
@@ -182,8 +181,8 @@ public class ParserTest {
             MinaParser::importDeclaration,
             importSymbolsNode(
                 new Range(0, 0, 0, 71),
-                nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                Lists.immutable.of(
+                nsIdNode(new Range(0, 7, 0, 23), List.of("Mina", "Test"), "Parser"),
+                List.of(
                     importeeNode(new Range(0, 25, 0, 40) ,"compilationUnit"),
                     importeeNode(new Range(0, 42, 0, 70), "importDeclaration", Optional.of("impDecl")))));
     }
@@ -195,8 +194,8 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importSymbolsNode(
                         new Range(0, 0, 0, 60),
-                        nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.of(
+                        nsIdNode(new Range(0, 7, 0, 23), List.of("Mina", "Test"), "Parser"),
+                        List.of(
                             importeeNode(new Range(0, 25, 0, 40) ,"compilationUnit"),
                             importeeNode(new Range(0, 42, 0, 59), "importDeclaration"))));
     }
@@ -209,7 +208,7 @@ public class ParserTest {
                 importSymbolsNode(
                         new Range(0, 0, 0, 50),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
-                        Lists.immutable.of(
+                        List.of(
                             importeeNode(new Range(0, 15, 0, 30) ,"compilationUnit"),
                             importeeNode(new Range(0, 32, 0, 49), "importDeclaration"))));
     }
@@ -220,8 +219,8 @@ public class ParserTest {
                 MinaParser::importDeclaration,
                 importSymbolsNode(
                         new Range(0, 0, 0, 30),
-                        nsIdNode(new Range(0, 7, 0, 23), Lists.immutable.of("Mina", "Test"), "Parser"),
-                        Lists.immutable.of(importeeNode(new Range(0, 24, 0, 30), "ifExpr"))));
+                        nsIdNode(new Range(0, 7, 0, 23), List.of("Mina", "Test"), "Parser"),
+                        List.of(importeeNode(new Range(0, 24, 0, 30), "ifExpr"))));
     }
 
     @Test
@@ -231,7 +230,7 @@ public class ParserTest {
                 importSymbolsNode(
                         new Range(0, 0, 0, 20),
                         nsIdNode(new Range(0, 7, 0, 13), "Parser"),
-                        Lists.immutable.of(importeeNode(new Range(0, 14, 0, 20), "ifExpr"))));
+                        List.of(importeeNode(new Range(0, 14, 0, 20), "ifExpr"))));
     }
 
     @Test
@@ -246,7 +245,7 @@ public class ParserTest {
         testSuccessfulParse("[A] { A }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
                         new Range(0, 0, 0, 9),
-                        Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
+                        List.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
                         typeRefNode(new Range(0, 6, 0, 7), "A")));
 
     }
@@ -256,13 +255,13 @@ public class ParserTest {
         testSuccessfulParse("[A] { [S] { ST[S, A] } }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
                         new Range(0, 0, 0, 24),
-                        Lists.immutable.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
+                        List.of(forAllVarNode(new Range(0, 1, 0, 2), "A")),
                         quantifiedTypeNode(
-                                new Range(0, 6, 0, 22), Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "S")),
+                                new Range(0, 6, 0, 22), List.of(forAllVarNode(new Range(0, 7, 0, 8), "S")),
                                 typeApplyNode(
                                     new Range(0, 12, 0, 20),
                                     typeRefNode(new Range(0, 12, 0, 14), "ST"),
-                                    Lists.immutable.of(
+                                    List.of(
                                         typeRefNode(new Range(0, 15, 0, 16), "S"),
                                         typeRefNode(new Range(0, 18, 0, 19), "A"))))));
     }
@@ -272,7 +271,7 @@ public class ParserTest {
         testSuccessfulParse("[A, B] { A }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
                         new Range(0, 0, 0, 12),
-                        Lists.immutable.of(
+                        List.of(
                                 forAllVarNode(new Range(0, 1, 0, 2), "A"),
                                 forAllVarNode(new Range(0, 4, 0, 5), "B")),
                         typeRefNode(new Range(0, 9, 0, 10), "A")));
@@ -284,7 +283,7 @@ public class ParserTest {
         testSuccessfulParse("[?A] { ?A }", Parser::getTypeVisitor, MinaParser::type,
                 quantifiedTypeNode(
                         new Range(0, 0, 0, 11),
-                        Lists.immutable.of(existsVarNode(new Range(0, 1, 0, 3), "?A")),
+                        List.of(existsVarNode(new Range(0, 1, 0, 3), "?A")),
                         typeRefNode(new Range(0, 7, 0, 9), "?A")));
     }
 
@@ -300,7 +299,7 @@ public class ParserTest {
         testSuccessfulParse("A -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 6),
-                        Lists.immutable.of(typeRefNode(new Range(0, 0, 0, 1), "A")),
+                        List.of(typeRefNode(new Range(0, 0, 0, 1), "A")),
                         typeRefNode(new Range(0, 5, 0, 6), "A")));
 
     }
@@ -310,7 +309,7 @@ public class ParserTest {
         testSuccessfulParse("(A) -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 8),
-                        Lists.immutable.of(typeRefNode(new Range(0, 1, 0, 2), "A")),
+                        List.of(typeRefNode(new Range(0, 1, 0, 2), "A")),
                         typeRefNode(new Range(0, 7, 0, 8), "A")));
 
     }
@@ -320,7 +319,7 @@ public class ParserTest {
         testSuccessfulParse("() -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 7),
-                        Lists.immutable.empty(),
+                        List.of(),
                         typeRefNode(new Range(0, 6, 0, 7), "A")));
 
     }
@@ -330,7 +329,7 @@ public class ParserTest {
         testSuccessfulParse("(A, B) -> A", Parser::getTypeVisitor, MinaParser::type,
                 funTypeNode(
                         new Range(0, 0, 0, 11),
-                        Lists.immutable.of(
+                        List.of(
                                 typeRefNode(new Range(0, 1, 0, 2), "A"),
                                 typeRefNode(new Range(0, 4, 0, 5), "B")),
                         typeRefNode(new Range(0, 10, 0, 11), "A")));
@@ -352,8 +351,7 @@ public class ParserTest {
                 typeApplyNode(
                         new Range(0, 0, 0, 9),
                         typeRefNode(new Range(0, 0, 0, 4), "List"),
-                        Lists.immutable
-                                .of(typeRefNode(new Range(0, 5, 0, 8), "Int"))));
+                        List.of(typeRefNode(new Range(0, 5, 0, 8), "Int"))));
 
     }
 
@@ -363,7 +361,7 @@ public class ParserTest {
                 typeApplyNode(
                         new Range(0, 0, 0, 21),
                         typeRefNode(new Range(0, 0, 0, 6), "Either"),
-                        Lists.immutable.of(
+                        List.of(
                                 typeRefNode(new Range(0, 7, 0, 12), "Error"),
                                 typeRefNode(new Range(0, 14, 0, 20), "String"))));
 
@@ -375,7 +373,7 @@ public class ParserTest {
                 typeApplyNode(
                         new Range(0, 0, 0, 7),
                         typeRefNode(new Range(0, 0, 0, 4), "List"),
-                        Lists.immutable.of(typeRefNode(new Range(0, 5, 0, 6), "?"))));
+                        List.of(typeRefNode(new Range(0, 5, 0, 6), "?"))));
 
     }
 
@@ -406,8 +404,8 @@ public class ParserTest {
                 letFnNode(
                         new Range(0, 0, 0, 22),
                         "id",
-                        Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
-                        Lists.immutable.of(paramNode(new Range(0, 10, 0, 14), "a",
+                        List.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
+                        List.of(paramNode(new Range(0, 10, 0, 14), "a",
                                 typeRefNode(new Range(0, 13, 0, 14), "A"))),
                         typeRefNode(new Range(0, 17, 0, 18), "A"),
                         refNode(new Range(0, 21, 0, 22), "a")));
@@ -419,8 +417,8 @@ public class ParserTest {
                 dataNode(
                         new Range(0, 0, 0, 15),
                         "Void",
-                        Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
-                        Lists.immutable.empty()));
+                        List.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
+                        List.of()));
     }
 
     @Test
@@ -430,12 +428,12 @@ public class ParserTest {
                 dataNode(
                         new Range(0, 0, 0, 61),
                         "List",
-                        Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
-                        Lists.immutable.of(
+                        List.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
+                        List.of(
                                 // Cons
                                 constructorNode(
                                         new Range(0, 15, 0, 48), "Cons",
-                                        Lists.immutable.of(
+                                        List.of(
                                                 // head: A
                                                 constructorParamNode(new Range(0, 25, 0, 32), "head",
                                                         typeRefNode(new Range(0, 31, 0, 32), "A")),
@@ -443,12 +441,12 @@ public class ParserTest {
                                                 constructorParamNode(new Range(0, 34, 0, 47), "tail",
                                                         typeApplyNode(new Range(0, 40, 0, 47),
                                                                 typeRefNode(new Range(0, 40, 0, 44), "List"),
-                                                                Lists.immutable.of(typeRefNode(
+                                                                List.of(typeRefNode(
                                                                         new Range(0, 45, 0, 46), "A"))))),
                                         Optional.empty()),
                                 // Nil
                                 constructorNode(
-                                        new Range(0, 49, 0, 59), "Nil", Lists.immutable.empty(), Optional.empty()))));
+                                        new Range(0, 49, 0, 59), "Nil", List.of(), Optional.empty()))));
     }
 
     @Test
@@ -462,26 +460,26 @@ public class ParserTest {
                 dataNode(
                         new Range(0, 0, 3, 1),
                         "Expr",
-                        Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
-                        Lists.immutable.of(
+                        List.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
+                        List.of(
                                 // Int
                                 constructorNode(new Range(1, 4, 1, 31), "Int",
                                         // i: Int
-                                        Lists.immutable.of(constructorParamNode(new Range(1, 13, 1, 19), "i",
+                                        List.of(constructorParamNode(new Range(1, 13, 1, 19), "i",
                                                 typeRefNode(new Range(1, 16, 1, 19), "Int"))),
                                         // : Expr[Int]
                                         Optional.of(typeApplyNode(new Range(1, 22, 1, 31),
-                                                typeRefNode(new Range(1, 22, 1, 26), "Expr"), Lists.immutable
-                                                        .of(typeRefNode(new Range(1, 27, 1, 30), "Int"))))),
+                                                typeRefNode(new Range(1, 22, 1, 26), "Expr"),
+                                            List.of(typeRefNode(new Range(1, 27, 1, 30), "Int"))))),
                                 // Bool
                                 constructorNode(new Range(2, 4, 2, 40), "Bool",
                                         // i: Int
-                                        Lists.immutable.of(constructorParamNode(new Range(2, 14, 2, 24), "b",
+                                        List.of(constructorParamNode(new Range(2, 14, 2, 24), "b",
                                                 typeRefNode(new Range(2, 17, 2, 24), "Boolean"))),
                                         // : Expr[Int]
                                         Optional.of(typeApplyNode(new Range(2, 27, 2, 40),
-                                                typeRefNode(new Range(2, 27, 2, 31), "Expr"), Lists.immutable
-                                                        .of(typeRefNode(new Range(2, 32, 2, 39),
+                                                typeRefNode(new Range(2, 27, 2, 31), "Expr"),
+                                            List.of(typeRefNode(new Range(2, 32, 2, 39),
                                                                 "Boolean"))))))));
     }
 
@@ -494,7 +492,7 @@ public class ParserTest {
                 }""", Parser::getExprVisitor, MinaParser::expr,
                 blockNode(
                         new Range(0, 0, 2, 1),
-                        Lists.immutable.empty(),
+                        List.of(),
                         refNode(new Range(1, 4, 1, 7), "foo")));
     }
 
@@ -507,7 +505,7 @@ public class ParserTest {
                 }""", Parser::getExprVisitor, MinaParser::expr,
                 blockNode(
                         new Range(0, 0, 3, 1),
-                        Lists.immutable.of(
+                        List.of(
                                 letNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1))),
                         intNode(new Range(2, 4, 2, 5), 2)));
     }
@@ -522,7 +520,7 @@ public class ParserTest {
                 }""", Parser::getExprVisitor, MinaParser::expr,
                 blockNode(
                         new Range(0, 0, 4, 1),
-                        Lists.immutable.of(
+                        List.of(
                                 letNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1)),
                                 letNode(new Range(2, 4, 2, 15), "y",
                                         charNode(new Range(2, 12, 2, 15), 'a'))),
@@ -541,7 +539,7 @@ public class ParserTest {
                 }""", Parser::getExprVisitor, MinaParser::expr,
                 blockNode(
                         new Range(0, 0, 6, 1),
-                        Lists.immutable.of(
+                        List.of(
                                 letNode(new Range(1, 4, 1, 13), "x", intNode(new Range(1, 12, 1, 13), 1)),
                                 letNode(new Range(2, 4, 4, 5), "y",
                                         blockNode(new Range(2, 12, 4, 5), charNode(new Range(3, 8, 3, 11), 'a')))),
@@ -555,9 +553,9 @@ public class ParserTest {
                 new Range(0, 0, 0, 5),
                 blockNode(
                     new Range(0, 0, 0, 2),
-                    Lists.immutable.empty(),
+                    List.of(),
                     Optional.empty()),
-            Lists.immutable.of(intNode(new Range(0, 3, 0, 4), 1))));
+            List.of(intNode(new Range(0, 3, 0, 4), 1))));
     }
 
     @Test
@@ -567,7 +565,7 @@ public class ParserTest {
                 new Range(0, 0, 0, 5),
                 blockNode(
                     new Range(0, 0, 0, 2),
-                    Lists.immutable.empty(),
+                    List.of(),
                     Optional.empty()),
                 refNode(new Range(0, 3, 0, 5), "id")));
     }
@@ -578,7 +576,7 @@ public class ParserTest {
         testSuccessfulParse("() -> 1", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
                         new Range(0, 0, 0, 7),
-                        Lists.immutable.empty(),
+                        List.of(),
                         intNode(new Range(0, 6, 0, 7), 1)));
     }
 
@@ -587,7 +585,7 @@ public class ParserTest {
         testSuccessfulParse("a -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
                         new Range(0, 0, 0, 6),
-                        Lists.immutable.of(paramNode(new Range(0, 0, 0, 1), "a")),
+                        List.of(paramNode(new Range(0, 0, 0, 1), "a")),
                         refNode(new Range(0, 5, 0, 6), "a")));
     }
 
@@ -596,7 +594,7 @@ public class ParserTest {
         testSuccessfulParse("(a) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
                         new Range(0, 0, 0, 8),
-                        Lists.immutable.of(paramNode(new Range(0, 1, 0, 2), "a")),
+                        List.of(paramNode(new Range(0, 1, 0, 2), "a")),
                         refNode(new Range(0, 7, 0, 8), "a")));
     }
 
@@ -605,7 +603,7 @@ public class ParserTest {
         testSuccessfulParse("(a: Int) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
                         new Range(0, 0, 0, 13),
-                        Lists.immutable.of(
+                        List.of(
                                 paramNode(new Range(0, 1, 0, 7), "a", typeRefNode(new Range(0, 4, 0, 7), "Int"))),
                         refNode(new Range(0, 12, 0, 13), "a")));
     }
@@ -615,7 +613,7 @@ public class ParserTest {
         testSuccessfulParse("(a, b) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
                         new Range(0, 0, 0, 11),
-                        Lists.immutable.of(
+                        List.of(
                                 paramNode(new Range(0, 1, 0, 2), "a"),
                                 paramNode(new Range(0, 4, 0, 5), "b")),
                         refNode(new Range(0, 10, 0, 11), "a")));
@@ -626,7 +624,7 @@ public class ParserTest {
         testSuccessfulParse("(a: Int, b: Boolean) -> a", Parser::getExprVisitor, MinaParser::expr,
                 lambdaNode(
                         new Range(0, 0, 0, 25),
-                        Lists.immutable.of(
+                        List.of(
                                 paramNode(new Range(0, 1, 0, 7), "a", typeRefNode(new Range(0, 4, 0, 7), "Int")),
                                 paramNode(new Range(0, 9, 0, 19), "b",
                                         typeRefNode(new Range(0, 12, 0, 19), "Boolean"))),
@@ -677,7 +675,7 @@ public class ParserTest {
                 applyNode(
                         new Range(0, 0, 0, 4),
                         refNode(new Range(0, 0, 0, 1), "f"),
-                        Lists.immutable.of(refNode(new Range(0, 2, 0, 3), "x"))));
+                        List.of(refNode(new Range(0, 2, 0, 3), "x"))));
     }
 
     @Test
@@ -686,7 +684,7 @@ public class ParserTest {
                 applyNode(
                         new Range(0, 0, 0, 3),
                         refNode(new Range(0, 0, 0, 1), "f"),
-                        Lists.immutable.empty()));
+                        List.of()));
     }
 
     @Test
@@ -695,7 +693,7 @@ public class ParserTest {
                 applyNode(
                         new Range(0, 0, 0, 7),
                         refNode(new Range(0, 0, 0, 1), "f"),
-                        Lists.immutable.of(
+                        List.of(
                                 refNode(new Range(0, 2, 0, 3), "x"),
                                 refNode(new Range(0, 5, 0, 6), "y"))));
     }
@@ -706,11 +704,11 @@ public class ParserTest {
                 applyNode(
                         new Range(0, 0, 0, 7),
                         refNode(new Range(0, 0, 0, 1), "f"),
-                        Lists.immutable.of(
+                        List.of(
                                 applyNode(
                                         new Range(0, 2, 0, 6),
                                         refNode(new Range(0, 2, 0, 3), "g"),
-                                        Lists.immutable.of(refNode(new Range(0, 4, 0, 5), "x"))))));
+                                        List.of(refNode(new Range(0, 4, 0, 5), "x"))))));
     }
 
     @Test
@@ -721,8 +719,8 @@ public class ParserTest {
                         applyNode(
                                 new Range(0, 0, 0, 4),
                                 refNode(new Range(0, 0, 0, 1), "f"),
-                                Lists.immutable.of(refNode(new Range(0, 2, 0, 3), "x"))),
-                        Lists.immutable.of(refNode(new Range(0, 5, 0, 6), "y"))));
+                                List.of(refNode(new Range(0, 2, 0, 3), "x"))),
+                        List.of(refNode(new Range(0, 5, 0, 6), "y"))));
     }
 
     @Test
@@ -731,11 +729,11 @@ public class ParserTest {
                 applyNode(
                         new Range(0, 0, 0, 9),
                         refNode(new Range(0, 0, 0, 1), "f"),
-                        Lists.immutable.of(
+                        List.of(
                                 applyNode(
                                         new Range(0, 2, 0, 8),
                                         refNode(new Range(0, 3, 0, 4), "x"),
-                                        Lists.immutable.of(refNode(new Range(0, 6, 0, 7), "y"))))));
+                                        List.of(refNode(new Range(0, 6, 0, 7), "y"))))));
     }
 
     @Test
@@ -745,9 +743,9 @@ public class ParserTest {
                         new Range(0, 0, 0, 11),
                         lambdaNode(
                                 new Range(0, 1, 0, 7),
-                                Lists.immutable.of(paramNode(new Range(0, 1, 0, 2), "x")),
+                                List.of(paramNode(new Range(0, 1, 0, 2), "x")),
                                 refNode(new Range(0, 6, 0, 7), "x")),
-                        Lists.immutable.of(intNode(new Range(0, 9, 0, 10), 1))));
+                        List.of(intNode(new Range(0, 9, 0, 10), 1))));
     }
 
     // Member selection
@@ -808,7 +806,7 @@ public class ParserTest {
                     new Range(0, 0, 0, 3),
                     refNode(new Range(0, 0, 0, 1), "f"),
                     refNode(new Range(0, 2, 0, 3), "x")),
-                Lists.immutable.of(refNode(new Range(0, 4, 0, 5), "y"))));
+                List.of(refNode(new Range(0, 4, 0, 5), "y"))));
     }
 
     @Test
@@ -819,7 +817,7 @@ public class ParserTest {
                 applyNode(
                     new Range(0, 0, 0, 4),
                     refNode(new Range(0, 0, 0, 1), "f"),
-                    Lists.immutable.of(refNode(new Range(0, 2, 0, 3), "x"))),
+                    List.of(refNode(new Range(0, 2, 0, 3), "x"))),
                 refNode(new Range(0, 5, 0, 6), "y")));
     }
 
@@ -836,9 +834,9 @@ public class ParserTest {
                             new Range(0, 0, 0, 3),
                             refNode(new Range(0, 0, 0, 1), "a"),
                             refNode(new Range(0, 2, 0, 3), "f")),
-                        Lists.immutable.of(refNode(new Range(0, 4, 0, 5), "x"))),
+                        List.of(refNode(new Range(0, 4, 0, 5), "x"))),
                     refNode(new Range(0, 7, 0, 8), "g")),
-                Lists.immutable.of(refNode(new Range(0, 9, 0, 10), "y"))));
+                List.of(refNode(new Range(0, 9, 0, 10), "y"))));
     }
 
     // Unary operators
@@ -904,7 +902,7 @@ public class ParserTest {
                 applyNode(
                     new Range(0, 4, 0, 8),
                     refNode(new Range(0, 4, 0, 5), "y"),
-                    Lists.immutable.of(refNode(new Range(0, 6, 0, 7), "z")))));
+                    List.of(refNode(new Range(0, 6, 0, 7), "z")))));
     }
 
     @Test
@@ -1721,7 +1719,7 @@ public class ParserTest {
                 matchNode(
                         new Range(0, 0, 0, 15),
                         refNode(new Range(0, 6, 0, 7), "x"),
-                        Lists.immutable.empty()));
+                        List.of()));
     }
 
     @Test
@@ -1730,7 +1728,7 @@ public class ParserTest {
                 matchNode(
                         new Range(0, 0, 0, 28),
                         refNode(new Range(0, 6, 0, 7), "x"),
-                        Lists.immutable.of(
+                        List.of(
                                 caseNode(
                                         new Range(0, 15, 0, 26),
                                         idPatternNode(new Range(0, 20, 0, 21), "y"),
@@ -1834,7 +1832,7 @@ public class ParserTest {
                         constructorPatternNode(
                                 new Range(0, 5, 0, 18),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
-                                Lists.immutable.of(
+                                List.of(
                                         fieldPatternNode(
                                             new Range(0, 12, 0, 16), "head",
                                             idPatternNode(new Range(0, 12, 0, 16), "head")))),
@@ -1851,7 +1849,7 @@ public class ParserTest {
                                 constructorPatternNode(
                                         new Range(0, 12, 0, 25),
                                         idNode(new Range(0, 12, 0, 16), "Cons"),
-                                        Lists.immutable.of(
+                                        List.of(
                                                 fieldPatternNode(
                                                     new Range(0, 19, 0, 23), "head",
                                                     idPatternNode(new Range(0, 19, 0, 23), "head"))))),
@@ -1867,7 +1865,7 @@ public class ParserTest {
                         constructorPatternNode(
                                 new Range(0, 5, 0, 33),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
-                                Lists.immutable.of(
+                                List.of(
                                         fieldPatternNode(
                                             new Range(0, 12, 0, 16), "head",
                                             idPatternNode(new Range(0, 12, 0, 16), "head")),
@@ -1876,7 +1874,7 @@ public class ParserTest {
                                                 constructorPatternNode(
                                                         new Range(0, 24, 0, 30),
                                                         idNode(new Range(0, 24, 0, 27), "Nil"),
-                                                        Lists.immutable.empty())))),
+                                                        List.of())))),
                         refNode(new Range(0, 37, 0, 41), "head")));
     }
 
@@ -1889,7 +1887,7 @@ public class ParserTest {
                         constructorPatternNode(
                                 new Range(0, 5, 0, 39),
                                 idNode(new Range(0, 5, 0, 9), "Cons"),
-                                Lists.immutable.of(
+                                List.of(
                                         fieldPatternNode(
                                             new Range(0, 12, 0, 16), "head",
                                             idPatternNode(new Range(0, 12, 0, 16), "head")),
@@ -1898,7 +1896,7 @@ public class ParserTest {
                                                         constructorPatternNode(
                                                                 new Range(0, 30, 0, 36),
                                                                 idNode(new Range(0, 30, 0, 33), "Nil"),
-                                                                Lists.immutable.empty()))))),
+                                                                List.of()))))),
                         refNode(new Range(0, 43, 0, 47), "head")));
     }
 

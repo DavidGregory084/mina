@@ -8,7 +8,6 @@ import com.opencastsoftware.yvette.Range;
 import net.jqwik.api.*;
 import net.jqwik.api.Tuple.Tuple2;
 import net.jqwik.api.Tuple.Tuple3;
-import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,6 +23,8 @@ import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,9 +55,9 @@ public class TypecheckerTest {
         var dummyUri = URI.create("file:///Mina/Test/Typechecker.mina");
         var scopedCollector = new NamespaceDiagnosticReporter(baseCollector, dummyUri);
         var typechecker = new Typechecker(scopedCollector, environment);
-        var typecheckedNodes = typechecker.typecheck(Lists.immutable.of(originalNode));
+        var typecheckedNodes = typechecker.typecheck(List.of(originalNode));
         assertThat(baseCollector.getDiagnostics(), is(empty()));
-        assertThat(typecheckedNodes.getFirst(), is(equalTo(expectedNode)));
+        assertThat(typecheckedNodes.get(0), is(equalTo(expectedNode)));
     }
 
     void testSuccessfulTypecheck(
@@ -116,7 +117,7 @@ public class TypecheckerTest {
         var firstDiagnostic = diagnostics.get(0);
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
         assertThat(firstDiagnostic.location().range(), is(equalTo(range)));
-        assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
+        assertThat(firstDiagnostic.relatedInformation(), is(empty()));
     }
 
     // Data declarations
@@ -464,7 +465,7 @@ public class TypecheckerTest {
 
         var illTypedBoolConstrTypeNode = funTypeNode(
                 Meta.of(Nameless.INSTANCE),
-                Lists.immutable.of(typeRefNode(Meta.of(new BuiltInName("Int")), "Int")),
+                List.of(typeRefNode(Meta.of(new BuiltInName("Int")), "Int")),
                 typeRefNode(Meta.of(ExampleNodes.Bool.NAME), "Bool"));
 
         /*- let testBool: Int -> Bool = True */
@@ -520,11 +521,11 @@ public class TypecheckerTest {
                 "testAnnotatedLambda",
                 funTypeNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable.of(typeRefNode(Meta.of(new BuiltInName("Int")), "Int")),
+                        List.of(typeRefNode(Meta.of(new BuiltInName("Int")), "Int")),
                         typeRefNode(Meta.of(new BuiltInName("Int")), "Int")),
                 lambdaNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable.of(paramNode(Meta.of(new LocalName("i", 0)), "i")),
+                        List.of(paramNode(Meta.of(new LocalName("i", 0)), "i")),
                         refNode(Meta.of(new LocalName("i", 0)), "i")));
 
         var expectedNode = letNode(
@@ -532,11 +533,11 @@ public class TypecheckerTest {
                 "testAnnotatedLambda",
                 funTypeNode(
                         Meta.nameless(TypeKind.INSTANCE),
-                        Lists.immutable.of(typeRefNode(Meta.of(new BuiltInName("Int"), TypeKind.INSTANCE), "Int")),
+                        List.of(typeRefNode(Meta.of(new BuiltInName("Int"), TypeKind.INSTANCE), "Int")),
                         typeRefNode(Meta.of(new BuiltInName("Int"), TypeKind.INSTANCE), "Int")),
                 lambdaNode(
                         Meta.nameless(Type.function(Type.INT, Type.INT)),
-                        Lists.immutable.of(paramNode(Meta.of(new LocalName("i", 0), Type.INT), "i")),
+                        List.of(paramNode(Meta.of(new LocalName("i", 0), Type.INT), "i")),
                         refNode(Meta.of(new LocalName("i", 0), Type.INT), "i")));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
@@ -554,21 +555,21 @@ public class TypecheckerTest {
                 /*- (Int -> Int) -> Int */
                 funTypeNode(
                         ExampleNodes.namelessMeta(),
-                        Lists.immutable.of(
+                        List.of(
                                 funTypeNode(
                                         ExampleNodes.namelessMeta(),
-                                        Lists.immutable.of(
+                                        List.of(
                                                 ExampleNodes.Int.NAMED_TYPE_NODE),
                                         ExampleNodes.Int.NAMED_TYPE_NODE)),
                         ExampleNodes.Int.NAMED_TYPE_NODE),
                 /*- f -> f(1) */
                 lambdaNode(
                         ExampleNodes.namelessMeta(),
-                        Lists.immutable.of(ExampleNodes.Param.namedNode("f")),
+                        List.of(ExampleNodes.Param.namedNode("f")),
                         applyNode(
                                 ExampleNodes.namelessMeta(),
                                 ExampleNodes.LocalVar.namedNode("f"),
-                                Lists.immutable.of(ExampleNodes.Int.namedNode(1)))));
+                                List.of(ExampleNodes.Int.namedNode(1)))));
 
         var intToInt = Type.function(Type.INT, Type.INT);
         var intToIntToInt = Type.function(intToInt, Type.INT);
@@ -578,21 +579,21 @@ public class TypecheckerTest {
                 "testAnnotatedLambda",
                 funTypeNode(
                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                        Lists.immutable.of(
+                        List.of(
                                 funTypeNode(
                                         ExampleNodes.namelessMeta(
                                                 TypeKind.INSTANCE),
-                                        Lists.immutable.of(
+                                        List.of(
                                                 ExampleNodes.Int.KINDED_TYPE_NODE),
                                         ExampleNodes.Int.KINDED_TYPE_NODE)),
                         ExampleNodes.Int.KINDED_TYPE_NODE),
                 lambdaNode(
                         ExampleNodes.namelessMeta(intToIntToInt),
-                        Lists.immutable.of(ExampleNodes.Param.typedNode("f", intToInt)),
+                        List.of(ExampleNodes.Param.typedNode("f", intToInt)),
                         applyNode(
                                 ExampleNodes.namelessMeta(Type.INT),
                                 ExampleNodes.LocalVar.typedNode("f", intToInt),
-                                Lists.immutable.of(ExampleNodes.Int.typedNode(1)))));
+                                List.of(ExampleNodes.Int.typedNode(1)))));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -608,7 +609,7 @@ public class TypecheckerTest {
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
         var letType = new QuantifiedType(
-                Lists.immutable.of(tyVarA),
+                List.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 TypeKind.INSTANCE);
 
@@ -623,14 +624,14 @@ public class TypecheckerTest {
                 "id",
                 quantifiedTypeNode(
                         ExampleNodes.namelessMeta(),
-                        Lists.immutable.of(forAllVarNode(Meta.of(tyVarAName), "A")),
+                        List.of(forAllVarNode(Meta.of(tyVarAName), "A")),
                         funTypeNode(
                                 ExampleNodes.namelessMeta(),
-                                Lists.immutable.of(typeRefNode(Meta.of(tyVarAName), "A")),
+                                List.of(typeRefNode(Meta.of(tyVarAName), "A")),
                                 typeRefNode(Meta.of(tyVarAName), "A"))),
                 lambdaNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable.of(ExampleNodes.Param.namedNode("a")),
+                        List.of(ExampleNodes.Param.namedNode("a")),
                         ExampleNodes.LocalVar.namedNode("a")));
 
         var expectedNode = letNode(
@@ -638,14 +639,14 @@ public class TypecheckerTest {
                 "id",
                 quantifiedTypeNode(
                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                        Lists.immutable.of(forAllVarNode(tyVarAMeta, "A")),
+                        List.of(forAllVarNode(tyVarAMeta, "A")),
                         funTypeNode(
                                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                                Lists.immutable.of(typeRefNode(tyVarAMeta, "A")),
+                                List.of(typeRefNode(tyVarAMeta, "A")),
                                 typeRefNode(tyVarAMeta, "A"))),
                 lambdaNode(
                         ExampleNodes.namelessMeta(lambdaType),
-                        Lists.immutable.of(ExampleNodes.Param.typedNode("a", instTyVarA)),
+                        List.of(ExampleNodes.Param.typedNode("a", instTyVarA)),
                         ExampleNodes.LocalVar.typedNode("a", instTyVarA)));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
@@ -667,7 +668,7 @@ public class TypecheckerTest {
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
         var letType = new QuantifiedType(
-                Lists.immutable.of(tyVarA, tyVarB),
+                List.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
                 TypeKind.INSTANCE);
 
@@ -682,18 +683,18 @@ public class TypecheckerTest {
                 "const",
                 quantifiedTypeNode(
                         ExampleNodes.namelessMeta(),
-                        Lists.immutable.of(
+                        List.of(
                                 forAllVarNode(Meta.of(tyVarAName), "A"),
                                 forAllVarNode(Meta.of(tyVarBName), "B")),
                         funTypeNode(
                                 ExampleNodes.namelessMeta(),
-                                Lists.immutable.of(
+                                List.of(
                                         typeRefNode(Meta.of(tyVarAName), "A"),
                                         typeRefNode(Meta.of(tyVarBName), "B")),
                                 typeRefNode(Meta.of(tyVarAName), "A"))),
                 lambdaNode(
                         Meta.of(Nameless.INSTANCE),
-                        Lists.immutable.of(
+                        List.of(
                                 ExampleNodes.Param.namedNode("a"),
                                 ExampleNodes.Param.namedNode("b")),
                         ExampleNodes.LocalVar.namedNode("a")));
@@ -703,18 +704,18 @@ public class TypecheckerTest {
                 "const",
                 quantifiedTypeNode(
                         ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                        Lists.immutable.of(
+                        List.of(
                                 forAllVarNode(tyVarAMeta, "A"),
                                 forAllVarNode(tyVarBMeta, "B")),
                         funTypeNode(
                                 ExampleNodes.namelessMeta(TypeKind.INSTANCE),
-                                Lists.immutable.of(
+                                List.of(
                                         typeRefNode(tyVarAMeta, "A"),
                                         typeRefNode(tyVarBMeta, "B")),
                                 typeRefNode(tyVarAMeta, "A"))),
                 lambdaNode(
                         ExampleNodes.namelessMeta(lambdaType),
-                        Lists.immutable.of(
+                        List.of(
                                 ExampleNodes.Param.typedNode("a", instTyVarA),
                                 ExampleNodes.Param.typedNode("b", instTyVarB)),
                         ExampleNodes.LocalVar.typedNode("a", instTyVarA)));
@@ -731,12 +732,12 @@ public class TypecheckerTest {
         var originalNode = letFnNode(
                 Meta.of(letName),
                 "testAnnotatedLambda",
-                Lists.immutable.of(ExampleNodes.Param.namedNode("f")),
+                List.of(ExampleNodes.Param.namedNode("f")),
                 ExampleNodes.Int.NAMED_TYPE_NODE,
                 applyNode(
                         ExampleNodes.namelessMeta(),
                         ExampleNodes.LocalVar.namedNode("f"),
-                        Lists.immutable.of(ExampleNodes.Int.namedNode(1))));
+                        List.of(ExampleNodes.Int.namedNode(1))));
 
         var intToInt = Type.function(Type.INT, Type.INT);
         var intToIntToInt = Type.function(intToInt, Type.INT);
@@ -744,12 +745,12 @@ public class TypecheckerTest {
         var expectedNode = letFnNode(
                 Meta.of(letName, intToIntToInt),
                 "testAnnotatedLambda",
-                Lists.immutable.of(ExampleNodes.Param.typedNode("f", intToInt)),
+                List.of(ExampleNodes.Param.typedNode("f", intToInt)),
                 ExampleNodes.Int.KINDED_TYPE_NODE,
                 applyNode(
                         ExampleNodes.namelessMeta(Type.INT),
                         ExampleNodes.LocalVar.typedNode("f", intToInt),
-                        Lists.immutable.of(ExampleNodes.Int.typedNode(1))));
+                        List.of(ExampleNodes.Int.typedNode(1))));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
     }
@@ -764,7 +765,7 @@ public class TypecheckerTest {
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
         var letType = new QuantifiedType(
-                Lists.immutable.of(tyVarA),
+                List.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
 
@@ -774,16 +775,16 @@ public class TypecheckerTest {
         var originalNode = letFnNode(
                 Meta.of(letName),
                 "id",
-                Lists.immutable.of(forAllVarNode(Meta.of(tyVarAName), "A")),
-                Lists.immutable.of(ExampleNodes.Param.namedNode("a", typeRefNode(Meta.of(tyVarAName), "A"))),
+                List.of(forAllVarNode(Meta.of(tyVarAName), "A")),
+                List.of(ExampleNodes.Param.namedNode("a", typeRefNode(Meta.of(tyVarAName), "A"))),
                 typeRefNode(Meta.of(tyVarAName), "A"),
                 ExampleNodes.LocalVar.namedNode("a"));
 
         var expectedNode = letFnNode(
                 letMeta,
                 "id",
-                Lists.immutable.of(forAllVarNode(tyVarAMeta, "A")),
-                Lists.immutable.of(ExampleNodes.Param.typedNode("a", tyVarA, typeRefNode(tyVarAMeta, "A"))),
+                List.of(forAllVarNode(tyVarAMeta, "A")),
+                List.of(ExampleNodes.Param.typedNode("a", tyVarA, typeRefNode(tyVarAMeta, "A"))),
                 typeRefNode(tyVarAMeta, "A"),
                 ExampleNodes.LocalVar.typedNode("a", tyVarA));
 
@@ -804,7 +805,7 @@ public class TypecheckerTest {
         var letName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
         var letType = new QuantifiedType(
-                Lists.immutable.of(tyVarA, tyVarB),
+                List.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
 
@@ -814,10 +815,10 @@ public class TypecheckerTest {
         var originalNode = letFnNode(
                 Meta.of(letName),
                 "const",
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(Meta.of(tyVarAName), "A"),
                         forAllVarNode(Meta.of(tyVarBName), "B")),
-                Lists.immutable.of(
+                List.of(
                         ExampleNodes.Param.namedNode("a", typeRefNode(Meta.of(tyVarAName), "A")),
                         ExampleNodes.Param.namedNode("b", typeRefNode(Meta.of(tyVarBName), "B"))),
                 typeRefNode(Meta.of(tyVarAName), "A"),
@@ -826,10 +827,10 @@ public class TypecheckerTest {
         var expectedNode = letFnNode(
                 letMeta,
                 "const",
-                Lists.immutable.of(
+                List.of(
                         forAllVarNode(tyVarAMeta, "A"),
                         forAllVarNode(tyVarBMeta, "B")),
-                Lists.immutable.of(
+                List.of(
                         ExampleNodes.Param.typedNode("a", tyVarA, typeRefNode(tyVarAMeta, "A")),
                         ExampleNodes.Param.typedNode("b", tyVarB, typeRefNode(tyVarBMeta, "B"))),
                 typeRefNode(tyVarAMeta, "A"),
@@ -933,12 +934,12 @@ public class TypecheckerTest {
         /*- () -> 1 */
         var originalNode = lambdaNode(
                 ExampleNodes.namelessMeta(),
-                Lists.immutable.empty(),
+                List.of(),
                 ExampleNodes.Int.namedNode(1));
 
         var expectedNode = lambdaNode(
                 ExampleNodes.namelessMeta(Type.function(Type.INT)),
-                Lists.immutable.empty(),
+                List.of(),
                 ExampleNodes.Int.typedNode(1));
 
         testSuccessfulTypecheck(TypeEnvironment.withBuiltInTypes(), originalNode, expectedNode);
@@ -950,13 +951,13 @@ public class TypecheckerTest {
         /*- (x: Int) -> 1 */
         var originalNode = lambdaNode(
                 ExampleNodes.namelessMeta(),
-                Lists.immutable.of(
+                List.of(
                         ExampleNodes.Param.namedNode("x", ExampleNodes.Int.NAMED_TYPE_NODE)),
                 ExampleNodes.Int.namedNode(1));
 
         var expectedNode = lambdaNode(
                 ExampleNodes.namelessMeta(Type.function(Type.INT, Type.INT)),
-                Lists.immutable.of(
+                List.of(
                         ExampleNodes.Param.typedNode("x", Type.INT,
                                 ExampleNodes.Int.KINDED_TYPE_NODE)),
                 ExampleNodes.Int.typedNode(1));
@@ -970,7 +971,7 @@ public class TypecheckerTest {
         /*- bool -> if bool then 1 else 2 */
         var originalNode = lambdaNode(
                 ExampleNodes.namelessMeta(),
-                Lists.immutable.of(ExampleNodes.Param.namedNode("bool")),
+                List.of(ExampleNodes.Param.namedNode("bool")),
                 ifNode(
                         ExampleNodes.namelessMeta(),
                         ExampleNodes.LocalVar.namedNode("bool"),
@@ -979,7 +980,7 @@ public class TypecheckerTest {
 
         var expectedNode = lambdaNode(
                 ExampleNodes.namelessMeta(Type.function(Type.BOOLEAN, Type.INT)),
-                Lists.immutable.of(ExampleNodes.Param.typedNode("bool", Type.BOOLEAN)),
+                List.of(ExampleNodes.Param.typedNode("bool", Type.BOOLEAN)),
                 ifNode(
                         ExampleNodes.namelessMeta(Type.INT),
                         ExampleNodes.LocalVar.typedNode("bool", Type.BOOLEAN),
@@ -1003,12 +1004,12 @@ public class TypecheckerTest {
         var originalNode = applyNode(
                 ExampleNodes.namelessMeta(),
                 ExampleNodes.LocalVar.namedNode("f"),
-                Lists.immutable.empty());
+                List.of());
 
         var expectedNode = applyNode(
                 ExampleNodes.namelessMeta(Type.INT),
                 ExampleNodes.LocalVar.typedNode("f", Type.function(Type.INT)),
-                Lists.immutable.empty());
+                List.of());
 
         testSuccessfulTypecheck(environment, originalNode, expectedNode);
     }
@@ -1027,12 +1028,12 @@ public class TypecheckerTest {
         var originalNode = applyNode(
                 ExampleNodes.namelessMeta(),
                 ExampleNodes.LocalVar.namedNode("f"),
-                Lists.immutable.of(ExampleNodes.Int.namedNode(1)));
+                List.of(ExampleNodes.Int.namedNode(1)));
 
         var expectedNode = applyNode(
                 ExampleNodes.namelessMeta(Type.INT),
                 ExampleNodes.LocalVar.typedNode("f", Type.function(Type.INT, Type.INT)),
-                Lists.immutable.of(ExampleNodes.Int.typedNode(1)));
+                List.of(ExampleNodes.Int.typedNode(1)));
 
         testSuccessfulTypecheck(environment, originalNode, expectedNode);
     }
@@ -1047,7 +1048,7 @@ public class TypecheckerTest {
         var idName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "id"));
 
         var idType = new QuantifiedType(
-                Lists.immutable.of(tyVarA),
+                List.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
 
@@ -1060,12 +1061,12 @@ public class TypecheckerTest {
         var originalNode = applyNode(
                 ExampleNodes.namelessMeta(),
                 refNode(Meta.of(idName), "id"),
-                Lists.immutable.of(ExampleNodes.Int.namedNode(1)));
+                List.of(ExampleNodes.Int.namedNode(1)));
 
         var expectedNode = applyNode(
                 ExampleNodes.namelessMeta(Type.INT),
                 refNode(idMeta, "id"),
-                Lists.immutable.of(ExampleNodes.Int.typedNode(1)));
+                List.of(ExampleNodes.Int.typedNode(1)));
 
         testSuccessfulTypecheck(environment, originalNode, expectedNode);
     }
@@ -1081,7 +1082,7 @@ public class TypecheckerTest {
         var constName = new LetName(new QualifiedName(ExampleNodes.TYPECHECKER_NAMESPACE, "const"));
 
         var constType = new QuantifiedType(
-                Lists.immutable.of(tyVarA, tyVarB),
+                List.of(tyVarA, tyVarB),
                 Type.function(tyVarA, tyVarB, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE, TypeKind.INSTANCE));
 
@@ -1094,21 +1095,21 @@ public class TypecheckerTest {
         var originalNode = applyNode(
                 ExampleNodes.namelessMeta(),
                 refNode(Meta.of(constName), "const"),
-                Lists.immutable.of(
+                List.of(
                         applyNode(
                                 ExampleNodes.namelessMeta(),
                                 refNode(Meta.of(constName), "const"),
-                                Lists.immutable.of(ExampleNodes.Int.namedNode(1), ExampleNodes.Char.namedNode('a'))),
+                                List.of(ExampleNodes.Int.namedNode(1), ExampleNodes.Char.namedNode('a'))),
                         ExampleNodes.String.namedNode("b")));
 
         var expectedNode = applyNode(
                 ExampleNodes.namelessMeta(Type.INT),
                 refNode(constMeta, "const"),
-                Lists.immutable.of(
+                List.of(
                         applyNode(
                                 ExampleNodes.namelessMeta(Type.INT),
                                 refNode(constMeta, "const"),
-                                Lists.immutable.of(ExampleNodes.Int.typedNode(1), ExampleNodes.Char.typedNode('a'))),
+                                List.of(ExampleNodes.Int.typedNode(1), ExampleNodes.Char.typedNode('a'))),
                         ExampleNodes.String.typedNode("b")));
 
         testSuccessfulTypecheck(environment, originalNode, expectedNode);
@@ -1624,7 +1625,7 @@ public class TypecheckerTest {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
 
         var idPoly = new QuantifiedType(
-                Lists.immutable.of(tyVarA),
+                List.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
 
@@ -1644,7 +1645,7 @@ public class TypecheckerTest {
         var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
 
         var idPoly = new QuantifiedType(
-                Lists.immutable.of(tyVarA),
+                List.of(tyVarA),
                 Type.function(tyVarA, tyVarA),
                 new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
 
@@ -1701,25 +1702,23 @@ public class TypecheckerTest {
         return Arbitraries.lazyOf(
                 () -> simpleTypes(),
                 () -> simpleTypes().list().ofMinSize(1).ofMaxSize(4).map(types -> {
-                    var tyList = Lists.immutable.ofAll(types);
-                    var funArgTys = tyList.take(tyList.size() - 1);
-                    var funReturnTy = tyList.getLast();
+                    var tyList = new ArrayList<>(types);
+                    var funArgTys = tyList.subList(0, tyList.size() - 1);
+                    var funReturnTy = tyList.get(tyList.size() - 1);
                     return Type.function(funArgTys, funReturnTy);
                 }),
                 () -> simpleTypes().list().ofMinSize(1).ofMaxSize(3).flatMap(types -> {
-                    var tyArgs = Lists.immutable.ofAll(types);
-                    var tyArgKinds = Lists.mutable.withNValues(
-                            types.size() + 1,
-                            () -> (Kind) TypeKind.INSTANCE);
-                    var tyConKind = new HigherKind(tyArgKinds.toImmutable());
+                    var tyArgs = new ArrayList<>(types);
+                    var tyArgKinds = Collections.nCopies(
+                        types.size() + 1,
+                        (Kind) TypeKind.INSTANCE);
+                    var tyConKind = new HigherKind(tyArgKinds);
                     return Arbitraries.strings()
                             .ofMinLength(2)
                             .ofMaxLength(20)
                             .map(tyName -> {
                                 var tyConName = new QualifiedName(
-                                        new NamespaceName(Lists.immutable
-                                                .of("Mina", "Test"),
-                                                "Typechecker"),
+                                        new NamespaceName(List.of("Mina", "Test"), "Typechecker"),
                                         tyName);
                                 return new TypeApply(
                                         new TypeConstructor(tyConName,
@@ -1757,6 +1756,6 @@ public class TypecheckerTest {
 
     @Provide
     Arbitrary<BuiltInType> builtIns() {
-        return Arbitraries.of(Type.builtIns.toSet());
+        return Arbitraries.of(Type.builtIns.values());
     }
 }

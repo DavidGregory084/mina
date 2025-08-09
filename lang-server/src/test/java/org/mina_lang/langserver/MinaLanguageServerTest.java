@@ -4,7 +4,7 @@
  */
 package org.mina_lang.langserver;
 
-import org.eclipse.collections.impl.block.function.checked.ThrowingFunction;
+import org.apache.commons.lang3.function.FailableFunction;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.launch.LSPLauncher;
@@ -162,10 +162,10 @@ public class MinaLanguageServerTest {
     @ParameterizedTest
     @MethodSource("clientServerProvider")
     void testInitialize(
-            ThrowingFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>> clientServerProvider)
+            FailableFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>, Exception> clientServerProvider)
             throws Exception {
 
-        var exitCode = clientServerProvider.safeValueOf((client, server) -> {
+        var exitCode = clientServerProvider.apply((client, server) -> {
             var params = new InitializeParams();
 
             var capabilities = new ClientCapabilities();
@@ -188,10 +188,10 @@ public class MinaLanguageServerTest {
     @ParameterizedTest
     @MethodSource("clientServerProvider")
     void testExitBeforeInitialization(
-            ThrowingFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>> clientServerProvider)
+            FailableFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>, Exception> clientServerProvider)
             throws Exception {
 
-        var exitCode = clientServerProvider.safeValueOf((client, server) -> {
+        var exitCode = clientServerProvider.apply((client, server) -> {
             server.exit();
         });
 
@@ -201,10 +201,10 @@ public class MinaLanguageServerTest {
     @ParameterizedTest
     @MethodSource("clientServerProvider")
     void testExitBeforeShutdown(
-            ThrowingFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>> clientServerProvider)
+            FailableFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>, Exception> clientServerProvider)
             throws Exception {
 
-        var exitCode = clientServerProvider.safeValueOf((client, server) -> {
+        var exitCode = clientServerProvider.apply((client, server) -> {
             var params = new InitializeParams();
 
             var capabilities = new ClientCapabilities();
@@ -225,10 +225,10 @@ public class MinaLanguageServerTest {
     @ParameterizedTest
     @MethodSource("clientServerProvider")
     void testShutdownBeforeInitialization(
-            ThrowingFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>> clientServerProvider)
+            FailableFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>, Exception> clientServerProvider)
             throws Exception {
 
-        var exitCode = clientServerProvider.safeValueOf((client, server) -> {
+        var exitCode = clientServerProvider.apply((client, server) -> {
             var shutdownRequest = server.shutdown();
 
             var exception = (Throwable) shutdownRequest.exceptionally(ex -> ex).join();
@@ -245,10 +245,10 @@ public class MinaLanguageServerTest {
     @ParameterizedTest
     @MethodSource("clientServerProvider")
     void testShutdownAfterShutdown(
-            ThrowingFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>> clientServerProvider)
+            FailableFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>, Exception> clientServerProvider)
             throws Exception {
 
-        var exitCode = clientServerProvider.safeValueOf((client, server) -> {
+        var exitCode = clientServerProvider.apply((client, server) -> {
             var params = new InitializeParams();
 
             var capabilities = new ClientCapabilities();
@@ -273,7 +273,7 @@ public class MinaLanguageServerTest {
         assertThat(exitCode.join(), is(0));
     }
 
-    static Stream<ThrowingFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>>> clientServerProvider() {
+    static Stream<FailableFunction<BiConsumer<TestClient, LanguageServer>, CompletableFuture<Integer>, Exception>> clientServerProvider() {
         return Stream.of(
                 /*MinaLanguageServerTest::withInOutStreams,*/
                 MinaLanguageServerTest::withTcpSocket,

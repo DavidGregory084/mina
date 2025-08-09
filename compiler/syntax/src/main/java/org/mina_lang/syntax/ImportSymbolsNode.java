@@ -5,9 +5,10 @@
 package org.mina_lang.syntax;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.list.ImmutableList;
 
-public record ImportSymbolsNode(Range range, NamespaceIdNode namespace, ImmutableList<ImporteeNode> symbols) implements ImportNode {
+import java.util.List;
+
+public record ImportSymbolsNode(Range range, NamespaceIdNode namespace, List<ImporteeNode> symbols) implements ImportNode {
 
     @Override
     public void accept(SyntaxNodeVisitor visitor) {

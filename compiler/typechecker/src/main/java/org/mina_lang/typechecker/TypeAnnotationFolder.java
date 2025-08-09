@@ -4,7 +4,6 @@
  */
 package org.mina_lang.typechecker;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.BuiltInName;
@@ -17,6 +16,8 @@ import org.mina_lang.syntax.QuantifiedTypeNode;
 import org.mina_lang.syntax.TypeNodeFolder;
 import org.mina_lang.typechecker.scopes.QuantifiedTypingScope;
 
+import java.util.List;
+
 public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
 
     protected TypeEnvironment environment;
@@ -26,12 +27,12 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
     }
 
     @Override
-    public TypeApply visitFunType(Meta<Attributes> meta, ImmutableList<Type> argTypes, Type returnType) {
+    public TypeApply visitFunType(Meta<Attributes> meta, List<Type> argTypes, Type returnType) {
         return Type.function(argTypes, returnType);
     }
 
     @Override
-    public TypeApply visitTypeApply(Meta<Attributes> meta, Type type, ImmutableList<Type> args) {
+    public TypeApply visitTypeApply(Meta<Attributes> meta, Type type, List<Type> args) {
         return new TypeApply(type, args, (Kind) meta.meta().sort());
     }
 
@@ -64,11 +65,11 @@ public class TypeAnnotationFolder implements TypeNodeFolder<Attributes, Type> {
     }
 
     @Override
-    public QuantifiedType visitQuantifiedType(Meta<Attributes> meta, ImmutableList<Type> args, Type body) {
+    public QuantifiedType visitQuantifiedType(Meta<Attributes> meta, List<Type> args, Type body) {
         return new QuantifiedType(
-                args.collect(tyArg -> (TypeVar) tyArg),
-                body,
-                (Kind) meta.meta().sort());
+            args.stream().map(tyArg -> (TypeVar) tyArg).toList(),
+            body,
+            (Kind) meta.meta().sort());
     }
 
     @Override

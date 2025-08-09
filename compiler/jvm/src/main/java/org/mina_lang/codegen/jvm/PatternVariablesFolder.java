@@ -4,76 +4,80 @@
  */
 package org.mina_lang.codegen.jvm;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.syntax.PatternNodeFolder;
 import org.mina_lang.syntax.QualifiedIdNode;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-public class PatternVariablesFolder implements PatternNodeFolder<Attributes, ImmutableSet<Name>> {
+
+public class PatternVariablesFolder implements PatternNodeFolder<Attributes, Set<Name>> {
 
     @Override
-    public ImmutableSet<Name> visitBoolean(Meta<Attributes> meta, boolean value) {
-        return Sets.immutable.empty();
+    public Set<Name> visitBoolean(Meta<Attributes> meta, boolean value) {
+        return new HashSet<>();
     }
 
     @Override
-    public ImmutableSet<Name> visitChar(Meta<Attributes> meta, char value) {
-        return Sets.immutable.empty();
+    public Set<Name> visitChar(Meta<Attributes> meta, char value) {
+        return new HashSet<>();
     }
 
     @Override
-    public ImmutableSet<Name> visitString(Meta<Attributes> meta, String value) {
-        return Sets.immutable.empty();
+    public Set<Name> visitString(Meta<Attributes> meta, String value) {
+        return new HashSet<>();
     }
 
     @Override
-    public ImmutableSet<Name> visitInt(Meta<Attributes> meta, int value) {
-        return Sets.immutable.empty();
+    public Set<Name> visitInt(Meta<Attributes> meta, int value) {
+        return new HashSet<>();
     }
 
     @Override
-    public ImmutableSet<Name> visitLong(Meta<Attributes> meta, long value) {
-        return Sets.immutable.empty();
+    public Set<Name> visitLong(Meta<Attributes> meta, long value) {
+        return new HashSet<>();
     }
 
     @Override
-    public ImmutableSet<Name> visitFloat(Meta<Attributes> meta, float value) {
-        return Sets.immutable.empty();
+    public Set<Name> visitFloat(Meta<Attributes> meta, float value) {
+        return new HashSet<>();
     }
 
     @Override
-    public ImmutableSet<Name> visitDouble(Meta<Attributes> meta, double value) {
-        return Sets.immutable.empty();
+    public Set<Name> visitDouble(Meta<Attributes> meta, double value) {
+        return new HashSet<>();
     }
 
     @Override
-    public ImmutableSet<Name> visitAliasPattern(Meta<Attributes> meta, String alias, ImmutableSet<Name> pattern) {
-        return pattern.newWith(meta.meta().name());
+    public Set<Name> visitAliasPattern(Meta<Attributes> meta, String alias, Set<Name> pattern) {
+        var aliasPattern = new HashSet<>(pattern);
+        aliasPattern.add(meta.meta().name());
+        return aliasPattern;
     }
 
     @Override
-    public ImmutableSet<Name> visitConstructorPattern(Meta<Attributes> meta, QualifiedIdNode id,
-            ImmutableList<ImmutableSet<Name>> fields) {
-        return fields.flatCollect(fld -> fld).toImmutableSet();
+    public Set<Name> visitConstructorPattern(Meta<Attributes> meta, QualifiedIdNode id,
+            List<Set<Name>> fields) {
+        return fields.stream().flatMap(Set::stream).collect(Collectors.toSet());
     }
 
     @Override
-    public ImmutableSet<Name> visitFieldPattern(Meta<Attributes> meta, String field, ImmutableSet<Name> pattern) {
+    public Set<Name> visitFieldPattern(Meta<Attributes> meta, String field, Set<Name> pattern) {
         return pattern;
     }
 
     @Override
-    public ImmutableSet<Name> visitIdPattern(Meta<Attributes> meta, String name) {
-        return Sets.immutable.of(meta.meta().name());
+    public Set<Name> visitIdPattern(Meta<Attributes> meta, String name) {
+        return Set.of(meta.meta().name());
     }
 
     @Override
-    public ImmutableSet<Name> visitLiteralPattern(Meta<Attributes> meta, ImmutableSet<Name> literal) {
-        return Sets.immutable.empty();
+    public Set<Name> visitLiteralPattern(Meta<Attributes> meta, Set<Name> literal) {
+        return new HashSet<>();
     }
 }

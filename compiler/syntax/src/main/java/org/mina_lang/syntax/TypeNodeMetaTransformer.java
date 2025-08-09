@@ -4,8 +4,9 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+
+import java.util.List;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
@@ -13,19 +14,19 @@ public interface TypeNodeMetaTransformer<A, B> extends MetaTransformer<A, B>, Ty
 
     @Override
     default public QuantifiedTypeNode<B> visitQuantifiedType(Meta<A> meta,
-                                                             ImmutableList<TypeVarNode<B>> args, TypeNode<B> body) {
+                                                             List<TypeVarNode<B>> args, TypeNode<B> body) {
         return quantifiedTypeNode(updateMeta(meta), args, body);
     }
 
     @Override
-    default public FunTypeNode<B> visitFunType(Meta<A> meta, ImmutableList<TypeNode<B>> argTypes,
+    default public FunTypeNode<B> visitFunType(Meta<A> meta, List<TypeNode<B>> argTypes,
             TypeNode<B> returnType) {
         return funTypeNode(updateMeta(meta), argTypes, returnType);
     }
 
     @Override
     default public TypeApplyNode<B> visitTypeApply(Meta<A> meta, TypeNode<B> type,
-            ImmutableList<TypeNode<B>> args) {
+            List<TypeNode<B>> args) {
         return typeApplyNode(updateMeta(meta), type, args);
     }
 

@@ -4,9 +4,6 @@
  */
 package org.mina_lang.optimiser;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
@@ -18,7 +15,9 @@ import org.mina_lang.ina.Long;
 import org.mina_lang.ina.String;
 import org.mina_lang.syntax.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class Lower {
     private final SyntheticNameSupply nameSupply;
@@ -66,12 +65,13 @@ public class Lower {
 
     public Namespace lower(NamespaceNode<Attributes> namespace) {
         var name = (NamespaceName) namespace.meta().meta().name();
-        var declarations = namespace.declarationGroups().flatCollect(this::lowerDeclarationGroup);
-        return new Namespace(name, declarations);
+        var declarations = namespace.declarationGroups().stream()
+            .flatMap(grp -> lowerDeclarationGroup(grp).stream());
+        return new Namespace(name, declarations.toList());
     }
 
-    ImmutableList<Declaration> lowerDeclarationGroup(ImmutableList<DeclarationNode<Attributes>> declarations) {
-        return declarations.collect(this::lowerDeclaration);
+    List<Declaration> lowerDeclarationGroup(List<DeclarationNode<Attributes>> declarations) {
+        return declarations.stream().map(this::lowerDeclaration).toList();
     }
 
     Declaration lowerDeclaration(DeclarationNode<Attributes> declaration) {
@@ -89,7 +89,7 @@ public class Lower {
     Data lowerData(DataNode<Attributes> data) {
         var name = (DataName) data.meta().meta().name();
 
-        ImmutableList<TypeVar> typeParams = data.typeParams().collect(tyVar -> {
+        var typeParams = data.typeParams().stream().<TypeVar>map(tyVar -> {
             var kind = (Kind) tyVar.meta().meta().sort();
 
             if (tyVar instanceof ForAllVarNode<Attributes> forall) {
@@ -101,15 +101,15 @@ public class Lower {
             return null;
         });
 
-        var constructors = data.constructors().collect(this::lowerConstructor);
+        var constructors = data.constructors().stream().map(this::lowerConstructor);
 
-        return new Data(name, typeParams, constructors);
+        return new Data(name, typeParams.toList(), constructors.toList());
     }
 
     Constructor lowerConstructor(ConstructorNode<Attributes> constr) {
         var name = (ConstructorName) constr.meta().meta().name();
-        var fields = constr.params().collect(this::lowerField);
-        return new Constructor(name, fields);
+        var fields = constr.params().stream().map(this::lowerField);
+        return new Constructor(name, fields.toList());
     }
 
     Field lowerField(ConstructorParamNode<Attributes> param) {
@@ -121,23 +121,23 @@ public class Lower {
     Let lowerLet(LetNode<Attributes> let) {
         var name = (LetName) let.meta().meta().name();
         var type = (Type) let.meta().meta().sort();
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        List<LocalBinding> bindings = new ArrayList<>();
         var body = lowerExpr(let.expr(), bindings);
         return new Let(
             name, type,
-            bindings.isEmpty() ? body : new Block(body.type(), bindings.toImmutableList(), body));
+            bindings.isEmpty() ? body : new Block(body.type(), bindings, body));
     }
 
     Let lowerLetFn(LetFnNode<Attributes> letFn) {
         var name = (LetName) letFn.meta().meta().name();
         var type = (Type) letFn.meta().meta().sort();
-        var params = letFn.valueParams().collect(this::lowerParam);
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        var params = letFn.valueParams().stream().map(this::lowerParam);
+        List<LocalBinding> bindings = new ArrayList<>();
         var body = lowerExpr(letFn.expr(), bindings);
         return new Let(
             name, type,
-            new Lambda(type, params,
-                bindings.isEmpty() ? body : new Block(body.type(), bindings.toImmutableList(), body)));
+            new Lambda(type, params.toList(),
+                bindings.isEmpty() ? body : new Block(body.type(), bindings, body)));
     }
 
     Param lowerParam(ParamNode<Attributes> param) {
@@ -194,29 +194,29 @@ public class Lower {
         // Eliminate selections that are applied immediately, replacing them with
         // a function call with the receiver as the first argument
         ExprNode<Attributes> appliedExpr;
-        ImmutableList<ExprNode<Attributes>> appliedArgs;
+        List<ExprNode<Attributes>> appliedArgs;
         if (apply.expr() instanceof SelectNode<Attributes> select) {
             appliedExpr = select.selection();
-            appliedArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
+            appliedArgs = new ArrayList<>();
+            appliedArgs.add(select.receiver());
+            appliedArgs.addAll(apply.args());
         } else {
             appliedExpr = apply.expr();
             appliedArgs = apply.args();
         }
 
         var funType = (TypeApply) getUnderlyingType(appliedExpr);
-        var returnType = funType.typeArguments().getLast();
+        var returnType = funType.typeArguments().get(funType.typeArguments().size() - 1);
 
         var loweredFn = lowerToValue(bindings, appliedExpr);
 
-        var args = appliedArgs
-            .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
-            .collect(pair -> {
-                var loweredArg = lowerToValue(bindings, pair.getOne());
-                var funArgType = pair.getTwo();
-                return boxArgValue(loweredArg, funArgType);
+        var args = IntStream.range(0, Math.min(appliedArgs.size(), funType.typeArguments().size()))
+            .mapToObj(index -> {
+                var loweredArg = lowerToValue(bindings, appliedArgs.get(index));
+                return boxArgValue(loweredArg, funType.typeArguments().get(index));
             });
 
-        var loweredApply = new Apply(applyType, loweredFn, args);
+        var loweredApply = new Apply(applyType, loweredFn, args.toList());
 
         return unboxReturnValue(bindings, loweredApply, applyType, returnType);
     }
@@ -240,20 +240,20 @@ public class Lower {
 
         var condition = lowerToValue(bindings, ifExpr.condition());
 
-        MutableList<LocalBinding> consequentBindings = Lists.mutable.empty();
+        List<LocalBinding> consequentBindings = new ArrayList<>();
         var consequent = lowerExpr(ifExpr.consequent(), consequentBindings);
 
-        MutableList<LocalBinding> alternativeBindings = Lists.mutable.empty();
+        List<LocalBinding> alternativeBindings = new ArrayList<>();
         var alternative = lowerExpr(ifExpr.alternative(), alternativeBindings);
 
         return new If(
             type, condition,
             consequentBindings.isEmpty()
                 ? consequent
-                : new Block(consequent.type(), consequentBindings.toImmutableList(), consequent),
+                : new Block(consequent.type(), consequentBindings, consequent),
             alternativeBindings.isEmpty()
                 ? alternative
-                : new Block(alternative.type(), alternativeBindings.toImmutableList(), alternative));
+                : new Block(alternative.type(), alternativeBindings, alternative));
     }
 
     Expression lowerSelect(SelectNode<Attributes> select) {
@@ -262,15 +262,16 @@ public class Lower {
         // receiver.selection ==> (..restArgs) => selection(receiver, ..restArgs)
         var type = (Type) select.meta().meta().sort();
         var adaptedFunType = (TypeApply) getUnderlyingType(type);
-        var adaptedReturnType = adaptedFunType.typeArguments().getLast();
+        var adaptedReturnType = adaptedFunType.typeArguments().get(adaptedFunType.typeArguments().size() - 1);
 
         // The params of the lambda are new synthetic names
         var params = adaptedFunType.typeArguments()
-            .take(adaptedFunType.typeArguments().size() - 1)
-            .collect((paramTy) -> new Param(nameSupply.newSyntheticName(), paramTy));
+            .subList(0, adaptedFunType.typeArguments().size() - 1)
+            .stream().map((paramTy) -> new Param(nameSupply.newSyntheticName(), paramTy))
+            .toList();
 
         // The body of the lambda is an application of the selection to the lowered receiver and any residual args
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        List<LocalBinding> bindings = new ArrayList<>();
         var selection = lowerReference(select.selection());
 
         var receiver = lowerToValue(bindings, select.receiver());
@@ -278,55 +279,55 @@ public class Lower {
         // The underlying (potentially polymorphic) function type
         var selectionType = (Type) select.selection().meta().meta().sort();
         var underlyingFunType = (TypeApply) getUnderlyingType(selectionType);
-        var underlyingReturnType = underlyingFunType.typeArguments().getLast();
+        var underlyingReturnType = underlyingFunType.typeArguments().get(underlyingFunType.typeArguments().size() - 1);
 
         // Assemble the full argument list of the underlying function
-        var residualArgs = params.collect(param -> new Reference(param.name(), param.type()));
-        var appliedArgs = Lists.immutable.of(receiver).newWithAll(residualArgs);
+        var residualArgs = params.stream().map(param -> new Reference(param.name(), param.type()));
+        var appliedArgs = new ArrayList<Value>();
+        appliedArgs.add(receiver);
+        appliedArgs.addAll(residualArgs.toList());
 
-        var args = appliedArgs
-            .zip(underlyingFunType.typeArguments().take(underlyingFunType.typeArguments().size() - 1))
-            .collect(pair -> {
-                var loweredArg = pair.getOne();
-                var underlyingArgType = pair.getTwo();
-                return boxArgValue(loweredArg, underlyingArgType);
+        var args = IntStream.range(0, Math.min(appliedArgs.size(), underlyingFunType.typeArguments().size()))
+            .mapToObj(index -> {
+                var loweredArg = appliedArgs.get(index);
+                return boxArgValue(loweredArg, underlyingFunType.typeArguments().get(index));
             });
 
-        var loweredApply = new Apply(adaptedReturnType, selection, args);
+        var loweredApply = new Apply(adaptedReturnType, selection, args.toList());
 
         var tailExpr = unboxReturnValue(bindings, loweredApply, adaptedReturnType, underlyingReturnType);
 
-        var body = bindings.isEmpty() ? tailExpr : new Block(adaptedReturnType, bindings.toImmutableList(), tailExpr);
+        var body = bindings.isEmpty() ? tailExpr : new Block(adaptedReturnType, bindings, tailExpr);
 
         return new Lambda(type, params, body);
     }
 
     Expression lowerLambda(LambdaNode<Attributes> lambda) {
         var type = (Type) lambda.meta().meta().sort();
-        var params = lambda.params().collect(this::lowerParam);
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        var params = lambda.params().stream().map(this::lowerParam);
+        List<LocalBinding> bindings = new ArrayList<>();
         var body = lowerExpr(lambda.body(), bindings);
         return new Lambda(
-            type, params,
-            bindings.isEmpty() ? body : new Block(body.type(), bindings.toImmutableList(), body));
+            type, params.toList(),
+            bindings.isEmpty() ? body : new Block(body.type(), bindings, body));
     }
 
     Expression lowerMatch(MatchNode<Attributes> match, List<LocalBinding> bindings) {
         var type = (Type) match.meta().meta().sort();
         var scrutinee = lowerToValue(bindings, match.scrutinee());
-        var cases = match.cases().collect(this::lowerCase);
-        return new Match(type, scrutinee, cases);
+        var cases = match.cases().stream().map(this::lowerCase);
+        return new Match(type, scrutinee, cases.toList());
     }
 
     Case lowerCase(CaseNode<Attributes> cse) {
         var pattern = lowerPattern(cse.pattern());
-        MutableList<LocalBinding> bindings = Lists.mutable.empty();
+        List<LocalBinding> bindings = new ArrayList<>();
         var consequent = lowerExpr(cse.consequent(), bindings);
         return new Case(
             pattern,
             bindings.isEmpty()
                 ? consequent
-                : new Block(consequent.type(), bindings.toImmutableList(), consequent));
+                : new Block(consequent.type(), bindings, consequent));
     }
 
     Pattern lowerPattern(PatternNode<Attributes> pattern) {
@@ -345,8 +346,8 @@ public class Lower {
         } else if (pattern instanceof ConstructorPatternNode<Attributes> constr) {
             var name = (ConstructorName) constr.meta().meta().name();
             var type = (Type) constr.meta().meta().sort();
-            var fields = constr.fields().collect(field -> lowerFieldPattern(name, field));
-            return new ConstructorPattern(name, type, fields);
+            var fields = constr.fields().stream().map(field -> lowerFieldPattern(name, field));
+            return new ConstructorPattern(name, type, fields.toList());
         }
 
         return null;

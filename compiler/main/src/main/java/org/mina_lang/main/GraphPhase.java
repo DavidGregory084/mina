@@ -4,8 +4,6 @@
  */
 package org.mina_lang.main;
 
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.factory.Sets;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
@@ -16,9 +14,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,8 +40,8 @@ public non-sealed abstract class GraphPhase<A, B>
         this.inputNodes = namespaceNodes;
         this.scopedDiagnostics = scopedDiagnostics;
         this.transformedNodes = new ConcurrentHashMap<>();
-        this.rootNodes = Sets.mutable.empty();
-        this.namespaceDependencies = Maps.mutable.empty();
+        this.rootNodes = new HashSet<>();
+        this.namespaceDependencies = new HashMap<>();
         namespaceGraph.vertexSet().forEach(namespace -> {
             var inDegree = namespaceGraph.inDegreeOf(namespace);
             if (inDegree > 0) {

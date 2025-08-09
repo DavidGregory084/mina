@@ -5,10 +5,11 @@
 package org.mina_lang.common.types;
 
 import net.jqwik.api.*;
-import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
+
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -38,29 +39,29 @@ public class TypePrinterTest {
         // TODO: Disambiguate names properly by accepting import environment in
         // TypePrinter constructor?
         var listDoc = new TypeConstructor(
-                new QualifiedName(new NamespaceName(Lists.immutable.of("Mina", "Test"), "Printer"), "List"),
-                new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE)).accept(printer);
+                new QualifiedName(new NamespaceName(List.of("Mina", "Test"), "Printer"), "List"),
+                new HigherKind(List.of(TypeKind.INSTANCE), TypeKind.INSTANCE)).accept(printer);
         assertThat(listDoc.render(80), is(equalTo("List")));
     }
 
     @Test
     void testTypeApplyPrinting() {
         var listTy = new TypeConstructor(
-                new QualifiedName(new NamespaceName(Lists.immutable.of("Mina", "Test"), "Printer"), "List"),
-                new HigherKind(Lists.immutable.of(TypeKind.INSTANCE), TypeKind.INSTANCE));
+                new QualifiedName(new NamespaceName(List.of("Mina", "Test"), "Printer"), "List"),
+                new HigherKind(List.of(TypeKind.INSTANCE), TypeKind.INSTANCE));
 
-        var listIntDoc = new TypeApply(listTy, Lists.immutable.of(Type.INT), TypeKind.INSTANCE).accept(printer);
+        var listIntDoc = new TypeApply(listTy, List.of(Type.INT), TypeKind.INSTANCE).accept(printer);
 
         assertThat(listIntDoc.render(80), is(equalTo("List[Int]")));
         assertThat(listIntDoc.render(4), is(equalTo(String.format("List[%n  Int%n]"))));
 
         var eitherTy = new TypeConstructor(
-                new QualifiedName(new NamespaceName(Lists.immutable.of("Mina", "Test"), "Printer"), "Either"),
-                new HigherKind(Lists.immutable.of(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE));
+                new QualifiedName(new NamespaceName(List.of("Mina", "Test"), "Printer"), "Either"),
+                new HigherKind(List.of(TypeKind.INSTANCE, TypeKind.INSTANCE), TypeKind.INSTANCE));
 
         var eitherStringIntDoc = new TypeApply(
                 eitherTy,
-                Lists.immutable.of(Type.STRING, Type.INT),
+                List.of(Type.STRING, Type.INT),
                 TypeKind.INSTANCE).accept(printer);
 
         assertThat(eitherStringIntDoc.render(80), is(equalTo("Either[String, Int]")));
@@ -69,21 +70,21 @@ public class TypePrinterTest {
 
     @Test
     void testFunctionTypePrinting() {
-        var nullaryFunc = Type.function(Lists.immutable.empty(), Type.INT);
+        var nullaryFunc = Type.function(List.of(), Type.INT);
         assertThat(nullaryFunc.accept(printer).render(80), is(equalTo("() -> Int")));
         assertThat(nullaryFunc.accept(printer).render(4), is(equalTo(String.format("() ->%n  Int"))));
 
-        var unaryFunc = Type.function(Lists.immutable.of(Type.INT), Type.INT);
+        var unaryFunc = Type.function(List.of(Type.INT), Type.INT);
         assertThat(unaryFunc.accept(printer).render(80), is(equalTo("Int -> Int")));
         assertThat(unaryFunc.accept(printer).render(4), is(equalTo(String.format("Int ->%n  Int"))));
 
         var nestedUnaryFunc = Type.function(
-                Lists.immutable.of(Type.function(Lists.immutable.of(Type.INT), Type.INT)), Type.INT);
+                List.of(Type.function(List.of(Type.INT), Type.INT)), Type.INT);
         assertThat(nestedUnaryFunc.accept(printer).render(80), is(equalTo("(Int -> Int) -> Int")));
         assertThat(nestedUnaryFunc.accept(printer).render(4),
                 is(equalTo(String.format("(%n  Int ->%n    Int%n) ->%n  Int"))));
 
-        var binaryFunc = Type.function(Lists.immutable.of(Type.INT, Type.INT), Type.INT);
+        var binaryFunc = Type.function(List.of(Type.INT, Type.INT), Type.INT);
         assertThat(binaryFunc.accept(printer).render(80), is(equalTo("(Int, Int) -> Int")));
         assertThat(binaryFunc.accept(printer).render(4), is(equalTo(String.format("(%n  Int,%n  Int%n) ->%n  Int"))));
     }
@@ -94,15 +95,15 @@ public class TypePrinterTest {
         var forAllVarB = new ForAllVar("B", TypeKind.INSTANCE);
         var existsVarC = new ExistsVar("?C", TypeKind.INSTANCE);
 
-        var unaryQuant = new QuantifiedType(Lists.immutable.of(forAllVarA), forAllVarA, TypeKind.INSTANCE);
+        var unaryQuant = new QuantifiedType(List.of(forAllVarA), forAllVarA, TypeKind.INSTANCE);
         assertThat(unaryQuant.accept(printer).render(80), is(equalTo("[A] { A }")));
         assertThat(unaryQuant.accept(printer).render(4), is(equalTo(String.format("[A] {%n  A%n}"))));
 
-        var binaryQuant = new QuantifiedType(Lists.immutable.of(forAllVarA, forAllVarB), forAllVarA, TypeKind.INSTANCE);
+        var binaryQuant = new QuantifiedType(List.of(forAllVarA, forAllVarB), forAllVarA, TypeKind.INSTANCE);
         assertThat(binaryQuant.accept(printer).render(80), is(equalTo("[A, B] { A }")));
         assertThat(binaryQuant.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  B%n] {%n  A%n}"))));
 
-        var mixedQuant = new QuantifiedType(Lists.immutable.of(forAllVarA, existsVarC), forAllVarA, TypeKind.INSTANCE);
+        var mixedQuant = new QuantifiedType(List.of(forAllVarA, existsVarC), forAllVarA, TypeKind.INSTANCE);
         assertThat(mixedQuant.accept(printer).render(80), is(equalTo("[A, ?C] { A }")));
         assertThat(mixedQuant.accept(printer).render(4), is(equalTo(String.format("[%n  A,%n  ?C%n] {%n  A%n}"))));
     }
@@ -129,6 +130,6 @@ public class TypePrinterTest {
 
     @Provide
     Arbitrary<BuiltInType> builtIns() {
-        return Arbitraries.of(Type.builtIns.toSet());
+        return Arbitraries.of(Type.builtIns.values());
     }
 }

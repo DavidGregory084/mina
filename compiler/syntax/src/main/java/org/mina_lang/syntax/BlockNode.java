@@ -4,12 +4,12 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
+import java.util.List;
 import java.util.Optional;
 
-public record BlockNode<A> (Meta<A> meta, ImmutableList<LetNode<A>> declarations, Optional<ExprNode<A>> result)
+public record BlockNode<A> (Meta<A> meta, List<LetNode<A>> declarations, Optional<ExprNode<A>> result)
         implements ExprNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -24,7 +24,7 @@ public record BlockNode<A> (Meta<A> meta, ImmutableList<LetNode<A>> declarations
 
         var result = visitor.visitBlock(
                 meta(),
-                declarations().collect(let -> let.accept(visitor)),
+                declarations().stream().map(let -> let.accept(visitor)).toList(),
                 result().map(visitor::visitExpr));
 
         visitor.postVisitBlock(this);
@@ -38,7 +38,7 @@ public record BlockNode<A> (Meta<A> meta, ImmutableList<LetNode<A>> declarations
 
         var result = visitor.visitBlock(
                 meta(),
-                declarations().collect(let -> let.accept(visitor)),
+                declarations().stream().map(let -> let.accept(visitor)).toList(),
                 result().map(visitor::visitExpr));
 
         visitor.postVisitBlock(result);

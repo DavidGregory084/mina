@@ -8,22 +8,21 @@ import com.opencastsoftware.yvette.LabelledRange;
 import com.opencastsoftware.yvette.Severity;
 import com.opencastsoftware.yvette.SourceCode;
 import com.opencastsoftware.yvette.URISourceCode;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Location;
 
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 public class Diagnostic extends com.opencastsoftware.yvette.Diagnostic {
     private final Location location;
     private final Severity severity;
     private final String message;
-    private final ImmutableList<DiagnosticRelatedInformation> relatedInformation;
+    private final List<DiagnosticRelatedInformation> relatedInformation;
 
     public Diagnostic(Location location, Severity severity, String message,
-        ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+        List<DiagnosticRelatedInformation> relatedInformation) {
             super(message);
             this.location = location;
             this.severity = severity;
@@ -32,7 +31,7 @@ public class Diagnostic extends com.opencastsoftware.yvette.Diagnostic {
     }
 
     public Diagnostic(Location location, Severity severity, String message, Throwable cause,
-        ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+        List<DiagnosticRelatedInformation> relatedInformation) {
             super(message, cause);
             this.location = location;
             this.severity = severity;
@@ -41,11 +40,11 @@ public class Diagnostic extends com.opencastsoftware.yvette.Diagnostic {
     }
 
     public Diagnostic(Location location, Severity severity, String message) {
-        this(location, severity, message, Lists.immutable.empty());
+        this(location, severity, message, List.of());
     }
 
     public Diagnostic(Location location, Severity severity, String message, Throwable cause) {
-        this(location, severity, message, cause, Lists.immutable.empty());
+        this(location, severity, message, cause, List.of());
     }
 
     public Location location() {
@@ -60,7 +59,7 @@ public class Diagnostic extends com.opencastsoftware.yvette.Diagnostic {
         return message;
     }
 
-    public ImmutableList<DiagnosticRelatedInformation> relatedInformation() {
+    public List<DiagnosticRelatedInformation> relatedInformation() {
         return relatedInformation;
     }
 

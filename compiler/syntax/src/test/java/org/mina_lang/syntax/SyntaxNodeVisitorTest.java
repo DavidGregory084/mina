@@ -5,12 +5,12 @@
 package org.mina_lang.syntax;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.impl.factory.Lists;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mina_lang.syntax.TracingSyntaxNodeVisitor.Entry;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -46,15 +46,15 @@ public class SyntaxNodeVisitorTest {
                 new Range(0, 0, 4, 0),
                 nsIdNode(
                         new Range(0, 7, 0, 24),
-                        Lists.immutable.of("Mina", "Test"), "Visitor"),
-                Lists.immutable.of(
+                        List.of("Mina", "Test"), "Visitor"),
+                List.of(
                         importSymbolsNode(
                                 new Range(1, 4, 1, 29),
                                 nsIdNode(
                                         new Range(1, 11, 1, 27),
-                                        Lists.immutable.of("Mina", "Test"), "Parser"),
-                                Lists.immutable.of(importeeNode(new Range(1, 28, 1, 29), "y")))),
-                Lists.immutable.of(
+                                        List.of("Mina", "Test"), "Parser"),
+                                List.of(importeeNode(new Range(1, 28, 1, 29), "y")))),
+                List.of(
                         letNode(
                                 new Range(2, 4, 2, 13),
                                 "x",
@@ -82,7 +82,7 @@ public class SyntaxNodeVisitorTest {
         /* [A] { A } */
         var quant = quantifiedTypeNode(
                 new Range(0, 0, 0, 6),
-                Lists.immutable.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
+                List.of(forAllVarNode(new Range(0, 0, 0, 1), "A")),
                 typeRefNode(new Range(0, 5, 0, 6), "A"));
 
         var expected = contains(
@@ -100,7 +100,7 @@ public class SyntaxNodeVisitorTest {
         /* [?A] { ?A } */
         var quant = quantifiedTypeNode(
                 new Range(0, 0, 0, 8),
-                Lists.immutable.of(existsVarNode(new Range(0, 0, 0, 2), "A")),
+                List.of(existsVarNode(new Range(0, 0, 0, 2), "A")),
                 typeRefNode(new Range(0, 6, 0, 8), "?A"));
 
         var expected = contains(
@@ -118,7 +118,7 @@ public class SyntaxNodeVisitorTest {
         /* A -> A */
         var funTy = funTypeNode(
                 new Range(0, 0, 0, 6),
-                Lists.immutable.of(typeRefNode(new Range(0, 0, 0, 1), "A")),
+                List.of(typeRefNode(new Range(0, 0, 0, 1), "A")),
                 typeRefNode(new Range(0, 5, 0, 6), "A"));
 
         var expected = contains(
@@ -138,8 +138,7 @@ public class SyntaxNodeVisitorTest {
         var tyApp = typeApplyNode(
                 new Range(0, 0, 0, 9),
                 typeRefNode(new Range(0, 0, 0, 4), "List"),
-                Lists.immutable
-                        .of(typeRefNode(new Range(0, 5, 0, 8), "Int")));
+                List.of(typeRefNode(new Range(0, 5, 0, 8), "Int")));
 
         var expected = contains(
                 // List
@@ -182,8 +181,8 @@ public class SyntaxNodeVisitorTest {
         var letFn = letFnNode(
                 new Range(0, 0, 0, 22),
                 "id",
-                Lists.immutable.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
-                Lists.immutable.of(paramNode(new Range(0, 10, 0, 14), "a",
+                List.of(forAllVarNode(new Range(0, 7, 0, 8), "A")),
+                List.of(paramNode(new Range(0, 10, 0, 14), "a",
                         typeRefNode(new Range(0, 13, 0, 14), "A"))),
                 typeRefNode(new Range(0, 17, 0, 18), "A"),
                 refNode(new Range(0, 21, 0, 22), "a"));
@@ -219,26 +218,26 @@ public class SyntaxNodeVisitorTest {
         var data = dataNode(
                 new Range(0, 0, 3, 1),
                 "Expr",
-                Lists.immutable.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
-                Lists.immutable.of(
+                List.of(forAllVarNode(new Range(0, 10, 0, 11), "A")),
+                List.of(
                         // Int
                         constructorNode(new Range(1, 4, 1, 31), "Int",
                                 // i: Int
-                                Lists.immutable.of(constructorParamNode(new Range(1, 13, 1, 19), "i",
+                                List.of(constructorParamNode(new Range(1, 13, 1, 19), "i",
                                         typeRefNode(new Range(1, 16, 1, 19), "Int"))),
                                 // : Expr[Int]
                                 Optional.of(typeApplyNode(new Range(1, 22, 1, 31),
-                                        typeRefNode(new Range(1, 22, 1, 26), "Expr"), Lists.immutable
-                                                .of(typeRefNode(new Range(1, 27, 1, 30), "Int"))))),
+                                        typeRefNode(new Range(1, 22, 1, 26), "Expr"),
+                                    List.of(typeRefNode(new Range(1, 27, 1, 30), "Int"))))),
                         // Bool
                         constructorNode(new Range(2, 4, 2, 40), "Bool",
                                 // b: Boolean
-                                Lists.immutable.of(constructorParamNode(new Range(2, 14, 2, 24), "b",
+                                List.of(constructorParamNode(new Range(2, 14, 2, 24), "b",
                                         typeRefNode(new Range(2, 17, 2, 24), "Boolean"))),
                                 // : Expr[Boolean]
                                 Optional.of(typeApplyNode(new Range(2, 27, 2, 40),
-                                        typeRefNode(new Range(2, 27, 2, 31), "Expr"), Lists.immutable
-                                                .of(typeRefNode(new Range(2, 32, 2, 39),
+                                        typeRefNode(new Range(2, 27, 2, 31), "Expr"),
+                                    List.of(typeRefNode(new Range(2, 32, 2, 39),
                                                         "Boolean")))))));
 
         var expected = contains(
@@ -303,7 +302,7 @@ public class SyntaxNodeVisitorTest {
         var apply = applyNode(
                 new Range(0, 0, 0, 4),
                 refNode(new Range(0, 0, 0, 1), "f"),
-                Lists.immutable.of(refNode(new Range(0, 2, 0, 3), "x")));
+                List.of(refNode(new Range(0, 2, 0, 3), "x")));
 
         var expected = contains(
                 new Entry(QualifiedIdNode.class, new Range(0, 0, 0, 1)),
@@ -322,7 +321,7 @@ public class SyntaxNodeVisitorTest {
         var match = matchNode(
                 new Range(0, 0, 0, 28),
                 refNode(new Range(0, 6, 0, 7), "x"),
-                Lists.immutable.of(
+                List.of(
                         caseNode(
                                 new Range(0, 15, 0, 26),
                                 idPatternNode(new Range(0, 20, 0, 21), "y"),
@@ -349,7 +348,7 @@ public class SyntaxNodeVisitorTest {
                 constructorPatternNode(
                         new Range(0, 5, 0, 33),
                         idNode(new Range(0, 5, 0, 9), "Cons"),
-                        Lists.immutable.of(
+                        List.of(
                                 fieldPatternNode(
                                     new Range(0, 12, 0, 16), "head",
                                     idPatternNode(new Range(0, 12, 0, 16), "head")),
@@ -357,7 +356,7 @@ public class SyntaxNodeVisitorTest {
                                         constructorPatternNode(
                                                 new Range(0, 24, 0, 30),
                                                 idNode(new Range(0, 24, 0, 27), "Nil"),
-                                                Lists.immutable.empty())))),
+                                                List.of())))),
                 refNode(new Range(0, 37, 0, 41), "head"));
 
         var expected = contains(
@@ -434,7 +433,7 @@ public class SyntaxNodeVisitorTest {
          */
         var block = blockNode(
                 new Range(0, 0, 4, 1),
-                Lists.immutable.of(
+                List.of(
                         letNode(new Range(1, 4, 1, 15), "x", stringNode(new Range(1, 12, 1, 15), "a")),
                         letNode(new Range(2, 4, 2, 15), "y", charNode(new Range(2, 12, 2, 15), 'a'))),
                 doubleNode(new Range(3, 4, 3, 7), 2.0));
@@ -456,7 +455,7 @@ public class SyntaxNodeVisitorTest {
         /* () -> 1L */
         var lambda = lambdaNode(
                 new Range(0, 0, 0, 8),
-                Lists.immutable.empty(),
+                List.of(),
                 longNode(new Range(0, 6, 0, 8), 1L));
 
         var expected = contains(

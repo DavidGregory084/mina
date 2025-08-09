@@ -5,10 +5,10 @@
 package org.mina_lang.common.diagnostics;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Location;
 
 import java.net.URI;
+import java.util.List;
 
 public interface LocalDiagnosticReporter extends DiagnosticReporter {
 
@@ -18,7 +18,7 @@ public interface LocalDiagnosticReporter extends DiagnosticReporter {
         reportError(new Location(getSourceUri(), range), message);
     }
 
-    default void reportError(Range range, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+    default void reportError(Range range, String message, List<DiagnosticRelatedInformation> relatedInformation) {
         reportError(new Location(getSourceUri(), range), message, relatedInformation);
     }
 
@@ -26,7 +26,7 @@ public interface LocalDiagnosticReporter extends DiagnosticReporter {
         reportWarning(new Location(getSourceUri(), range), message);
     }
 
-    default void reportWarning(Range range, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+    default void reportWarning(Range range, String message, List<DiagnosticRelatedInformation> relatedInformation) {
         reportWarning(new Location(getSourceUri(), range), message, relatedInformation);
     }
 
@@ -34,7 +34,7 @@ public interface LocalDiagnosticReporter extends DiagnosticReporter {
         reportInfo(new Location(getSourceUri(), range), message);
     }
 
-    default void reportInfo(Range range, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+    default void reportInfo(Range range, String message, List<DiagnosticRelatedInformation> relatedInformation) {
         reportInfo(new Location(getSourceUri(), range), message, relatedInformation);
     }
 
@@ -42,7 +42,7 @@ public interface LocalDiagnosticReporter extends DiagnosticReporter {
         reportInfo(new Location(getSourceUri(), range), message);
     }
 
-    default void reportHint(Range range, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+    default void reportHint(Range range, String message, List<DiagnosticRelatedInformation> relatedInformation) {
         reportInfo(new Location(getSourceUri(), range), message, relatedInformation);
     }
 }

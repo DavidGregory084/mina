@@ -4,16 +4,16 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.LetName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
 
+import java.util.List;
 import java.util.Optional;
 
-public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<A>> typeParams,
-        ImmutableList<ParamNode<A>> valueParams, Optional<TypeNode<A>> returnType, ExprNode<A> expr)
+public record LetFnNode<A> (Meta<A> meta, String name, List<TypeVarNode<A>> typeParams,
+        List<ParamNode<A>> valueParams, Optional<TypeNode<A>> returnType, ExprNode<A> expr)
         implements DeclarationNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -31,8 +31,8 @@ public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode
         var result = visitor.visitLetFn(
                 meta(),
                 name(),
-                typeParams().collect(visitor::visitTypeVar),
-                valueParams().collect(param -> param.accept(visitor)),
+                typeParams().stream().map(visitor::visitTypeVar).toList(),
+                valueParams().stream().map(param -> param.accept(visitor)).toList(),
                 returnType().map(visitor::visitType),
                 visitor.visitExpr(expr()));
 
@@ -48,8 +48,8 @@ public record LetFnNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode
         var result = visitor.visitLetFn(
                 meta(),
                 name(),
-                typeParams().collect(visitor::visitTypeVar),
-                valueParams().collect(param -> param.accept(visitor)),
+                typeParams().stream().map(visitor::visitTypeVar).toList(),
+                valueParams().stream().map(param -> param.accept(visitor)).toList(),
                 returnType().map(visitor::visitType),
                 visitor.visitExpr(expr()));
 

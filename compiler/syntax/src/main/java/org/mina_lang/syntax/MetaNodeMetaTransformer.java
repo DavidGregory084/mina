@@ -4,11 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
@@ -17,8 +17,8 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
 
     // Namespaces
     @Override
-    default NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-            ImmutableList<ImmutableList<DeclarationNode<B>>> declarationGroups) {
+    default NamespaceNode<B> visitNamespace(Meta<A> meta, NamespaceIdNode id, List<ImportNode> imports,
+            List<List<DeclarationNode<B>>> declarationGroups) {
         return new NamespaceNode<>(updateMeta(meta), id, imports, declarationGroups);
     }
 
@@ -30,8 +30,8 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
     }
 
     @Override
-    default LetFnNode<B> visitLetFn(Meta<A> meta, String name, ImmutableList<TypeVarNode<B>> typeParams,
-            ImmutableList<ParamNode<B>> valueParams, Optional<TypeNode<B>> returnType, ExprNode<B> expr) {
+    default LetFnNode<B> visitLetFn(Meta<A> meta, String name, List<TypeVarNode<B>> typeParams,
+            List<ParamNode<B>> valueParams, Optional<TypeNode<B>> returnType, ExprNode<B> expr) {
         return letFnNode(updateMeta(meta), name, typeParams, valueParams, returnType, expr);
     }
 
@@ -42,7 +42,7 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
 
     // Expressions
     @Override
-    default BlockNode<B> visitBlock(Meta<A> meta, ImmutableList<LetNode<B>> declarations, Optional<ExprNode<B>> result) {
+    default BlockNode<B> visitBlock(Meta<A> meta, List<LetNode<B>> declarations, Optional<ExprNode<B>> result) {
         return blockNode(updateMeta(meta), declarations, result);
     }
 
@@ -52,17 +52,17 @@ public interface MetaNodeMetaTransformer<A, B> extends MetaNodeTransformer<A, B>
     }
 
     @Override
-    default LambdaNode<B> visitLambda(Meta<A> meta, ImmutableList<ParamNode<B>> params, ExprNode<B> body) {
+    default LambdaNode<B> visitLambda(Meta<A> meta, List<ParamNode<B>> params, ExprNode<B> body) {
         return lambdaNode(updateMeta(meta), params, body);
     }
 
     @Override
-    default MatchNode<B> visitMatch(Meta<A> meta, ExprNode<B> scrutinee, ImmutableList<CaseNode<B>> cases) {
+    default MatchNode<B> visitMatch(Meta<A> meta, ExprNode<B> scrutinee, List<CaseNode<B>> cases) {
         return matchNode(updateMeta(meta), scrutinee, cases);
     }
 
     @Override
-    default ApplyNode<B> visitApply(Meta<A> meta, ExprNode<B> expr, ImmutableList<ExprNode<B>> args) {
+    default ApplyNode<B> visitApply(Meta<A> meta, ExprNode<B> expr, List<ExprNode<B>> args) {
         return applyNode(updateMeta(meta), expr, args);
     }
 

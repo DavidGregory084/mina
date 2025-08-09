@@ -8,6 +8,7 @@ bsp4j = "2.1.1"
 directories = "26"
 eclipseCollections = "13.0.0"
 equalsVerifier = "4.0.7"
+fastutil = "8.5.16"
 gradleBsp = "0.0.0-110-fa4ab1a-SNAPSHOT"
 gradleBuildInfo = "0.3.1"
 gradleNode = "7.1.0"
@@ -49,6 +50,7 @@ directories = { module = "dev.dirs:directories", version.ref = "directories" }
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipseCollections" }
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipseCollections" }
 equalsVerifier = { module = "nl.jqno.equalsverifier:equalsverifier", version.ref = "equalsVerifier" }
+fastutilCore = { module = "it.unimi.dsi:fastutil-core", version.ref = "fastutil" }
 gitVersioningPlugin = { module = "me.qoomon:gradle-git-versioning-plugin", version.ref = "gradleGitVersioning" }
 gradleBspPlugin = { module = "com.opencastsoftware.gradle:gradle-bsp-plugin", version.ref = "gradleBsp" }
 gradleVersionsPlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradleVersions" }

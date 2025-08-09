@@ -4,9 +4,9 @@
  */
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.list.ImmutableList;
+import java.util.List;
 
-public record TypeApply(Type type, ImmutableList<Type> typeArguments, Kind kind) implements MonoType {
+public record TypeApply(Type type, List<Type> typeArguments, Kind kind) implements MonoType {
 
     @Override
     public void accept(TypeVisitor visitor) {

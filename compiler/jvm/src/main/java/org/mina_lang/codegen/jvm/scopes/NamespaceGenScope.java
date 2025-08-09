@@ -4,9 +4,6 @@
  */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.codegen.jvm.Asm;
 import org.mina_lang.codegen.jvm.LocalVar;
 import org.mina_lang.codegen.jvm.Types;
@@ -21,6 +18,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -32,11 +31,11 @@ public record NamespaceGenScope(
         GeneratorAdapter initWriter,
         Label startLabel,
         Label endLabel,
-        MutableMap<String, Meta<Attributes>> values,
-        MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
-        ImmutableMap<Named, LocalVar> methodParams,
-        MutableMap<Named, LocalVar> localVars,
+        Map<String, Meta<Attributes>> values,
+        Map<String, Meta<Attributes>> types,
+        Map<ConstructorName, Map<String, Meta<Attributes>>> fields,
+        Map<Named, LocalVar> methodParams,
+        Map<Named, LocalVar> localVars,
         AtomicInteger nextLambdaId)
         implements LambdaLiftingScope {
 
@@ -54,12 +53,12 @@ public record NamespaceGenScope(
                 initWriter,
                 startLabel,
                 endLabel,
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
                 // Static initializer takes no params
-                Maps.immutable.empty(),
-                Maps.mutable.empty(),
+                new HashMap<>(),
+                new HashMap<>(),
                 new AtomicInteger());
     }
 

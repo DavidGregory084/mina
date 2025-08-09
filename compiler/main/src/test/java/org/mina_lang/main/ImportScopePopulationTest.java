@@ -5,8 +5,6 @@
 package org.mina_lang.main;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -23,6 +21,7 @@ import org.mina_lang.renamer.scopes.ImportedNamesScope;
 import org.mina_lang.syntax.NamespaceNode;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,7 +68,7 @@ public class ImportScopePopulationTest {
         var firstDiagnostic = diagnostics.get(0);
         assertThat(firstDiagnostic.message(), is(equalTo(message)));
         assertThat(firstDiagnostic.location().range(), is(equalTo(range)));
-        assertThat(firstDiagnostic.relatedInformation().toList(), is(empty()));
+        assertThat(firstDiagnostic.relatedInformation(), is(empty()));
     }
 
     void assertDiagnosticWithRelatedInfo(List<Diagnostic> diagnostics, Range diagnosticRange, String diagnosticMessage,
@@ -80,7 +79,7 @@ public class ImportScopePopulationTest {
         assertThat(firstDiagnostic.message(), is(equalTo(diagnosticMessage)));
         assertThat(firstDiagnostic.location().range(), is(equalTo(diagnosticRange)));
 
-        assertThat(firstDiagnostic.relatedInformation().toList(), is(not(empty())));
+        assertThat(firstDiagnostic.relatedInformation(), is(not(empty())));
 
         var firstRelatedInfo = firstDiagnostic.relatedInformation().get(0);
         assertThat(firstRelatedInfo.message(), startsWith(relatedInfoMessage));
@@ -89,14 +88,14 @@ public class ImportScopePopulationTest {
 
     @Test
     void failsWhenUnableToFindQualifiedImportNamespace() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
         var importedNsRange = new Range(1, 2, 1, 23);
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(importedNsRange, Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(importedNsRange, List.of("Mina", "Test"), "Other");
 
         /*-
          * namespace Mina/Test/Renamer {
@@ -105,12 +104,12 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importQualifiedNode(Range.EMPTY, importedIdNode)),
-            Lists.immutable.empty());
+            List.of(importQualifiedNode(Range.EMPTY, importedIdNode)),
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.empty(),
+            new HashMap<>(),
+            new HashMap<>(),
             scopedCollector);
 
         assertThat(populator.populateImportScope(namespaceNode, new ImportedNamesScope()), is(Optional.empty()));
@@ -123,20 +122,20 @@ public class ImportScopePopulationTest {
 
     @Test
     void failsWhenUnableToFindImportedSymbol() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 28);
 
         var importedScope = new TopLevelScope<Attributes>(
-            Maps.mutable.empty(),
-            Maps.mutable.empty(),
-            Maps.mutable.empty()
+            new HashMap<>(),
+            new HashMap<>(),
+            new HashMap<>()
         );
 
         /*-
@@ -146,14 +145,14 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(
                     Range.EMPTY, importedIdNode,
                     importeeNode(importedSymbolRange, "Void"))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
+            new HashMap<>(),
             Map.of(importedNsName, importedScope),
             scopedCollector);
 
@@ -167,34 +166,34 @@ public class ImportScopePopulationTest {
 
     @Test
     void failsWhenDuplicateValueImported() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 28);
 
-        var duplicateIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Duplicate");
-        var duplicateNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Duplicate");
+        var duplicateIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Duplicate");
+        var duplicateNsName = new NamespaceName(List.of("Mina", "Test"), "Duplicate");
         var duplicateSymbolRange = new Range(2, 29, 2, 33);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.of("one", Meta.of(
+            Map.of("one", Meta.of(
                 new LetName(new QualifiedName(duplicateNsName, "one")),
                 new BuiltInType("Int", TypeKind.INSTANCE))),
-            Maps.mutable.empty(),
-            Maps.mutable.empty()
+            new HashMap<>(),
+            new HashMap<>()
         );
 
         var duplicateScope = new TopLevelScope<>(
-            Maps.mutable.of("one", Meta.of(
+            Map.of("one", Meta.of(
                 new LetName(new QualifiedName(duplicateNsName, "one")),
                 new BuiltInType("Int", TypeKind.INSTANCE))),
-            Maps.mutable.empty(),
-            Maps.mutable.empty()
+            new HashMap<>(),
+            new HashMap<>()
         );
 
         /*-
@@ -205,14 +204,14 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "one")),
                 importSymbolsNode(Range.EMPTY, duplicateIdNode, importeeNode(duplicateSymbolRange, "one"))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(
+            new HashMap<>(),
+            Map.of(
                 importedNsName, importedScope,
                 duplicateNsName, duplicateScope),
             scopedCollector);
@@ -231,34 +230,34 @@ public class ImportScopePopulationTest {
 
     @Test
     void failsWhenDuplicateTypeImported() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 28);
 
-        var duplicateIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Duplicate");
-        var duplicateNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Duplicate");
+        var duplicateIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Duplicate");
+        var duplicateNsName = new NamespaceName(List.of("Mina", "Test"), "Duplicate");
         var duplicateSymbolRange = new Range(2, 29, 2, 33);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.empty(),
-            Maps.mutable.of("Void", Meta.of(
+            new HashMap<>(),
+            Map.of("Void", Meta.of(
                 new DataName(new QualifiedName(importedNsName, "Void")),
                 new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
-            Maps.mutable.empty()
+            new HashMap<>()
         );
 
         var duplicateScope = new TopLevelScope<>(
-            Maps.mutable.empty(),
-            Maps.mutable.of("Void", Meta.of(
+            new HashMap<>(),
+            Map.of("Void", Meta.of(
                 new DataName(new QualifiedName(duplicateNsName, "Void")),
                 new TypeConstructor(new QualifiedName(duplicateNsName, "Void"), TypeKind.INSTANCE))),
-            Maps.mutable.empty()
+            new HashMap<>()
         );
 
         /*-
@@ -269,14 +268,14 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(Range.EMPTY, importedIdNode, importeeNode(importedSymbolRange, "Void")),
                 importSymbolsNode(Range.EMPTY, duplicateIdNode, importeeNode(duplicateSymbolRange, "Void"))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(
+            new HashMap<>(),
+            Map.of(
                 importedNsName, importedScope,
                 duplicateNsName, duplicateScope),
             scopedCollector);
@@ -295,24 +294,24 @@ public class ImportScopePopulationTest {
 
     @Test
     void populatesQualifiedImportsSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedNsRange = new Range(1, 2, 1, 23);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.of("one", Meta.of(
+            Map.of("one", Meta.of(
                 new LetName(new QualifiedName(importedNsName, "one")),
                 new BuiltInType("Int", TypeKind.INSTANCE))),
-            Maps.mutable.of("Void", Meta.of(
+            Map.of("Void", Meta.of(
                 new DataName(new QualifiedName(importedNsName, "Void")),
                 new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
-            Maps.mutable.empty()
+            new HashMap<>()
         );
 
         /*-
@@ -322,12 +321,12 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importQualifiedNode(importedNsRange, importedIdNode)),
-            Lists.immutable.empty());
+            List.of(importQualifiedNode(importedNsRange, importedIdNode)),
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();
@@ -347,21 +346,21 @@ public class ImportScopePopulationTest {
 
     @Test
     void populatesQualifiedImportWithConstructorFieldsSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedNsRange = new Range(1, 2, 1, 23);
 
         var dataName = new DataName(new QualifiedName(importedNsName, "One"));
         var constrName = new ConstructorName(dataName, new QualifiedName(importedNsName, "MkOne"));
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.of(
+            Map.of(
                 "one", Meta.of(
                     new LetName(new QualifiedName(importedNsName, "one")),
                     new BuiltInType("Int", TypeKind.INSTANCE)),
@@ -370,10 +369,10 @@ public class ImportScopePopulationTest {
                     Type.function(
                         Type.INT,
                         new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE)))),
-            Maps.mutable.of("One", Meta.of(
+            Map.of("One", Meta.of(
                 dataName,
                 new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE))),
-            Maps.mutable.of(constrName, Maps.mutable.of(
+            Map.of(constrName, Map.of(
                     "value",
                     Meta.of(
                         new FieldName(constrName, "value"),
@@ -387,12 +386,12 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(importQualifiedNode(importedNsRange, importedIdNode)),
-            Lists.immutable.empty());
+            List.of(importQualifiedNode(importedNsRange, importedIdNode)),
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();
@@ -417,24 +416,24 @@ public class ImportScopePopulationTest {
 
     @Test
     void populatesQualifiedImportsWithAliasSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedNsRange = new Range(1, 2, 1, 23);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.of("one", Meta.of(
+            Map.of("one", Meta.of(
                 new LetName(new QualifiedName(importedNsName, "one")),
                 new BuiltInType("Int", TypeKind.INSTANCE))),
-            Maps.mutable.of("Void", Meta.of(
+            Map.of("Void", Meta.of(
                 new DataName(new QualifiedName(importedNsName, "Void")),
                 new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
-            Maps.mutable.empty()
+            new HashMap<>()
         );
 
         /*-
@@ -444,13 +443,13 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importQualifiedNode(importedNsRange, importedIdNode, Optional.of("Another"))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();
@@ -470,22 +469,22 @@ public class ImportScopePopulationTest {
 
     @Test
     void resolvesValuesFromImportsSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 27);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.of("one", Meta.of(
+            Map.of("one", Meta.of(
                 new LetName(new QualifiedName(importedNsName, "one")),
                 new BuiltInType("Int", TypeKind.INSTANCE))),
-            Maps.mutable.empty(),
-            Maps.mutable.empty()
+            new HashMap<>(),
+            new HashMap<>()
         );
 
         /*-
@@ -495,15 +494,15 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(
                     Range.EMPTY, importedIdNode,
                     importeeNode(importedSymbolRange, "one"))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();
@@ -520,22 +519,22 @@ public class ImportScopePopulationTest {
 
     @Test
     void resolvesAliasedValuesFromImportsSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 27);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.of("one", Meta.of(
+            Map.of("one", Meta.of(
                 new LetName(new QualifiedName(importedNsName, "one")),
                 new BuiltInType("Int", TypeKind.INSTANCE))),
-            Maps.mutable.empty(),
-            Maps.mutable.empty()
+            new HashMap<>(),
+            new HashMap<>()
         );
 
         /*-
@@ -545,15 +544,15 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(
                     Range.EMPTY, importedIdNode,
                     importeeNode(importedSymbolRange, "one", Optional.of("One")))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();
@@ -570,29 +569,29 @@ public class ImportScopePopulationTest {
 
     @Test
     void resolvesValuesWithConstructorFieldsSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 29);
 
         var dataName = new DataName(new QualifiedName(importedNsName, "One"));
         var constrName = new ConstructorName(dataName, new QualifiedName(importedNsName, "MkOne"));
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.of("MkOne", Meta.of(
+            Map.of("MkOne", Meta.of(
                     constrName,
                     Type.function(
                         Type.INT,
                         new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE)))),
-            Maps.mutable.of("One", Meta.of(
+            Map.of("One", Meta.of(
                 dataName,
                 new TypeConstructor(new QualifiedName(importedNsName, "One"), TypeKind.INSTANCE))),
-            Maps.mutable.of(constrName, Maps.mutable.of(
+            Map.of(constrName, Map.of(
                 "value",
                 Meta.of(
                     new FieldName(constrName, "value"),
@@ -606,15 +605,15 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(
                     Range.EMPTY, importedIdNode,
                     importeeNode(importedSymbolRange, "MkOne"))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();
@@ -633,22 +632,22 @@ public class ImportScopePopulationTest {
 
     @Test
     void resolvesTypesFromImportsSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 28);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.empty(),
-            Maps.mutable.of("Void", Meta.of(
+            new HashMap<>(),
+            Map.of("Void", Meta.of(
                 new DataName(new QualifiedName(importedNsName, "Void")),
                 new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
-            Maps.mutable.empty()
+            new HashMap<>()
         );
 
         /*-
@@ -658,15 +657,15 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(
                     Range.EMPTY, importedIdNode,
                     importeeNode(importedSymbolRange, "Void"))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();
@@ -683,22 +682,22 @@ public class ImportScopePopulationTest {
 
     @Test
     void resolvesAliasedTypesFromImportsSuccessfully() {
-        var nsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Renamer");
+        var nsName = new NamespaceName(List.of("Mina", "Test"), "Renamer");
         var baseCollector = new ErrorCollector();
         var dummyUri = URI.create("file:///Mina/Test/Renamer.mina");
         var scopedCollector = Map.of(nsName, new NamespaceDiagnosticReporter(baseCollector, dummyUri));
 
-        var idNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Renamer");
-        var importedIdNode = nsIdNode(Range.EMPTY, Lists.immutable.of("Mina", "Test"), "Other");
-        var importedNsName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Other");
+        var idNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Renamer");
+        var importedIdNode = nsIdNode(Range.EMPTY, List.of("Mina", "Test"), "Other");
+        var importedNsName = new NamespaceName(List.of("Mina", "Test"), "Other");
         var importedSymbolRange = new Range(1, 25, 1, 28);
 
         var importedScope = new TopLevelScope<>(
-            Maps.mutable.empty(),
-            Maps.mutable.of("Void", Meta.of(
+            new HashMap<>(),
+            Map.of("Void", Meta.of(
                 new DataName(new QualifiedName(importedNsName, "Void")),
                 new TypeConstructor(new QualifiedName(importedNsName, "Void"), TypeKind.INSTANCE))),
-            Maps.mutable.empty()
+            new HashMap<>()
         );
 
         /*-
@@ -708,15 +707,15 @@ public class ImportScopePopulationTest {
          */
         var namespaceNode = namespaceNode(
             Range.EMPTY, idNode,
-            Lists.immutable.of(
+            List.of(
                 importSymbolsNode(
                     Range.EMPTY, importedIdNode,
                     importeeNode(importedSymbolRange, "Void", Optional.of("Never")))),
-            Lists.immutable.empty());
+            List.of());
 
         var populator = createScopePopulator(
-            Maps.mutable.empty(),
-            Maps.mutable.of(importedNsName, importedScope),
+            new HashMap<>(),
+            Map.of(importedNsName, importedScope),
             scopedCollector);
 
         var expectedScope = new ImportedNamesScope();

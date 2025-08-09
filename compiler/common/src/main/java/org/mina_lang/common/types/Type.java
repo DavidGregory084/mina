@@ -4,14 +4,7 @@
  */
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.factory.Maps;
-import org.eclipse.collections.impl.factory.Sets;
-
-import java.util.Arrays;
+import java.util.*;
 
 sealed public interface Type extends Sort permits PolyType, MonoType {
     public Kind kind();
@@ -48,13 +41,15 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public static TypeApply function(Type... types) {
         return function(
-                Lists.immutable.of(Arrays.copyOfRange(types, 0, types.length - 1)),
-                types[types.length - 1]);
+            List.of(Arrays.copyOfRange(types, 0, types.length - 1)),
+            types[types.length - 1]);
     }
 
-    public static TypeApply function(ImmutableList<Type> argTypes, Type returnType) {
-        var appliedTypes = argTypes.newWith(returnType);
-        var kind = new HigherKind(appliedTypes.collect(typ -> TypeKind.INSTANCE), TypeKind.INSTANCE);
+    public static TypeApply function(List<Type> argTypes, Type returnType) {
+        var appliedTypes = new ArrayList<>(argTypes);
+        appliedTypes.add(returnType);
+        var appliedKinds = Collections.<Kind>nCopies(argTypes.size() + 1, TypeKind.INSTANCE);
+        var kind = new HigherKind(appliedKinds, TypeKind.INSTANCE);
         return new TypeApply(new BuiltInType("->", kind), appliedTypes, TypeKind.INSTANCE);
     }
 
@@ -76,21 +71,15 @@ sealed public interface Type extends Sort permits PolyType, MonoType {
 
     public static BuiltInType NAMESPACE = new BuiltInType("Namespace", TypeKind.INSTANCE);
 
-    public static ImmutableSet<BuiltInType> primitives = Sets.immutable.<BuiltInType>empty()
-            .newWith(Type.BOOLEAN)
-            .newWith(Type.CHAR)
-            .newWith(Type.INT)
-            .newWith(Type.LONG)
-            .newWith(Type.FLOAT)
-            .newWith(Type.DOUBLE);
+    public static Set<BuiltInType> primitives = Set.of(Type.BOOLEAN, Type.CHAR, Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE);
 
-    public static ImmutableMap<String, BuiltInType> builtIns = Maps.immutable.<String, BuiltInType>empty()
-            .newWithKeyValue("Unit", Type.UNIT)
-            .newWithKeyValue("Boolean", Type.BOOLEAN)
-            .newWithKeyValue("Char", Type.CHAR)
-            .newWithKeyValue("String", Type.STRING)
-            .newWithKeyValue("Int", Type.INT)
-            .newWithKeyValue("Long", Type.LONG)
-            .newWithKeyValue("Float", Type.FLOAT)
-            .newWithKeyValue("Double", Type.DOUBLE);
+    public static Map<String, BuiltInType> builtIns = Map.of(
+        "Unit", Type.UNIT,
+        "Boolean", Type.BOOLEAN,
+        "Char", Type.CHAR,
+        "String", Type.STRING,
+        "Int", Type.INT,
+        "Long", Type.LONG,
+        "Float", Type.FLOAT,
+        "Double", Type.DOUBLE);
 }

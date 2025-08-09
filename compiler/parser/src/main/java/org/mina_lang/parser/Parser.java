@@ -14,9 +14,6 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.text.StringEscapeUtils;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.collector.Collectors2;
-import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.parser.MinaParser.*;
@@ -222,36 +219,37 @@ public class Parser {
             return tree != null ? visit(tree) : null;
         }
 
-        public <C extends ParserRuleContext, D> ImmutableList<D> visitRepeated(List<C> contexts,
+        public <C extends ParserRuleContext, D> List<D> visitRepeated(List<C> contexts,
                 Visitor<C, D> visitor) {
             return contexts.stream()
-                    .map(visitor::visit)
-                    .collect(Collectors2.toImmutableList());
+                .map(visitor::visit)
+                .toList();
         }
 
-        public <C extends ParserRuleContext, D> ImmutableList<D> visitRepeated(List<C> contexts,
+        public <C extends ParserRuleContext, D> List<D> visitRepeated(List<C> contexts,
                 Function<C, D> visitorMethod) {
             return contexts.stream()
-                    .map(visitorMethod)
-                    .collect(Collectors2.toImmutableList());
+                .map(visitorMethod)
+                .toList();
         }
 
-        public <C extends ParserRuleContext, D extends ParserRuleContext, E> ImmutableList<E> visitNullableRepeated(
+        public <C extends ParserRuleContext, D extends ParserRuleContext, E> List<E> visitNullableRepeated(
                 C context, Function<C, List<D>> rule,
                 Visitor<D, E> visitor) {
-            return context == null ? Lists.immutable.<E>empty()
-                    : rule.apply(context).stream()
-                            .map(visitor::visit)
-                            .collect(Collectors2.toImmutableList());
+            return context == null
+                ? new ArrayList<>()
+                : rule.apply(context).stream()
+                        .map(visitor::visit)
+                        .toList();
         }
 
-        public <C extends ParserRuleContext, D extends ParserRuleContext, E> ImmutableList<E> visitNullableRepeated(
+        public <C extends ParserRuleContext, D extends ParserRuleContext, E> List<E> visitNullableRepeated(
                 C context, Function<C, List<D>> rule,
                 Function<D, E> visitorMethod) {
-            return context == null ? Lists.immutable.<E>empty()
-                    : rule.apply(context).stream()
-                            .map(visitorMethod)
-                            .collect(Collectors2.toImmutableList());
+            return context == null ? new ArrayList<>()
+                : rule.apply(context).stream()
+                        .map(visitorMethod)
+                        .toList();
         }
 
         public B visitAlternatives(ParseTree... tree) {
@@ -357,11 +355,11 @@ public class Parser {
         }
     }
 
-    class ImportedSymbolsVisitor extends Visitor<ImportedSymbolsContext, ImmutableList<ImporteeNode>> {
+    class ImportedSymbolsVisitor extends Visitor<ImportedSymbolsContext, List<ImporteeNode>> {
         @Override
-        public ImmutableList<ImporteeNode> visitImportedSymbols(ImportedSymbolsContext ctx) {
+        public List<ImporteeNode> visitImportedSymbols(ImportedSymbolsContext ctx) {
             if (ctx.id != null) {
-                return Lists.immutable.of(importeeNode(tokenRange(ctx.id), ctx.id.getText()));
+                return List.of(importeeNode(tokenRange(ctx.id), ctx.id.getText()));
             } else {
                 return visitNullableRepeated(ctx, ImportedSymbolsContext::importee, importeeVisitor);
             }
@@ -450,7 +448,7 @@ public class Parser {
                 var typeParams = visitNullableRepeated(funTypeParams, FunTypeParamsContext::type, this);
                 return funTypeNode(contextRange(ctx), typeParams, bodyType);
             } else if (bodyType != null) {
-                return funTypeNode(contextRange(ctx), Lists.immutable.of(headType), bodyType);
+                return funTypeNode(contextRange(ctx), List.of(headType), bodyType);
             } else {
                 return headType;
             }
@@ -477,8 +475,8 @@ public class Parser {
 
             if (applicableTypeNode != null) {
                 var args = ctx.typeApplication().type().stream()
-                        .<TypeNode<Void>>map(this::visitType)
-                        .collect(Collectors2.toImmutableList());
+                    .map(this::visitType)
+                    .toList();
 
                 return typeApplyNode(contextRange(ctx), applicableTypeNode, args);
             }
@@ -539,11 +537,11 @@ public class Parser {
         @Override
         public LambdaNode<Void> visitLambdaExpr(LambdaExprContext ctx) {
             var singleParam = Optional.ofNullable(ctx.ID())
-                    .map(id -> {
-                        var token = id.getSymbol();
-                        return paramNode(tokenRange(token), id.getText());
-                    })
-                    .map(Lists.immutable::of);
+                .map(id -> {
+                    var token = id.getSymbol();
+                    return paramNode(tokenRange(token), id.getText());
+                })
+                .map(List::of);
 
             var params = singleParam.orElse(
                     visitNullableRepeated(ctx.lambdaParams(), LambdaParamsContext::lambdaParam,
@@ -857,9 +855,9 @@ public class Parser {
 
         @Override
         public NamespaceIdNode visitNamespaceId(NamespaceIdContext ctx) {
-            var elements = Lists.immutable.ofAll(ctx.ID()).collect(TerminalNode::getText);
-            var pkg = elements.take(elements.size() - 1);
-            var ns = elements.getLast();
+            var elements = ctx.ID().stream().map(TerminalNode::getText).toList();
+            var pkg = elements.subList(0, elements.size() - 1);
+            var ns = elements.get(elements.size() - 1);
             return nsIdNode(contextRange(ctx), pkg, ns);
         }
     }
@@ -868,16 +866,14 @@ public class Parser {
 
         @Override
         public QualifiedIdNode visitQualifiedId(QualifiedIdContext ctx) {
-            var elements = Lists.immutable.ofAll(ctx.ID()).collect(TerminalNode::getSymbol);
-            if (elements.size() > 1) {
-                var ns = elements.getFirstOptional().map(token -> {
-                    return nsIdNode(tokenRange(token), Lists.immutable.empty(), token.getText());
-                }).orElse(null);
-                var id = elements.getLastOptional().map(Token::getText).orElse(null);
-                return idNode(contextRange(ctx), ns, id);
+            if (ctx.ID().size() > 1) {
+                var firstToken = ctx.ID(0).getSymbol();
+                var ns = nsIdNode(tokenRange(firstToken), List.of(), firstToken.getText());
+                var lastToken = ctx.ID(ctx.ID().size() - 1).getSymbol();
+                return idNode(contextRange(ctx), ns, lastToken.getText());
             } else {
-                var id = elements.getLastOptional().map(Token::getText).orElse(null);
-                return idNode(contextRange(ctx), Optional.empty(), id);
+                var lastToken = ctx.ID(ctx.ID().size() - 1).getSymbol();
+                return idNode(contextRange(ctx), Optional.empty(), lastToken.getText());
             }
         }
     }

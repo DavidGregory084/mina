@@ -4,25 +4,26 @@
  */
 package org.mina_lang.ina;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.Type;
 import org.mina_lang.common.types.TypeVar;
 
+import java.util.List;
+
 public interface InaNodeFolder<A> {
     // Namespaces
-    A visitNamespace(NamespaceName name, ImmutableList<A> declarations);
+    A visitNamespace(NamespaceName name, List<A> declarations);
 
     // Declarations
     default A visitDeclaration(Declaration decl)  {
         return decl.accept(this);
     }
 
-    A visitData(DataName name, ImmutableList<TypeVar> typeParams, ImmutableList<A> constructors);
+    A visitData(DataName name, List<TypeVar> typeParams, List<A> constructors);
 
-    A visitConstructor(ConstructorName name, ImmutableList<A> fields);
+    A visitConstructor(ConstructorName name, List<A> fields);
 
     A visitField(FieldName name, Type type);
 
@@ -38,35 +39,35 @@ public interface InaNodeFolder<A> {
 
     A visitLetAssign(LocalBindingName name, Type type, A body);
 
-    A visitJoin(LocalBindingName name, Type type, ImmutableList<A> params, A body);
+    A visitJoin(LocalBindingName name, Type type, List<A> params, A body);
 
     // Expressions
     default A visitExpr(Expression expr) {
         return expr.accept(this);
     }
 
-    A visitApply(Type type, A expr, ImmutableList<A> args);
+    A visitApply(Type type, A expr, List<A> args);
 
     A visitBinOp(Type type, A left, BinaryOp operator, A right);
 
-    A visitBlock(Type type, ImmutableList<A> bindings, A result);
+    A visitBlock(Type type, List<A> bindings, A result);
 
     A visitIf(Type type, A cond, A consequent, A alternative);
 
-    A visitLambda(Type type, ImmutableList<A> params, A body);
+    A visitLambda(Type type, List<A> params, A body);
 
     A visitReference(ValueName name, Type type);
 
     A visitUnOp(Type type, UnaryOp operator, A operand);
 
-    A visitMatch(Type type, A scrutinee, ImmutableList<A> cases);
+    A visitMatch(Type type, A scrutinee, List<A> cases);
 
     A visitCase(A pattern, A consequent);
 
     // Patterns
     A visitAliasPattern(LocalName alias, Type type, A pattern);
 
-    A visitConstructorPattern(ConstructorName name, Type type, ImmutableList<A> fields);
+    A visitConstructorPattern(ConstructorName name, Type type, List<A> fields);
 
     A visitFieldPattern(FieldName name, Type type, A pattern);
 

@@ -4,7 +4,9 @@
  */
 package org.mina_lang.common.types;
 
-public record UnsolvedType(int id, Kind kind) implements MonoType {
+import java.util.Comparator;
+
+public record UnsolvedType(int id, Kind kind) implements MonoType, Comparable<UnsolvedType> {
     public String name() {
         var div = (id / 26) + 1;
         var rem = id % 26;
@@ -47,8 +49,8 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
             @Override
             public Boolean visitTypeApply(TypeApply tyApp) {
                 var occursInType = tyApp.type().accept(this);
-                var occursInArgs = tyApp.typeArguments()
-                        .anySatisfy(arg -> arg.accept(this));
+                var occursInArgs = tyApp.typeArguments().stream()
+                    .anyMatch(arg -> arg.accept(this));
                 return occursInType || occursInArgs;
             }
 
@@ -72,5 +74,10 @@ public record UnsolvedType(int id, Kind kind) implements MonoType {
                 return id() == unsolved.id();
             }
         });
+    }
+
+    @Override
+    public int compareTo(UnsolvedType that) {
+        return Integer.compare(this.id, that.id);
     }
 }

@@ -4,10 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record FunTypeNode<A> (Meta<A> meta, ImmutableList<TypeNode<A>> argTypes, TypeNode<A> returnType)
+import java.util.List;
+
+public record FunTypeNode<A> (Meta<A> meta, List<TypeNode<A>> argTypes, TypeNode<A> returnType)
         implements TypeNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -22,7 +23,7 @@ public record FunTypeNode<A> (Meta<A> meta, ImmutableList<TypeNode<A>> argTypes,
 
         var result = visitor.visitFunType(
                 meta(),
-                argTypes().collect(visitor::visitType),
+                argTypes().stream().map(visitor::visitType).toList(),
                 visitor.visitType(returnType()));
 
         visitor.postVisitFunType(result);
@@ -36,7 +37,7 @@ public record FunTypeNode<A> (Meta<A> meta, ImmutableList<TypeNode<A>> argTypes,
 
         var result = visitor.visitFunType(
                 meta(),
-                argTypes().collect(visitor::visitType),
+                argTypes().stream().map(visitor::visitType).toList(),
                 visitor.visitType(returnType()));
 
         visitor.postVisitFunType(result);

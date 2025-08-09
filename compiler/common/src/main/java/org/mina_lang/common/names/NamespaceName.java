@@ -4,9 +4,10 @@
  */
 package org.mina_lang.common.names;
 
-import org.eclipse.collections.api.list.ImmutableList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public record NamespaceName(ImmutableList<String> pkg, String name) implements Named {
+public record NamespaceName(List<String> pkg, String name) implements Named {
 
     @Override
     public String localName() {
@@ -15,9 +16,9 @@ public record NamespaceName(ImmutableList<String> pkg, String name) implements N
 
     @Override
     public String canonicalName() {
-        var segments = pkg().toList();
+        var segments = new java.util.ArrayList<>(pkg());
         segments.add(name());
-        return segments.makeString("/");
+        return String.join("/", segments);
     }
 
     @Override

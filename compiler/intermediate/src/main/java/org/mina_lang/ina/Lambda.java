@@ -4,15 +4,16 @@
  */
 package org.mina_lang.ina;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.types.Type;
 
-public record Lambda(Type type, ImmutableList<Param> params, Expression body) implements Value {
+import java.util.List;
+
+public record Lambda(Type type, List<Param> params, Expression body) implements Value {
     @Override
     public <A> A accept(InaNodeFolder<A> visitor) {
         return visitor.visitLambda(
             type,
-            params.collect(param -> param.accept(visitor)),
+            params.stream().map(param -> param.accept(visitor)).toList(),
             body.accept(visitor));
     }
 }

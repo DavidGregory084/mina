@@ -10,6 +10,9 @@ dependencies {
     // Protobuf Serialization
     implementation(project(":compiler:mina-compiler-proto"))
 
+    // Primitive Collections
+    implementation(libs.fastutilCore)
+
     // Java Bytecode Generation
     api(libs.asm)
     api(libs.asmCommons)

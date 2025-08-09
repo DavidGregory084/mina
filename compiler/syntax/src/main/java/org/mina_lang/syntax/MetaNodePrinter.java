@@ -6,12 +6,13 @@ package org.mina_lang.syntax;
 
 import com.opencastsoftware.prettier4j.Doc;
 import org.apache.commons.text.StringEscapeUtils;
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     private static final int DEFAULT_INDENT = 3;
@@ -91,7 +92,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
         }
     }
 
-    private Doc visitTypeParams(ImmutableList<Doc> typeParams) {
+    private Doc visitTypeParams(List<Doc> typeParams) {
         if (typeParams.isEmpty()) {
             return Doc.empty();
         }
@@ -102,15 +103,15 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
         ).bracket(this.indent, Doc.lineOrEmpty(), LSQUARE, RSQUARE);
     }
 
-    private Doc visitValueParams(ImmutableList<Doc> valueParams) {
+    private Doc visitValueParams(List<Doc> valueParams) {
         return Doc.intersperse(
             COMMA.append(Doc.lineOrSpace()),
             valueParams.stream()
         ).bracket(this.indent, Doc.lineOrEmpty(), LPAREN, RPAREN);
     }
 
-    private Doc visitDeclarations(ImmutableList<Doc> declarations) {
-        if (declarations.toList().isEmpty()) {
+    private Doc visitDeclarations(List<Doc> declarations) {
+        if (declarations.isEmpty()) {
             return LBRACE.append(RBRACE);
         }
 
@@ -120,7 +121,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
         ).bracket(this.indent, Doc.lineOrSpace(), LBRACE, RBRACE);
     }
 
-    private Doc visitSymbols(ImmutableList<Doc> symbols) {
+    private Doc visitSymbols(List<Doc> symbols) {
         if (symbols.isEmpty()) {
             return LBRACE.append(RBRACE);
         }
@@ -141,12 +142,12 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
                 .orElse(impDoc);
         } else if (imp instanceof ImportSymbolsNode sym) {
             var hasMultiple = sym.symbols().size() > 1;
-            var hasAliases = sym.symbols().anySatisfy(it -> it.alias().isPresent());
-            var symbols = sym.symbols().collect(it -> {
+            var hasAliases = sym.symbols().stream().anyMatch(it -> it.alias().isPresent());
+            var symbols = sym.symbols().stream().map(it -> {
                 return it.alias()
                     .map(alias -> Doc.text(it.symbol()).appendSpace(AS).appendSpace(Doc.text(alias)))
                     .orElseGet(() -> Doc.text(it.symbol()));
-            });
+            }).toList();
             return hasMultiple || hasAliases
                 ? impDoc.append(DOT).append(visitSymbols(symbols))
                 : impDoc.append(DOT).append(symbols.get(0));
@@ -155,10 +156,11 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports, ImmutableList<ImmutableList<Doc>> declarationGroups) {
+    public Doc visitNamespace(Meta<A> meta, NamespaceIdNode id, List<ImportNode> imports, List<List<Doc>> declarationGroups) {
         var bodyDoc = visitDeclarations(
-            imports.collect(this::visitImport)
-                .newWithAll(declarationGroups.flatCollect(it -> it))
+            Stream.concat(
+                imports.stream().map(this::visitImport),
+                declarationGroups.stream().flatMap(List::stream)).toList()
         );
 
         return NAMESPACE
@@ -177,7 +179,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitLetFn(Meta<A> meta, String name, ImmutableList<Doc> typeParams, ImmutableList<Doc> valueParams, Optional<Doc> returnType, Doc expr) {
+    public Doc visitLetFn(Meta<A> meta, String name, List<Doc> typeParams, List<Doc> valueParams, Optional<Doc> returnType, Doc expr) {
         var nameDoc = LET.appendSpace(Doc.text(name));
         var tpArgsDoc = typeParams.isEmpty() ? Doc.empty() : visitTypeParams(typeParams);
         var argsDoc = valueParams.isEmpty() ? Doc.empty() : visitValueParams(valueParams);
@@ -196,8 +198,8 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitBlock(Meta<A> meta, ImmutableList<Doc> declarations, Optional<Doc> result) {
-        return visitDeclarations(declarations.newWithAll(result.stream().toList()));
+    public Doc visitBlock(Meta<A> meta, List<Doc> declarations, Optional<Doc> result) {
+        return visitDeclarations(Stream.concat(declarations.stream(), result.stream()).toList());
     }
 
     @Override
@@ -210,14 +212,14 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitLambda(Meta<A> meta, ImmutableList<Doc> params, Doc body) {
+    public Doc visitLambda(Meta<A> meta, List<Doc> params, Doc body) {
         return visitValueParams(params)
             .appendSpace(ARROW)
             .append(indented(body));
     }
 
     @Override
-    public Doc visitMatch(Meta<A> meta, Doc scrutinee, ImmutableList<Doc> cases) {
+    public Doc visitMatch(Meta<A> meta, Doc scrutinee, List<Doc> cases) {
         return MATCH
             .appendSpace(scrutinee)
             .appendSpace(WITH)
@@ -225,7 +227,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitApply(Meta<A> meta, Doc expr, ImmutableList<Doc> args) {
+    public Doc visitApply(Meta<A> meta, Doc expr, List<Doc> args) {
         return expr.append(visitValueParams(args));
     }
 
@@ -297,7 +299,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitData(Meta<A> meta, String name, ImmutableList<Doc> typeParams, ImmutableList<Doc> constructors) {
+    public Doc visitData(Meta<A> meta, String name, List<Doc> typeParams, List<Doc> constructors) {
         return DATA
             .appendSpace(Doc.text(name))
             .append(visitTypeParams(typeParams))
@@ -305,7 +307,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitConstructor(Meta<A> meta, String name, ImmutableList<Doc> params, Optional<Doc> type) {
+    public Doc visitConstructor(Meta<A> meta, String name, List<Doc> params, Optional<Doc> type) {
         var constructor = CASE
             .appendSpace(Doc.text(name))
             .append(visitValueParams(params));
@@ -325,7 +327,7 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitConstructorPattern(Meta<A> meta, QualifiedIdNode id, ImmutableList<Doc> fields) {
+    public Doc visitConstructorPattern(Meta<A> meta, QualifiedIdNode id, List<Doc> fields) {
         return Doc.text(id.name()).appendSpace(visitSymbols(fields));
     }
 
@@ -382,19 +384,19 @@ public class MetaNodePrinter<A> implements MetaNodeFolder<A, Doc> {
     }
 
     @Override
-    public Doc visitQuantifiedType(Meta<A> meta, ImmutableList<Doc> args, Doc body) {
+    public Doc visitQuantifiedType(Meta<A> meta, List<Doc> args, Doc body) {
         return visitTypeParams(args).appendSpace(body.bracket(this.indent, LBRACE, RBRACE));
     }
 
     @Override
-    public Doc visitFunType(Meta<A> meta, ImmutableList<Doc> argTypes, Doc returnType) {
+    public Doc visitFunType(Meta<A> meta, List<Doc> argTypes, Doc returnType) {
         return visitValueParams(argTypes)
             .appendSpace(ARROW)
             .appendSpace(returnType);
     }
 
     @Override
-    public Doc visitTypeApply(Meta<A> meta, Doc type, ImmutableList<Doc> args) {
+    public Doc visitTypeApply(Meta<A> meta, Doc type, List<Doc> args) {
         return type.append(visitTypeParams(args));
     }
 

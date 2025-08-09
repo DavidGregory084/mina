@@ -4,8 +4,6 @@
  */
 package org.mina_lang.codegen.jvm;
 
-import org.eclipse.collections.api.stack.MutableStack;
-import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.codegen.jvm.scopes.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
@@ -14,101 +12,115 @@ import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Optional;
 
-public record CodegenEnvironment(MutableStack<CodegenScope> scopes) implements Environment<Attributes, CodegenScope> {
+public record CodegenEnvironment(Deque<CodegenScope> scopes) implements Environment<Attributes, CodegenScope> {
 
     public Optional<NamespaceGenScope> enclosingNamespace() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof NamespaceGenScope)
-                .map(scope -> (NamespaceGenScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof NamespaceGenScope)
+            .findFirst()
+            .map(scope -> (NamespaceGenScope) scope);
     }
 
     public Optional<DataGenScope> enclosingData() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof DataGenScope)
-                .map(scope -> (DataGenScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof DataGenScope)
+            .findFirst()
+            .map(scope -> (DataGenScope) scope);
     }
 
     public Optional<ConstructorGenScope> enclosingConstructor() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof ConstructorGenScope)
-                .map(scope -> (ConstructorGenScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof ConstructorGenScope)
+            .findFirst()
+            .map(scope -> (ConstructorGenScope) scope);
     }
 
     public Optional<LambdaGenScope> enclosingLambda() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof LambdaGenScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof LambdaGenScope)
+                .findFirst()
                 .map(scope -> (LambdaGenScope) scope);
     }
 
     public Optional<MatchGenScope> enclosingMatch() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof MatchGenScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof MatchGenScope)
+            .findFirst()
                 .map(scope -> (MatchGenScope) scope);
     }
 
     public Optional<IfGenScope> enclosingIf() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof IfGenScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof IfGenScope)
+            .findFirst()
                 .map(scope -> (IfGenScope) scope);
     }
 
     public Optional<CaseGenScope> enclosingCase() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof CaseGenScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof CaseGenScope)
+            .findFirst()
                 .map(scope -> (CaseGenScope) scope);
     }
 
     public Optional<BlockGenScope> enclosingBlock() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof BlockGenScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof BlockGenScope)
+            .findFirst()
                 .map(scope -> (BlockGenScope) scope);
     }
 
     public Optional<TopLevelLetGenScope> enclosingTopLevelLet() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof TopLevelLetGenScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof TopLevelLetGenScope)
+            .findFirst()
                 .map(scope -> (TopLevelLetGenScope) scope);
     }
 
     public Optional<LambdaLiftingScope> enclosingLambdaLifter() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof LambdaLiftingScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof LambdaLiftingScope)
+            .findFirst()
                 .map(scope -> (LambdaLiftingScope) scope);
     }
 
     public Optional<JavaMethodScope> enclosingJavaMethod() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof JavaMethodScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof JavaMethodScope)
+            .findFirst()
                 .map(scope -> (JavaMethodScope) scope);
     }
 
     public Optional<VarBindingScope> enclosingVarBinding() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof VarBindingScope)
+        return scopes().stream()
+                .filter(scope -> scope instanceof VarBindingScope)
+            .findFirst()
                 .map(scope -> (VarBindingScope) scope);
     }
 
     public static CodegenEnvironment empty() {
-        return new CodegenEnvironment(Stacks.mutable.empty());
+        return new CodegenEnvironment(new ArrayDeque<>());
     }
 
     public static CodegenEnvironment of(CodegenScope scope) {
-        var scopes = Stacks.mutable.<CodegenScope>empty();
+        var scopes = new ArrayDeque<CodegenScope>();
         scopes.push(scope);
         return new CodegenEnvironment(scopes);
     }
 
     public Optional<LocalVar> lookupLocalVarIn(GeneratorAdapter methodWriter, Named varName) {
-        return scopes()
-                .select(scope -> {
-                    return scope instanceof VarBindingScope varBinder &&
-                        varBinder.methodWriter().equals(methodWriter) && // Make sure we only look up local vars from the same Java method
-                        varBinder.hasLocalVar(varName);
-                })
-                .getFirstOptional()
-                .flatMap(varBinder -> ((VarBindingScope) varBinder).lookupLocalVar(varName));
+        return scopes().stream()
+            .filter(scope -> {
+                return scope instanceof VarBindingScope varBinder &&
+                    varBinder.methodWriter().equals(methodWriter) && // Make sure we only look up local vars from the same Java method
+                    varBinder.hasLocalVar(varName);
+            })
+            .findFirst()
+            .flatMap(varBinder -> ((VarBindingScope) varBinder).lookupLocalVar(varName));
     }
 
     public int putLocalVar(MetaNode<Attributes> localVar, Label startLabel, Label endLabel) {

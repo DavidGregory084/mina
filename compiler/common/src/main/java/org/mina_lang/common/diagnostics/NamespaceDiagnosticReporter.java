@@ -4,10 +4,10 @@
  */
 package org.mina_lang.common.diagnostics;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Location;
 
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NamespaceDiagnosticReporter implements LocalDiagnosticReporter, DiagnosticEnumerator {
@@ -30,7 +30,7 @@ public class NamespaceDiagnosticReporter implements LocalDiagnosticReporter, Dia
 
     @Override
     public void reportError(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         errorCount.incrementAndGet();
         recipient.reportError(location, message, relatedInformation);
     }
@@ -43,7 +43,7 @@ public class NamespaceDiagnosticReporter implements LocalDiagnosticReporter, Dia
 
     @Override
     public void reportWarning(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         warningCount.incrementAndGet();
         recipient.reportWarning(location, message, relatedInformation);
     }
@@ -55,7 +55,7 @@ public class NamespaceDiagnosticReporter implements LocalDiagnosticReporter, Dia
 
     @Override
     public void reportInfo(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         recipient.reportInfo(location, message, relatedInformation);
     }
 
@@ -66,7 +66,7 @@ public class NamespaceDiagnosticReporter implements LocalDiagnosticReporter, Dia
 
     @Override
     public void reportHint(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         recipient.reportHint(location, message, relatedInformation);
     }
 

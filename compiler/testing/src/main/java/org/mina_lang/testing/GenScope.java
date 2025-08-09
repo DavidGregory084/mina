@@ -4,19 +4,20 @@
  */
 package org.mina_lang.testing;
 
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.ConstructorName;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public record GenScope(
-    MutableMap<String, Meta<Attributes>> values,
-    MutableMap<String, Meta<Attributes>> types,
-    MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields
+    Map<String, Meta<Attributes>> values,
+    Map<String, Meta<Attributes>> types,
+    Map<ConstructorName, Map<String, Meta<Attributes>>> fields
 ) implements Scope<Attributes> {
     public GenScope() {
-        this(Maps.mutable.empty(), Maps.mutable.empty(), Maps.mutable.empty());
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 }

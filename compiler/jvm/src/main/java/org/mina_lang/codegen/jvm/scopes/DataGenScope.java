@@ -4,8 +4,6 @@
  */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.codegen.jvm.JavaSignature;
 import org.mina_lang.codegen.jvm.Types;
 import org.mina_lang.common.Attributes;
@@ -15,15 +13,18 @@ import org.mina_lang.syntax.DataNode;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.objectweb.asm.Opcodes.*;
 
 public record DataGenScope(
         DataNode<Attributes> data,
         Type dataType,
         ClassWriter classWriter,
-        MutableMap<String, Meta<Attributes>> values,
-        MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields) implements CodegenScope {
+        Map<String, Meta<Attributes>> values,
+        Map<String, Meta<Attributes>> types,
+        Map<ConstructorName, Map<String, Meta<Attributes>>> fields) implements CodegenScope {
     public DataGenScope(
             DataNode<Attributes> data,
             Type dataType,
@@ -32,9 +33,9 @@ public record DataGenScope(
                 data,
                 dataType,
                 classWriter,
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty());
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>());
     }
 
     public static DataGenScope open(DataNode<Attributes> data) {

@@ -4,10 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record TypeApplyNode<A>(Meta<A> meta, TypeNode<A> type, ImmutableList<TypeNode<A>> args)
+import java.util.List;
+
+public record TypeApplyNode<A>(Meta<A> meta, TypeNode<A> type, List<TypeNode<A>> args)
         implements TypeNode<A> {
 
     @Override
@@ -24,7 +25,7 @@ public record TypeApplyNode<A>(Meta<A> meta, TypeNode<A> type, ImmutableList<Typ
         var result = visitor.visitTypeApply(
                 meta(),
                 visitor.visitType(type()),
-                args().collect(visitor::visitType));
+                args().stream().map(visitor::visitType).toList());
 
         visitor.postVisitTypeApply(result);
 
@@ -38,7 +39,7 @@ public record TypeApplyNode<A>(Meta<A> meta, TypeNode<A> type, ImmutableList<Typ
         var result = visitor.visitTypeApply(
                 meta(),
                 visitor.visitType(type()),
-                args().collect(visitor::visitType));
+                args().stream().map(visitor::visitType).toList());
 
         visitor.postVisitTypeApply(result);
 

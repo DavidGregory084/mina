@@ -4,9 +4,9 @@
  */
 package org.mina_lang.common.operators;
 
-import org.eclipse.collections.api.factory.Sets;
-
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public enum BinaryOp {
     MULTIPLY,
@@ -48,10 +48,9 @@ public enum BinaryOp {
         Set.of(LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL);
 
     public static final Set<BinaryOp> BOOLEAN_OPERATORS =
-        Sets.mutable
-            .ofAll(EQUALITY_OPERATORS)
-            .withAll(LOGICAL_OPERATORS)
-            .withAll(RELATIONAL_OPERATORS);
+        Stream.of(EQUALITY_OPERATORS, LOGICAL_OPERATORS, RELATIONAL_OPERATORS)
+            .flatMap(Set::stream)
+            .collect(Collectors.toSet());
 
     public static final Set<BinaryOp> SHIFT_OPERATORS =
         Set.of(SHIFT_LEFT, SHIFT_RIGHT, UNSIGNED_SHIFT_RIGHT);

@@ -4,10 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record ApplyNode<A> (Meta<A> meta, ExprNode<A> expr, ImmutableList<ExprNode<A>> args) implements ExprNode<A> {
+import java.util.List;
+
+public record ApplyNode<A> (Meta<A> meta, ExprNode<A> expr, List<ExprNode<A>> args) implements ExprNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         expr.accept(visitor);
@@ -22,7 +23,7 @@ public record ApplyNode<A> (Meta<A> meta, ExprNode<A> expr, ImmutableList<ExprNo
         var result = visitor.visitApply(
                 meta(),
                 visitor.visitExpr(expr()),
-                args().collect(visitor::visitExpr));
+                args().stream().map(visitor::visitExpr).toList());
 
         visitor.postVisitApply(this);
 
@@ -36,7 +37,7 @@ public record ApplyNode<A> (Meta<A> meta, ExprNode<A> expr, ImmutableList<ExprNo
         var result = visitor.visitApply(
                 meta(),
                 visitor.visitExpr(expr()),
-                args().collect(visitor::visitExpr));
+                args().stream().map(visitor::visitExpr).toList());
 
         visitor.postVisitApply(result);
 

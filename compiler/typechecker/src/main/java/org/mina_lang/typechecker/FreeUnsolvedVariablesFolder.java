@@ -4,64 +4,68 @@
  */
 package org.mina_lang.typechecker;
 
-import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
-import org.eclipse.collections.impl.factory.SortedSets;
 import org.mina_lang.common.types.*;
 
-import java.util.Comparator;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
-public class FreeUnsolvedVariablesFolder implements TypeFolder<ImmutableSortedSet<UnsolvedType>> {
+public class FreeUnsolvedVariablesFolder implements TypeFolder<SortedSet<UnsolvedType>> {
 
-    private static Comparator<UnsolvedType> COMPARATOR = Comparator.comparing(UnsolvedType::id);
-
-    private TypeSubstitutionTransformer typeTransformer;
+    private final TypeSubstitutionTransformer typeTransformer;
 
     public FreeUnsolvedVariablesFolder(TypeSubstitutionTransformer typeTransformer) {
         this.typeTransformer = typeTransformer;
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitQuantifiedType(QuantifiedType quant) {
+    public SortedSet<UnsolvedType> visitQuantifiedType(QuantifiedType quant) {
         return quant.body().accept(this);
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitTypeConstructor(TypeConstructor tyCon) {
-        return SortedSets.immutable.empty(COMPARATOR);
+    public SortedSet<UnsolvedType> visitTypeConstructor(TypeConstructor tyCon) {
+        return new TreeSet<>();
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitBuiltInType(BuiltInType primTy) {
-        return SortedSets.immutable.empty(COMPARATOR);
+    public SortedSet<UnsolvedType> visitBuiltInType(BuiltInType primTy) {
+        return new TreeSet<>();
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitTypeApply(TypeApply tyApp) {
-        return tyApp.type().accept(this)
-                .newWithAll(tyApp.typeArguments().flatCollect(tyArg -> tyArg.accept(this)));
+    public SortedSet<UnsolvedType> visitTypeApply(TypeApply tyApp) {
+        var unsolvedInType = tyApp.type().accept(this);
+        var unsolvedInArgs = tyApp.typeArguments().stream()
+            .flatMap(tyArg -> tyArg.accept(this).stream())
+            .collect(Collectors.toCollection(TreeSet::new));
+        unsolvedInType.addAll(unsolvedInArgs);
+        return unsolvedInType;
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitForAllVar(ForAllVar forall) {
-        return SortedSets.immutable.empty(COMPARATOR);
+    public SortedSet<UnsolvedType> visitForAllVar(ForAllVar forall) {
+        return new TreeSet<>();
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitExistsVar(ExistsVar exists) {
-        return SortedSets.immutable.empty(COMPARATOR);
+    public SortedSet<UnsolvedType> visitExistsVar(ExistsVar exists) {
+        return new TreeSet<>();
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitSyntheticVar(SyntheticVar syn) {
-        return SortedSets.immutable.empty(COMPARATOR);
+    public SortedSet<UnsolvedType> visitSyntheticVar(SyntheticVar syn) {
+        return new TreeSet<>();
     }
 
     @Override
-    public ImmutableSortedSet<UnsolvedType> visitUnsolvedType(UnsolvedType unsolved) {
+    public SortedSet<UnsolvedType> visitUnsolvedType(UnsolvedType unsolved) {
         var substituted = unsolved.accept(typeTransformer);
 
         if (substituted.equals(unsolved)) {
-            return SortedSets.immutable.of(COMPARATOR, unsolved);
+            var unsolvedAfterSubst = new TreeSet<UnsolvedType>();
+            unsolvedAfterSubst.add(unsolved);
+            return unsolvedAfterSubst;
         } else {
             return substituted.accept(this);
         }

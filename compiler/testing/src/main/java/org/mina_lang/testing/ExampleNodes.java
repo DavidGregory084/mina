@@ -5,7 +5,6 @@
 package org.mina_lang.testing;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.*;
@@ -14,6 +13,7 @@ import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
@@ -32,7 +32,7 @@ public interface ExampleNodes {
     /**
      * Namespace name <code>Mina/Test/Examples</code>.
      */
-    NamespaceName NAMESPACE_NAME = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Examples");
+    NamespaceName NAMESPACE_NAME = new NamespaceName(List.of("Mina", "Test"), "Examples");
 
     /**
      * A universally quantified type variable <code>A: *</code>.
@@ -94,7 +94,7 @@ public interface ExampleNodes {
      */
     TypeApply LIST_A_TYPE = new TypeApply(
         LIST_TYPE,
-        Lists.immutable.of(TYPE_VAR_A),
+        List.of(TYPE_VAR_A),
         KIND_STAR
     );
 
@@ -108,7 +108,7 @@ public interface ExampleNodes {
      * <pre><code>[A] { (A, List[A]) -> List[A] }</code></pre>
      */
     QuantifiedType CONS_CONSTRUCTOR_TYPE = new QuantifiedType(
-        Lists.immutable.of(TYPE_VAR_A),
+        List.of(TYPE_VAR_A),
         Type.function(TYPE_VAR_A, LIST_A_TYPE, LIST_A_TYPE),
         KIND_STAR);
 
@@ -131,7 +131,7 @@ public interface ExampleNodes {
         constructorNode(
             CONS_CONSTRUCTOR_META,
             "Cons",
-            Lists.immutable.of(
+            List.of(
                 constructorParamNode(
                     Meta.of(HEAD_FIELD_NAME, TYPE_VAR_A),
                     "head",
@@ -142,7 +142,7 @@ public interface ExampleNodes {
                     typeApplyNode(
                         Meta.nameless(KIND_STAR),
                         typeRefNode(LIST_DATA_META, "List"),
-                        Lists.immutable.of(TYPE_VAR_A_REF_NODE)))),
+                        List.of(TYPE_VAR_A_REF_NODE)))),
             Optional.empty());
 
     /**
@@ -155,7 +155,7 @@ public interface ExampleNodes {
      * <pre><code>[A] { () -> List[A] }</code></pre>
      */
     QuantifiedType NIL_CONSTRUCTOR_TYPE = new QuantifiedType(
-        Lists.immutable.of(TYPE_VAR_A),
+        List.of(TYPE_VAR_A),
         Type.function(LIST_A_TYPE),
         KIND_STAR);
 
@@ -173,7 +173,7 @@ public interface ExampleNodes {
     ConstructorNode<Attributes> NIL_CONSTRUCTOR_NODE = constructorNode(
         NIL_CONSTRUCTOR_META,
         "Nil",
-        Lists.immutable.empty(),
+        List.of(),
         Optional.empty());
 
     /**
@@ -188,8 +188,8 @@ public interface ExampleNodes {
     DataNode<Attributes> LIST_DATA_NODE = dataNode(
         LIST_DATA_META,
         "List",
-        Lists.immutable.of(TYPE_VAR_A_NODE),
-        Lists.immutable.of(
+        List.of(TYPE_VAR_A_NODE),
+        List.of(
             CONS_CONSTRUCTOR_NODE,
             NIL_CONSTRUCTOR_NODE));
 
@@ -219,7 +219,7 @@ public interface ExampleNodes {
      * <pre><code>[A] { A -> A }</code></pre>
      */
     QuantifiedType LET_ID_TYPE = new QuantifiedType(
-        Lists.immutable.of(TYPE_VAR_A),
+        List.of(TYPE_VAR_A),
         Type.function(TYPE_VAR_A, TYPE_VAR_A),
         KIND_STAR);
 
@@ -239,8 +239,8 @@ public interface ExampleNodes {
      */
     QuantifiedTypeNode<Attributes> LET_ID_TYPE_NODE = quantifiedTypeNode(
         Meta.nameless(KIND_STAR),
-        Lists.immutable.of(TYPE_VAR_A_NODE),
-        funTypeNode(Meta.nameless(KIND_STAR), Lists.immutable.of(TYPE_VAR_A_REF_NODE), TYPE_VAR_A_REF_NODE));
+        List.of(TYPE_VAR_A_NODE),
+        funTypeNode(Meta.nameless(KIND_STAR), List.of(TYPE_VAR_A_REF_NODE), TYPE_VAR_A_REF_NODE));
 
     /**
      * A typed and kinded example node for a let binding to an identity function:
@@ -254,7 +254,7 @@ public interface ExampleNodes {
         LET_ID_TYPE_NODE,
         lambdaNode(
             Meta.nameless(LET_ID_TYPE),
-            Lists.immutable.of(paramNode(Meta.of(LET_ID_PARAM_NAME, TYPE_VAR_A), "a", TYPE_VAR_A_REF_NODE)),
+            List.of(paramNode(Meta.of(LET_ID_PARAM_NAME, TYPE_VAR_A), "a", TYPE_VAR_A_REF_NODE)),
             refNode(Meta.of(LET_ID_PARAM_NAME, TYPE_VAR_A), "a")));
 
     /**
@@ -266,8 +266,8 @@ public interface ExampleNodes {
     LetFnNode<Attributes> LET_FN_ID_NODE = letFnNode(
         Meta.of(LET_ID_NAME, LET_ID_TYPE),
         "id",
-        Lists.immutable.of(TYPE_VAR_A_NODE),
-        Lists.immutable.of(paramNode(Meta.of(LET_ID_PARAM_NAME, TYPE_VAR_A), "a", TYPE_VAR_A_REF_NODE)),
+        List.of(TYPE_VAR_A_NODE),
+        List.of(paramNode(Meta.of(LET_ID_PARAM_NAME, TYPE_VAR_A), "a", TYPE_VAR_A_REF_NODE)),
         TYPE_VAR_A_REF_NODE,
         refNode(Meta.of(LET_ID_PARAM_NAME, TYPE_VAR_A), "a"));
 
@@ -297,7 +297,7 @@ public interface ExampleNodes {
      * <pre><code>[A] { A -> Int }</code></pre>
      */
     QuantifiedType LET_MAGIC_TYPE = new QuantifiedType(
-        Lists.immutable.of(TYPE_VAR_A),
+        List.of(TYPE_VAR_A),
         Type.function(TYPE_VAR_A, Type.INT),
         KIND_STAR);
 
@@ -316,7 +316,7 @@ public interface ExampleNodes {
      * <pre><code>[A, B] { (A, B) -> A }</code></pre>
      */
     QuantifiedType LET_CONST_TYPE = new QuantifiedType(
-        Lists.immutable.of(TYPE_VAR_A, TYPE_VAR_B),
+        List.of(TYPE_VAR_A, TYPE_VAR_B),
         Type.function(TYPE_VAR_A, TYPE_VAR_B, TYPE_VAR_A),
         KIND_STAR);
 
@@ -334,7 +334,7 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_INC_NODE = applyNode(
         Meta.nameless(Type.INT),
         refNode(LET_INC_META, "inc"),
-        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1)));
+        List.of(intNode(Meta.nameless(Type.INT), 1)));
 
     /**
      * A typed example node for the application of a magic number function to an integer:
@@ -345,7 +345,7 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_MAGIC_INT_NODE = applyNode(
         Meta.nameless(Type.INT),
         refNode(LET_MAGIC_META, "magic"),
-        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1)));
+        List.of(intNode(Meta.nameless(Type.INT), 1)));
 
     /**
      * A typed example node for the application of a magic number function to a string:
@@ -356,7 +356,7 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_MAGIC_STRING_NODE = applyNode(
         Meta.nameless(Type.STRING),
         refNode(LET_MAGIC_META, "magic"),
-        Lists.immutable.of(stringNode(Meta.nameless(Type.STRING), "abc")));
+        List.of(stringNode(Meta.nameless(Type.STRING), "abc")));
 
     /**
      * A typed example node for the application of an identity function to an integer:
@@ -367,7 +367,7 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_ID_INT_NODE = applyNode(
         Meta.nameless(Type.INT),
         refNode(LET_ID_META, "id"),
-        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1)));
+        List.of(intNode(Meta.nameless(Type.INT), 1)));
 
     /**
      * A typed example node for the application of an identity function to a string:
@@ -378,7 +378,7 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_ID_STRING_NODE = applyNode(
         Meta.nameless(Type.STRING),
         refNode(LET_ID_META, "id"),
-        Lists.immutable.of(stringNode(Meta.nameless(Type.STRING), "abc")));
+        List.of(stringNode(Meta.nameless(Type.STRING), "abc")));
 
     /**
      * A typed example node for two differently-instantiated applications of a const function:
@@ -389,11 +389,11 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_CONST_POLY_NODE = applyNode(
         Meta.nameless(Type.INT),
         refNode(LET_CONST_META, "const"),
-        Lists.immutable.of(
+        List.of(
             applyNode(
                 Meta.nameless(Type.INT),
                 refNode(LET_CONST_META, "const"),
-                Lists.immutable.of(
+                List.of(
                     intNode(Meta.nameless(Type.INT), 1),
                     charNode(Meta.nameless(Type.CHAR), 'a'))),
             stringNode(Meta.nameless(Type.STRING), "b")));
@@ -424,7 +424,7 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_SELECT_INC_INT_NODE = applyNode(
         Meta.nameless(Type.INT),
         SELECT_INC_INT_NODE,
-        Lists.immutable.empty());
+        List.of());
 
     /**
      * The type of the magic number function <code>Mina/Test/Examples.magic</code> after being partially applied with an integer.
@@ -452,14 +452,14 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_SELECT_MAGIC_INT_NODE = applyNode(
         Meta.nameless(Type.INT),
         SELECT_MAGIC_INT_NODE,
-        Lists.immutable.empty());
+        List.of());
 
     /**
      * The type of the constant function <code>Mina/Test/Examples.const</code> after being partially applied with an integer.
      * <pre><code>[B] { B -> Int }</code></pre>
      */
     QuantifiedType SELECT_CONST_INT_TYPE = new QuantifiedType(
-        Lists.immutable.of(TYPE_VAR_B),
+        List.of(TYPE_VAR_B),
         Type.function(TYPE_VAR_B, Type.INT),
         KIND_STAR);
 
@@ -487,7 +487,7 @@ public interface ExampleNodes {
     ApplyNode<Attributes> APPLY_CHAR_SELECT_CONST_INT_NODE = applyNode(
         Meta.nameless(Type.INT),
         SELECT_CONST_INT_NODE,
-        Lists.immutable.of(charNode(Meta.nameless(Type.CHAR), 'b')));
+        List.of(charNode(Meta.nameless(Type.CHAR), 'b')));
 
     /**
      * A typed example node for a negation expression:
@@ -509,7 +509,7 @@ public interface ExampleNodes {
     UnaryOpNode<Attributes> NEGATE_INC_ONE_NODE = unaryOpNode(
         Meta.nameless(Type.INT),
         UnaryOp.NEGATE,
-        applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))));
+        applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), List.of(intNode(Meta.nameless(Type.INT), 1))));
 
     /**
      * A typed example node for a negation expression that calls magic on its operand:
@@ -520,7 +520,7 @@ public interface ExampleNodes {
     UnaryOpNode<Attributes> NEGATE_MAGIC_ONE_NODE = unaryOpNode(
         Meta.nameless(Type.INT),
         UnaryOp.NEGATE,
-        applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))));
+        applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), List.of(intNode(Meta.nameless(Type.INT), 1))));
 
     /**
      * A typed example node for a negation expression that calls identity on its operand:
@@ -531,7 +531,7 @@ public interface ExampleNodes {
     UnaryOpNode<Attributes> NEGATE_ID_ONE_NODE = unaryOpNode(
         Meta.nameless(Type.INT),
         UnaryOp.NEGATE,
-        applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))));
+        applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), List.of(intNode(Meta.nameless(Type.INT), 1))));
 
     /**
      * A typed example node for an addition expression:
@@ -553,9 +553,9 @@ public interface ExampleNodes {
      */
     BinaryOpNode<Attributes> INC_ONE_PLUS_INC_TWO_NODE = binaryOpNode(
         Meta.nameless(Type.INT),
-        applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
+        applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), List.of(intNode(Meta.nameless(Type.INT), 1))),
         BinaryOp.ADD,
-        applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
+        applyNode(Meta.nameless(Type.INT), refNode(LET_INC_META, "inc"), List.of(intNode(Meta.nameless(Type.INT), 2))));
 
     /**
      * A typed example node for an addition expression that calls magic on its operands:
@@ -565,9 +565,9 @@ public interface ExampleNodes {
      */
     BinaryOpNode<Attributes> MAGIC_ONE_PLUS_MAGIC_TWO_NODE = binaryOpNode(
         Meta.nameless(Type.INT),
-        applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
+        applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), List.of(intNode(Meta.nameless(Type.INT), 1))),
         BinaryOp.ADD,
-        applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
+        applyNode(Meta.nameless(Type.INT), refNode(LET_MAGIC_META, "magic"), List.of(intNode(Meta.nameless(Type.INT), 2))));
 
     /**
      * A typed example node for an addition expression that calls identity on its operands:
@@ -577,9 +577,9 @@ public interface ExampleNodes {
      */
     BinaryOpNode<Attributes> ID_ONE_PLUS_ID_TWO_NODE = binaryOpNode(
         Meta.nameless(Type.INT),
-        applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
+        applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), List.of(intNode(Meta.nameless(Type.INT), 1))),
         BinaryOp.ADD,
-        applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
+        applyNode(Meta.nameless(Type.INT), refNode(LET_ID_META, "id"), List.of(intNode(Meta.nameless(Type.INT), 2))));
 
     /**
      * A typed example node for an if expression with a constant boolean condition and branches.
@@ -600,7 +600,7 @@ public interface ExampleNodes {
         applyNode(
             Meta.nameless(Type.BOOLEAN),
             refNode(LET_ID_META, "id"),
-            Lists.immutable.of(boolNode(Meta.nameless(Type.BOOLEAN), true))),
+            List.of(boolNode(Meta.nameless(Type.BOOLEAN), true))),
         intNode(Meta.nameless(Type.INT), 1),
         intNode(Meta.nameless(Type.INT), 2));
 
@@ -613,15 +613,15 @@ public interface ExampleNodes {
         applyNode(
             Meta.nameless(Type.BOOLEAN),
             refNode(LET_ID_META, "id"),
-            Lists.immutable.of(boolNode(Meta.nameless(Type.BOOLEAN), true))),
+            List.of(boolNode(Meta.nameless(Type.BOOLEAN), true))),
         applyNode(
             Meta.nameless(Type.INT),
             refNode(LET_ID_META, "id"),
-            Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
+            List.of(intNode(Meta.nameless(Type.INT), 1))),
         applyNode(
             Meta.nameless(Type.INT),
             refNode(LET_ID_META, "id"),
-            Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))));
+            List.of(intNode(Meta.nameless(Type.INT), 2))));
 
     /**
      * A typed example node for a block that declares a mixture of constant bindings and computations.
@@ -637,7 +637,7 @@ public interface ExampleNodes {
      */
     BlockNode<Attributes> MIXED_BLOCK_NODE = blockNode(
         Meta.nameless(Type.INT),
-        Lists.immutable.of(
+        List.of(
             letNode(
                 Meta.of(new LocalName("a", 0), Type.INT),
                 "a",
@@ -648,14 +648,14 @@ public interface ExampleNodes {
                 applyNode(
                     Meta.nameless(Type.INT),
                     refNode(LET_ID_META, "id"),
-                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2)))),
+                    List.of(intNode(Meta.nameless(Type.INT), 2)))),
             letNode(
                 Meta.of(new LocalName("c", 2), Type.INT),
                 "c",
                 applyNode(
                     Meta.nameless(Type.INT),
                     refNode(LET_MAGIC_META, "magic"),
-                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 3)))),
+                    List.of(intNode(Meta.nameless(Type.INT), 3)))),
             letNode(
                 Meta.of(new LocalName("d", 3), Type.BOOLEAN),
                 "d",
@@ -663,7 +663,7 @@ public interface ExampleNodes {
         applyNode(
             Meta.nameless(Type.INT),
             refNode(LET_INC_META, "inc"),
-            Lists.immutable.of(refNode(Meta.of(new LocalName("c", 2), Type.INT), "c"))));
+            List.of(refNode(Meta.of(new LocalName("c", 2), Type.INT), "c"))));
 
     /**
      * A typed example node for a block that declares a mixture of constant bindings and computations,
@@ -682,7 +682,7 @@ public interface ExampleNodes {
      */
     BlockNode<Attributes> MIXED_NESTED_BLOCK_NODE = blockNode(
         Meta.nameless(Type.INT),
-        Lists.immutable.of(
+        List.of(
             letNode(
                 Meta.of(new LocalName("a", 0), Type.INT),
                 "a",
@@ -692,19 +692,19 @@ public interface ExampleNodes {
                 "c",
                 blockNode(
                     Meta.nameless(Type.INT),
-                    Lists.immutable.of(
+                    List.of(
                         letNode(
                             Meta.of(new LocalName("b", 1), Type.INT),
                             "b",
                             applyNode(
                                 Meta.nameless(Type.INT),
                                 refNode(LET_ID_META, "id"),
-                                Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))))
+                                List.of(intNode(Meta.nameless(Type.INT), 2))))
                     ),
                     applyNode(
                         Meta.nameless(Type.INT),
                         refNode(LET_MAGIC_META, "magic"),
-                        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 3))))),
+                        List.of(intNode(Meta.nameless(Type.INT), 3))))),
             letNode(
                 Meta.of(new LocalName("d", 3), Type.BOOLEAN),
                 "d",
@@ -712,7 +712,7 @@ public interface ExampleNodes {
         applyNode(
             Meta.nameless(Type.INT),
             refNode(LET_INC_META, "inc"),
-            Lists.immutable.of(refNode(Meta.of(new LocalName("c", 2), Type.INT), "c"))));
+            List.of(refNode(Meta.of(new LocalName("c", 2), Type.INT), "c"))));
 
     /**
      * A typed example node for a block that declares a mixture of constant bindings and computations
@@ -728,7 +728,7 @@ public interface ExampleNodes {
      */
     BlockNode<Attributes> MIXED_BLOCK_NO_TAIL_NODE = blockNode(
         Meta.nameless(Type.INT),
-        Lists.immutable.of(
+        List.of(
             letNode(
                 Meta.of(new LocalName("a", 0), Type.INT),
                 "a",
@@ -739,14 +739,14 @@ public interface ExampleNodes {
                 applyNode(
                     Meta.nameless(Type.INT),
                     refNode(LET_ID_META, "id"),
-                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2)))),
+                    List.of(intNode(Meta.nameless(Type.INT), 2)))),
             letNode(
                 Meta.of(new LocalName("c", 2), Type.INT),
                 "c",
                 applyNode(
                     Meta.nameless(Type.INT),
                     refNode(LET_MAGIC_META, "magic"),
-                    Lists.immutable.of(intNode(Meta.nameless(Type.INT), 3)))),
+                    List.of(intNode(Meta.nameless(Type.INT), 3)))),
             letNode(
                 Meta.of(new LocalName("d", 3), Type.BOOLEAN),
                 "d",
@@ -769,7 +769,7 @@ public interface ExampleNodes {
      */
     BlockNode<Attributes> MIXED_NESTED_BLOCK_NO_TAIL_NODE = blockNode(
         Meta.nameless(Type.INT),
-        Lists.immutable.of(
+        List.of(
             letNode(
                 Meta.of(new LocalName("a", 0), Type.INT),
                 "a",
@@ -779,19 +779,19 @@ public interface ExampleNodes {
                 "c",
                 blockNode(
                     Meta.nameless(Type.INT),
-                    Lists.immutable.of(
+                    List.of(
                         letNode(
                             Meta.of(new LocalName("b", 1), Type.INT),
                             "b",
                             applyNode(
                                 Meta.nameless(Type.INT),
                                 refNode(LET_ID_META, "id"),
-                                Lists.immutable.of(intNode(Meta.nameless(Type.INT), 2))))
+                                List.of(intNode(Meta.nameless(Type.INT), 2))))
                     ),
                     applyNode(
                         Meta.nameless(Type.INT),
                         refNode(LET_MAGIC_META, "magic"),
-                        Lists.immutable.of(intNode(Meta.nameless(Type.INT), 3))))),
+                        List.of(intNode(Meta.nameless(Type.INT), 3))))),
             letNode(
                 Meta.of(new LocalName("d", 3), Type.BOOLEAN),
                 "d",
@@ -809,7 +809,7 @@ public interface ExampleNodes {
     MatchNode<Attributes> MATCH_NODE_INT_ID_PATTERN = matchNode(
         Meta.nameless(Type.INT),
         intNode(Meta.nameless(Type.INT), 1),
-        Lists.immutable.of(caseNode(
+        List.of(caseNode(
             Meta.nameless(Type.INT),
             idPatternNode(Meta.of(new LocalName("x", 0), Type.INT), "x"),
             refNode(Meta.of(new LocalName("x", 0), Type.INT), "x"))));
@@ -825,7 +825,7 @@ public interface ExampleNodes {
     MatchNode<Attributes> MATCH_NODE_INT_LITERAL_PATTERN = matchNode(
         Meta.nameless(Type.BOOLEAN),
         intNode(Meta.nameless(Type.INT), 1),
-        Lists.immutable.of(caseNode(
+        List.of(caseNode(
             Meta.nameless(Type.BOOLEAN),
             literalPatternNode(Meta.nameless(Type.INT), intNode(Meta.nameless(Type.INT), 1)),
             boolNode(Meta.nameless(Type.BOOLEAN), true))));
@@ -841,7 +841,7 @@ public interface ExampleNodes {
     MatchNode<Attributes> MATCH_NODE_INT_ALIAS_PATTERN = matchNode(
         Meta.nameless(Type.INT),
         intNode(Meta.nameless(Type.INT), 1),
-        Lists.immutable.of(caseNode(
+        List.of(caseNode(
             Meta.nameless(Type.INT),
             aliasPatternNode(
                 Meta.of(new LocalName("x", 0), Type.INT),
@@ -861,20 +861,20 @@ public interface ExampleNodes {
     MatchNode<Attributes> MATCH_NODE_LIST_CONSTRUCTOR_ID_PATTERN = matchNode(
         Meta.nameless(Type.INT),
         refNode(Meta.of(new LocalName("list", 0), LIST_A_TYPE), "list"),
-        Lists.immutable.of(
+        List.of(
             caseNode(
                 Meta.nameless(Type.INT),
                 constructorPatternNode(
                     Meta.of(NIL_CONSTRUCTOR_NAME, LIST_A_TYPE),
                     idNode(Range.EMPTY, "Nil"),
-                    Lists.immutable.empty()),
+                    List.of()),
                 intNode(Meta.nameless(Type.INT), 0)),
             caseNode(
                 Meta.nameless(Type.INT),
                 constructorPatternNode(
                     Meta.of(CONS_CONSTRUCTOR_NAME, LIST_A_TYPE),
                     idNode(Range.EMPTY, "Cons"),
-                    Lists.immutable.of(
+                    List.of(
                         fieldPatternNode(
                             Meta.of(HEAD_FIELD_NAME, TYPE_VAR_A),
                             "head",
@@ -898,8 +898,8 @@ public interface ExampleNodes {
         applyNode(
             Meta.nameless(Type.INT),
             refNode(LET_ID_META, "id"),
-            Lists.immutable.of(intNode(Meta.nameless(Type.INT), 1))),
-        Lists.immutable.of(caseNode(
+            List.of(intNode(Meta.nameless(Type.INT), 1))),
+        List.of(caseNode(
             Meta.nameless(Type.INT),
             idPatternNode(Meta.of(new LocalName("x", 0), Type.INT), "x"),
             refNode(Meta.of(new LocalName("x", 0), Type.INT), "x"))));
@@ -915,11 +915,11 @@ public interface ExampleNodes {
     MatchNode<Attributes> MATCH_NODE_INT_LITERAL_PATTERN_ID = matchNode(
         Meta.nameless(Type.BOOLEAN),
         intNode(Meta.nameless(Type.INT), 1),
-        Lists.immutable.of(caseNode(
+        List.of(caseNode(
             Meta.nameless(Type.BOOLEAN),
             literalPatternNode(Meta.nameless(Type.INT), intNode(Meta.nameless(Type.INT), 1)),
             applyNode(
                 Meta.nameless(Type.BOOLEAN),
                 refNode(LET_ID_META, "id"),
-                Lists.immutable.of(boolNode(Meta.nameless(Type.BOOLEAN), true))))));
+                List.of(boolNode(Meta.nameless(Type.BOOLEAN), true))))));
 }

@@ -4,16 +4,16 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.*;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
 
+import java.util.List;
 import java.util.Optional;
 
-public record ConstructorNode<A> (Meta<A> meta, String name, ImmutableList<ConstructorParamNode<A>> params,
+public record ConstructorNode<A> (Meta<A> meta, String name, List<ConstructorParamNode<A>> params,
         Optional<TypeNode<A>> type) implements MetaNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -33,7 +33,7 @@ public record ConstructorNode<A> (Meta<A> meta, String name, ImmutableList<Const
         var result = visitor.visitConstructor(
                 meta(),
                 name(),
-                params().collect(param -> param.accept(visitor)),
+                params().stream().map(param -> param.accept(visitor)).toList(),
                 type().map(visitor::visitType));
 
         visitor.postVisitConstructor(result);
@@ -52,7 +52,7 @@ public record ConstructorNode<A> (Meta<A> meta, String name, ImmutableList<Const
         var result = visitor.visitConstructor(
                 meta(),
                 name(),
-                params().collect(param -> param.accept(visitor)),
+                params().stream().map(param -> param.accept(visitor)).toList(),
                 type().map(visitor::visitType));
 
         visitor.postVisitConstructor(result);

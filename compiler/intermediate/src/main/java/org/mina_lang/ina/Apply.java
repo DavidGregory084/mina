@@ -4,15 +4,16 @@
  */
 package org.mina_lang.ina;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.types.Type;
 
-public record Apply(Type type, Value expr, ImmutableList<Value> args) implements Expression {
+import java.util.List;
+
+public record Apply(Type type, Value expr, List<Value> args) implements Expression {
     @Override
     public <A> A accept(InaNodeFolder<A> visitor) {
         return visitor.visitApply(
             type,
             expr.accept(visitor),
-            args.collect(arg -> arg.accept(visitor)));
+            args.stream().map(arg -> arg.accept(visitor)).toList());
     }
 }

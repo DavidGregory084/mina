@@ -4,9 +4,9 @@
  */
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.list.ImmutableList;
+import java.util.List;
 
-public record QuantifiedType(ImmutableList<TypeVar> args, Type body, Kind kind) implements PolyType {
+public record QuantifiedType(List<TypeVar> args, Type body, Kind kind) implements PolyType {
 
     @Override
     public void accept(TypeVisitor visitor) {

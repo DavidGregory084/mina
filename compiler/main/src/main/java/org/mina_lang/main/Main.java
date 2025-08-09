@@ -7,14 +7,10 @@ package org.mina_lang.main;
 import com.opencastsoftware.yvette.Range;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.factory.Sets;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.HawickJamesSimpleCycles;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
-import org.jgrapht.nio.DefaultAttribute;
-import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticReporter;
@@ -38,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -52,14 +49,10 @@ public class Main {
     private ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes;
     private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics;
 
-    private DOTExporter<NamespaceName, DefaultEdge> dotExporter = new DOTExporter<>();
-
     public Main(BaseDiagnosticCollector diagnostics) {
         this.mainCollector = diagnostics;
         this.namespaceNodes = new ConcurrentHashMap<>();
         this.scopedDiagnostics = new ConcurrentHashMap<>();
-        dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
-                "label", DefaultAttribute.createAttribute(nsName.canonicalName())));
     }
 
     public BaseDiagnosticCollector getMainCollector() {
@@ -150,11 +143,11 @@ public class Main {
 
             // Find the import statement that triggers the cycle
             var startNsNode = namespaceNodes.get(startNs);
-            var cyclicImport = startNsNode.imports().detect(imp -> {
+            var cyclicImport = startNsNode.imports().stream().filter(imp -> {
                 var nextNs = importCycle.get(1);
                 var importedNs = imp.namespace().getName();
                 return importedNs.equals(nextNs);
-            });
+            }).findFirst().get();
 
             // Report the import cycle at the appropriate location
             var startNsCollector = scopedDiagnostics.get(startNs);
@@ -198,7 +191,7 @@ public class Main {
         var parsingPhase = new ParsingPhase(sourceData, scopedDiagnostics, namespaceNodes, mainCollector);
 
         return parsingPhase.runPhase().flatMap(parsedNodes -> {
-            Set<NamespaceName> importedNamespaces = Sets.mutable.empty();
+            Set<NamespaceName> importedNamespaces = new HashSet<>();
             var namespaceGraph = constructNamespaceGraph(parsedNodes, importedNamespaces);
 
             // We can't proceed if our namespace graph is badly formed

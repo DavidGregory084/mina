@@ -4,16 +4,17 @@
  */
 package org.mina_lang.ina;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.names.LocalBindingName;
 import org.mina_lang.common.types.Type;
 
-public record Join(LocalBindingName name, Type type, ImmutableList<Param> params, Expression body) implements LocalBinding {
+import java.util.List;
+
+public record Join(LocalBindingName name, Type type, List<Param> params, Expression body) implements LocalBinding {
     @Override
     public <A> A accept(InaNodeFolder<A> visitor) {
         return visitor.visitJoin(
             name, type,
-            params.collect(param -> param.accept(visitor)),
+            params.stream().map(param -> param.accept(visitor)).toList(),
             body.accept(visitor));
     }
 }

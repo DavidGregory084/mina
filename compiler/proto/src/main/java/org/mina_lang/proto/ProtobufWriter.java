@@ -5,9 +5,8 @@
 package org.mina_lang.proto;
 
 import com.google.protobuf.Empty;
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.factory.primitive.ObjectIntMaps;
-import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.NameVisitor;
 import org.mina_lang.common.types.SortVisitor;
@@ -15,6 +14,7 @@ import org.mina_lang.common.types.SyntheticVar;
 import org.mina_lang.proto.names.*;
 import org.mina_lang.proto.types.*;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,14 +24,14 @@ public class ProtobufWriter {
     public Environment toProto(Scope<org.mina_lang.common.Attributes> topLevelScope) {
         var builder = Environment.newBuilder();
 
-        MutableObjectIntMap<String> stringIndices = ObjectIntMaps.mutable.empty();
-        List<String> strings = Lists.mutable.empty();
+        Object2IntMap<String> stringIndices = Object2IntMaps.emptyMap();
+        List<String> strings = new ArrayList<>();
 
-        MutableObjectIntMap<org.mina_lang.common.names.Name> nameIndices = ObjectIntMaps.mutable.empty();
+        Object2IntMap<org.mina_lang.common.names.Name> nameIndices = Object2IntMaps.emptyMap();
         Map<org.mina_lang.common.names.Name, Name> namesEncoded = new LinkedHashMap<>();
         var nameVisitor = new NameEncodingVisitor(stringIndices, strings, nameIndices, namesEncoded);
 
-        MutableObjectIntMap<org.mina_lang.common.types.Sort> sortIndices = ObjectIntMaps.mutable.empty();
+        Object2IntMap<org.mina_lang.common.types.Sort> sortIndices = Object2IntMaps.emptyMap();
         Map<org.mina_lang.common.types.Sort, Sort> sortsEncoded = new LinkedHashMap<>();
         var sortVisitor = new SortEncodingVisitor(stringIndices, strings, sortIndices, sortsEncoded, nameVisitor);
 
@@ -48,7 +48,7 @@ public class ProtobufWriter {
         topLevelScope.fields().forEach((constr, fields) -> {
             constr.accept(nameVisitor);
 
-            fields.forEach(field -> {
+            fields.forEach((name, field) -> {
                 field.meta().name().accept(nameVisitor);
                 field.meta().sort().accept(sortVisitor);
             });
@@ -91,15 +91,15 @@ public class ProtobufWriter {
     }
 
     static class NameEncodingVisitor implements NameVisitor {
-        private final MutableObjectIntMap<String> stringIndices;
+        private final Object2IntMap<String> stringIndices;
         private final List<String> strings;
-        private final MutableObjectIntMap<org.mina_lang.common.names.Name> nameIndices;
+        private final Object2IntMap<org.mina_lang.common.names.Name> nameIndices;
         private final Map<org.mina_lang.common.names.Name, Name> namesEncoded;
 
         NameEncodingVisitor(
-            MutableObjectIntMap<String> stringIndices,
+            Object2IntMap<String> stringIndices,
             List<String> strings,
-            MutableObjectIntMap<org.mina_lang.common.names.Name> nameIndices,
+            Object2IntMap<org.mina_lang.common.names.Name> nameIndices,
             Map<org.mina_lang.common.names.Name, Name> namesEncoded) {
             this.stringIndices = stringIndices;
             this.strings = strings;
@@ -108,7 +108,7 @@ public class ProtobufWriter {
         }
 
         private int recordString(String string) {
-            return stringIndices.getIfAbsentPut(string, () -> {
+            return stringIndices.computeIfAbsent(string, s -> {
                 var index = strings.size();
                 strings.add(string);
                 return index;
@@ -158,7 +158,7 @@ public class ProtobufWriter {
             recordName(namespace, () -> {
                 var proto = NamespaceName.newBuilder()
                     .setName(recordString(namespace.name()))
-                    .addAllPkg(namespace.pkg().collect(this::recordString));
+                    .addAllPkg(namespace.pkg().stream().map(this::recordString).toList());
                 return Name.newBuilder()
                     .setNamespace(proto)
                     .build();
@@ -250,16 +250,16 @@ public class ProtobufWriter {
     }
 
     static class SortEncodingVisitor implements SortVisitor {
-        private final MutableObjectIntMap<String> stringIndices;
+        private final Object2IntMap<String> stringIndices;
         private final List<String> strings;
-        private final MutableObjectIntMap<org.mina_lang.common.types.Sort> sortIndices;
+        private final Object2IntMap<org.mina_lang.common.types.Sort> sortIndices;
         private final Map<org.mina_lang.common.types.Sort, Sort> sortsEncoded;
         private final NameEncodingVisitor nameVisitor;
 
         SortEncodingVisitor(
-            MutableObjectIntMap<String> stringIndices,
+            Object2IntMap<String> stringIndices,
             List<String> strings,
-            MutableObjectIntMap<org.mina_lang.common.types.Sort> sortIndices,
+            Object2IntMap<org.mina_lang.common.types.Sort> sortIndices,
             Map<org.mina_lang.common.types.Sort, Sort> sortsEncoded,
             NameEncodingVisitor nameVisitor
         ) {
@@ -271,7 +271,7 @@ public class ProtobufWriter {
         }
 
         private int recordString(String string) {
-            return stringIndices.getIfAbsentPut(string, () -> {
+            return stringIndices.computeIfAbsent(string, s -> {
                 var index = strings.size();
                 strings.add(string);
                 return index;

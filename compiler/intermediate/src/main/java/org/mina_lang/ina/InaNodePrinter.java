@@ -6,13 +6,16 @@ package org.mina_lang.ina;
 
 import com.opencastsoftware.prettier4j.Doc;
 import org.apache.commons.text.StringEscapeUtils;
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.Type;
 import org.mina_lang.common.types.TypePrinter;
 import org.mina_lang.common.types.TypeVar;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class InaNodePrinter implements InaNodeFolder<Doc> {
     private static final int DEFAULT_INDENT = 3;
@@ -84,7 +87,7 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
         this(DEFAULT_INDENT);
     }
 
-    private Doc visitTypeParams(ImmutableList<Doc> typeParams) {
+    private Doc visitTypeParams(List<Doc> typeParams) {
         if (typeParams.isEmpty()) {
             return Doc.empty();
         }
@@ -94,13 +97,13 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
             .bracket(this.indent, Doc.lineOrEmpty(), LSQUARE, RSQUARE);
     }
 
-    private Doc visitValueParams(ImmutableList<Doc> valueParams) {
+    private Doc visitValueParams(List<Doc> valueParams) {
         return Doc
             .intersperse(COMMA, valueParams.stream())
             .bracket(this.indent, Doc.lineOrEmpty(), LPAREN, RPAREN);
     }
 
-    private Doc visitSymbols(ImmutableList<Doc> symbols) {
+    private Doc visitSymbols(List<Doc> symbols) {
         if (symbols.isEmpty()) {
             return EMPTY_DECLS;
         }
@@ -110,8 +113,8 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
             .bracket(this.indent, Doc.lineOrSpace(), LBRACE, RBRACE);
     }
 
-    private Doc visitDeclarations(ImmutableList<Doc> declarations) {
-        if (declarations.toList().isEmpty()) {
+    private Doc visitDeclarations(List<Doc> declarations) {
+        if (declarations.isEmpty()) {
             return EMPTY_DECLS;
         }
 
@@ -120,8 +123,8 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
             .bracket(this.indent, Doc.line(), LBRACE, RBRACE);
     }
 
-    private Doc visitTopLevelDeclarations(ImmutableList<Doc> declarations) {
-        if (declarations.toList().isEmpty()) {
+    private Doc visitTopLevelDeclarations(List<Doc> declarations) {
+        if (declarations.isEmpty()) {
             return EMPTY_DECLS;
         }
 
@@ -131,22 +134,22 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
     }
 
     @Override
-    public Doc visitNamespace(NamespaceName name, ImmutableList<Doc> declarations) {
+    public Doc visitNamespace(NamespaceName name, List<Doc> declarations) {
         return NAMESPACE
             .appendSpace(name.accept(namePrinter))
             .appendSpace(visitTopLevelDeclarations(declarations));
     }
 
     @Override
-    public Doc visitData(DataName name, ImmutableList<TypeVar> typeParams, ImmutableList<Doc> constructors) {
+    public Doc visitData(DataName name, List<TypeVar> typeParams, List<Doc> constructors) {
         return DATA
             .appendSpace(name.accept(namePrinter))
-            .append(visitTypeParams(typeParams.collect(tyParam -> tyParam.accept(typePrinter))))
+            .append(visitTypeParams(typeParams.stream().map(tyParam -> tyParam.accept(typePrinter)).toList()))
             .appendSpace(visitDeclarations(constructors));
     }
 
     @Override
-    public Doc visitConstructor(ConstructorName name, ImmutableList<Doc> fields) {
+    public Doc visitConstructor(ConstructorName name, List<Doc> fields) {
         return CASE
             .appendSpace(name.accept(namePrinter))
             .append(visitValueParams(fields));
@@ -189,7 +192,7 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
     }
 
     @Override
-    public Doc visitJoin(LocalBindingName name, Type type, ImmutableList<Doc> params, Doc body) {
+    public Doc visitJoin(LocalBindingName name, Type type, List<Doc> params, Doc body) {
         return JOIN
             .appendSpace(name.accept(namePrinter))
             .append(COLON)
@@ -201,7 +204,7 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
     }
 
     @Override
-    public Doc visitApply(Type type, Doc expr, ImmutableList<Doc> args) {
+    public Doc visitApply(Type type, Doc expr, List<Doc> args) {
         return expr.append(visitValueParams(args));
     }
 
@@ -235,8 +238,10 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
     }
 
     @Override
-    public Doc visitBlock(Type type, ImmutableList<Doc> bindings, Doc result) {
-        return visitDeclarations(bindings.newWith(result));
+    public Doc visitBlock(Type type, List<Doc> bindings, Doc result) {
+        var declarations = new ArrayList<>(bindings);
+        declarations.add(result);
+        return visitDeclarations(declarations);
     }
 
     @Override
@@ -249,7 +254,7 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
     }
 
     @Override
-    public Doc visitLambda(Type type, ImmutableList<Doc> params, Doc body) {
+    public Doc visitLambda(Type type, List<Doc> params, Doc body) {
         return visitValueParams(params)
             .appendSpace(ARROW)
             .appendLineOrSpace(body);
@@ -272,7 +277,7 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
     }
 
     @Override
-    public Doc visitMatch(Type type, Doc scrutinee, ImmutableList<Doc> cases) {
+    public Doc visitMatch(Type type, Doc scrutinee, List<Doc> cases) {
         return MATCH
             .appendSpace(scrutinee)
             .appendSpace(WITH)
@@ -293,7 +298,7 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
     }
 
     @Override
-    public Doc visitConstructorPattern(ConstructorName name, Type type, ImmutableList<Doc> fields) {
+    public Doc visitConstructorPattern(ConstructorName name, Type type, List<Doc> fields) {
         return name.accept(namePrinter).appendSpace(visitSymbols(fields));
     }
 

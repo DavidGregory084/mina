@@ -4,10 +4,6 @@
  */
 package org.mina_lang.codegen.jvm;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.codegen.jvm.scopes.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -27,10 +23,10 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
@@ -40,12 +36,12 @@ public class CodeGenerator {
 
     ProtobufWriter protobufWriter = new ProtobufWriter();
 
-    MutableMap<Named, byte[]> classes = Maps.mutable.empty();
+    Map<Named, byte[]> classes = new HashMap<>();
 
     public void generate(Path destination, NamespaceNode<Attributes> namespace) throws IOException {
         generateNamespace(namespace);
 
-        classes.forEachKeyValue((name, classData) -> {
+        classes.forEach((name, classData) -> {
             if (name instanceof NamespaceName nsName) {
                 var path = Paths.namespacePath(destination, nsName);
                 try {
@@ -203,13 +199,14 @@ public class CodeGenerator {
             dataScope.classWriter()
                     .visitPermittedSubclass(constrScope.constrType().getInternalName());
 
-            constr.params()
-                    .forEachWithIndex(this::generateConstructorParam);
+            IntStream
+                .range(0, constr.params().size())
+                .forEach(i -> generateConstructorParam(constr.params().get(i), i));
 
             Asm.emitObjectBootstrapMethod(
                     "equals",
                     Type.BOOLEAN_TYPE,
-                    Lists.immutable.of(Types.OBJECT_TYPE),
+                    List.of(Types.OBJECT_TYPE),
                     constrScope.classWriter(),
                     constrScope.constrType(),
                     JavaSignature.forConstructorInstance(constr),
@@ -219,7 +216,7 @@ public class CodeGenerator {
             Asm.emitObjectBootstrapMethod(
                     "hashCode",
                     Type.INT_TYPE,
-                    Lists.immutable.empty(),
+                    List.of(),
                     constrScope.classWriter(),
                     constrScope.constrType(),
                     JavaSignature.forConstructorInstance(constr),
@@ -229,7 +226,7 @@ public class CodeGenerator {
             Asm.emitObjectBootstrapMethod(
                     "toString",
                     Types.STRING_TYPE,
-                    Lists.immutable.empty(),
+                    List.of(),
                     constrScope.classWriter(),
                     constrScope.constrType(),
                     JavaSignature.forConstructorInstance(constr),
@@ -304,7 +301,8 @@ public class CodeGenerator {
                 var funType = (TypeApply) Types.getUnderlyingType(let);
 
                 letScope.methodParams()
-                    .toSortedListBy(LocalVar::index)
+                    .values().stream()
+                    .sorted(Comparator.comparingInt(LocalVar::index))
                     .forEach(param -> {
                         letScope.methodWriter().loadArg(param.index());
                         var argType = funType.typeArguments().get(param.index());
@@ -317,7 +315,9 @@ public class CodeGenerator {
                         Types.asmType(let),
                         Types.erasedMethod("apply", letScope.methodParams().size()));
 
-                Asm.unboxReturnValue(letScope.methodWriter(), funType.typeArguments().getLast());
+                Asm.unboxReturnValue(
+                    letScope.methodWriter(),
+                    funType.typeArguments().get(funType.typeArguments().size() - 1));
 
                 letScope.finaliseLet();
             });
@@ -426,9 +426,9 @@ public class CodeGenerator {
                 false);
 
             var freeVarTypes = lambdaScope
-                .freeVariables()
-                .collect(Types::asmType)
-                .toArray(new Type[lambdaScope.freeVariables().size()]);
+                .freeVariables().stream()
+                .map(Types::asmType)
+                .toArray(Type[]::new);
 
             // Stack the free variables of the lambda so they can be captured by the
             // invokedynamic instruction
@@ -459,23 +459,24 @@ public class CodeGenerator {
             var lambdaAttrs = Attributes.nameless(selectMeta.meta().sort());
             var lambdaMeta = selectMeta.withMeta(lambdaAttrs);
 
-            var lambdaParams = funType.typeArguments()
-                .take(funType.typeArguments().size() - 1)
-                .collectWithIndex((paramTy, index) -> {
+            var lambdaParams = IntStream.range(0, funType.typeArguments().size() - 1)
+                .mapToObj((index) -> {
                     var paramName = new LocalName("arg" +  index, 0);
-                    return paramNode(Meta.of(paramName, paramTy), "arg" + index);
-                });
+                    return paramNode(Meta.of(paramName, funType.typeArguments().get(index)), "arg" + index);
+                }).toList();
 
-            var applyAttrs = Attributes.nameless(funType.typeArguments().getLast());
+            var applyAttrs = Attributes.nameless(funType.typeArguments().get(funType.typeArguments().size() - 1));
             var applyMeta = selectMeta.withMeta(applyAttrs);
 
-            var appliedExprs = Lists.immutable.of(select.receiver())
-                .newWithAll(funType.typeArguments()
-                    .take(funType.typeArguments().size() - 1)
-                    .collectWithIndex((paramTy, index) -> {
-                        var paramName = new LocalName("arg" +  index, 0);
-                        return refNode(Meta.of(paramName, paramTy), "arg" + index);
-                    }));
+            var argReferences = IntStream.range(0, funType.typeArguments().size() - 1)
+                .mapToObj((index) -> {
+                    var paramName = new LocalName("arg" +  index, 0);
+                    return refNode(Meta.of(paramName, funType.typeArguments().get(index)), "arg" + index);
+                });
+
+            var appliedExprs = new ArrayList<ExprNode<Attributes>>();
+            appliedExprs.add(select.receiver());
+            appliedExprs.addAll(argReferences.toList());
 
             var lambda = lambdaNode(
                 lambdaMeta,
@@ -500,18 +501,20 @@ public class CodeGenerator {
                 var scrutineeLocal = method.methodWriter().newLocal(scrutineeType);
                 generateExpr(match.scrutinee());
                 method.methodWriter().storeLocal(scrutineeLocal);
-                match.cases().forEachWithIndex((cse, index) -> generateCase(cse, index, scrutineeLocal));
+                IntStream.range(0, match.cases().size()).forEach(i -> generateCase(match.cases().get(i), i, scrutineeLocal));
                 matchScope.finaliseMatch();
             });
         } else if (expr instanceof ApplyNode<Attributes> apply) {
             var applyType = Types.getType(apply);
 
             ExprNode<Attributes> appliedExpr;
-            ImmutableList<ExprNode<Attributes>> appliedArgs;
+            List<ExprNode<Attributes>> appliedArgs;
 
             if (apply.expr() instanceof SelectNode<Attributes> select) {
                 appliedExpr = select.selection();
-                appliedArgs = Lists.immutable.of(select.receiver()).newWithAll(apply.args());
+                appliedArgs = new ArrayList<>();
+                appliedArgs.add(select.receiver());
+                appliedArgs.addAll(apply.args());
             } else {
                 appliedExpr = apply.expr();
                 appliedArgs = apply.args();
@@ -520,24 +523,27 @@ public class CodeGenerator {
             Name appliedName = appliedExpr.meta().meta().name();
             TypeApply appliedType = (TypeApply) Types.getUnderlyingType(appliedExpr);
 
-            var funReturnType = Types.asmType(appliedType.typeArguments().getLast());
+            var funReturnType = Types.asmType(appliedType.typeArguments().get(appliedType.typeArguments().size() - 1));
             var funArgTypes = appliedType.typeArguments()
-                    .take(appliedType.typeArguments().size() - 1)
-                    .collect(Types::asmType)
-                    .toArray(new Type[appliedType.typeArguments().size() - 1]);
+                .subList(0, appliedType.typeArguments().size() - 1)
+                .stream().map(Types::asmType)
+                .toArray(Type[]::new);
 
             if (appliedName instanceof LetName letName) {
                 var namespaceName = letName.name().ns();
                 var declarationName = letName.name().name();
                 var ownerType = Types.getNamespaceAsmType(namespaceName);
 
-                appliedArgs
-                        .zip(appliedType.typeArguments())
-                        .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
+                IntStream
+                    .range(0, Math.min(appliedArgs.size(), appliedType.typeArguments().size()))
+                    .forEach(i -> generateArgExpr(appliedArgs.get(i), appliedType.typeArguments().get(i)));
 
                 method.methodWriter().invokeStatic(ownerType, new Method(declarationName, funReturnType, funArgTypes));
 
-                Asm.boxUnboxReturnValue(method.methodWriter(), appliedType.typeArguments().getLast(), applyType);
+                Asm.boxUnboxReturnValue(
+                    method.methodWriter(),
+                    appliedType.typeArguments().get(appliedType.typeArguments().size() - 1),
+                    applyType);
 
             } else if (appliedName instanceof ConstructorName constrName) {
                 var constrType = Types.getConstructorAsmType(constrName);
@@ -545,9 +551,9 @@ public class CodeGenerator {
                 method.methodWriter().newInstance(constrType);
                 method.methodWriter().dup();
 
-                appliedArgs
-                        .zip(appliedType.typeArguments())
-                        .forEach(pair -> generateArgExpr(pair.getOne(), pair.getTwo()));
+                IntStream
+                    .range(0, Math.min(appliedArgs.size(), appliedType.typeArguments().size()))
+                    .forEach(i -> generateArgExpr(appliedArgs.get(i), appliedType.typeArguments().get(i)));
 
                 method.methodWriter().invokeConstructor(constrType, new Method("<init>", Type.VOID_TYPE, funArgTypes));
                 // Not exactly necessary - this is here to upcast constructors into their parent
@@ -560,9 +566,9 @@ public class CodeGenerator {
             } else if (appliedName.equals(Nameless.INSTANCE) || appliedName instanceof LocalName) {
                 generateExpr(appliedExpr);
 
-                appliedArgs
-                        .zip(appliedType.typeArguments())
-                        .forEach(pair -> generateBoxedArgExpr(pair.getOne(), pair.getTwo()));
+                IntStream
+                    .range(0, Math.min(appliedArgs.size(), appliedType.typeArguments().size()))
+                    .forEach(i -> generateArgExpr(appliedArgs.get(i), appliedType.typeArguments().get(i)));
 
                 method.methodWriter().invokeInterface(
                         Types.asmType(appliedType),

@@ -4,34 +4,37 @@
  */
 package org.mina_lang.renamer.scopes;
 
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.BuiltInName;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.Name;
+import org.mina_lang.common.types.BuiltInType;
 import org.mina_lang.common.types.Type;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public record BuiltInNamingScope(
-        MutableMap<String, Meta<Name>> values,
-        MutableMap<String, Meta<Name>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Name>>> fields) implements NamingScope {
+        Map<String, Meta<Name>> values,
+        Map<String, Meta<Name>> types,
+        Map<ConstructorName, Map<String, Meta<Name>>> fields) implements NamingScope {
     public BuiltInNamingScope() {
         this(
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty());
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>());
     }
 
     public static BuiltInNamingScope empty() {
-        var builtInNames = Type.builtIns
-                .toMap(
-                        typ -> typ.name(),
-                        typ -> Meta.<Name>of(new BuiltInName(typ.name())));
+        var builtInNames = Type.builtIns.values().stream()
+            .collect(Collectors.toMap(
+                BuiltInType::name,
+                typ -> Meta.<Name>of(new BuiltInName(typ.name()))));
 
         return new BuiltInNamingScope(
-                Maps.mutable.empty(),
+                new HashMap<>(),
                 builtInNames,
-                Maps.mutable.empty());
+                new HashMap<>());
     }
 }

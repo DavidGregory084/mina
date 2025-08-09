@@ -4,23 +4,24 @@
  */
 package org.mina_lang.common.diagnostics;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Location;
+
+import java.util.List;
 
 public interface DiagnosticReporter {
     void reportError(Location location, String message);
 
-    void reportError(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation);
+    void reportError(Location location, String message, List<DiagnosticRelatedInformation> relatedInformation);
 
     void reportWarning(Location location, String message);
 
-    void reportWarning(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation);
+    void reportWarning(Location location, String message, List<DiagnosticRelatedInformation> relatedInformation);
 
     void reportInfo(Location location, String message);
 
-    void reportInfo(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation);
+    void reportInfo(Location location, String message, List<DiagnosticRelatedInformation> relatedInformation);
 
     void reportHint(Location location, String message);
 
-    void reportHint(Location location, String message, ImmutableList<DiagnosticRelatedInformation> relatedInformation);
+    void reportHint(Location location, String message, List<DiagnosticRelatedInformation> relatedInformation);
 }

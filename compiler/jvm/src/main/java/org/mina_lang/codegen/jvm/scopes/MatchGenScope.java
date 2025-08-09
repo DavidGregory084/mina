@@ -4,30 +4,31 @@
  */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.ConstructorName;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public record MatchGenScope(
         JavaMethodScope enclosingMethod,
         Label startLabel,
         Label endLabel,
-        MutableMap<String, Meta<Attributes>> values,
-        MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields) implements CodegenScope {
+        Map<String, Meta<Attributes>> values,
+        Map<String, Meta<Attributes>> types,
+        Map<ConstructorName, Map<String, Meta<Attributes>>> fields) implements CodegenScope {
 
     public MatchGenScope(JavaMethodScope enclosingMethod, Label startLabel, Label endLabel) {
         this(
                 enclosingMethod,
                 startLabel,
                 endLabel,
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty());
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>());
     }
 
     public static MatchGenScope open(JavaMethodScope enclosingMethod) {

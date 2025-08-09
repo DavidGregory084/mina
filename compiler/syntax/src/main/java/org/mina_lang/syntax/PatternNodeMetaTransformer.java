@@ -4,8 +4,9 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+
+import java.util.List;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
@@ -18,7 +19,7 @@ public interface PatternNodeMetaTransformer<A, B> extends LiteralNodeMetaTransfo
 
     @Override
     default ConstructorPatternNode<B> visitConstructorPattern(Meta<A> meta, QualifiedIdNode id,
-            ImmutableList<FieldPatternNode<B>> fields) {
+            List<FieldPatternNode<B>> fields) {
         return constructorPatternNode(updateMeta(meta), id, fields);
     }
 

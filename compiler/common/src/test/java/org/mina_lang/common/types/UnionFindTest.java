@@ -4,10 +4,8 @@
  */
 package org.mina_lang.common.types;
 
+import it.unimi.dsi.fastutil.Pair;
 import net.jqwik.api.*;
-import org.eclipse.collections.api.tuple.Twin;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.tuple.Tuples;
 
 import java.util.List;
 import java.util.Set;
@@ -47,9 +45,9 @@ public class UnionFindTest {
 
     @Property
     void findPicksTypeKindOverUnsolved(
-            @ForAll("distinctUnsolved") Twin<UnsolvedKind> unsolved) {
-        var unsolved1 = unsolved.getOne();
-        var unsolved2 = unsolved.getTwo();
+            @ForAll("distinctUnsolved") Pair<UnsolvedKind, UnsolvedKind> unsolved) {
+        var unsolved1 = unsolved.first();
+        var unsolved2 = unsolved.second();
 
         var unionFind = UnionFind.of(chooseKindConstant, unsolved1, unsolved2, TypeKind.INSTANCE);
 
@@ -72,11 +70,11 @@ public class UnionFindTest {
 
     @Property
     void findPicksHigherKindOverUnsolved(
-            @ForAll("distinctUnsolved") Twin<UnsolvedKind> unsolved,
+            @ForAll("distinctUnsolved") Pair<UnsolvedKind, UnsolvedKind> unsolved,
             @ForAll List<@From("kinds") Kind> kindArgs) {
-        var unsolved1 = unsolved.getOne();
-        var unsolved2 = unsolved.getTwo();
-        var higher = new HigherKind(Lists.immutable.ofAll(kindArgs), TypeKind.INSTANCE);
+        var unsolved1 = unsolved.first();
+        var unsolved2 = unsolved.second();
+        var higher = new HigherKind(kindArgs, TypeKind.INSTANCE);
 
         var unionFind = UnionFind.of(chooseKindConstant, unsolved1, unsolved2, higher);
 
@@ -98,13 +96,13 @@ public class UnionFindTest {
     }
 
     @Provide
-    Arbitrary<Twin<UnsolvedKind>> distinctUnsolved() {
+    Arbitrary<Pair<UnsolvedKind, UnsolvedKind>> distinctUnsolved() {
         return Arbitraries.integers()
                 .between(0, 99)
                 .map(UnsolvedKind::new)
                 .tuple2()
                 .filter(tuple -> !tuple.get1().equals(tuple.get2()))
-                .map(tuple -> Tuples.twin(tuple.get1(), tuple.get2()));
+                .map(tuple -> Pair.of(tuple.get1(), tuple.get2()));
     }
 
     @Provide
@@ -114,6 +112,6 @@ public class UnionFindTest {
                 () -> Arbitraries.integers().map(UnsolvedKind::new),
                 () -> kinds().list()
                         .ofMaxSize(5)
-                        .map(kindArgs -> new HigherKind(Lists.immutable.ofAll(kindArgs), TypeKind.INSTANCE)));
+                        .map(kindArgs -> new HigherKind(kindArgs, TypeKind.INSTANCE)));
     }
 }

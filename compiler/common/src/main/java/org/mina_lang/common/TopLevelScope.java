@@ -4,12 +4,13 @@
  */
 package org.mina_lang.common;
 
-import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.common.names.ConstructorName;
 
+import java.util.Map;
+
 public record TopLevelScope<A>(
-    MutableMap<String, Meta<A>> values,
-    MutableMap<String, Meta<A>> types,
-    MutableMap<ConstructorName, MutableMap<String, Meta<A>>> fields
+    Map<String, Meta<A>> values,
+    Map<String, Meta<A>> types,
+    Map<ConstructorName, Map<String, Meta<A>>> fields
 ) implements Scope<A> {
 }

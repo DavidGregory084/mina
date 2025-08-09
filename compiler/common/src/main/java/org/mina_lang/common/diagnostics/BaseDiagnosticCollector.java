@@ -5,7 +5,6 @@
 package org.mina_lang.common.diagnostics;
 
 import com.opencastsoftware.yvette.Severity;
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Location;
 
 import java.util.List;
@@ -29,7 +28,7 @@ public abstract class BaseDiagnosticCollector implements DiagnosticCollector, Di
 
     @Override
     public void reportError(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         diagnostics.offer(new Diagnostic(location, Severity.Error, message, relatedInformation));
         errorCount.incrementAndGet();
     }
@@ -42,7 +41,7 @@ public abstract class BaseDiagnosticCollector implements DiagnosticCollector, Di
 
     @Override
     public void reportWarning(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         diagnostics.offer(new Diagnostic(location, Severity.Warning, message, relatedInformation));
         warningCount.incrementAndGet();
     }
@@ -54,7 +53,7 @@ public abstract class BaseDiagnosticCollector implements DiagnosticCollector, Di
 
     @Override
     public void reportInfo(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         diagnostics.offer(new Diagnostic(location, Severity.Information, message, relatedInformation));
     }
 
@@ -65,7 +64,7 @@ public abstract class BaseDiagnosticCollector implements DiagnosticCollector, Di
 
     @Override
     public void reportHint(Location location, String message,
-            ImmutableList<DiagnosticRelatedInformation> relatedInformation) {
+            List<DiagnosticRelatedInformation> relatedInformation) {
         diagnostics.offer(new Diagnostic(location, Severity.Hint, message, relatedInformation));
     }
 

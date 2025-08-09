@@ -6,7 +6,6 @@ package org.mina_lang.main;
 
 import com.opencastsoftware.yvette.Range;
 import net.jqwik.api.*;
-import org.eclipse.collections.api.factory.Lists;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.jgrapht.Graphs;
@@ -22,11 +21,13 @@ import reactor.test.StepVerifier;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -48,7 +49,7 @@ public class GraphPhaseTest {
             var sourceURI = URI.create("Mina/Test/Main/" + nsName.name() + ".mina");
             var predecessors = Graphs.predecessorListOf(graph, nsName);
             // Technically pointless, but let's create imports mirroring our namespace graph
-            var imports = Lists.immutable.ofAll(predecessors).collect(importedNs -> {
+            var imports = predecessors.stream().map(importedNs -> {
                 var importIdNode = nsIdNode(Range.EMPTY, importedNs.pkg(), importedNs.name());
                 return (ImportNode) importQualifiedNode(Range.EMPTY, importIdNode);
             });
@@ -60,8 +61,8 @@ public class GraphPhaseTest {
                     namespaceNode(
                             Range.EMPTY,
                             nsIdNode(Range.EMPTY, nsName.pkg(), nsName.name()),
-                            imports,
-                            Lists.immutable.empty()));
+                            imports.toList(),
+                            List.of()));
         });
 
         var phase = new GraphPhase<NamespaceNode<Void>, NamespaceNode<Void>>(graph, namespaceNodes, scopedDiagnostics) {
@@ -79,9 +80,10 @@ public class GraphPhaseTest {
                 .expectComplete()
                 .verify();
 
-        var visitedList = Lists.mutable.ofAll(visited);
+        var visitedList = new ArrayList<>(visited);
 
-        visitedList.forEachWithIndex((visitedNode, visitedIndex) -> {
+        IntStream.range(0, visitedList.size()).forEach(visitedIndex -> {
+            var visitedNode = visitedList.get(visitedIndex);
             graph.getAncestors(visitedNode).forEach(ancestor -> {
                 assertThat(ancestor, visitedIndex(visitedList, lessThan(visitedIndex)));
             });
@@ -115,7 +117,7 @@ public class GraphPhaseTest {
                 .alpha()
                 .ofMaxLength(10)
                 .map(ident -> new NamespaceName(
-                        Lists.immutable.of("Mina", "Test", "Main"),
+                        List.of("Mina", "Test", "Main"),
                         ident));
     }
 

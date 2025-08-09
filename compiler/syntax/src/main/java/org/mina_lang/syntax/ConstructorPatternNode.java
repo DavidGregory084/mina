@@ -4,11 +4,12 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
+import java.util.List;
+
 public record ConstructorPatternNode<A>(Meta<A> meta, QualifiedIdNode id,
-        ImmutableList<FieldPatternNode<A>> fields) implements PatternNode<A> {
+        List<FieldPatternNode<A>> fields) implements PatternNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         id.accept(visitor);
@@ -23,7 +24,7 @@ public record ConstructorPatternNode<A>(Meta<A> meta, QualifiedIdNode id,
         var result = visitor.visitConstructorPattern(
                 meta(),
                 id(),
-                fields().collect(field -> field.accept(visitor)));
+                fields().stream().map(field -> field.accept(visitor)).toList());
 
         visitor.postVisitConstructorPattern(this);
 
@@ -37,7 +38,7 @@ public record ConstructorPatternNode<A>(Meta<A> meta, QualifiedIdNode id,
         var result = visitor.visitConstructorPattern(
                 meta(),
                 id(),
-                fields().collect(field -> field.accept(visitor)));
+                fields().stream().map(field -> field.accept(visitor)).toList());
 
         visitor.postVisitConstructorPattern(result);
 

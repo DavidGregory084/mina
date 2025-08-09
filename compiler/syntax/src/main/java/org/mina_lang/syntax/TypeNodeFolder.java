@@ -4,8 +4,9 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+
+import java.util.List;
 
 public interface TypeNodeFolder<A, B> {
 
@@ -15,21 +16,21 @@ public interface TypeNodeFolder<A, B> {
 
     default void preVisitQuantifiedType(QuantifiedTypeNode<A> quant) {}
 
-    B visitQuantifiedType(Meta<A> meta, ImmutableList<B> args, B body);
+    B visitQuantifiedType(Meta<A> meta, List<B> args, B body);
 
     default void postVisitQuantifiedType(B quant) {}
 
 
     default void preVisitFunType(FunTypeNode<A> funTyp) {}
 
-    B visitFunType(Meta<A> meta, ImmutableList<B> argTypes, B returnType);
+    B visitFunType(Meta<A> meta, List<B> argTypes, B returnType);
 
     default void postVisitFunType(B funTyp) {}
 
 
     default void preVisitTypeApply(TypeApplyNode<A> tyApp) {}
 
-    B visitTypeApply(Meta<A> meta, B type, ImmutableList<B> args);
+    B visitTypeApply(Meta<A> meta, B type, List<B> args);
 
     default void postVisitTypeApply(B tyApp) {}
 

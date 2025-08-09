@@ -4,15 +4,14 @@
  */
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.map.ImmutableMap;
-
+import java.util.Map;
 import java.util.Optional;
 
 public class TypeInstantiationTransformer implements TypeTransformer {
 
-    public ImmutableMap<TypeVar, MonoType> instantiatedVariables;
+    public Map<TypeVar, MonoType> instantiatedVariables;
 
-    public TypeInstantiationTransformer(ImmutableMap<TypeVar, MonoType> instantiatedVariables) {
+    public TypeInstantiationTransformer(Map<TypeVar, MonoType> instantiatedVariables) {
         this.instantiatedVariables = instantiatedVariables;
     }
 
@@ -21,7 +20,7 @@ public class TypeInstantiationTransformer implements TypeTransformer {
         return new QuantifiedType(
                 // Safe to cast here, since we never instantiate
                 // variables bound in nested quantifiers
-                quant.args().collect(tyArg -> (TypeVar) tyArg.accept(this)),
+                quant.args().stream().map(tyArg -> (TypeVar) tyArg.accept(this)).toList(),
                 quant.body().accept(this),
                 quant.kind());
     }
@@ -59,7 +58,7 @@ public class TypeInstantiationTransformer implements TypeTransformer {
     public TypeApply visitTypeApply(TypeApply tyApp) {
         return new TypeApply(
                 tyApp.type().accept(this),
-                tyApp.typeArguments().collect(tyArg -> tyArg.accept(this)),
+                tyApp.typeArguments().stream().map(tyArg -> tyArg.accept(this)).toList(),
                 tyApp.kind());
     }
 

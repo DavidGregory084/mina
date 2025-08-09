@@ -4,10 +4,6 @@
  */
 package org.mina_lang.proto;
 
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.map.MutableMap;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
@@ -15,6 +11,9 @@ import org.mina_lang.common.TopLevelScope;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.types.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ProtobufReader {
@@ -35,15 +34,15 @@ public class ProtobufReader {
             sorts[i] = fromProto(strings, names, sorts, env.getSorts(i));
         }
 
-        MutableMap<String, Meta<Attributes>> values = Maps.mutable.empty();
-        MutableMap<String, Meta<Attributes>> types = Maps.mutable.empty();
+        Map<String, Meta<Attributes>> values = new HashMap<>();
+        Map<String, Meta<Attributes>> types = new HashMap<>();
         loadFromProto(strings, names, sorts, env.getValuesMap(), values);
         loadFromProto(strings, names, sorts, env.getTypesMap(), types);
 
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields = Maps.mutable.empty();
+        Map<ConstructorName, Map<String, Meta<Attributes>>> fields = new HashMap<>();
         for (var i = 0; i < env.getFieldsCount(); i++) {
             var entry = env.getFields(i);
-            MutableMap<String, Meta<Attributes>> entryFields = Maps.mutable.empty();
+            Map<String, Meta<Attributes>> entryFields = new HashMap<>();
             loadFromProto(strings, names, sorts, entry.getFieldsMap(), entryFields);
             fields.put((ConstructorName) names[entry.getConstructor()], entryFields);
         }
@@ -74,7 +73,7 @@ public class ProtobufReader {
             case NAMESPACE -> {
                 var namespace = proto.getNamespace();
                 var pkgList = namespace.getPkgList().stream().map(pkg -> strings[pkg]);
-                yield new NamespaceName(Lists.immutable.fromStream(pkgList), strings[namespace.getName()]);
+                yield new NamespaceName(pkgList.toList(), strings[namespace.getName()]);
             }
             case LET -> {
                 var name = proto.getLet().getName();
@@ -105,31 +104,28 @@ public class ProtobufReader {
             case TYPEKIND -> TypeKind.INSTANCE;
             case HIGHERKIND -> {
                 var higher = proto.getHigherKind();
-                MutableList<Kind> args = Lists.mutable.of();
+                List<Kind> args = new ArrayList<>();
                 for (var i = 0; i < higher.getArgsCount(); i++) {
                     args.add((Kind) sorts[higher.getArgs(i)]);
                 }
-                yield new HigherKind(
-                    args.toImmutableList(),
-                    (Kind) sorts[higher.getResult()]
-                );
+                yield new HigherKind(args, (Kind) sorts[higher.getResult()]);
             }
             case BUILTIN -> {
                 var builtIn = proto.getBuiltIn();
                 var builtInName = strings[builtIn.getName()];
-                yield Type.builtIns.getIfAbsent(
+                yield Type.builtIns.getOrDefault(
                     builtInName,
-                    () -> new BuiltInType(builtInName, (Kind) sorts[builtIn.getKind()])
+                    new BuiltInType(builtInName, (Kind) sorts[builtIn.getKind()])
                 );
             }
             case QUANTTY -> {
                 var quant = proto.getQuantTy();
-                MutableList<TypeVar> args = Lists.mutable.of();
+                List<TypeVar> args = new ArrayList<>();
                 for (var i = 0; i < quant.getArgsCount(); i++) {
                     args.add((TypeVar) sorts[quant.getArgs(i)]);
                 }
                 yield new QuantifiedType(
-                    args.toImmutableList(),
+                    args,
                     (Type) sorts[quant.getBody()],
                     (Kind) sorts[quant.getKind()]
                 );
@@ -144,13 +140,13 @@ public class ProtobufReader {
             }
             case TYAPP -> {
                 var tyApp = proto.getTyApp();
-                MutableList<Type> args = Lists.mutable.of();
+                List<Type> args = new ArrayList<>();
                 for (var i = 0; i < tyApp.getArgsCount(); i++) {
                     args.add((Type) sorts[tyApp.getArgs(i)]);
                 }
                 yield new TypeApply(
                     (Type) sorts[tyApp.getTyp()],
-                    args.toImmutableList(),
+                    args,
                     (Kind) sorts[tyApp.getKind()]
                 );
             }

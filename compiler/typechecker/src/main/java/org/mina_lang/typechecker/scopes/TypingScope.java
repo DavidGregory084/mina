@@ -4,17 +4,18 @@
  */
 package org.mina_lang.typechecker.scopes;
 
-import org.eclipse.collections.api.set.MutableSet;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.types.SyntheticVar;
 import org.mina_lang.common.types.UnsolvedKind;
 import org.mina_lang.common.types.UnsolvedType;
 
+import java.util.Set;
+
 public interface TypingScope extends Scope<Attributes> {
-    MutableSet<SyntheticVar> syntheticVars();
+    Set<SyntheticVar> syntheticVars();
 
-    MutableSet<UnsolvedKind> unsolvedKinds();
+    Set<UnsolvedKind> unsolvedKinds();
 
-    MutableSet<UnsolvedType> unsolvedTypes();
+    Set<UnsolvedType> unsolvedTypes();
 }

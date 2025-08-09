@@ -4,10 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record LambdaNode<A> (Meta<A> meta, ImmutableList<ParamNode<A>> params, ExprNode<A> body)
+import java.util.List;
+
+public record LambdaNode<A> (Meta<A> meta, List<ParamNode<A>> params, ExprNode<A> body)
         implements ExprNode<A> {
 
     @Override
@@ -23,7 +24,7 @@ public record LambdaNode<A> (Meta<A> meta, ImmutableList<ParamNode<A>> params, E
 
         var result = visitor.visitLambda(
                 meta(),
-                params().collect(param -> param.accept(visitor)),
+                params().stream().map(param -> param.accept(visitor)).toList(),
                 visitor.visitExpr(body()));
 
         visitor.postVisitLambda(this);
@@ -37,7 +38,7 @@ public record LambdaNode<A> (Meta<A> meta, ImmutableList<ParamNode<A>> params, E
 
         var result = visitor.visitLambda(
                 meta(),
-                params().collect(param -> param.accept(visitor)),
+                params().stream().map(param -> param.accept(visitor)).toList(),
                 visitor.visitExpr(body()));
 
         visitor.postVisitLambda(result);

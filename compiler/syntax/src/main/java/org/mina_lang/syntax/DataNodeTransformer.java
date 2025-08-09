@@ -4,23 +4,23 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface DataNodeTransformer<A, B> extends TypeNodeTransformer<A, B> {
 
     default void preVisitData(DataNode<A> data) {}
 
-    DataNode<B> visitData(Meta<A> meta, String name, ImmutableList<TypeVarNode<B>> typeParams, ImmutableList<ConstructorNode<B>> constructors);
+    DataNode<B> visitData(Meta<A> meta, String name, List<TypeVarNode<B>> typeParams, List<ConstructorNode<B>> constructors);
 
     default void postVisitData(DataNode<B> data) {}
 
 
     default void preVisitConstructor(ConstructorNode<A> constr) {}
 
-    ConstructorNode<B> visitConstructor(Meta<A> meta, String name, ImmutableList<ConstructorParamNode<B>> params, Optional<TypeNode<B>> type);
+    ConstructorNode<B> visitConstructor(Meta<A> meta, String name, List<ConstructorParamNode<B>> params, Optional<TypeNode<B>> type);
 
     default void postVisitConstructor(ConstructorNode<B> constr) {}
 

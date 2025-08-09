@@ -169,11 +169,11 @@ public class Types {
     }
 
     public static Type boxedMethodType(TypeApply funType) {
-        var boxedReturnType = Types.boxedAsmType(funType.typeArguments().getLast());
+        var boxedReturnType = Types.boxedAsmType(funType.typeArguments().get(funType.typeArguments().size() - 1));
         var boxedArgTypes = funType.typeArguments()
-                .take(funType.typeArguments().size() - 1)
-                .collect(Types::boxedAsmType)
-                .toArray(new Type[funType.typeArguments().size() - 1]);
+            .subList(0, funType.typeArguments().size() - 1)
+            .stream().map(Types::boxedAsmType)
+            .toArray(Type[]::new);
         return Type.getMethodType(boxedReturnType, boxedArgTypes);
     }
 }

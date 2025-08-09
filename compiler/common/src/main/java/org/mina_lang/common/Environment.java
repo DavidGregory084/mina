@@ -4,10 +4,10 @@
  */
 package org.mina_lang.common;
 
-import org.eclipse.collections.api.stack.MutableStack;
 import org.mina_lang.common.functions.TriConsumer;
 import org.mina_lang.common.names.ConstructorName;
 
+import java.util.Deque;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
@@ -22,17 +22,18 @@ import java.util.function.BiConsumer;
  */
 public interface Environment<A, B extends Scope<A>> {
 
-    MutableStack<B> scopes();
+    Deque<B> scopes();
 
     default B topScope() {
         return scopes().peek();
     }
 
     default Optional<Meta<A>> lookupValue(String name) {
-        return scopes()
-                .detectOptional(scope -> scope.hasValue(name))
-                .flatMap(scope -> scope.lookupValue(name));
-    };
+        return scopes().stream()
+            .filter(scope -> scope.hasValue(name))
+            .findFirst()
+            .flatMap(scope -> scope.lookupValue(name));
+    }
 
     default <C> Optional<Meta<A>> lookupValueOrElse(String name, Meta<C> meta,
             BiConsumer<String, Meta<C>> orElseFn) {
@@ -43,19 +44,19 @@ public interface Environment<A, B extends Scope<A>> {
         }
 
         return valueMeta;
-    };
+    }
 
     default void putValue(String name, Meta<A> meta) {
-        scopes()
-                .getFirstOptional()
-                .ifPresent(scope -> scope.putValue(name, meta));
+        scopes().stream()
+            .findFirst()
+            .ifPresent(scope -> scope.putValue(name, meta));
     }
 
     default Meta<A> putValueIfAbsent(String name, Meta<A> meta) {
         return lookupValue(name)
                 .orElseGet(() -> {
-                    return scopes()
-                            .getFirstOptional()
+                    return scopes().stream()
+                            .findFirst()
                             .map(scope -> scope.putValueIfAbsent(name, meta))
                             .orElse(null);
                 });
@@ -70,10 +71,11 @@ public interface Environment<A, B extends Scope<A>> {
     }
 
     default Optional<Meta<A>> lookupType(String name) {
-        return scopes()
-                .detectOptional(scope -> scope.hasType(name))
-                .flatMap(scope -> scope.lookupType(name));
-    };
+        return scopes().stream()
+            .filter(scope -> scope.hasType(name))
+            .findFirst()
+            .flatMap(scope -> scope.lookupType(name));
+    }
 
     default <C> Optional<Meta<A>> lookupTypeOrElse(String name, Meta<C> meta,
             BiConsumer<String, Meta<C>> orElseFn) {
@@ -87,16 +89,16 @@ public interface Environment<A, B extends Scope<A>> {
     };
 
     default void putType(String name, Meta<A> meta) {
-        scopes()
-                .getFirstOptional()
-                .ifPresent(scope -> scope.putType(name, meta));
+        scopes().stream()
+            .findFirst()
+            .ifPresent(scope -> scope.putType(name, meta));
     }
 
     default Meta<A> putTypeIfAbsent(String name, Meta<A> meta) {
         return lookupType(name)
                 .orElseGet(() -> {
-                    return scopes()
-                            .getFirstOptional()
+                    return scopes().stream()
+                            .findFirst()
                             .map(scope -> scope.putTypeIfAbsent(name, meta))
                             .orElse(null);
                 });
@@ -111,10 +113,11 @@ public interface Environment<A, B extends Scope<A>> {
     }
 
     default Optional<Meta<A>> lookupField(ConstructorName constr, String name) {
-        return scopes()
-                .detectOptional(scope -> scope.hasField(constr, name))
-                .flatMap(scope -> scope.lookupField(constr, name));
-    };
+        return scopes().stream()
+            .filter(scope -> scope.hasField(constr, name))
+            .findFirst()
+            .flatMap(scope -> scope.lookupField(constr, name));
+    }
 
     default <C> Optional<Meta<A>> lookupFieldOrElse(ConstructorName constr, String name, Meta<C> meta,
             BiConsumer<String, Meta<C>> orElseFn) {
@@ -125,19 +128,19 @@ public interface Environment<A, B extends Scope<A>> {
         }
 
         return fieldMeta;
-    };
+    }
 
     default void putField(ConstructorName constr, String name, Meta<A> meta) {
-        scopes()
-                .getFirstOptional()
-                .ifPresent(scope -> scope.putField(constr, name, meta));
+        scopes().stream()
+            .findFirst()
+            .ifPresent(scope -> scope.putField(constr, name, meta));
     }
 
     default Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
         return lookupField(constr, name)
                 .orElseGet(() -> {
-                    return scopes()
-                            .getFirstOptional()
+                    return scopes().stream()
+                            .findFirst()
                             .map(scope -> scope.putFieldIfAbsent(constr, name, meta))
                             .orElse(null);
                 });

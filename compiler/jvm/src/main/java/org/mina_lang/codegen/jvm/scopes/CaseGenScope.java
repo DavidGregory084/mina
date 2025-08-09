@@ -4,8 +4,6 @@
  */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.codegen.jvm.LocalVar;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -14,15 +12,18 @@ import org.mina_lang.common.names.Named;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public record CaseGenScope(
         JavaMethodScope enclosingMethod,
         MatchGenScope enclosingMatch,
         Label startLabel,
         Label endLabel,
-        MutableMap<String, Meta<Attributes>> values,
-        MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
-        MutableMap<Named, LocalVar> localVars) implements VarBindingScope {
+        Map<String, Meta<Attributes>> values,
+        Map<String, Meta<Attributes>> types,
+        Map<ConstructorName, Map<String, Meta<Attributes>>> fields,
+        Map<Named, LocalVar> localVars) implements VarBindingScope {
     public CaseGenScope(
         JavaMethodScope enclosingMethod,
         MatchGenScope enclosingMatch,
@@ -33,10 +34,10 @@ public record CaseGenScope(
                 enclosingMatch,
                 startLabel,
                 endLabel,
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty());
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>());
     }
 
     @Override

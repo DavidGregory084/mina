@@ -4,8 +4,6 @@
  */
 package org.mina_lang.codegen.jvm;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.names.ConstructorName;
 import org.mina_lang.common.names.LetName;
@@ -19,6 +17,9 @@ import org.objectweb.asm.commons.Method;
 
 import java.lang.invoke.*;
 import java.lang.runtime.ObjectMethods;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -70,10 +71,10 @@ public class Asm {
     public static GeneratorAdapter constructor(
             ClassWriter classWriter,
             String signature,
-            ImmutableList<ConstructorParamNode<Attributes>> params) {
-        var argTypes = params
-                .collect(Types::asmType)
-                .toArray(new Type[params.size()]);
+            List<ConstructorParamNode<Attributes>> params) {
+        var argTypes = params.stream()
+                .map(Types::asmType)
+                .toArray(Type[]::new);
         return new GeneratorAdapter(
                 ACC_PUBLIC,
                 new Method("<init>", Type.VOID_TYPE, argTypes),
@@ -95,7 +96,7 @@ public class Asm {
             int access,
             String name,
             Type returnType,
-            ImmutableList<Type> argTypes,
+            List<Type> argTypes,
             String signature,
             ClassWriter classWriter) {
         var argTypeArray = argTypes.toArray(new Type[argTypes.size()]);
@@ -111,7 +112,7 @@ public class Asm {
             int access,
             String name,
             ExprNode<Attributes> bodyExpr,
-            ImmutableList<Type> argTypes,
+            List<Type> argTypes,
             String signature,
             ClassWriter classWriter) {
         var argTypeArray = argTypes.toArray(new Type[argTypes.size()]);
@@ -127,7 +128,7 @@ public class Asm {
     public static GeneratorAdapter methodWriter(
             String name,
             Type returnType,
-            ImmutableList<Type> argTypes,
+            List<Type> argTypes,
             String signature,
             ClassWriter classWriter) {
         var argTypeArray = argTypes.toArray(new Type[argTypes.size()]);
@@ -142,7 +143,7 @@ public class Asm {
     public static GeneratorAdapter methodWriter(
             String name,
             ExprNode<Attributes> bodyExpr,
-            ImmutableList<Type> argTypes,
+            List<Type> argTypes,
             String signature,
             ClassWriter classWriter) {
         var argTypeArray = argTypes.toArray(new Type[argTypes.size()]);
@@ -228,12 +229,12 @@ public class Asm {
     public static void emitObjectBootstrapMethod(
             String methodName,
             Type returnType,
-            ImmutableList<Type> argTypes,
+            List<Type> argTypes,
             ClassWriter classWriter,
             Type constrType,
             String thisSignature,
             String methodSignature,
-            ImmutableList<ConstructorParamNode<Attributes>> constrParams) {
+            List<ConstructorParamNode<Attributes>> constrParams) {
 
         var methodDescriptor = Type.getMethodDescriptor(
                 returnType,
@@ -259,27 +260,26 @@ public class Asm {
 
         var callsiteDescriptor = Type.getMethodDescriptor(
                 returnType,
-                Lists.immutable.of(constrType)
-                        .newWithAll(argTypes)
-                        .toArray(new Type[argTypes.size() + 1]));
+                Stream.concat(Stream.of(constrType), argTypes.stream()).toArray(Type[]::new));
 
         methodVisitor.invokeDynamic(
-                methodName, // methodName
-                callsiteDescriptor, // type
-                OBJECTMETHODS_HANDLE, // bootstrapMethodHandle
-                Lists.immutable.<Object>of(
-                        constrType.getInternalName(), // recordClass
-                        constrParams.collect(ConstructorParamNode::name).makeString(";")) // names
-                        .newWithAll(
-                                constrParams.collect(param -> {
-                                    return new Handle(
-                                            H_GETFIELD,
-                                            constrType.getInternalName(),
-                                            param.name(),
-                                            Types.asmType(param).getDescriptor(),
-                                            false); // getters
-                                }))
-                        .toArray());
+            methodName, // methodName
+            callsiteDescriptor, // type
+            OBJECTMETHODS_HANDLE, // bootstrapMethodHandle
+            Stream.concat(
+                Stream.of(
+                    constrType.getInternalName(), // recordClass
+                    constrParams.stream().map(ConstructorParamNode::name).collect(Collectors.joining(";")) // names
+                ),
+                constrParams.stream().map(param -> {
+                    return new Handle(
+                        H_GETFIELD,
+                        constrType.getInternalName(),
+                        param.name(),
+                        Types.asmType(param).getDescriptor(),
+                        false);
+                }) // getters
+            ).toArray());
 
         methodVisitor.returnValue();
 
@@ -308,11 +308,11 @@ public class Asm {
 
     public static Handle staticMethodHandle(LetName letName, org.mina_lang.common.types.Type letType) {
         var funType = (TypeApply) Types.getUnderlyingType(letType);
-        var funReturnType = Types.asmType(funType.typeArguments().getLast());
+        var funReturnType = Types.asmType(funType.typeArguments().get(funType.typeArguments().size() - 1));
         var funArgTypes = funType.typeArguments()
-                .take(funType.typeArguments().size() - 1)
-                .collect(Types::asmType)
-                .toArray(new Type[funType.typeArguments().size() - 1]);
+            .subList(0, funType.typeArguments().size() - 1)
+            .stream().map(Types::asmType)
+            .toArray(Type[]::new);
 
         return new Handle(
                 H_INVOKESTATIC,
@@ -326,9 +326,9 @@ public class Asm {
             org.mina_lang.common.types.Type constrType) {
         var funType = (TypeApply) Types.getUnderlyingType(constrType);
         var funArgTypes = funType.typeArguments()
-                .take(funType.typeArguments().size() - 1)
-                .collect(Types::asmType)
-                .toArray(new Type[funType.typeArguments().size() - 1]);
+            .subList(0, funType.typeArguments().size() - 1)
+            .stream().map(Types::asmType)
+            .toArray(Type[]::new);
 
         return new Handle(
                 H_NEWINVOKESPECIAL,

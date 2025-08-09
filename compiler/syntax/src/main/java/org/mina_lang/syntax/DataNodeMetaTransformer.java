@@ -4,9 +4,9 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
@@ -15,14 +15,14 @@ public interface DataNodeMetaTransformer<A, B> extends DataNodeTransformer<A, B>
 
     @Override
     default public DataNode<B> visitData(Meta<A> meta, String name,
-            ImmutableList<TypeVarNode<B>> typeParams,
-            ImmutableList<ConstructorNode<B>> constructors) {
+            List<TypeVarNode<B>> typeParams,
+            List<ConstructorNode<B>> constructors) {
         return dataNode(updateMeta(meta), name, typeParams, constructors);
     }
 
     @Override
     default public ConstructorNode<B> visitConstructor(Meta<A> meta, String name,
-            ImmutableList<ConstructorParamNode<B>> params, Optional<TypeNode<B>> type) {
+            List<ConstructorParamNode<B>> params, Optional<TypeNode<B>> type) {
         return constructorNode(updateMeta(meta), name, params, type);
     }
 

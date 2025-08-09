@@ -4,17 +4,11 @@
  */
 package org.mina_lang.renamer;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.collector.Collectors2;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.factory.Maps;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
-import org.jgrapht.nio.DefaultAttribute;
-import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.common.Location;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
@@ -25,8 +19,11 @@ import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.renamer.scopes.*;
 import org.mina_lang.syntax.*;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
@@ -41,15 +38,11 @@ public class Renamer {
             .edgeClass(DefaultEdge.class)
             .buildGraph();
 
-    private DOTExporter<DeclarationName, DefaultEdge> dotExporter = new DOTExporter<>();
-
     private int localVarIndex = 0;
 
     public Renamer(LocalDiagnosticReporter diagnostics, NameEnvironment environment) {
         this.diagnostics = diagnostics;
         this.environment = environment;
-        dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
-                "label", DefaultAttribute.createAttribute(nsName.localName())));
     }
 
     public NameEnvironment getEnvironment() {
@@ -73,7 +66,7 @@ public class Renamer {
         diagnostics.reportError(
                 proposed.range(),
                 "Duplicate definition of value '" + name + "'",
-                Lists.immutable.of(originalDefinition));
+                List.of(originalDefinition));
     }
 
     public void duplicateTypeDefinition(String name, Meta<Name> proposed, Meta<Name> existing) {
@@ -83,7 +76,7 @@ public class Renamer {
         diagnostics.reportError(
                 proposed.range(),
                 "Duplicate definition of type '" + name + "'",
-                Lists.immutable.of(originalDefinition));
+                List.of(originalDefinition));
     }
 
     public void duplicateFieldDefinition(ConstructorName constr, String name, Meta<Name> proposed,
@@ -94,7 +87,7 @@ public class Renamer {
         diagnostics.reportError(
                 proposed.range(),
                 "Duplicate definition of field '" + name + "' in constructor '" + constr.name().canonicalName() + "'",
-                Lists.immutable.of(originalDefinition));
+                List.of(originalDefinition));
     }
 
     public void undefinedType(String name, Meta<Void> meta) {
@@ -124,7 +117,7 @@ public class Renamer {
         diagnostics.reportWarning(
             local.range(),
             "The local declaration '" + name + "' shadows the imported declaration '" + importedName.canonicalName() + "'",
-            Lists.immutable.of(importedDeclaration));
+            List.of(importedDeclaration));
     }
 
     public NamespaceNamingScope populateTopLevel(NamespaceNode<Void> namespace) {
@@ -227,8 +220,8 @@ public class Renamer {
         public NamespaceNode<Name> visitNamespace(
                 Meta<Void> meta,
                 NamespaceIdNode id,
-                ImmutableList<ImportNode> imports,
-                ImmutableList<ImmutableList<DeclarationNode<Name>>> declarationGroups) {
+                List<ImportNode> imports,
+                List<List<DeclarationNode<Name>>> declarationGroups) {
 
             var namespaceMeta = new Meta<Name>(meta.range(), environment.enclosingNamespace().get().namespace());
 
@@ -242,20 +235,19 @@ public class Renamer {
             if (connectedComponents.vertexSet().isEmpty()) {
                 return new NamespaceNode<>(namespaceMeta, id, imports, declarationGroups);
             } else {
-                var sortedDeclarations = Lists.mutable
-                        .<ImmutableList<DeclarationNode<Name>>>empty();
+                var sortedDeclarations = new ArrayList<List<DeclarationNode<Name>>>();
 
-                var unsortedDeclarations = declarationGroups.getFirst()
-                        .<DeclarationName, DeclarationNode<Name>>toMap(
-                                decl -> (DeclarationName) decl.meta().meta(),
-                                decl -> decl);
+                var unsortedDeclarations = declarationGroups.get(0).stream()
+                    .collect(Collectors.toMap(
+                        decl -> decl.meta().meta(),
+                        decl -> decl));
 
                 connectedComponents.iterator().forEachRemaining(subGraph -> {
                     var declarationGroup = subGraph.vertexSet().stream()
-                            .filter(unsortedDeclarations::containsKey)
-                            .map(unsortedDeclarations::get)
-                            .sorted(Comparator.comparing(decl -> decl.range().start()))
-                            .collect(Collectors2.toImmutableList());
+                        .filter(unsortedDeclarations::containsKey)
+                        .map(unsortedDeclarations::get)
+                        .sorted(Comparator.comparing(decl -> decl.range().start()))
+                        .toList();
 
                     declarationGroup.forEach(decl -> {
                         unsortedDeclarations.remove(decl.meta().meta());
@@ -266,13 +258,13 @@ public class Renamer {
                     }
                 });
 
-                var disconnectedComponents = unsortedDeclarations.valuesView().toImmutableList();
+                var disconnectedComponents = unsortedDeclarations.values().stream().toList();
 
                 if (!disconnectedComponents.isEmpty()) {
                     sortedDeclarations.add(disconnectedComponents);
                 }
 
-                return new NamespaceNode<>(namespaceMeta, id, imports, sortedDeclarations.toImmutable());
+                return new NamespaceNode<>(namespaceMeta, id, imports, sortedDeclarations);
             }
         }
 
@@ -289,8 +281,8 @@ public class Renamer {
         }
 
         @Override
-        public DataNode<Name> visitData(Meta<Void> meta, String name, ImmutableList<TypeVarNode<Name>> typeParams,
-                ImmutableList<ConstructorNode<Name>> constructors) {
+        public DataNode<Name> visitData(Meta<Void> meta, String name, List<TypeVarNode<Name>> typeParams,
+                List<ConstructorNode<Name>> constructors) {
             return dataNode(environment.lookupType(name).get(), name, typeParams, constructors);
         }
 
@@ -313,7 +305,7 @@ public class Renamer {
 
         @Override
         public ConstructorNode<Name> visitConstructor(Meta<Void> meta, String name,
-                ImmutableList<ConstructorParamNode<Name>> params, Optional<TypeNode<Name>> type) {
+                List<ConstructorParamNode<Name>> params, Optional<TypeNode<Name>> type) {
             return constructorNode(environment.lookupValue(name).get(), name, params, type);
         }
 
@@ -374,8 +366,8 @@ public class Renamer {
         }
 
         @Override
-        public LetFnNode<Name> visitLetFn(Meta<Void> meta, String name, ImmutableList<TypeVarNode<Name>> typeParams,
-                ImmutableList<ParamNode<Name>> valueParams, Optional<TypeNode<Name>> returnType, ExprNode<Name> expr) {
+        public LetFnNode<Name> visitLetFn(Meta<Void> meta, String name, List<TypeVarNode<Name>> typeParams,
+                List<ParamNode<Name>> valueParams, Optional<TypeNode<Name>> returnType, ExprNode<Name> expr) {
             return letFnNode(environment.lookupValue(name).get(), name, typeParams, valueParams, returnType, expr);
         }
 
@@ -414,7 +406,7 @@ public class Renamer {
         }
 
         @Override
-        public QuantifiedTypeNode<Name> visitQuantifiedType(Meta<Void> meta, ImmutableList<TypeVarNode<Name>> args,
+        public QuantifiedTypeNode<Name> visitQuantifiedType(Meta<Void> meta, List<TypeVarNode<Name>> args,
                                                             TypeNode<Name> body) {
             return quantifiedTypeNode(new Meta<>(meta.range(), Nameless.INSTANCE), args, body);
         }
@@ -425,14 +417,14 @@ public class Renamer {
         }
 
         @Override
-        public FunTypeNode<Name> visitFunType(Meta<Void> meta, ImmutableList<TypeNode<Name>> argTypes,
+        public FunTypeNode<Name> visitFunType(Meta<Void> meta, List<TypeNode<Name>> argTypes,
                 TypeNode<Name> returnType) {
             return funTypeNode(new Meta<>(meta.range(), Nameless.INSTANCE), argTypes, returnType);
         }
 
         @Override
         public TypeApplyNode<Name> visitTypeApply(Meta<Void> meta, TypeNode<Name> type,
-                ImmutableList<TypeNode<Name>> args) {
+                List<TypeNode<Name>> args) {
             return typeApplyNode(new Meta<>(meta.range(), Nameless.INSTANCE), type, args);
         }
 
@@ -468,7 +460,7 @@ public class Renamer {
         }
 
         @Override
-        public BlockNode<Name> visitBlock(Meta<Void> meta, ImmutableList<LetNode<Name>> declarations,
+        public BlockNode<Name> visitBlock(Meta<Void> meta, List<LetNode<Name>> declarations,
                 Optional<ExprNode<Name>> result) {
             return blockNode(new Meta<>(meta.range(), Nameless.INSTANCE), declarations, result);
         }
@@ -490,7 +482,7 @@ public class Renamer {
         }
 
         @Override
-        public LambdaNode<Name> visitLambda(Meta<Void> meta, ImmutableList<ParamNode<Name>> params,
+        public LambdaNode<Name> visitLambda(Meta<Void> meta, List<ParamNode<Name>> params,
                 ExprNode<Name> body) {
             return lambdaNode(new Meta<>(meta.range(), Nameless.INSTANCE), params, body);
         }
@@ -502,12 +494,12 @@ public class Renamer {
 
         @Override
         public MatchNode<Name> visitMatch(Meta<Void> meta, ExprNode<Name> scrutinee,
-                ImmutableList<CaseNode<Name>> cases) {
+                List<CaseNode<Name>> cases) {
             return matchNode(new Meta<>(meta.range(), Nameless.INSTANCE), scrutinee, cases);
         }
 
         @Override
-        public ApplyNode<Name> visitApply(Meta<Void> meta, ExprNode<Name> expr, ImmutableList<ExprNode<Name>> args) {
+        public ApplyNode<Name> visitApply(Meta<Void> meta, ExprNode<Name> expr, List<ExprNode<Name>> args) {
             return applyNode(new Meta<>(meta.range(), Nameless.INSTANCE), expr, args);
         }
 
@@ -618,7 +610,7 @@ public class Renamer {
 
         @Override
         public ConstructorPatternNode<Name> visitConstructorPattern(Meta<Void> meta, QualifiedIdNode id,
-                ImmutableList<FieldPatternNode<Name>> fields) {
+                List<FieldPatternNode<Name>> fields) {
             var lookupMeta = environment.lookupValue(id.canonicalName())
                     .map(constrMeta -> constrMeta.withRange(meta.range()))
                     .orElseGet(() -> new Meta<>(meta.range(), Nameless.INSTANCE));

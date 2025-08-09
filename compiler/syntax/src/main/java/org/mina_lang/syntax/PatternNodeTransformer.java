@@ -4,8 +4,9 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+
+import java.util.List;
 
 
 public interface PatternNodeTransformer<A, B> extends LiteralNodeTransformer<A, B> {
@@ -23,7 +24,7 @@ public interface PatternNodeTransformer<A, B> extends LiteralNodeTransformer<A, 
     default void preVisitConstructorPattern(ConstructorPatternNode<A> constrPat) {}
 
     ConstructorPatternNode<B> visitConstructorPattern(Meta<A> meta, QualifiedIdNode id,
-            ImmutableList<FieldPatternNode<B>> fields);
+            List<FieldPatternNode<B>> fields);
 
     default void postVisitConstructorPattern(ConstructorPatternNode<B> constrPat) {}
 

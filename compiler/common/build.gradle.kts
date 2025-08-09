@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
-    // Immutable collections
-    api(libs.bundles.eclipseCollections)
+    // Primitive collections
+    implementation(libs.fastutilCore)
 
     // Pretty printing
     api(libs.prettier4j)

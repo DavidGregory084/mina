@@ -4,10 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record MatchNode<A> (Meta<A> meta, ExprNode<A> scrutinee, ImmutableList<CaseNode<A>> cases)
+import java.util.List;
+
+public record MatchNode<A> (Meta<A> meta, ExprNode<A> scrutinee, List<CaseNode<A>> cases)
         implements ExprNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -23,7 +24,7 @@ public record MatchNode<A> (Meta<A> meta, ExprNode<A> scrutinee, ImmutableList<C
         var result = visitor.visitMatch(
                 meta(),
                 visitor.visitExpr(scrutinee()),
-                cases().collect(cse -> cse.accept(visitor)));
+                cases().stream().map(cse -> cse.accept(visitor)).toList());
 
         visitor.postVisitMatch(this);
 
@@ -37,7 +38,7 @@ public record MatchNode<A> (Meta<A> meta, ExprNode<A> scrutinee, ImmutableList<C
         var result = visitor.visitMatch(
                 meta(),
                 visitor.visitExpr(scrutinee()),
-                cases().collect(cse -> cse.accept(visitor)));
+                cases().stream().map(cse -> cse.accept(visitor)).toList());
 
         visitor.postVisitMatch(result);
 

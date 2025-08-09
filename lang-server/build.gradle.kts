@@ -29,6 +29,9 @@ dependencies {
     // JSON Parsing
     implementation(libs.gson)
 
+    // Primitive Collections
+    implementation(libs.fastutilCore)
+
     // Compiler Main
     implementation(project(":compiler:mina-compiler-main"))
 

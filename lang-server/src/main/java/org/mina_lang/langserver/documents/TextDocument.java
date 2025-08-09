@@ -4,7 +4,8 @@
  */
 package org.mina_lang.langserver.documents;
 
-import org.eclipse.collections.impl.factory.primitive.IntLists;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrays;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
@@ -19,7 +20,7 @@ public class TextDocument {
     }
 
     private static int[] getLineIndices(String documentText) {
-        var indices = IntLists.mutable.empty();
+        var indices = new IntArrayList();
         var matcher = LINE_ENDINGS.matcher(documentText);
 
         indices.add(0);
@@ -27,7 +28,7 @@ public class TextDocument {
             indices.add(matcher.end());
         }
 
-        return indices.toArray();
+        return indices.toIntArray();
     }
 
     private static int positionToIndex(Position position, int[] lineIndices) {

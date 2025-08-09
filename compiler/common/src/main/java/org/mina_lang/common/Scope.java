@@ -4,20 +4,20 @@
  */
 package org.mina_lang.common;
 
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.common.functions.TriConsumer;
 import org.mina_lang.common.names.ConstructorName;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
 public interface Scope<A> {
-    MutableMap<String, Meta<A>> values();
+    Map<String, Meta<A>> values();
 
-    MutableMap<String, Meta<A>> types();
+    Map<String, Meta<A>> types();
 
-    MutableMap<ConstructorName, MutableMap<String, Meta<A>>> fields();
+    Map<ConstructorName, Map<String, Meta<A>>> fields();
 
     default boolean hasValue(String name) {
         return values().containsKey(name);
@@ -104,12 +104,12 @@ public interface Scope<A> {
     };
 
     default void putField(ConstructorName constr, String name, Meta<A> meta) {
-        var constrFields = fields().getIfAbsentPut(constr, Maps.mutable::empty);
+        var constrFields = fields().computeIfAbsent(constr, k -> new HashMap<>());
         constrFields.put(name, meta);
     }
 
     default Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
-        var constrFields = fields().getIfAbsentPut(constr, Maps.mutable::empty);
+        var constrFields = fields().computeIfAbsent(constr, k -> new HashMap<>());
         return constrFields.putIfAbsent(name, meta);
     }
 

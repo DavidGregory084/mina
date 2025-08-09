@@ -4,76 +4,85 @@
  */
 package org.mina_lang.renamer;
 
-import org.eclipse.collections.api.stack.MutableStack;
-import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.common.Environment;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.renamer.scopes.*;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Optional;
 
-public record NameEnvironment(MutableStack<NamingScope> scopes) implements Environment<Name, NamingScope> {
+public record NameEnvironment(Deque<NamingScope> scopes) implements Environment<Name, NamingScope> {
 
     public Optional<NamespaceNamingScope> enclosingNamespace() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof NamespaceNamingScope)
-                .map(scope -> (NamespaceNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof NamespaceNamingScope)
+            .findFirst()
+            .map(scope -> (NamespaceNamingScope) scope);
     }
 
     public Optional<DeclarationNamingScope> enclosingDeclaration() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof DeclarationNamingScope)
-                .map(scope -> (DeclarationNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof DeclarationNamingScope)
+            .findFirst()
+            .map(scope -> (DeclarationNamingScope) scope);
     }
 
     public Optional<DataNamingScope> enclosingData() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof DataNamingScope)
-                .map(scope -> (DataNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof DataNamingScope)
+            .findFirst()
+            .map(scope -> (DataNamingScope) scope);
     }
 
     public Optional<ConstructorNamingScope> enclosingConstructor() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof ConstructorNamingScope)
-                .map(scope -> (ConstructorNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof ConstructorNamingScope)
+            .findFirst()
+            .map(scope -> (ConstructorNamingScope) scope);
     }
 
     public Optional<LetNamingScope> enclosingLet() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof LetNamingScope)
-                .map(scope -> (LetNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof LetNamingScope)
+            .findFirst()
+            .map(scope -> (LetNamingScope) scope);
     }
 
     public Optional<LambdaNamingScope> enclosingLambda() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof LambdaNamingScope)
-                .map(scope -> (LambdaNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof LambdaNamingScope)
+            .findFirst()
+            .map(scope -> (LambdaNamingScope) scope);
     }
 
     public Optional<CaseNamingScope> enclosingCase() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof CaseNamingScope)
-                .map(scope -> (CaseNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof CaseNamingScope)
+            .findFirst()
+            .map(scope -> (CaseNamingScope) scope);
     }
 
     public Optional<ConstructorPatternNamingScope> enclosingConstructorPattern() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof ConstructorPatternNamingScope)
-                .map(scope -> (ConstructorPatternNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof ConstructorPatternNamingScope)
+            .findFirst()
+            .map(scope -> (ConstructorPatternNamingScope) scope);
     }
 
     public Optional<BlockNamingScope> enclosingBlock() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof BlockNamingScope)
-                .map(scope -> (BlockNamingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof BlockNamingScope)
+            .findFirst()
+            .map(scope -> (BlockNamingScope) scope);
     }
 
     public static NameEnvironment empty() {
-        return new NameEnvironment(Stacks.mutable.empty());
+        return new NameEnvironment(new ArrayDeque<>());
     }
 
     public static NameEnvironment of(NamingScope scope) {
-        var scopes = Stacks.mutable.<NamingScope>empty();
+        var scopes = new ArrayDeque<NamingScope>();
         scopes.push(scope);
         return new NameEnvironment(scopes);
     }

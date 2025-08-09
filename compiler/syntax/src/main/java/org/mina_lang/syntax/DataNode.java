@@ -4,14 +4,15 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.DataName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.QualifiedName;
 
-public record DataNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<A>> typeParams,
-        ImmutableList<ConstructorNode<A>> constructors) implements DeclarationNode<A> {
+import java.util.List;
+
+public record DataNode<A> (Meta<A> meta, String name, List<TypeVarNode<A>> typeParams,
+        List<ConstructorNode<A>> constructors) implements DeclarationNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
         typeParams.forEach(tyParam -> tyParam.accept(visitor));
@@ -30,8 +31,8 @@ public record DataNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<
         var result = visitor.visitData(
                 meta(),
                 name(),
-                typeParams().collect(visitor::visitTypeVar),
-                constructors().collect(constr -> constr.accept(visitor)));
+                typeParams().stream().map(visitor::visitTypeVar).toList(),
+                constructors().stream().map(constr -> constr.accept(visitor)).toList());
 
         visitor.postVisitData(result);
 
@@ -49,8 +50,8 @@ public record DataNode<A> (Meta<A> meta, String name, ImmutableList<TypeVarNode<
         var result = visitor.visitData(
                 meta(),
                 name(),
-                typeParams().collect(visitor::visitTypeVar),
-                constructors().collect(constr -> constr.accept(visitor)));
+                typeParams().stream().map(visitor::visitTypeVar).toList(),
+                constructors().stream().map(constr -> constr.accept(visitor)).toList());
 
         visitor.postVisitData(result);
 

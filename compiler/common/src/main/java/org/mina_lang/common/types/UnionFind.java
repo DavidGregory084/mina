@@ -4,20 +4,21 @@
  */
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.block.function.Function2;
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
-import org.eclipse.collections.impl.collector.Collectors2;
-import org.eclipse.collections.impl.factory.Maps;
-import org.eclipse.collections.impl.factory.primitive.ObjectIntMaps;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 public class UnionFind<A> {
-    private final MutableMap<A, A> representative = Maps.mutable.empty();
-    private final MutableMap<A, A> parent = Maps.mutable.empty();
-    private final MutableObjectIntMap<A> rank = ObjectIntMaps.mutable.empty();
+    private final Map<A, A> representative = new HashMap<>();
+    private final Map<A, A> parent = new HashMap<>();
+    private final Object2IntMap<A> rank = new Object2IntOpenHashMap<>();
     private final BinaryOperator<A> chooseRep;
 
     UnionFind(BinaryOperator<A> chooseRep) {
@@ -53,8 +54,8 @@ public class UnionFind<A> {
 
     public Set<A> representatives() {
         return elements().stream()
-                .map(this::find)
-                .collect(Collectors2.toSet());
+            .map(this::find)
+            .collect(Collectors.toSet());
     }
 
     public boolean contains(A element) {
@@ -69,9 +70,9 @@ public class UnionFind<A> {
         }
     }
 
-    public void updateWith(Function2<? super A, ? super A, ? extends A> func) {
-        representative.forEachKeyValue((k, v) -> {
-            representative.updateValueWith(k, () -> v, func, k);
+    public void updateWith(BiFunction<? super A, ? super A, ? extends A> func) {
+        representative.forEach((k, v) -> {
+            representative.computeIfPresent(k, func);
         });
     }
 
@@ -81,21 +82,26 @@ public class UnionFind<A> {
         // Remove the element from the set
         parent.remove(element);
 
-        var children = parent.flip();
+        var children = parent.entrySet().stream()
+            .collect(Collectors.groupingBy(
+                Map.Entry::getValue,
+                Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
 
         // If it is a parent node, we need to figure out what to do with its children
-        if (rank.get(element) > 1)  {
+        if (rank.getInt(element) > 1) {
             var elementChildren = children.get(element);
 
             if (!elementChildren.isEmpty()) {
                 // It's the root of a set
                 if (root.equals(element)) {
                     // Find the child with highest rank and make it a new root
-                    var newRoot = elementChildren.maxBy(rank::get);
+                    var newRoot = elementChildren.stream()
+                        .max(Comparator.comparingInt(rank::getInt))
+                        .get();
                     elementChildren.forEach(child -> {
                         parent.put(child, newRoot);
                         if (!child.equals(newRoot)) {
-                            rank.updateValue(newRoot, 1, i -> i + rank.get(child));
+                            rank.computeInt(newRoot, (k, i) -> i == null ? 1 :  i + rank.getInt(child));
                         }
                     });
                 } else {
@@ -103,7 +109,7 @@ public class UnionFind<A> {
                     elementChildren.forEach(child -> {
                         parent.put(child, root);
                         if (!child.equals(root)) {
-                            rank.updateValue(root, 1, i -> i + rank.get(child));
+                            rank.computeInt(root, (k, i) -> i == null ? 1 :  i + rank.getInt(child));
                         }
                     });
                 }
@@ -113,10 +119,10 @@ public class UnionFind<A> {
         rank.remove(element);
 
         // If it is a representative of the set, choose a new rep
-        if (element.equals(representative.get(root))) {
+        if (element.equals(representative.get(root)) && children.get(root) != null) {
             representative.put(
                 root,
-                children.get(root).reduce(chooseRep).orElse(root));
+                children.get(root).stream().reduce(chooseRep).orElse(root));
         }
     }
 
@@ -145,24 +151,22 @@ public class UnionFind<A> {
         A rightRoot = root(right);
 
         if (!leftRoot.equals(rightRoot)) {
-            if (rank.get(leftRoot) < rank.get(rightRoot)) {
+            if (rank.getInt(leftRoot) < rank.getInt(rightRoot)) {
                 parent.put(leftRoot, rightRoot);
-                rank.updateValue(
-                        rightRoot, 1,
-                        i -> i + rank.get(leftRoot));
-                representative.updateValue(
-                        rightRoot,
-                        () -> rightRoot,
-                        rightRep -> chooseRep.apply(rightRep, representative.getOrDefault(leftRoot, leftRoot)));
+                rank.compute(
+                    rightRoot,
+                    (k, i) -> i == null ? 1 : i + rank.getInt(leftRoot));
+                representative.compute(
+                    rightRoot,
+                    (k, rightRep) -> rightRep == null ? rightRoot : chooseRep.apply(rightRep, representative.getOrDefault(leftRoot, leftRoot)));
             } else {
                 parent.put(rightRoot, leftRoot);
-                rank.updateValue(
-                        leftRoot, 1,
-                        i -> i + rank.get(rightRoot));
-                representative.updateValue(
-                        leftRoot,
-                        () -> leftRoot,
-                        leftRep -> chooseRep.apply(leftRep, representative.getOrDefault(rightRoot, rightRoot)));
+                rank.compute(
+                    leftRoot,
+                    (k, i) -> i == null ? 1 : i + rank.getInt(rightRoot));
+                representative.compute(
+                    leftRoot,
+                    (k, leftRep) -> leftRep == null ? leftRoot : chooseRep.apply(leftRep, representative.getOrDefault(rightRoot, rightRoot)));
             }
         }
     }

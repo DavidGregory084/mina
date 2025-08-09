@@ -6,8 +6,6 @@ package org.mina_lang.main;
 
 import com.opencastsoftware.prettier4j.Doc;
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.tuple.Tuples;
 import org.mina_lang.common.*;
 import org.mina_lang.common.diagnostics.DiagnosticRelatedInformation;
 import org.mina_lang.common.diagnostics.NamespaceDiagnosticReporter;
@@ -18,6 +16,9 @@ import org.mina_lang.syntax.ImportQualifiedNode;
 import org.mina_lang.syntax.ImportSymbolsNode;
 import org.mina_lang.syntax.NamespaceNode;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ImportScopePopulation<A, B extends Scope<A>> {
@@ -69,7 +70,7 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         diagnostics.reportError(
             proposed.range(),
             "Duplicate definition of value '" + symbol + "'",
-            Lists.immutable.of(originalDefinition));
+            List.of(originalDefinition));
     }
 
     private void duplicateTypeDefinition(
@@ -82,7 +83,7 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         diagnostics.reportError(
             proposed.range(),
             "Duplicate definition of type '" + symbol + "'",
-            Lists.immutable.of(originalDefinition));
+            List.of(originalDefinition));
     }
 
     default Optional<B> populateImportScope(NamespaceNode<?> namespaceNode, B scope) {
@@ -137,22 +138,26 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
     }
 
     default Scope<A> transformScope(Scope<Attributes> scope) {
-        var values = scope.values().collect((key, value) -> Tuples.pair(key, transformMeta(value)));
-        var types = scope.types().collect((key, value) -> Tuples.pair(key, transformMeta(value)));
-        var fields = scope.fields().collect((constr, constrFields) -> {
-            var transformedFields = constrFields.collect((key, value) -> Tuples.pair(key, transformMeta(value)));
-            return Tuples.pair(constr, transformedFields);
+        var values = new HashMap<String, Meta<A>>();
+        scope.values().forEach((key, value) -> values.put(key, transformMeta(value)));
+        var types = new HashMap<String, Meta<A>>();
+        scope.types().forEach((key, value) -> types.put(key, transformMeta(value)));
+        var fields = new HashMap<ConstructorName, Map<String, Meta<A>>>();
+        scope.fields().forEach((constr, constrFields) -> {
+            var transformedFields = new HashMap<String, Meta<A>>();
+            constrFields.forEach((key, value) -> transformedFields.put(key, transformMeta(value)));
+            fields.put(constr, transformedFields);
         });
         return new TopLevelScope<>(values, types, fields);
     }
 
     private void populateQualifiedImport(Range range, Scope<A> namespaceScope, B importScope, String namespaceAlias) {
-        namespaceScope.types().forEach(meta -> {
+        namespaceScope.types().forEach((k, meta) -> {
             var name = getName(meta);
             var locatedMeta = new Meta<>(range, meta.meta());
             importScope.putTypeIfAbsent(namespaceAlias + "." + name.localName(), locatedMeta);
         });
-        namespaceScope.values().forEach(meta -> {
+        namespaceScope.values().forEach((k, meta) -> {
             var name = getName(meta);
             var locatedMeta = new Meta<>(range, meta.meta());
             importScope.putValueIfAbsent(namespaceAlias + "." + name.localName(), locatedMeta);

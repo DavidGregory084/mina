@@ -5,13 +5,12 @@
 package org.mina_lang.syntax;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.impl.factory.Lists;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TracingSyntaxNodeVisitor implements SyntaxNodeVisitor {
-    private MutableList<Entry> entries = Lists.mutable.empty();
+    private List<Entry> entries = new ArrayList<>();
 
     public List<Entry> getEntries() {
         return entries;

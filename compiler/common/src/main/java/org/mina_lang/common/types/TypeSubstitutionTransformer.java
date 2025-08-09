@@ -35,7 +35,7 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
     public QuantifiedType visitQuantifiedType(QuantifiedType quant) {
         return new QuantifiedType(
                 // Safe to cast, since do not manipulate type variables here
-                quant.args().collect(tyArg -> (TypeVar) tyArg.accept(this)),
+                quant.args().stream().map(tyArg -> (TypeVar) tyArg.accept(this)).toList(),
                 quant.body().accept(this),
                 quant.kind().accept(kindTransformer));
     }
@@ -77,7 +77,7 @@ public class TypeSubstitutionTransformer implements TypeTransformer {
     public TypeApply visitTypeApply(TypeApply tyApp) {
         return new TypeApply(
                 tyApp.type().accept(this),
-                tyApp.typeArguments().collect(tyArg -> tyArg.accept(this)),
+                tyApp.typeArguments().stream().map(tyArg -> tyArg.accept(this)).toList(),
                 tyApp.kind().accept(kindTransformer));
     }
 

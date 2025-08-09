@@ -4,7 +4,6 @@
  */
 package org.mina_lang.langserver.documents;
 
-import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
@@ -12,6 +11,7 @@ import org.eclipse.lsp4j.TextDocumentItem;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MinaTextDocuments {
     private final ConcurrentHashMap<String, TextDocumentItem> documents = new ConcurrentHashMap<>();

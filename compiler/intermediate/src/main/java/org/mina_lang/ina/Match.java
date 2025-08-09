@@ -4,15 +4,16 @@
  */
 package org.mina_lang.ina;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.types.Type;
 
-public record Match(Type type, Value scrutinee, ImmutableList<Case> cases) implements Expression {
+import java.util.List;
+
+public record Match(Type type, Value scrutinee, List<Case> cases) implements Expression {
     @Override
     public <A> A accept(InaNodeFolder<A> visitor) {
         return visitor.visitMatch(
             type,
             scrutinee.accept(visitor),
-            cases.collect(cse -> cse.accept(visitor)));
+            cases.stream().map(cse -> cse.accept(visitor)).toList());
     }
 }

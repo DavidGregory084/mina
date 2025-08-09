@@ -4,15 +4,16 @@
  */
 package org.mina_lang.ina;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.types.Type;
 
-public record Block(Type type, ImmutableList<LocalBinding> bindings, Expression result) implements Expression {
+import java.util.List;
+
+public record Block(Type type, List<LocalBinding> bindings, Expression result) implements Expression {
     @Override
     public <A> A accept(InaNodeFolder<A> visitor) {
         return visitor.visitBlock(
             type,
-            bindings.collect(binding -> binding.accept(visitor)),
+            bindings.stream().map(binding -> binding.accept(visitor)).toList(),
             result.accept(visitor));
     }
 }

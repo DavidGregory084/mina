@@ -5,12 +5,11 @@
 package org.mina_lang.syntax;
 
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.factory.Lists;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 
+import java.util.List;
 import java.util.Optional;
 
 public class SyntaxNodes {
@@ -18,17 +17,17 @@ public class SyntaxNodes {
     public static NamespaceNode<Void> namespaceNode(
             Range range,
             NamespaceIdNode id,
-            ImmutableList<ImportNode> imports,
-            ImmutableList<DeclarationNode<Void>> declarations) {
-        return new NamespaceNode<>(Meta.of(range), id, imports, Lists.immutable.of(declarations));
+            List<ImportNode> imports,
+            List<DeclarationNode<Void>> declarations) {
+        return new NamespaceNode<>(Meta.of(range), id, imports, List.of(declarations));
     }
 
     public static <A> NamespaceNode<A> namespaceNode(
             Meta<A> meta,
             NamespaceIdNode id,
-            ImmutableList<ImportNode> imports,
-            ImmutableList<DeclarationNode<A>> declarations) {
-        return new NamespaceNode<>(meta, id, imports, Lists.immutable.of(declarations));
+            List<ImportNode> imports,
+            List<DeclarationNode<A>> declarations) {
+        return new NamespaceNode<>(meta, id, imports, List.of(declarations));
     }
 
     public static ImportQualifiedNode importQualifiedNode(
@@ -55,13 +54,13 @@ public class SyntaxNodes {
             Range range,
             NamespaceIdNode namespace,
             ImporteeNode symbol) {
-        return new ImportSymbolsNode(range, namespace, Lists.immutable.of(symbol));
+        return new ImportSymbolsNode(range, namespace, List.of(symbol));
     }
 
     public static ImportNode importSymbolsNode(
             Range range,
             NamespaceIdNode namespace,
-            ImmutableList<ImporteeNode> symbols) {
+            List<ImporteeNode> symbols) {
         return new ImportSymbolsNode(range, namespace, symbols);
     }
 
@@ -77,24 +76,24 @@ public class SyntaxNodes {
     public static DataNode<Void> dataNode(
             Range range,
             String name,
-            ImmutableList<TypeVarNode<Void>> typeParams,
-            ImmutableList<ConstructorNode<Void>> constructors) {
+            List<TypeVarNode<Void>> typeParams,
+            List<ConstructorNode<Void>> constructors) {
         return new DataNode<>(Meta.of(range), name, typeParams, constructors);
     }
 
     public static <A> DataNode<A> dataNode(
             Meta<A> meta,
             String name,
-            ImmutableList<TypeVarNode<A>> typeParams,
-            ImmutableList<ConstructorNode<A>> constructors) {
+            List<TypeVarNode<A>> typeParams,
+            List<ConstructorNode<A>> constructors) {
         return new DataNode<>(meta, name, typeParams, constructors);
     }
 
     public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
-            ImmutableList<TypeVarNode<Void>> typeParams,
-            ImmutableList<ParamNode<Void>> valueParams,
+            List<TypeVarNode<Void>> typeParams,
+            List<ParamNode<Void>> valueParams,
             Optional<TypeNode<Void>> returnType,
             ExprNode<Void> expr) {
         return new LetFnNode<>(Meta.of(range), name, typeParams, valueParams, returnType, expr);
@@ -103,8 +102,8 @@ public class SyntaxNodes {
     public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
-            ImmutableList<TypeVarNode<A>> typeParams,
-            ImmutableList<ParamNode<A>> valueParams,
+            List<TypeVarNode<A>> typeParams,
+            List<ParamNode<A>> valueParams,
             Optional<TypeNode<A>> returnType,
             ExprNode<A> expr) {
         return new LetFnNode<>(meta, name, typeParams, valueParams, returnType, expr);
@@ -113,8 +112,8 @@ public class SyntaxNodes {
     public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
-            ImmutableList<TypeVarNode<Void>> typeParams,
-            ImmutableList<ParamNode<Void>> valueParams,
+            List<TypeVarNode<Void>> typeParams,
+            List<ParamNode<Void>> valueParams,
             TypeNode<Void> returnType,
             ExprNode<Void> expr) {
         return new LetFnNode<>(Meta.of(range), name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
@@ -123,8 +122,8 @@ public class SyntaxNodes {
     public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
-            ImmutableList<TypeVarNode<A>> typeParams,
-            ImmutableList<ParamNode<A>> valueParams,
+            List<TypeVarNode<A>> typeParams,
+            List<ParamNode<A>> valueParams,
             TypeNode<A> returnType,
             ExprNode<A> expr) {
         return new LetFnNode<>(meta, name, typeParams, valueParams, Optional.ofNullable(returnType), expr);
@@ -133,26 +132,26 @@ public class SyntaxNodes {
     public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
-            ImmutableList<ParamNode<Void>> valueParams,
+            List<ParamNode<Void>> valueParams,
             TypeNode<Void> returnType,
             ExprNode<Void> expr) {
-        return new LetFnNode<>(Meta.of(range), name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
+        return new LetFnNode<>(Meta.of(range), name, List.of(), valueParams, Optional.ofNullable(returnType), expr);
     }
 
     public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
-            ImmutableList<ParamNode<A>> valueParams,
+            List<ParamNode<A>> valueParams,
             TypeNode<A> returnType,
             ExprNode<A> expr) {
-        return new LetFnNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.ofNullable(returnType), expr);
+        return new LetFnNode<>(meta, name, List.of(), valueParams, Optional.ofNullable(returnType), expr);
     }
 
     public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
-            ImmutableList<TypeVarNode<Void>> typeParams,
-            ImmutableList<ParamNode<Void>> valueParams,
+            List<TypeVarNode<Void>> typeParams,
+            List<ParamNode<Void>> valueParams,
             ExprNode<Void> expr) {
         return new LetFnNode<>(Meta.of(range), name, typeParams, valueParams, Optional.empty(), expr);
     }
@@ -160,8 +159,8 @@ public class SyntaxNodes {
     public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
-            ImmutableList<TypeVarNode<A>> typeParams,
-            ImmutableList<ParamNode<A>> valueParams,
+            List<TypeVarNode<A>> typeParams,
+            List<ParamNode<A>> valueParams,
             ExprNode<A> expr) {
         return new LetFnNode<>(meta, name, typeParams, valueParams, Optional.empty(), expr);
     }
@@ -169,17 +168,17 @@ public class SyntaxNodes {
     public static LetFnNode<Void> letFnNode(
             Range range,
             String name,
-            ImmutableList<ParamNode<Void>> valueParams,
+            List<ParamNode<Void>> valueParams,
             ExprNode<Void> expr) {
-        return new LetFnNode<>(Meta.of(range), name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
+        return new LetFnNode<>(Meta.of(range), name, List.of(), valueParams, Optional.empty(), expr);
     }
 
     public static <A> LetFnNode<A> letFnNode(
             Meta<A> meta,
             String name,
-            ImmutableList<ParamNode<A>> valueParams,
+            List<ParamNode<A>> valueParams,
             ExprNode<A> expr) {
-        return new LetFnNode<>(meta, name, Lists.immutable.empty(), valueParams, Optional.empty(), expr);
+        return new LetFnNode<>(meta, name, List.of(), valueParams, Optional.empty(), expr);
     }
 
     public static LetNode<Void> letNode(
@@ -232,7 +231,7 @@ public class SyntaxNodes {
     public static ConstructorNode<Void> constructorNode(
             Range range,
             String name,
-            ImmutableList<ConstructorParamNode<Void>> params,
+            List<ConstructorParamNode<Void>> params,
             Optional<TypeNode<Void>> type) {
         return new ConstructorNode<>(Meta.of(range), name, params, type);
     }
@@ -240,7 +239,7 @@ public class SyntaxNodes {
     public static <A> ConstructorNode<A> constructorNode(
             Meta<A> meta,
             String name,
-            ImmutableList<ConstructorParamNode<A>> params,
+            List<ConstructorParamNode<A>> params,
             Optional<TypeNode<A>> type) {
         return new ConstructorNode<>(meta, name, params, type);
     }
@@ -262,28 +261,28 @@ public class SyntaxNodes {
     // Types
     public static QuantifiedTypeNode<Void> quantifiedTypeNode(
             Range range,
-            ImmutableList<TypeVarNode<Void>> args,
+            List<TypeVarNode<Void>> args,
             TypeNode<Void> body) {
         return new QuantifiedTypeNode<>(Meta.of(range), args, body);
     }
 
     public static <A> QuantifiedTypeNode<A> quantifiedTypeNode(
             Meta<A> meta,
-            ImmutableList<TypeVarNode<A>> args,
+            List<TypeVarNode<A>> args,
             TypeNode<A> body) {
         return new QuantifiedTypeNode<>(meta, args, body);
     }
 
     public static FunTypeNode<Void> funTypeNode(
             Range range,
-            ImmutableList<TypeNode<Void>> argTypes,
+            List<TypeNode<Void>> argTypes,
             TypeNode<Void> returnType) {
         return new FunTypeNode<>(Meta.of(range), argTypes, returnType);
     }
 
     public static <A> FunTypeNode<A> funTypeNode(
             Meta<A> meta,
-            ImmutableList<TypeNode<A>> argTypes,
+            List<TypeNode<A>> argTypes,
             TypeNode<A> returnType) {
         return new FunTypeNode<>(meta, argTypes, returnType);
     }
@@ -291,14 +290,14 @@ public class SyntaxNodes {
     public static TypeApplyNode<Void> typeApplyNode(
             Range range,
             TypeNode<Void> type,
-            ImmutableList<TypeNode<Void>> args) {
+            List<TypeNode<Void>> args) {
         return new TypeApplyNode<>(Meta.of(range), type, args);
     }
 
     public static <A> TypeApplyNode<A> typeApplyNode(
             Meta<A> meta,
             TypeNode<A> type,
-            ImmutableList<TypeNode<A>> args) {
+            List<TypeNode<A>> args) {
         return new TypeApplyNode<>(meta, type, args);
     }
 
@@ -356,33 +355,33 @@ public class SyntaxNodes {
         Range range,
         ExprNode<Void> result
     ) {
-        return new BlockNode<>(Meta.of(range), Lists.immutable.empty(), Optional.of(result));
+        return new BlockNode<>(Meta.of(range), List.of(), Optional.of(result));
     }
 
     public static BlockNode<Void> blockNode(
         Range range,
         Optional<ExprNode<Void>> result
     ) {
-        return new BlockNode<>(Meta.of(range), Lists.immutable.empty(), result);
+        return new BlockNode<>(Meta.of(range), List.of(), result);
     }
 
     public static <A> BlockNode<A> blockNode(
         Meta<A> meta,
         ExprNode<A> result
     ) {
-        return new BlockNode<>(meta, Lists.immutable.empty(), Optional.of(result));
+        return new BlockNode<>(meta, List.of(), Optional.of(result));
     }
 
     public static <A> BlockNode<A> blockNode(
         Meta<A> meta,
         Optional<ExprNode<A>> result
     ) {
-        return new BlockNode<>(meta, Lists.immutable.empty(), result);
+        return new BlockNode<>(meta, List.of(), result);
     }
 
     public static BlockNode<Void> blockNode(
         Range range,
-        ImmutableList<LetNode<Void>> declarations,
+        List<LetNode<Void>> declarations,
         ExprNode<Void> result
     ) {
         return new BlockNode<>(Meta.of(range), declarations, Optional.of(result));
@@ -390,7 +389,7 @@ public class SyntaxNodes {
 
     public static BlockNode<Void> blockNode(
         Range range,
-        ImmutableList<LetNode<Void>> declarations,
+        List<LetNode<Void>> declarations,
         Optional<ExprNode<Void>> result
     ) {
         return new BlockNode<>(Meta.of(range), declarations, result);
@@ -398,7 +397,7 @@ public class SyntaxNodes {
 
     public static <A> BlockNode<A> blockNode(
         Meta<A> meta,
-        ImmutableList<LetNode<A>> declarations,
+        List<LetNode<A>> declarations,
         ExprNode<A> result
     ) {
         return new BlockNode<>(meta, declarations, Optional.of(result));
@@ -406,7 +405,7 @@ public class SyntaxNodes {
 
     public static <A> BlockNode<A> blockNode(
         Meta<A> meta,
-        ImmutableList<LetNode<A>> declarations,
+        List<LetNode<A>> declarations,
         Optional<ExprNode<A>> result
     ) {
         return new BlockNode<>(meta, declarations, result);
@@ -430,14 +429,14 @@ public class SyntaxNodes {
 
     public static LambdaNode<Void> lambdaNode(
             Range range,
-            ImmutableList<ParamNode<Void>> params,
+            List<ParamNode<Void>> params,
             ExprNode<Void> body) {
         return new LambdaNode<>(Meta.of(range), params, body);
     }
 
     public static <A> LambdaNode<A> lambdaNode(
             Meta<A> meta,
-            ImmutableList<ParamNode<A>> params,
+            List<ParamNode<A>> params,
             ExprNode<A> body) {
         return new LambdaNode<>(meta, params, body);
     }
@@ -445,28 +444,28 @@ public class SyntaxNodes {
     public static MatchNode<Void> matchNode(
             Range range,
             ExprNode<Void> scrutinee,
-            ImmutableList<CaseNode<Void>> cases) {
+            List<CaseNode<Void>> cases) {
         return new MatchNode<>(Meta.of(range), scrutinee, cases);
     }
 
     public static <A> MatchNode<A> matchNode(
             Meta<A> meta,
             ExprNode<A> scrutinee,
-            ImmutableList<CaseNode<A>> cases) {
+            List<CaseNode<A>> cases) {
         return new MatchNode<>(meta, scrutinee, cases);
     }
 
     public static ApplyNode<Void> applyNode(
             Range range,
             ExprNode<Void> expr,
-            ImmutableList<ExprNode<Void>> args) {
+            List<ExprNode<Void>> args) {
         return new ApplyNode<>(Meta.of(range), expr, args);
     }
 
     public static <A> ApplyNode<A> applyNode(
             Meta<A> meta,
             ExprNode<A> expr,
-            ImmutableList<ExprNode<A>> args) {
+            List<ExprNode<A>> args) {
         return new ApplyNode<>(meta, expr, args);
     }
 
@@ -702,14 +701,14 @@ public class SyntaxNodes {
     public static ConstructorPatternNode<Void> constructorPatternNode(
             Range range,
             QualifiedIdNode id,
-            ImmutableList<FieldPatternNode<Void>> fields) {
+            List<FieldPatternNode<Void>> fields) {
         return new ConstructorPatternNode<>(Meta.of(range), id, fields);
     }
 
     public static <A> ConstructorPatternNode<A> constructorPatternNode(
             Meta<A> meta,
             QualifiedIdNode id,
-            ImmutableList<FieldPatternNode<A>> fields) {
+            List<FieldPatternNode<A>> fields) {
         return new ConstructorPatternNode<>(meta, id, fields);
     }
 
@@ -770,7 +769,7 @@ public class SyntaxNodes {
 
     public static NamespaceIdNode nsIdNode(
             Range range,
-            ImmutableList<String> pkg,
+            List<String> pkg,
             String ns) {
         return new NamespaceIdNode(range, pkg, ns);
     }
@@ -778,7 +777,7 @@ public class SyntaxNodes {
     public static NamespaceIdNode nsIdNode(
             Range range,
             String ns) {
-        return new NamespaceIdNode(range, Lists.immutable.empty(), ns);
+        return new NamespaceIdNode(range, List.of(), ns);
     }
 
     public static QualifiedIdNode idNode(

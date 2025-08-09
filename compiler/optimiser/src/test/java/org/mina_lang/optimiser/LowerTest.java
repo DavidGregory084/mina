@@ -8,7 +8,6 @@ import net.jqwik.api.Disabled;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
-import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -26,6 +25,7 @@ import org.mina_lang.ina.Long;
 import org.mina_lang.ina.String;
 import org.mina_lang.syntax.NamespaceNode;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -68,14 +68,14 @@ public class LowerTest {
                 lower.lowerDeclaration(LIST_DATA_NODE),
                 is(new Data(
                     LIST_DATA_NAME,
-                    Lists.immutable.of(TYPE_VAR_A),
-                    Lists.immutable.of(
+                    List.of(TYPE_VAR_A),
+                    List.of(
                         new Constructor(
                             CONS_CONSTRUCTOR_NAME,
-                            Lists.immutable.of(
+                            List.of(
                                 new Field(HEAD_FIELD_NAME, TYPE_VAR_A),
                                 new Field(TAIL_FIELD_NAME, LIST_A_TYPE))),
-                        new Constructor(NIL_CONSTRUCTOR_NAME, Lists.immutable.empty())
+                        new Constructor(NIL_CONSTRUCTOR_NAME, List.of())
                     )))
             );
         });
@@ -104,7 +104,7 @@ public class LowerTest {
                     LET_ID_TYPE,
                     new Lambda(
                         LET_ID_TYPE,
-                        Lists.immutable.of(new Param(LET_ID_PARAM_NAME, TYPE_VAR_A)),
+                        List.of(new Param(LET_ID_PARAM_NAME, TYPE_VAR_A)),
                         new Reference(LET_ID_PARAM_NAME, TYPE_VAR_A)))));
         });
     }
@@ -188,7 +188,7 @@ public class LowerTest {
     @Test
     void lowersUnOpWithValueOperand() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // -1
             var actual = lower.lowerExpr(NEGATE_ONE_NODE, bindings);
@@ -203,12 +203,12 @@ public class LowerTest {
     @Test
     void lowersApplyInc() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // inc(1)
             var actual = lower.lowerExpr(APPLY_INC_NODE, bindings);
             // inc(1)
-            var expected = new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(1)));
+            var expected = new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), List.of(new Int(1)));
 
             assertThat(bindings, is(empty()));
             assertThat(actual, is(expected));
@@ -218,12 +218,12 @@ public class LowerTest {
     @Test
     void lowersApplyMagicToInt() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // magic(1)
             var actual = lower.lowerExpr(APPLY_MAGIC_INT_NODE, bindings);
             // magic(box(1))
-            var expected = new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1))));
+            var expected = new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), List.of(new Box(new Int(1))));
 
             assertThat(bindings, is(empty()));
             assertThat(actual, is(expected));
@@ -233,7 +233,7 @@ public class LowerTest {
     @Test
     void lowersApplyMagicToString() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // magic("abc")
             var actual = lower.lowerExpr(APPLY_MAGIC_STRING_NODE, bindings);
@@ -241,7 +241,7 @@ public class LowerTest {
             var expected = new Apply(
                 Type.STRING,
                 new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE),
-                Lists.immutable.of(new String("abc")));
+                List.of(new String("abc")));
 
             assertThat(bindings, is(empty()));
             assertThat(actual, is(expected));
@@ -251,7 +251,7 @@ public class LowerTest {
     @Test
     void lowersApplyIdToInt() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // id(1)
             var tail = lower.lowerExpr(APPLY_ID_INT_NODE, bindings);
@@ -261,7 +261,7 @@ public class LowerTest {
             var expectedBindings = List.of(
                 new LetAssign(
                     new SyntheticName(0), Type.INT,
-                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1)))))
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(1)))))
             );
             var expectedTail = new Unbox(new Reference(new SyntheticName(0), Type.INT));
 
@@ -273,7 +273,7 @@ public class LowerTest {
     @Test
     void lowersApplyIdToString() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // id("abc")
             var tail = lower.lowerExpr(APPLY_ID_STRING_NODE, bindings);
@@ -282,7 +282,7 @@ public class LowerTest {
             var expectedTail = new Apply(
                 Type.STRING,
                 new Reference(LET_ID_NAME, LET_ID_TYPE),
-                Lists.immutable.of(new String("abc")));
+                List.of(new String("abc")));
 
             assertThat(bindings, is(empty()));
             assertThat(tail, is(expectedTail));
@@ -292,7 +292,7 @@ public class LowerTest {
     @Test
     void lowersApplyConstPoly() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // const(const(1, 'a'), "b")
             var tail = lower.lowerExpr(APPLY_CONST_POLY_NODE, bindings);
@@ -305,12 +305,12 @@ public class LowerTest {
                     new SyntheticName(0), Type.INT,
                     new Apply(
                         Type.INT, new Reference(LET_CONST_NAME, LET_CONST_TYPE),
-                        Lists.immutable.of(new Box(new Int(1)), new Box(new Char('a'))))),
+                        List.of(new Box(new Int(1)), new Box(new Char('a'))))),
                 new LetAssign(
                     new SyntheticName(1), Type.INT,
                     new Apply(
                         Type.INT, new Reference(LET_CONST_NAME, LET_CONST_TYPE),
-                        Lists.immutable.of(new Box(new Unbox(new Reference(new SyntheticName(0), Type.INT))), new String("b"))))
+                        List.of(new Box(new Unbox(new Reference(new SyntheticName(0), Type.INT))), new String("b"))))
             );
             var expectedTail = new Unbox(new Reference(new SyntheticName(1), Type.INT));
 
@@ -322,7 +322,7 @@ public class LowerTest {
     @Test
     void lowersSelectIncWithoutApply() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // 1.inc
             var tail = lower.lowerExpr(SELECT_INC_INT_NODE, bindings);
@@ -330,11 +330,11 @@ public class LowerTest {
             // () -> inc(1)
             var expectedTail = new Lambda(
                 SELECT_INC_INT_TYPE,
-                Lists.immutable.empty(),
+                List.of(),
                 new Apply(
                     Type.INT,
                     new Reference(LET_INC_NAME, LET_INC_TYPE),
-                    Lists.immutable.of(new Int(1))));
+                    List.of(new Int(1))));
 
             assertThat(bindings, is(empty()));
             assertThat(tail, is(expectedTail));
@@ -344,7 +344,7 @@ public class LowerTest {
     @Test
     void lowersSelectIncWithApply() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // 1.inc()
             var tail = lower.lowerExpr(APPLY_SELECT_INC_INT_NODE, bindings);
@@ -353,7 +353,7 @@ public class LowerTest {
             var expectedTail = new Apply(
                 Type.INT,
                 new Reference(LET_INC_NAME, LET_INC_TYPE),
-                Lists.immutable.of(new Int(1)));
+                List.of(new Int(1)));
 
             assertThat(bindings, is(empty()));
             assertThat(tail, is(expectedTail));
@@ -363,7 +363,7 @@ public class LowerTest {
     @Test
     void lowersSelectMagicWithoutApply() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // 1.magic
             var tail = lower.lowerExpr(SELECT_MAGIC_INT_NODE, bindings);
@@ -372,11 +372,11 @@ public class LowerTest {
             var expectedTail = new Lambda(
                 SELECT_MAGIC_INT_TYPE,
                 // () ->
-                Lists.immutable.empty(),
+                List.of(),
                 new Apply(
                     Type.INT,
                     new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE),
-                    Lists.immutable.of(new Box(new Int(1)))));
+                    List.of(new Box(new Int(1)))));
 
             assertThat(bindings, is(empty()));
             assertThat(tail, is(expectedTail));
@@ -386,7 +386,7 @@ public class LowerTest {
     @Test
     void lowersSelectMagicWithApply() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // 1.magic()
             var tail = lower.lowerExpr(APPLY_SELECT_MAGIC_INT_NODE, bindings);
@@ -394,7 +394,7 @@ public class LowerTest {
             var expectedTail = new Apply(
                 Type.INT,
                 new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE),
-                Lists.immutable.of(new Box(new Int(1))));
+                List.of(new Box(new Int(1))));
 
             assertThat(bindings, is(empty()));
             assertThat(tail, is(expectedTail));
@@ -404,7 +404,7 @@ public class LowerTest {
     @Test
     void lowersSelectConstWithoutApply() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // 1.const
             var tail = lower.lowerExpr(SELECT_CONST_INT_NODE, bindings);
@@ -416,10 +416,10 @@ public class LowerTest {
             var expectedTail = new Lambda(
                 SELECT_CONST_INT_TYPE,
                 // ($0: B) ->
-                Lists.immutable.of(new Param(new SyntheticName(0), TYPE_VAR_B)),
+                List.of(new Param(new SyntheticName(0), TYPE_VAR_B)),
                 new Block(
                     Type.INT,
-                    Lists.immutable.of(
+                    List.of(
                         // let $1 =
                         new LetAssign(
                             new SyntheticName(1),
@@ -428,7 +428,7 @@ public class LowerTest {
                             new Apply(
                                 Type.INT,
                                 new Reference(LET_CONST_NAME, LET_CONST_TYPE),
-                                Lists.immutable.of(new Box(new Int(1)), new Reference(new SyntheticName(0), TYPE_VAR_B))))),
+                                List.of(new Box(new Int(1)), new Reference(new SyntheticName(0), TYPE_VAR_B))))),
                     // unbox($1)
                     new Unbox(new Reference(new SyntheticName(1), Type.INT))));
 
@@ -440,7 +440,7 @@ public class LowerTest {
     @Test
     void lowersSelectConstWithApply() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // 1.const('b')
             var tail = lower.lowerExpr(APPLY_CHAR_SELECT_CONST_INT_NODE, bindings);
@@ -456,7 +456,7 @@ public class LowerTest {
                     new Apply(
                         Type.INT,
                         new Reference(LET_CONST_NAME, LET_CONST_TYPE),
-                        Lists.immutable.of(new Box(new Int(1)), new Box(new Char('b')))))
+                        List.of(new Box(new Int(1)), new Box(new Char('b')))))
             );
             var expectedTail = new Unbox(new Reference(new SyntheticName(0), Type.INT));
 
@@ -468,7 +468,7 @@ public class LowerTest {
     @Test
     void lowersUnOpWithIncOperand() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // -inc(1)
             var tail = lower.lowerExpr(NEGATE_INC_ONE_NODE, bindings);
@@ -479,7 +479,7 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(1))))
+                    new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), List.of(new Int(1))))
             );
             var expectedTail = new UnOp(Type.INT, UnaryOp.NEGATE, new Reference(new SyntheticName(0), Type.INT));
 
@@ -491,7 +491,7 @@ public class LowerTest {
     @Test
     void lowersUnOpWithMagicOperand() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // -magic(1)
             var tail = lower.lowerExpr(NEGATE_MAGIC_ONE_NODE, bindings);
@@ -502,7 +502,7 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1)))))
+                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), List.of(new Box(new Int(1)))))
             );
             var expectedTail = new UnOp(Type.INT, UnaryOp.NEGATE, new Reference(new SyntheticName(0), Type.INT));
 
@@ -514,7 +514,7 @@ public class LowerTest {
     @Test
     void lowersUnOpWithIdOperand() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // -id(1)
             var tail = lower.lowerExpr(NEGATE_ID_ONE_NODE, bindings);
@@ -528,7 +528,7 @@ public class LowerTest {
                     new Apply(
                         Type.INT,
                         new Reference(LET_ID_NAME, LET_ID_TYPE),
-                        Lists.immutable.of(new Box(new Int(1)))))
+                        List.of(new Box(new Int(1)))))
             );
             var expectedTail = new UnOp(
                 Type.INT,
@@ -543,7 +543,7 @@ public class LowerTest {
     @Test
     void lowersBinOpWithValueOperands() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // 1 + 2
             var actual = lower.lowerExpr(ONE_PLUS_TWO_NODE, bindings);
@@ -558,7 +558,7 @@ public class LowerTest {
     @Test
     void lowersBinOpWithIncOperands() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // inc(1) + inc(2)
             var tail = lower.lowerExpr(INC_ONE_PLUS_INC_TWO_NODE, bindings);
@@ -570,11 +570,11 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(1)))),
+                    new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), List.of(new Int(1)))),
                 new LetAssign(
                     new SyntheticName(1),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), Lists.immutable.of(new Int(2))))
+                    new Apply(Type.INT, new Reference(LET_INC_NAME, LET_INC_TYPE), List.of(new Int(2))))
             );
             var expectedTail = new BinOp(Type.INT, new Reference(new SyntheticName(0), Type.INT), BinaryOp.ADD, new Reference(new SyntheticName(1), Type.INT));
 
@@ -586,7 +586,7 @@ public class LowerTest {
     @Test
     void lowersBinOpWithMagicOperands() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // magic(1) + magic(2)
             var tail = lower.lowerExpr(MAGIC_ONE_PLUS_MAGIC_TWO_NODE, bindings);
@@ -598,11 +598,11 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(1))))),
+                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), List.of(new Box(new Int(1))))),
                 new LetAssign(
                     new SyntheticName(1),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(2)))))
+                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), List.of(new Box(new Int(2)))))
             );
             var expectedTail = new BinOp(
                 Type.INT,
@@ -618,7 +618,7 @@ public class LowerTest {
     @Test
     void lowersBinOpWithIdOperands() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // id(1) + id(2)
             var tail = lower.lowerExpr(ID_ONE_PLUS_ID_TWO_NODE, bindings);
@@ -630,11 +630,11 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1))))),
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(1))))),
                 new LetAssign(
                     new SyntheticName(1),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2)))))
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(2)))))
             );
             var expectedTail = new BinOp(
                 Type.INT,
@@ -650,7 +650,7 @@ public class LowerTest {
     @Test
     void lowersIfNodeWithImmediateOperands() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // if true then 1 else 2
             var tail = lower.lowerExpr(IF_TRUE_THEN_ONE_ELSE_TWO_NODE, bindings);
@@ -666,7 +666,7 @@ public class LowerTest {
     @Test
     void lowersIfNodeWithIdCondition() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // if id(true) then 1 else 2
             var tail = lower.lowerExpr(IF_ID_TRUE_THEN_ONE_ELSE_TWO_NODE, bindings);
@@ -677,7 +677,7 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.BOOLEAN,
-                    new Apply(Type.BOOLEAN, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Boolean(true)))))
+                    new Apply(Type.BOOLEAN, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Boolean(true)))))
             );
             var expectedTail = new If(
                 Type.INT,
@@ -693,7 +693,7 @@ public class LowerTest {
     @Test
     void lowersIfNodeWithIdConditionAndBranches() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // if id(true) then id(1) else id(2)
             var tail = lower.lowerExpr(IF_ID_TRUE_THEN_ID_ONE_ELSE_ID_TWO_NODE, bindings);
@@ -710,27 +710,27 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.BOOLEAN,
-                    new Apply(Type.BOOLEAN, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Boolean(true)))))
+                    new Apply(Type.BOOLEAN, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Boolean(true)))))
             );
             var expectedTail = new If(
                 Type.INT,
                 new Unbox(new Reference(new SyntheticName(0), Type.BOOLEAN)),
                 new Block(
                     Type.INT,
-                    Lists.immutable.of(
+                    List.of(
                         new LetAssign(
                             new SyntheticName(1),
                             Type.INT,
-                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1)))))),
+                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(1)))))),
                     new Unbox(new Reference(new SyntheticName(1), Type.INT))
                 ),
                 new Block(
                     Type.INT,
-                    Lists.immutable.of(
+                    List.of(
                         new LetAssign(
                             new SyntheticName(2),
                             Type.INT,
-                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2)))))),
+                            new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(2)))))),
                     new Unbox(new Reference(new SyntheticName(2), Type.INT))));
 
             assertThat(bindings, is(expectedBindings));
@@ -741,7 +741,7 @@ public class LowerTest {
     @Test
     void lowersBlockNodeWithMixedBindings() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // {
             //   let a = 1
@@ -768,7 +768,7 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2))))),
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(2))))),
                 new LetAssign(
                     new LocalName("b", 1),
                     Type.INT,
@@ -776,7 +776,7 @@ public class LowerTest {
                 new LetAssign(
                     new LocalName("c", 2),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(3))))),
+                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), List.of(new Box(new Int(3))))),
                 new LetAssign(
                     new LocalName("d", 3),
                     Type.BOOLEAN,
@@ -785,7 +785,7 @@ public class LowerTest {
             var expectedTail = new Apply(
                 Type.INT,
                 new Reference(LET_INC_NAME, LET_INC_TYPE),
-                Lists.immutable.of(new Reference(new LocalName("c", 2), Type.INT)));
+                List.of(new Reference(new LocalName("c", 2), Type.INT)));
 
             assertThat(bindings, is(expectedBindings));
             assertThat(tail, is(expectedTail));
@@ -797,8 +797,8 @@ public class LowerTest {
         withLowering(plainLower -> {
             // Make sure that we use different synthetic var counters
             withLowering(nestedLower -> {
-                List<LocalBinding> plainBindings = Lists.mutable.empty();
-                List<LocalBinding> nestedBindings = Lists.mutable.empty();
+                List<LocalBinding> plainBindings = new ArrayList<>();
+                List<LocalBinding> nestedBindings = new ArrayList<>();
 
                 var plainTail = plainLower.lowerExpr(MIXED_BLOCK_NODE, plainBindings);
                 var nestedTail = nestedLower.lowerExpr(MIXED_NESTED_BLOCK_NODE, nestedBindings);
@@ -812,7 +812,7 @@ public class LowerTest {
     @Test
     void lowersBlockNodeWithMixedBindingsAndNoTail() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // {
             //   let a = 1
@@ -838,7 +838,7 @@ public class LowerTest {
                 new LetAssign(
                     new SyntheticName(0),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(2))))),
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(2))))),
                 new LetAssign(
                     new LocalName("b", 1),
                     Type.INT,
@@ -846,7 +846,7 @@ public class LowerTest {
                 new LetAssign(
                     new LocalName("c", 2),
                     Type.INT,
-                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), Lists.immutable.of(new Box(new Int(3))))),
+                    new Apply(Type.INT, new Reference(LET_MAGIC_NAME, LET_MAGIC_TYPE), List.of(new Box(new Int(3))))),
                 new LetAssign(
                     new LocalName("d", 3),
                     Type.BOOLEAN,
@@ -864,8 +864,8 @@ public class LowerTest {
         withLowering(plainLower -> {
             // Make sure that we use different synthetic var counters
             withLowering(nestedLower -> {
-                List<LocalBinding> plainBindings = Lists.mutable.empty();
-                List<LocalBinding> nestedBindings = Lists.mutable.empty();
+                List<LocalBinding> plainBindings = new ArrayList<>();
+                List<LocalBinding> nestedBindings = new ArrayList<>();
 
                 var plainTail = plainLower.lowerExpr(MIXED_BLOCK_NO_TAIL_NODE, plainBindings);
                 var nestedTail = nestedLower.lowerExpr(MIXED_NESTED_BLOCK_NO_TAIL_NODE, nestedBindings);
@@ -879,7 +879,7 @@ public class LowerTest {
     @Test
     void lowersMatchNodeWithIdPattern() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // match 1 with {
             //    case x -> x
@@ -889,11 +889,11 @@ public class LowerTest {
             // match 1 with {
             //    case x -> x
             // }
-            var expectedBindings = Lists.mutable.empty();
+            var expectedBindings = new ArrayList<>();
             var expectedTail = new Match(
                 Type.INT,
                 new Int(1),
-                Lists.immutable.of(
+                List.of(
                     new Case(
                         new IdPattern(new LocalName("x", 0), Type.INT),
                         new Reference(new LocalName("x", 0), Type.INT))));
@@ -906,7 +906,7 @@ public class LowerTest {
     @Test
     void lowersMatchNodeWithLiteralPattern() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // match 1 with {
             //    case 1 -> true
@@ -916,11 +916,11 @@ public class LowerTest {
             // match 1 with {
             //    case 1 -> true
             // }
-            var expectedBindings = Lists.mutable.empty();
+            var expectedBindings = new ArrayList<>();
             var expectedTail = new Match(
                 Type.BOOLEAN,
                 new Int(1),
-                Lists.immutable.of(
+                List.of(
                     new Case(
                         new LiteralPattern(new Int(1)),
                         new Boolean(true))));
@@ -933,7 +933,7 @@ public class LowerTest {
     @Test
     void lowersMatchNodeWithLiteralAndAliasPattern() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // match 1 with {
             //    case x @ 1 -> x
@@ -943,11 +943,11 @@ public class LowerTest {
             // match 1 with {
             //    case x @ 1 -> x
             // }
-            var expectedBindings = Lists.mutable.empty();
+            var expectedBindings = new ArrayList<>();
             var expectedTail = new Match(
                 Type.INT,
                 new Int(1),
-                Lists.immutable.of(
+                List.of(
                     new Case(
                         new AliasPattern(new LocalName("x", 0), Type.INT, new LiteralPattern(new Int(1))),
                         new Reference(new LocalName("x", 0), Type.INT))));
@@ -960,7 +960,7 @@ public class LowerTest {
     @Test
     void lowersMatchNodeWithConstructorPatternAndIdPatterns() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // match list with {
             //    case Nil {} -> 0
@@ -972,20 +972,20 @@ public class LowerTest {
             //    case Nil {} -> 0
             //    case Cons { head, tail } -> 1
             // }
-            var expectedBindings = Lists.mutable.empty();
+            var expectedBindings = new ArrayList<>();
             var expectedTail = new Match(
                 Type.INT,
                 new Reference(new LocalName("list", 0), LIST_A_TYPE),
-                Lists.immutable.of(
+                List.of(
                     new Case(
                         new ConstructorPattern(
                             NIL_CONSTRUCTOR_NAME,
-                            LIST_A_TYPE, Lists.immutable.empty()),
+                            LIST_A_TYPE, List.of()),
                         new Int(0)),
                     new Case(
                         new ConstructorPattern(
                             CONS_CONSTRUCTOR_NAME,
-                            LIST_A_TYPE, Lists.immutable.of(
+                            LIST_A_TYPE, List.of(
                             new FieldPattern(
                                 HEAD_FIELD_NAME,
                                 TYPE_VAR_A, new IdPattern(new LocalName("head", 1), TYPE_VAR_A)),
@@ -1002,7 +1002,7 @@ public class LowerTest {
     @Test
     void lowersMatchNodeWithComputationInScrutinee() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // match id(1) with {
             //    case x -> x
@@ -1015,14 +1015,14 @@ public class LowerTest {
             //       case x -> x
             //    }
             // }
-            var expectedBindings = Lists.mutable.of(
+            var expectedBindings = List.of(
                 new LetAssign(
                     new SyntheticName(0), Type.INT,
-                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), Lists.immutable.of(new Box(new Int(1))))));
+                    new Apply(Type.INT, new Reference(LET_ID_NAME, LET_ID_TYPE), List.of(new Box(new Int(1))))));
             var expectedTail = new Match(
                 Type.INT,
                 new Unbox(new Reference(new SyntheticName(0), Type.INT)),
-                Lists.immutable.of(
+                List.of(
                     new Case(
                         new IdPattern(new LocalName("x", 0), Type.INT),
                         new Reference(new LocalName("x", 0), Type.INT))));
@@ -1035,7 +1035,7 @@ public class LowerTest {
     @Test
     void lowersMatchNodeWithComputationInCaseConsequent() {
         withLowering(lower -> {
-            List<LocalBinding> bindings = Lists.mutable.empty();
+            List<LocalBinding> bindings = new ArrayList<>();
 
             // match 1 with {
             //    case 1 -> id(true)
@@ -1048,22 +1048,22 @@ public class LowerTest {
             //       unbox($0)
             //    }
             // }
-            var expectedBindings = Lists.mutable.empty();
+            var expectedBindings = new ArrayList<>();
             var expectedTail = new Match(
                 Type.BOOLEAN,
                 new Int(1),
-                Lists.immutable.of(
+                List.of(
                     new Case(
                         new LiteralPattern(new Int(1)),
                         new Block(
                             Type.BOOLEAN,
-                            Lists.immutable.of(
+                            List.of(
                                 new LetAssign(
                                     new SyntheticName(0), Type.BOOLEAN,
                                     new Apply(
                                         Type.BOOLEAN,
                                         new Reference(LET_ID_NAME, LET_ID_TYPE),
-                                        Lists.immutable.of(new Box(new Boolean(true)))))),
+                                        List.of(new Box(new Boolean(true)))))),
                             new Unbox(new Reference(new SyntheticName(0), Type.BOOLEAN))))));
 
             assertThat(bindings, is(expectedBindings));

@@ -10,6 +10,9 @@ dependencies {
 
     // Syntax Tree Definitions
     api(project(":compiler:mina-compiler-syntax"))
+
+    // Primitive Collections
+    implementation(libs.fastutilCore)
 }
 
 testing {

@@ -4,8 +4,6 @@
  */
 package org.mina_lang.codegen.jvm;
 
-import org.eclipse.collections.api.set.MutableSet;
-import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.ConstructorNode;
@@ -14,6 +12,9 @@ import org.mina_lang.syntax.MetaNode;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class JavaSignature {
     private static String OBJECT_NAME = Type.getInternalName(Object.class);
@@ -43,7 +44,7 @@ public class JavaSignature {
 
         if (constrType instanceof QuantifiedType quant) {
             var funType = (TypeApply) Types.getUnderlyingType(constr);
-            var returnType = (TypeApply) funType.typeArguments().getLast();
+            var returnType = (TypeApply) funType.typeArguments().get(funType.typeArguments().size() - 1);
             returnType.typeArguments().forEach(tyArg -> {
                 if (tyArg instanceof TypeVar tyVar) {
                     visitor.visitFormalTypeParameter(tyVar.name());
@@ -63,7 +64,7 @@ public class JavaSignature {
 
         if (constrType instanceof QuantifiedType quant) {
             var funType = (TypeApply) Types.getUnderlyingType(constr);
-            var returnType = (TypeApply) funType.typeArguments().getLast();
+            var returnType = (TypeApply) funType.typeArguments().get(funType.typeArguments().size() - 1);
             returnType.typeArguments().forEach(returnTyArg -> {
                 var argVisitor = interfaceVisitor.visitTypeArgument(SignatureVisitor.INSTANCEOF);
                 returnTyArg.accept(new BoxedTypeSignatureVisitor(argVisitor));
@@ -82,7 +83,7 @@ public class JavaSignature {
         var funType = (TypeApply) Types.getUnderlyingType(constr);
 
         if (constrType instanceof QuantifiedType quant) {
-            var returnType = (TypeApply) funType.typeArguments().getLast();
+            var returnType = (TypeApply) funType.typeArguments().get(funType.typeArguments().size() - 1);
             returnType.typeArguments().forEach(tyArg -> {
                 if (tyArg instanceof TypeVar tyVar) {
                     visitor.visitFormalTypeParameter(tyVar.name());
@@ -94,11 +95,11 @@ public class JavaSignature {
         }
 
         funType.typeArguments()
-                .take(funType.typeArguments().size() - 1)
-                .forEach(paramType -> {
-                    var paramVisitor = visitor.visitParameterType();
-                    paramType.accept(new TypeSignatureVisitor(paramVisitor));
-                });
+            .subList(0, funType.typeArguments().size() - 1)
+            .forEach(paramType -> {
+                var paramVisitor = visitor.visitParameterType();
+                paramType.accept(new TypeSignatureVisitor(paramVisitor));
+            });
 
         var returnTypeVisitor = visitor.visitReturnType();
         returnTypeVisitor.visitBaseType(Type.VOID_TYPE.getDescriptor().charAt(0));
@@ -115,7 +116,7 @@ public class JavaSignature {
 
         if (constrType instanceof QuantifiedType quant) {
             var funType = (TypeApply) Types.getUnderlyingType(constr);
-            var returnType = (TypeApply) funType.typeArguments().getLast();
+            var returnType = (TypeApply) funType.typeArguments().get(funType.typeArguments().size() - 1);
             returnType.typeArguments().forEach(returnTyArg -> {
                 if (returnTyArg instanceof ForAllVar forall) {
                     var argVisitor = visitor.visitTypeArgument(SignatureVisitor.INSTANCEOF);
@@ -154,14 +155,14 @@ public class JavaSignature {
         var funType = (TypeApply) Types.getUnderlyingType(type);
 
         funType.typeArguments()
-                .take(funType.typeArguments().size() - 1)
-                .forEach(paramType -> {
-                    var paramVisitor = visitor.visitParameterType();
-                    paramType.accept(new TypeSignatureVisitor(paramVisitor));
-                });
+            .subList(0, funType.typeArguments().size() - 1)
+            .forEach(paramType -> {
+                var paramVisitor = visitor.visitParameterType();
+                paramType.accept(new TypeSignatureVisitor(paramVisitor));
+            });
 
         var returnTypeVisitor = visitor.visitReturnType();
-        funType.typeArguments().getLast().accept(new TypeSignatureVisitor(returnTypeVisitor));
+        funType.typeArguments().get(funType.typeArguments().size() - 1).accept(new TypeSignatureVisitor(returnTypeVisitor));
 
         return visitor.toString();
     }
@@ -177,7 +178,7 @@ public class JavaSignature {
     }
 
     public static class TypeSignatureVisitor implements TypeVisitor {
-        protected MutableSet<TypeVar> boundVars = Sets.mutable.empty();
+        protected Set<TypeVar> boundVars = new HashSet<>();
         protected SignatureVisitor visitor;
 
         public TypeSignatureVisitor(SignatureVisitor visitor) {
@@ -186,9 +187,9 @@ public class JavaSignature {
 
         @Override
         public void visitQuantifiedType(QuantifiedType quant) {
-            boundVars.addAllIterable(quant.args());
+            boundVars.addAll(quant.args());
             quant.body().accept(this);
-            boundVars.removeAllIterable(quant.args());
+            quant.args().forEach(boundVars::remove);
         }
 
         @Override

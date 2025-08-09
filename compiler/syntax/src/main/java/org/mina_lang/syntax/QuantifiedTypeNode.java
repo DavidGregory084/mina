@@ -4,10 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 
-public record QuantifiedTypeNode<A> (Meta<A> meta, ImmutableList<TypeVarNode<A>> args, TypeNode<A> body)
+import java.util.List;
+
+public record QuantifiedTypeNode<A> (Meta<A> meta, List<TypeVarNode<A>> args, TypeNode<A> body)
         implements TypeNode<A> {
     @Override
     public void accept(SyntaxNodeVisitor visitor) {
@@ -22,7 +23,7 @@ public record QuantifiedTypeNode<A> (Meta<A> meta, ImmutableList<TypeVarNode<A>>
 
         var result = visitor.visitQuantifiedType(
                 meta(),
-                args().collect(visitor::visitTypeVar),
+                args().stream().map(visitor::visitTypeVar).toList(),
                 visitor.visitType(body()));
 
         visitor.postVisitQuantifiedType(result);
@@ -36,7 +37,7 @@ public record QuantifiedTypeNode<A> (Meta<A> meta, ImmutableList<TypeVarNode<A>>
 
         var result = visitor.visitQuantifiedType(
                 meta(),
-                args().collect(visitor::visitTypeVar),
+                args().stream().map(visitor::visitTypeVar).toList(),
                 visitor.visitType(body()));
 
         visitor.postVisitQuantifiedType(result);

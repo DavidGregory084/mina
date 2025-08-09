@@ -4,8 +4,9 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
+
+import java.util.List;
 
 public interface TypeNodeTransformer<A, B> {
 
@@ -15,21 +16,21 @@ public interface TypeNodeTransformer<A, B> {
 
     default void preVisitQuantifiedType(QuantifiedTypeNode<A> quant) {}
 
-    QuantifiedTypeNode<B> visitQuantifiedType(Meta<A> meta, ImmutableList<TypeVarNode<B>> args, TypeNode<B> body);
+    QuantifiedTypeNode<B> visitQuantifiedType(Meta<A> meta, List<TypeVarNode<B>> args, TypeNode<B> body);
 
     default void postVisitQuantifiedType(QuantifiedTypeNode<B> quant) {}
 
 
     default void preVisitFunType(FunTypeNode<A> funTyp) {}
 
-    FunTypeNode<B> visitFunType(Meta<A> meta, ImmutableList<TypeNode<B>> argTypes, TypeNode<B> returnType);
+    FunTypeNode<B> visitFunType(Meta<A> meta, List<TypeNode<B>> argTypes, TypeNode<B> returnType);
 
     default void postVisitFunType(FunTypeNode<B> funTyp) {}
 
 
     default void preVisitTypeApply(TypeApplyNode<A> tyApp) {}
 
-    TypeApplyNode<B> visitTypeApply(Meta<A> meta, TypeNode<B> type, ImmutableList<TypeNode<B>> args);
+    TypeApplyNode<B> visitTypeApply(Meta<A> meta, TypeNode<B> type, List<TypeNode<B>> args);
 
     default void postVisitTypeApply(TypeApplyNode<B> tyApp) {}
 

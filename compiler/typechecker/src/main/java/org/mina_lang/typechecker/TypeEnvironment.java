@@ -4,18 +4,16 @@
  */
 package org.mina_lang.typechecker;
 
-import org.eclipse.collections.api.stack.MutableStack;
-import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.types.*;
 import org.mina_lang.typechecker.scopes.*;
 
-import java.util.Optional;
+import java.util.*;
 
 public record TypeEnvironment(
-        MutableStack<TypingScope> scopes,
+        Deque<TypingScope> scopes,
         UnionFind<MonoType> typeSubstitution,
         UnionFind<Kind> kindSubstitution,
         SortSubstitutionTransformer sortTransformer) implements Environment<Attributes, TypingScope> {
@@ -46,39 +44,45 @@ public record TypeEnvironment(
     }
 
     public Optional<NamespaceTypingScope> enclosingNamespace() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof NamespaceTypingScope)
-                .map(scope -> (NamespaceTypingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof NamespaceTypingScope)
+            .findFirst()
+            .map(scope -> (NamespaceTypingScope) scope);
     }
 
     public Optional<DataTypingScope> enclosingData() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof DataTypingScope)
-                .map(scope -> (DataTypingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof DataTypingScope)
+            .findFirst()
+            .map(scope -> (DataTypingScope) scope);
     }
 
     public Optional<ConstructorTypingScope> enclosingConstructor() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof ConstructorTypingScope)
-                .map(scope -> (ConstructorTypingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof ConstructorTypingScope)
+            .findFirst()
+            .map(scope -> (ConstructorTypingScope) scope);
     }
 
     public Optional<LambdaTypingScope> enclosingLambda() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof LambdaTypingScope)
-                .map(scope -> (LambdaTypingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof LambdaTypingScope)
+            .findFirst()
+            .map(scope -> (LambdaTypingScope) scope);
     }
 
     public Optional<CaseTypingScope> enclosingCase() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof CaseTypingScope)
-                .map(scope -> (CaseTypingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof CaseTypingScope)
+            .findFirst()
+            .map(scope -> (CaseTypingScope) scope);
     }
 
     public Optional<BlockTypingScope> enclosingBlock() {
-        return scopes()
-                .detectOptional(scope -> scope instanceof BlockTypingScope)
-                .map(scope -> (BlockTypingScope) scope);
+        return scopes().stream()
+            .filter(scope -> scope instanceof BlockTypingScope)
+            .findFirst()
+            .map(scope -> (BlockTypingScope) scope);
     }
 
     public void putUnsolvedKind(UnsolvedKind unsolved) {
@@ -124,17 +128,18 @@ public record TypeEnvironment(
         }
     }
 
-    public static Kind pickKindConstant(MutableStack<TypingScope> scopes, Kind left, Kind right) {
+    public static Kind pickKindConstant(Deque<TypingScope> scopes, Kind left, Kind right) {
         if (left instanceof UnsolvedKind unsolvedLeft) {
             if (right instanceof UnsolvedKind unsolvedRight) {
                 var leftDepth = -1;
                 var rightDepth = -1;
-                // TODO: use MutableStack#indexWhere once it's implemented
-                for (var i = 0; i < scopes.size(); i++) {
-                    if (scopes.peekAt(i).unsolvedKinds().contains(unsolvedLeft)) {
+                int i = 0;
+                for (var it = scopes.iterator(); it.hasNext(); i++) {
+                    var scope = it.next();
+                    if (scope.unsolvedKinds().contains(unsolvedLeft)) {
                         leftDepth = i;
                     }
-                    if (scopes.peekAt(i).unsolvedKinds().contains(unsolvedRight)) {
+                    if (scope.unsolvedKinds().contains(unsolvedRight)) {
                         rightDepth = i;
                     }
                 }
@@ -152,17 +157,18 @@ public record TypeEnvironment(
         }
     };
 
-    public static MonoType pickTypeConstant(MutableStack<TypingScope> scopes, MonoType left, MonoType right) {
+    public static MonoType pickTypeConstant(Deque<TypingScope> scopes, MonoType left, MonoType right) {
         if (left instanceof UnsolvedType unsolvedLeft) {
             if (right instanceof UnsolvedType unsolvedRight) {
                 var leftDepth = -1;
                 var rightDepth = -1;
-                // TODO: use MutableStack#indexWhere once it's implemented
-                for (var i = 0; i < scopes.size(); i++) {
-                    if (scopes.peekAt(i).unsolvedTypes().contains(unsolvedLeft)) {
+                int i = 0;
+                for (var it = scopes.iterator(); it.hasNext(); i++) {
+                    var scope = it.next();
+                    if (scope.unsolvedTypes().contains(unsolvedLeft)) {
                         leftDepth = i;
                     }
-                    if (scopes.peekAt(i).unsolvedTypes().contains(unsolvedRight)) {
+                    if (scope.unsolvedTypes().contains(unsolvedRight)) {
                         rightDepth = i;
                     }
                 }
@@ -181,7 +187,7 @@ public record TypeEnvironment(
     };
 
     public static TypeEnvironment empty() {
-        var scopes = Stacks.mutable.<TypingScope>empty();
+        var scopes = new ArrayDeque<TypingScope>();
         var typeSubst = UnionFind.<MonoType>of((l, r) -> pickTypeConstant(scopes, l, r));
         var kindSubst = UnionFind.<Kind>of((l, r) -> pickKindConstant(scopes, l, r));
         var sortTransformer = new SortSubstitutionTransformer(typeSubst, kindSubst);

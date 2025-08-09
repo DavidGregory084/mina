@@ -4,11 +4,7 @@
  */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.api.tuple.Pair;
-import org.eclipse.collections.impl.factory.Maps;
-import org.eclipse.collections.impl.tuple.Tuples;
+import it.unimi.dsi.fastutil.Pair;
 import org.mina_lang.codegen.jvm.*;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
@@ -22,6 +18,12 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import static org.objectweb.asm.Opcodes.*;
 
 public record ConstructorGenScope(
@@ -31,11 +33,11 @@ public record ConstructorGenScope(
         GeneratorAdapter initWriter,
         Label startLabel,
         Label endLabel,
-        MutableMap<String, Meta<Attributes>> values,
-        MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
-        ImmutableMap<Named, LocalVar> methodParams,
-        MutableMap<Named, LocalVar> localVars) implements JavaMethodScope {
+        Map<String, Meta<Attributes>> values,
+        Map<String, Meta<Attributes>> types,
+        Map<ConstructorName, Map<String, Meta<Attributes>>> fields,
+        Map<Named, LocalVar> methodParams,
+        Map<Named, LocalVar> localVars) implements JavaMethodScope {
 
     public ConstructorGenScope(
             ConstructorNode<Attributes> constr,
@@ -44,7 +46,7 @@ public record ConstructorGenScope(
             GeneratorAdapter initWriter,
             Label startLabel,
             Label endLabel,
-            ImmutableMap<Named, LocalVar> methodParams) {
+            Map<Named, LocalVar> methodParams) {
         this(
                 constr,
                 constrType,
@@ -52,11 +54,11 @@ public record ConstructorGenScope(
                 initWriter,
                 startLabel,
                 endLabel,
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
                 methodParams,
-                Maps.mutable.empty());
+                new HashMap<>());
     }
 
     @Override
@@ -103,29 +105,30 @@ public record ConstructorGenScope(
         var startLabel = new Label();
         var endLabel = new Label();
 
-        var methodParams = constructor.params()
-                .collectWithIndex((param, index) -> {
-                    var paramName = Names.getName(param);
-                    var paramMinaType = Types.getType(param);
-                    var paramType = Types.asmType(param);
-                    var paramSignature = JavaSignature.forType(paramMinaType);
-                    return Tuples.pair(
-                            paramName,
-                            new LocalVar(
-                                    ACC_FINAL,
-                                    index + 1, // first param is `this`
-                                    param.name(),
-                                    paramType.getDescriptor(),
-                                    paramSignature,
-                                    startLabel,
-                                    endLabel));
-                }).toImmutableMap(Pair::getOne, Pair::getTwo);
+        var methodParams = IntStream.range(0, constructor.params().size())
+            .mapToObj((index) -> {
+                var param = constructor.params().get(index);
+                var paramName = Names.getName(param);
+                var paramMinaType = Types.getType(param);
+                var paramType = Types.asmType(param);
+                var paramSignature = JavaSignature.forType(paramMinaType);
+                return Pair.of(
+                    paramName,
+                    new LocalVar(
+                        ACC_FINAL,
+                        index + 1, // first param is `this`
+                        param.name(),
+                        paramType.getDescriptor(),
+                        paramSignature,
+                        startLabel,
+                        endLabel));
+            }).collect(Collectors.toMap(Pair::first, Pair::second));
 
-        methodParams
-                .toSortedListBy(LocalVar::index)
-                .forEach(param -> {
-                    initWriter.visitParameter(param.name(), param.access());
-                });
+        methodParams.values().stream()
+            .sorted(Comparator.comparingInt(LocalVar::index))
+            .forEach(param -> {
+                initWriter.visitParameter(param.name(), param.access());
+            });
 
         initWriter.visitCode();
         initWriter.visitLabel(startLabel);

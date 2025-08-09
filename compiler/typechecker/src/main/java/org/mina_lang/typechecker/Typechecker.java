@@ -6,10 +6,6 @@ package org.mina_lang.typechecker;
 
 import com.opencastsoftware.prettier4j.Doc;
 import com.opencastsoftware.yvette.Range;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
@@ -20,10 +16,12 @@ import org.mina_lang.common.types.*;
 import org.mina_lang.syntax.*;
 import org.mina_lang.typechecker.scopes.*;
 
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.mina_lang.syntax.SyntaxNodes.*;
 
@@ -91,9 +89,9 @@ public class Typechecker {
         return inferNamespace(namespace).accept(metaTransformer);
     }
 
-    public ImmutableList<DeclarationNode<Attributes>> typecheck(ImmutableList<DeclarationNode<Name>> node) {
+    public List<DeclarationNode<Attributes>> typecheck(List<DeclarationNode<Name>> node) {
         var metaTransformer = new MetaNodeSubstitutionTransformer(sortTransformer);
-        return inferDeclarationGroup(node).collect(decl -> decl.accept(metaTransformer));
+        return inferDeclarationGroup(node).stream().map(decl -> decl.accept(metaTransformer)).toList();
     }
 
     public DeclarationNode<Attributes> typecheck(DeclarationNode<Name> node) {
@@ -263,20 +261,20 @@ public class Typechecker {
     }
 
     void noUniqueType(Range range, DeclarationName name, Type inferredType,
-            ImmutableSortedSet<UnsolvedType> unsolvedVars) {
+            SortedSet<UnsolvedType> unsolvedVars) {
         var inferred = inferredType
-                .accept(sortTransformer.getTypeTransformer())
-                .accept(sortPrinter);
+            .accept(sortTransformer.getTypeTransformer())
+            .accept(sortPrinter);
 
-        var unsolvedVarDocs = unsolvedVars
-                .collect(UnsolvedType::name)
-                .collect(Doc::text);
+        var unsolvedVarDocs = unsolvedVars.stream()
+            .map(UnsolvedType::name)
+            .map(Doc::text);
 
         var message = Doc.group(
                 Doc.text("Couldn't infer a unique type for " + name.localName() + "!")
                         .appendLineOrSpace(Doc.text("Found:").appendSpace(inferred))
                         .appendLineOr(", ", Doc.text("where").appendSpace(
-                                Doc.intersperse(Doc.text(", "), unsolvedVarDocs.stream()))
+                                Doc.intersperse(Doc.text(", "), unsolvedVarDocs))
                                 .appendSpace(
                                         unsolvedVars.size() > 1 ? Doc.text("are unsolved variables.")
                                                 : Doc.text("is an unsolved variable."))))
@@ -286,7 +284,7 @@ public class Typechecker {
     }
 
     TypeInstantiationTransformer subTypeInstantiation(QuantifiedType quant) {
-        var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
+        var instantiated = new HashMap<TypeVar, MonoType>();
 
         quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
@@ -300,7 +298,7 @@ public class Typechecker {
             }
         });
 
-        return new TypeInstantiationTransformer(instantiated.toImmutable());
+        return new TypeInstantiationTransformer(instantiated);
     }
 
     Type instantiateAsSubType(QuantifiedType quant) {
@@ -308,7 +306,7 @@ public class Typechecker {
     }
 
     TypeInstantiationTransformer superTypeInstantiation(QuantifiedType quant) {
-        var instantiated = Maps.mutable.<TypeVar, MonoType>empty();
+        var instantiated = new HashMap<TypeVar, MonoType>();
 
         quant.args().forEach(tyParam -> {
             if (tyParam instanceof ForAllVar forall) {
@@ -322,7 +320,7 @@ public class Typechecker {
             }
         });
 
-        return new TypeInstantiationTransformer(instantiated.toImmutable());
+        return new TypeInstantiationTransformer(instantiated);
     }
 
     Type instantiateAsSuperType(QuantifiedType quant) {
@@ -347,52 +345,48 @@ public class Typechecker {
         } else if (Type.isFunction(superType) &&
                 superType instanceof TypeApply funTypeSup) {
             // Complete and Easy's InstLArr rule
-            var funTypeArgs = funTypeSup
-                    .typeArguments()
-                    .take(funTypeSup.typeArguments().size() - 1)
-                    .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+            var funTypeArgs = funTypeSup.typeArguments()
+                .subList(0, funTypeSup.typeArguments().size() - 1)
+                .stream().map(arg -> newUnsolvedType(TypeKind.INSTANCE))
+                .toList();
 
             var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
 
             var funType = Type.function(
-                    funTypeArgs.collect(tyArg -> (Type) tyArg),
-                    funTypeReturn);
+                funTypeArgs.stream().map(tyArg -> (Type) tyArg).toList(),
+                funTypeReturn);
 
             environment.solveType(unsolved, funType);
 
-            funTypeArgs
-                    .zip(funTypeSup.typeArguments())
-                    .forEach(pair -> {
-                        instantiateAsSuperType(
-                                pair.getOne(),
-                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                    });
+            IntStream.range(0, Math.min(funTypeArgs.size(), funTypeSup.typeArguments().size())).forEach(index -> {
+                instantiateAsSuperType(
+                    funTypeArgs.get(index),
+                    funTypeSup.typeArguments().get(index).accept(sortTransformer.getTypeTransformer()));
+            });
 
             instantiateAsSubType(
                     funTypeReturn,
-                    funTypeSup.typeArguments().getLast()
+                    funTypeSup.typeArguments().get(funTypeSup.typeArguments().size() - 1)
                             .accept(sortTransformer.getTypeTransformer()));
 
         } else if (superType instanceof TypeApply tyAppSup) {
             // Complete and Easy's InstLArr rule extended to other type constructors
-            var tyAppArgs = tyAppSup
-                    .typeArguments()
-                    .collect(arg -> newUnsolvedType());
+            var tyAppArgs = tyAppSup.typeArguments().stream()
+                .map(arg -> newUnsolvedType())
+                .toList();
 
             var tyAppSub = new TypeApply(
-                    tyAppSup.type(),
-                    tyAppArgs.collect(arg -> (Type) arg),
-                    tyAppSup.kind());
+                tyAppSup.type(),
+                tyAppArgs.stream().map(arg -> (Type) arg).toList(),
+                tyAppSup.kind());
 
             environment.solveType(unsolved, tyAppSub);
 
-            tyAppArgs
-                    .zip(tyAppSup.typeArguments())
-                    .forEach(pair -> {
-                        instantiateAsSubType(
-                                pair.getOne(),
-                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                    });
+            IntStream.range(0, Math.min(tyAppArgs.size(), tyAppSup.typeArguments().size())).forEach(index -> {
+                instantiateAsSubType(
+                    tyAppArgs.get(index),
+                    tyAppSup.typeArguments().get(index).accept(sortTransformer.getTypeTransformer()));
+            });
         } else if (superType instanceof QuantifiedType quant) {
             // Complete and Easy's InstLAllR rule
             withScope(new InstantiateTypeScope(), () -> {
@@ -419,52 +413,48 @@ public class Typechecker {
         } else if (Type.isFunction(subType) &&
                 subType instanceof TypeApply funTypeSub) {
             // Complete and Easy's InstLArr rule
-            var funTypeArgs = funTypeSub
-                    .typeArguments()
-                    .take(funTypeSub.typeArguments().size() - 1)
-                    .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+            var funTypeArgs = funTypeSub.typeArguments()
+                .subList(0, funTypeSub.typeArguments().size() - 1)
+                .stream().map(arg -> newUnsolvedType(TypeKind.INSTANCE))
+                .toList();
 
             var funTypeReturn = newUnsolvedType(TypeKind.INSTANCE);
 
             var funType = Type.function(
-                    funTypeArgs.collect(tyArg -> (Type) tyArg),
-                    funTypeReturn);
+                funTypeArgs.stream().map(tyArg -> (Type) tyArg).toList(),
+                funTypeReturn);
 
             environment.solveType(unsolved, funType);
 
-            funTypeArgs
-                    .zip(funTypeSub.typeArguments())
-                    .forEach(pair -> {
-                        instantiateAsSubType(
-                                pair.getOne(),
-                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                    });
+            IntStream.range(0, Math.min(funTypeArgs.size(), funTypeSub.typeArguments().size())).forEach(index -> {
+                instantiateAsSubType(
+                    funTypeArgs.get(index),
+                    funTypeSub.typeArguments().get(index).accept(sortTransformer.getTypeTransformer()));
+            });
 
             instantiateAsSuperType(
                     funTypeReturn,
-                    funTypeSub.typeArguments().getLast()
+                    funTypeSub.typeArguments().get(funTypeSub.typeArguments().size() - 1)
                             .accept(sortTransformer.getTypeTransformer()));
 
         } else if (subType instanceof TypeApply tyAppSub) {
             // Complete and Easy's InstRArr rule extended to other type constructors
-            var tyAppArgs = tyAppSub
-                    .typeArguments()
-                    .collect(arg -> newUnsolvedType());
+            var tyAppArgs = tyAppSub.typeArguments().stream()
+                .map(arg -> newUnsolvedType())
+                .toList();
 
             var tyAppSup = new TypeApply(
-                    tyAppSub.type(),
-                    tyAppArgs.collect(arg -> (Type) arg),
-                    tyAppSub.kind());
+                tyAppSub.type(),
+                tyAppArgs.stream().map(arg -> (Type) arg).toList(),
+                tyAppSub.kind());
 
             environment.solveType(unsolved, tyAppSup);
 
-            tyAppArgs
-                    .zip(tyAppSub.typeArguments())
-                    .forEach(pair -> {
-                        instantiateAsSuperType(
-                                pair.getOne(),
-                                pair.getTwo().accept(sortTransformer.getTypeTransformer()));
-                    });
+            IntStream.range(0, Math.min(tyAppArgs.size(), tyAppSub.typeArguments().size())).forEach(index -> {
+                instantiateAsSuperType(
+                    tyAppArgs.get(index),
+                    tyAppSub.typeArguments().get(index).accept(sortTransformer.getTypeTransformer()));
+            });
         } else if (subType instanceof QuantifiedType quant) {
             // Complete and Easy's InstRAllL rule
             withScope(new InstantiateTypeScope(), () -> {
@@ -533,15 +523,15 @@ public class Typechecker {
                 Type.isFunction(solvedSuperType) && solvedSuperType instanceof TypeApply tyAppSup &&
                 tyAppSub.typeArguments().size() == tyAppSup.typeArguments().size()) {
             // Complete and Easy's <:-> rule
-            var argsSubTyped = tyAppSub.typeArguments().take(tyAppSub.typeArguments().size() - 1)
-                    .zip(tyAppSup.typeArguments().take(tyAppSup.typeArguments().size() - 1))
-                    .allSatisfy(pair -> {
-                        return checkSubType(pair.getTwo(), pair.getOne());
-                    });
+            var argsSubTyped = IntStream.range(0, tyAppSub.typeArguments().size()).allMatch(index -> {
+                return checkSubType(
+                    tyAppSup.typeArguments().get(index),
+                    tyAppSub.typeArguments().get(index));
+            });
 
             var resultSubTyped = checkSubType(
-                    tyAppSub.typeArguments().getLast(),
-                    tyAppSup.typeArguments().getLast());
+                tyAppSub.typeArguments().get(tyAppSub.typeArguments().size() - 1),
+                tyAppSup.typeArguments().get(tyAppSup.typeArguments().size() - 1));
 
             return argsSubTyped && resultSubTyped;
         } else if (solvedSubType instanceof TypeApply tyAppSub &&
@@ -550,11 +540,9 @@ public class Typechecker {
             // Complete and Easy's <:-> rule extended to other type constructors
             var tyConSubTyped = checkSubType(tyAppSub.type(), tyAppSup.type());
 
-            var tyArgsSubTyped = tyAppSub.typeArguments()
-                    .zip(tyAppSup.typeArguments())
-                    .allSatisfy(pair -> {
-                        return checkSubType(pair.getOne(), pair.getTwo());
-                    });
+            var tyArgsSubTyped = IntStream.range(0, tyAppSub.typeArguments().size()).allMatch(index -> {
+                return checkSubType(tyAppSub.typeArguments().get(index), tyAppSup.typeArguments().get(index));
+            });
 
             return tyConSubTyped && tyArgsSubTyped;
         } else {
@@ -637,14 +625,14 @@ public class Typechecker {
     }
 
     Type createLetFnType(
-            ImmutableList<TypeVar> typeParamTypes,
-            ImmutableList<ParamNode<Attributes>> valueParams,
+            List<TypeVar> typeParamTypes,
+            List<ParamNode<Attributes>> valueParams,
             Type returnType) {
 
-        var valueParamTypes = valueParams.collect(param -> {
+        var valueParamTypes = valueParams.stream().map(param -> {
             var paramType = environment.lookupValue(param.name()).get();
             return (Type) paramType.meta().sort();
-        });
+        }).toList();
 
         var functionType = Type.function(valueParamTypes, returnType);
 
@@ -654,23 +642,25 @@ public class Typechecker {
             return new QuantifiedType(
                     typeParamTypes,
                     functionType,
-                    new HigherKind(typeParamTypes.collect(Type::kind), TypeKind.INSTANCE));
+                    new HigherKind(typeParamTypes.stream().map(Type::kind).toList(), TypeKind.INSTANCE));
         }
     }
 
     <A> A withTypeParams(
-            Supplier<ImmutableList<TypeVarNode<Name>>> getTyParams,
-            BiFunction<ImmutableList<TypeVarNode<Attributes>>, ImmutableList<TypeVar>, A> fn) {
+            Supplier<List<TypeVarNode<Name>>> getTyParams,
+            BiFunction<List<TypeVarNode<Attributes>>, List<TypeVar>, A> fn) {
         var tyParams = getTyParams.get();
 
         if (tyParams.isEmpty()) {
-            return fn.apply(Lists.immutable.empty(), Lists.immutable.empty());
+            return fn.apply(List.of(), List.of());
         } else {
             return withScope(new QuantifiedTypingScope(), () -> {
-                var kindedTyParams = tyParams
-                        .collect(tyParam -> (TypeVarNode<Attributes>) kindchecker.inferType(tyParam));
-                var tyParamTypes = kindedTyParams
-                        .collect(tyParam -> (TypeVar) typeFolder.visitTypeVar(tyParam));
+                var kindedTyParams = tyParams.stream()
+                    .map(tyParam -> (TypeVarNode<Attributes>) kindchecker.inferType(tyParam))
+                    .toList();
+                var tyParamTypes = kindedTyParams.stream()
+                    .map(tyParam -> (TypeVar) typeFolder.visitTypeVar(tyParam))
+                    .toList();
 
                 return fn.apply(kindedTyParams, tyParamTypes);
             });
@@ -691,18 +681,19 @@ public class Typechecker {
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
         return withScope(populateTopLevel(namespace), () -> {
             var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
-            var inferredDecls = namespace.declarationGroups().collect(this::inferDeclarationGroup);
-            return new NamespaceNode<>(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
+            var inferredDecls = namespace.declarationGroups().stream().map(this::inferDeclarationGroup);
+            return new NamespaceNode<>(updatedMeta, namespace.id(), namespace.imports(), inferredDecls.toList());
         });
     }
 
-    ImmutableList<DeclarationNode<Attributes>> inferDeclarationGroup(
-            ImmutableList<DeclarationNode<Name>> declarationGroup) {
-        var inferredGroup = declarationGroup
-                .collect(this::inferDeclaration)
-                .collect(this::defaultKinds)
-                .collect(this::checkPrincipalTypes)
-                .collect(this::defaultUnsolvedTypes);
+    List<DeclarationNode<Attributes>> inferDeclarationGroup(
+            List<DeclarationNode<Name>> declarationGroup) {
+        var inferredGroup = declarationGroup.stream()
+            .map(this::inferDeclaration)
+            .map(this::defaultKinds)
+            .map(this::checkPrincipalTypes)
+            .map(this::defaultUnsolvedTypes)
+            .toList();
 
         inferredGroup.forEach(this::updateTopLevel);
 
@@ -768,17 +759,18 @@ public class Typechecker {
 
                 kindedConstr.type().ifPresent(constrTypeNode -> {
                     withScope(new ConstructorTypingScope(constrName), () -> {
-                        var typeParamTypes = kindedData.typeParams()
-                                .collect(tyParam -> tyParam.accept(typeFolder));
+                        var typeParamTypes = kindedData.typeParams().stream()
+                            .map(tyParam -> tyParam.accept(typeFolder))
+                            .toList();
                         var constrType = constrTypeNode.accept(typeFolder);
 
                         var dataTyCon = new TypeConstructor(dataName.name(), getKind(kindedData));
 
                         var dataType = typeParamTypes.isEmpty() ? dataTyCon
                                 : instantiateAsSubType(new QuantifiedType(
-                                        typeParamTypes.collect(tyParam -> (TypeVar) tyParam),
-                                        new TypeApply(dataTyCon, typeParamTypes, TypeKind.INSTANCE),
-                                        TypeKind.INSTANCE));
+                                    typeParamTypes.stream().map(tyParam -> (TypeVar) tyParam).toList(),
+                                    new TypeApply(dataTyCon, typeParamTypes, TypeKind.INSTANCE),
+                                    TypeKind.INSTANCE));
 
                         // Constructor return type should be a valid instantiation of the data type
                         if (!checkSubType(dataType, constrType)) {
@@ -793,10 +785,11 @@ public class Typechecker {
         } else if (declaration instanceof LetFnNode<Name> letFn) {
             var letFnNode = withTypeParams(letFn::typeParams, (tyParams, tyParamTypes) -> {
                 return withScope(new LambdaTypingScope(), () -> {
-                    var inferredParams = letFn.valueParams()
-                            .collect(this::inferParam);
+                    var inferredParams = letFn.valueParams().stream()
+                        .map(this::inferParam)
+                        .toList();
                     var kindedReturn = letFn.returnType()
-                            .map(kindchecker::kindcheck);
+                        .map(kindchecker::kindcheck);
 
                     var expectedType = kindedReturn.map(typeFolder::visitType);
 
@@ -875,9 +868,9 @@ public class Typechecker {
     ExprNode<Attributes> inferExpr(ExprNode<Name> expr) {
         if (expr instanceof BlockNode<Name> block) {
             return withScope(new BlockTypingScope(), () -> {
-                var inferredDeclarations = block
-                        .declarations()
-                        .collect(let -> (LetNode<Attributes>) inferDeclaration(let));
+                var inferredDeclarations = block.declarations().stream()
+                    .map(let -> (LetNode<Attributes>) inferDeclaration(let))
+                    .toList();
 
                 var inferredResult = block.result().map(this::inferExpr);
                 var inferredType = inferredResult.map(this::getType).orElse(Type.UNIT);
@@ -888,13 +881,15 @@ public class Typechecker {
             });
         } else if (expr instanceof LambdaNode<Name> lambda) {
             return withScope(new LambdaTypingScope(), () -> {
-                var inferredArgs = lambda.params().collect(this::inferParam);
+                var inferredArgs = lambda.params().stream()
+                    .map(this::inferParam)
+                    .toList();
 
                 var inferredBody = inferExpr(lambda.body());
 
                 var inferredType = Type.function(
-                        inferredArgs.collect(this::getType),
-                        getType(inferredBody));
+                    inferredArgs.stream().map(this::getType).toList(),
+                    getType(inferredBody));
 
                 var updatedMeta = updateMetaWith(lambda.meta(), inferredType);
 
@@ -916,30 +911,19 @@ public class Typechecker {
             var scrutinee = inferExpr(match.scrutinee());
             var scrutineeType = getType(scrutinee);
 
-            var firstCase = match.cases()
-                    .getFirstOptional()
-                    .map(cse -> inferCase(cse, scrutineeType));
+            var firstCase = match.cases().stream().findFirst()
+                .map(cse -> inferCase(cse, scrutineeType));
 
-            var firstCaseType = firstCase
-                    .map(this::getType);
+            var firstCaseType = firstCase.map(this::getType);
 
-            var restCases = firstCaseType
-                    .map(inferredType -> {
-                        return match.cases()
-                                .drop(1)
-                                .collect(restCase -> checkCase(restCase, scrutineeType, inferredType));
-                    });
+            var restCases = firstCaseType.stream().flatMap(inferredType -> {
+                return match.cases().subList(1, match.cases().size()).stream()
+                    .map(restCase -> checkCase(restCase, scrutineeType, inferredType));
+            });
 
-            var cases = firstCase.flatMap(first -> {
-                return restCases.map(rest -> {
-                    return Lists.immutable
-                            .of(first)
-                            .newWithAll(rest);
-                });
-            }).orElseGet(Lists.immutable::empty);
+            var cases = Stream.concat(firstCase.stream(), restCases).toList();
 
-            var matchType = firstCaseType
-                    .orElseGet(() -> newUnsolvedType(TypeKind.INSTANCE));
+            var matchType = firstCaseType.orElseGet(() -> newUnsolvedType(TypeKind.INSTANCE));
 
             var updatedMeta = updateMetaWith(match.meta(), matchType);
 
@@ -1048,11 +1032,11 @@ public class Typechecker {
                     inferredType instanceof TypeApply funType &&
                     funType.typeArguments().size() > 1) {
 
-                    var firstArgType = funType.typeArguments().getFirst();
+                    var firstArgType = funType.typeArguments().get(0);
 
                     var checkedReceiver = checkExpr(select.receiver(), firstArgType);
 
-                    var remainingArgs = funType.typeArguments().drop(1);
+                    var remainingArgs = funType.typeArguments().subList(1, funType.typeArguments().size());
 
                     var adaptedFunctionType = Type.function(remainingArgs.toArray(new Type[remainingArgs.size()]));
 
@@ -1075,22 +1059,27 @@ public class Typechecker {
                         inferredType instanceof TypeApply funType &&
                         apply.args().size() == (funType.typeArguments().size() - 1)) {
 
-                    var checkedArgs = apply.args()
-                            .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
-                            .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
+                    var checkedArgs = IntStream.range(0, apply.args().size()).mapToObj(index -> {
+                        return checkExpr(
+                            apply.args().get(index),
+                            funType.typeArguments().get(index));
+                    }).toList();
 
-                    var updatedMeta = updateMetaWith(apply.meta(), funType.typeArguments().getLast());
+                    var updatedMeta = updateMetaWith(
+                        apply.meta(),
+                        funType.typeArguments().get(funType.typeArguments().size() - 1));
 
                     return applyNode(updatedMeta, inferredExpr, checkedArgs);
                 } else {
-                    var unsolvedArgs = apply.args()
-                            .collect(arg -> newUnsolvedType(TypeKind.INSTANCE));
+                    var unsolvedArgs = apply.args().stream()
+                        .map(arg -> newUnsolvedType(TypeKind.INSTANCE))
+                        .toList();
 
                     var unsolvedReturn = newUnsolvedType(TypeKind.INSTANCE);
 
                     var appliedType = Type.function(
-                            unsolvedArgs.collect(arg -> (Type) arg),
-                            unsolvedReturn);
+                        unsolvedArgs.stream().map(arg -> (Type) arg).toList(),
+                        unsolvedReturn);
 
                     // Don't need to do an occurs check here as these are fresh unsolved types
                     if (inferredType instanceof UnsolvedType unsolved) {
@@ -1099,12 +1088,16 @@ public class Typechecker {
                             inferredType instanceof TypeApply funType) {
                         // We have an argument mismatch, but we can instantiate the return type
                         // to improve type errors
-                        instantiateAsSubType(unsolvedReturn, funType.typeArguments().getLast());
+                        instantiateAsSubType(
+                            unsolvedReturn,
+                            funType.typeArguments().get(funType.typeArguments().size() - 1));
                     }
 
-                    var checkedArgs = apply.args()
-                            .zip(unsolvedArgs)
-                            .collect(pair -> checkExpr(pair.getOne(), pair.getTwo()));
+                    var checkedArgs = IntStream.range(0, apply.args().size()).mapToObj(index -> {
+                        return checkExpr(
+                            apply.args().get(index),
+                            unsolvedArgs.get(index));
+                    }).toList();
 
                     if (!(inferredType instanceof UnsolvedType)) {
                         mismatchedApplication(apply.range(), appliedType, inferredType);
@@ -1246,9 +1239,9 @@ public class Typechecker {
             });
         } else if (expr instanceof BlockNode<Name> block) {
             return withScope(new BlockTypingScope(), () -> {
-                var inferredDeclarations = block
-                        .declarations()
-                        .collect(let -> (LetNode<Attributes>) inferDeclaration(let));
+                var inferredDeclarations = block.declarations().stream()
+                    .map(let -> (LetNode<Attributes>) inferDeclaration(let))
+                    .toList();
 
                 var checkedResult = block.result().map(res -> checkExpr(res, expectedType));
 
@@ -1264,15 +1257,19 @@ public class Typechecker {
                 expectedType instanceof TypeApply funType &&
                 lambda.params().size() == (funType.typeArguments().size() - 1)) {
             return withScope(new LambdaTypingScope(), () -> {
-                var knownParams = lambda.params()
-                        .zip(funType.typeArguments().take(funType.typeArguments().size() - 1))
-                        .collect(pair -> checkParam(pair.getOne(), pair.getTwo()));
+                var knownParams = IntStream.range(0, lambda.params().size()).mapToObj(index -> {
+                    return checkParam(
+                        lambda.params().get(index),
+                        funType.typeArguments().get(index));
+                }).toList();
 
-                var checkedReturn = checkExpr(lambda.body(), funType.typeArguments().getLast());
+                var checkedReturn = checkExpr(
+                    lambda.body(),
+                    funType.typeArguments().get(funType.typeArguments().size() - 1));
 
                 var appliedType = Type.function(
-                        knownParams.collect(this::getType),
-                        getType(checkedReturn));
+                    knownParams.stream().map(this::getType).toList(),
+                    getType(checkedReturn));
 
                 // We could make this error more local by checking the expected types of the
                 // params against their annotations above, but I think this gives more context
@@ -1298,8 +1295,9 @@ public class Typechecker {
             var scrutinee = inferExpr(match.scrutinee());
             var scrutineeType = getType(scrutinee);
 
-            var cases = match.cases()
-                .collect(cse -> checkCase(cse, scrutineeType, expectedType));
+            var cases = match.cases().stream()
+                .map(cse -> checkCase(cse, scrutineeType, expectedType))
+                .toList();
 
             var updatedMeta = updateMetaWith(match.meta(), expectedType);
 
@@ -1387,7 +1385,7 @@ public class Typechecker {
                 }
 
                 if (Type.isFunction(constrType) && constrType instanceof TypeApply tyApp) {
-                    constrType = tyApp.typeArguments().getLast();
+                    constrType = tyApp.typeArguments().get(tyApp.typeArguments().size() - 1);
                 }
 
                 // We do this here to ensure that we solve our newly instantiated type
@@ -1396,8 +1394,9 @@ public class Typechecker {
                     mismatchedType(constrPat.range(), constrType, expectedType);
                 }
 
-                var inferredFields = constrPat.fields()
-                        .collect(field -> inferFieldPattern(constrName, field, instantiator));
+                var inferredFields = constrPat.fields().stream()
+                    .map(field -> inferFieldPattern(constrName, field, instantiator))
+                    .toList();
 
                 var updatedMeta = updateMetaWith(constrPat.meta(), expectedType);
 

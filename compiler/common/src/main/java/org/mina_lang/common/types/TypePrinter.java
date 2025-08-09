@@ -53,8 +53,8 @@ public class TypePrinter implements TypeFolder<Doc> {
     @Override
     public Doc visitTypeApply(TypeApply tyApp) {
         if (Type.isFunction(tyApp)) {
-            var argTypes = tyApp.typeArguments().take(tyApp.typeArguments().size() - 1);
-            var returnType = tyApp.typeArguments().getLast();
+            var argTypes = tyApp.typeArguments().subList(0, tyApp.typeArguments().size() - 1);
+            var returnType = tyApp.typeArguments().get(tyApp.typeArguments().size() - 1);
 
             var argDoc = argTypes.size() == 1
                     ? Type.isFunction(argTypes.get(0))

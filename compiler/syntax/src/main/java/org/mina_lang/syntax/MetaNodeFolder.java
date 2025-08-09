@@ -4,11 +4,11 @@
  */
 package org.mina_lang.syntax;
 
-import org.eclipse.collections.api.list.ImmutableList;
 import org.mina_lang.common.Meta;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeFolder<A, B> {
@@ -16,8 +16,8 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeF
     // Namespaces
     default void preVisitNamespace(NamespaceNode<A> namespace) {}
 
-    B visitNamespace(Meta<A> meta, NamespaceIdNode id, ImmutableList<ImportNode> imports,
-            ImmutableList<ImmutableList<B>> declarationGroups);
+    B visitNamespace(Meta<A> meta, NamespaceIdNode id, List<ImportNode> imports,
+            List<List<B>> declarationGroups);
 
     default void postVisitNamespace(NamespaceNode<A> namespace) {}
 
@@ -35,7 +35,7 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeF
 
     default void preVisitLetFn(LetFnNode<A> letFn) {}
 
-    B visitLetFn(Meta<A> meta, String name, ImmutableList<B> typeParams, ImmutableList<B> valueParams,
+    B visitLetFn(Meta<A> meta, String name, List<B> typeParams, List<B> valueParams,
             Optional<B> returnType, B expr);
 
     default void postVisitLetFn(LetFnNode<A> letFn) {}
@@ -54,7 +54,7 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeF
 
     default void preVisitBlock(BlockNode<A> block) {}
 
-    B visitBlock(Meta<A> meta, ImmutableList<B> declarations, Optional<B> result);
+    B visitBlock(Meta<A> meta, List<B> declarations, Optional<B> result);
 
     default void postVisitBlock(BlockNode<A> block) {}
 
@@ -68,21 +68,21 @@ public interface MetaNodeFolder<A, B> extends DataNodeFolder<A, B>, PatternNodeF
 
     default void preVisitLambda(LambdaNode<A> lambda) {}
 
-    B visitLambda(Meta<A> meta, ImmutableList<B> params, B body);
+    B visitLambda(Meta<A> meta, List<B> params, B body);
 
     default void postVisitLambda(LambdaNode<A> lambda) {}
 
 
     default void preVisitMatch(MatchNode<A> match) {}
 
-    B visitMatch(Meta<A> meta, B scrutinee, ImmutableList<B> cases);
+    B visitMatch(Meta<A> meta, B scrutinee, List<B> cases);
 
     default void postVisitMatch(MatchNode<A> match) {}
 
 
     default void preVisitApply(ApplyNode<A> apply) {}
 
-    B visitApply(Meta<A> meta, B expr, ImmutableList<B> args);
+    B visitApply(Meta<A> meta, B expr, List<B> args);
 
     default void postVisitApply(ApplyNode<A> apply) {}
 

@@ -29,7 +29,7 @@ public class KindSubstitutionTransformer implements KindTransformer {
     @Override
     public HigherKind visitHigherKind(HigherKind higher) {
         return new HigherKind(
-            higher.argKinds().collect(argKind -> argKind.accept(this)),
+            higher.argKinds().stream().map(argKind -> argKind.accept(this)).toList(),
             higher.resultKind().accept(this));
     }
 }

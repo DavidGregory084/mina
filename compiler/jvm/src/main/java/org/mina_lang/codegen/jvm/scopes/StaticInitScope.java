@@ -4,10 +4,6 @@
  */
 package org.mina_lang.codegen.jvm.scopes;
 
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.factory.Maps;
 import org.mina_lang.codegen.jvm.Asm;
 import org.mina_lang.codegen.jvm.LocalVar;
 import org.mina_lang.codegen.jvm.Names;
@@ -23,6 +19,10 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -32,11 +32,11 @@ public record StaticInitScope(
         GeneratorAdapter methodWriter,
         Label startLabel,
         Label endLabel,
-        MutableMap<String, Meta<Attributes>> values,
-        MutableMap<String, Meta<Attributes>> types,
-        MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields,
-        ImmutableMap<Named, LocalVar> methodParams,
-        MutableMap<Named, LocalVar> localVars) implements JavaMethodScope {
+        Map<String, Meta<Attributes>> values,
+        Map<String, Meta<Attributes>> types,
+        Map<ConstructorName, Map<String, Meta<Attributes>>> fields,
+        Map<Named, LocalVar> methodParams,
+        Map<Named, LocalVar> localVars) implements JavaMethodScope {
 
     public StaticInitScope(
             LetNode<Attributes> let,
@@ -49,11 +49,11 @@ public record StaticInitScope(
                 methodWriter,
                 startLabel,
                 endLabel,
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.mutable.empty(),
-                Maps.immutable.empty(),
-                Maps.mutable.empty());
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>());
     }
 
     public static StaticInitScope open(
@@ -65,7 +65,7 @@ public record StaticInitScope(
                 ACC_STATIC + ACC_PRIVATE,
                 "init$" + let.name(),
                 Types.asmType(let),
-                Lists.immutable.empty(),
+                List.of(),
                 null,
                 namespaceWriter);
 

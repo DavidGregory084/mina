@@ -4,20 +4,18 @@
  */
 package org.mina_lang.common.types;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.factory.Lists;
-
 import java.util.Arrays;
+import java.util.List;
 
-public record HigherKind(ImmutableList<Kind> argKinds, Kind resultKind) implements Kind {
+public record HigherKind(List<Kind> argKinds, Kind resultKind) implements Kind {
 
-    public HigherKind(ImmutableList<Kind> kinds) {
-        this(kinds.take(kinds.size() - 1), kinds.getLast());
+    public HigherKind(List<Kind> kinds) {
+        this(kinds.subList(0, kinds.size() - 1), kinds.get(kinds.size() - 1));
     }
 
     public HigherKind(Kind... kinds) {
         this(
-                Lists.immutable.of(Arrays.copyOfRange(kinds, 0, kinds.length - 1)),
+                Arrays.asList(Arrays.copyOfRange(kinds, 0, kinds.length - 1)),
                 kinds[kinds.length - 1]);
     }
 
