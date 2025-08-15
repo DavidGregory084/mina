@@ -8,20 +8,20 @@
     },
     {
       "matchPackageNames": "node",
-      "allowedVersions": "<19"
+      "allowedVersions": "<23"
     },
     {
       "matchPackageNames": "@types/node",
-      "allowedVersions": "<19"
+      "allowedVersions": "<23"
     },
     {
       "matchDepNames": "vscode",
       "matchDepTypes": "engines",
-      "allowedVersions": "<=1.82.0"
+      "allowedVersions": "<1.102"
     },
     {
       "matchPackageNames": "@types/vscode",
-      "allowedVersions": "<1.83"
+      "allowedVersions": "<1.102"
     },
     {
       "matchManagers": "npm",

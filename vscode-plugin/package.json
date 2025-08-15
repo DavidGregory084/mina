@@ -15,7 +15,7 @@
     "url": "https://codeberg.org/mina-lang/mina/issues"
   },
   "engines": {
-    "vscode": "^1.82.0"
+    "vscode": "^1.101.0"
   },
   "categories": [
     "Programming Languages"

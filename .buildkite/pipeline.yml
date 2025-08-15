@@ -4,7 +4,7 @@ steps:
     artifact_paths: "**/build/test-results/*/TEST-*.xml"
     plugins:
       - docker#v5.13.0:
-          image: "timbru31/java-node:17-jdk-18"
+          image: "timbru31/java-node:17-jdk-22"
           memory: 3g
 
   - wait: ~
