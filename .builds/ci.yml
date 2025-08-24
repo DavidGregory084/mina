@@ -1,0 +1,15 @@
+image: archlinux
+packages:
+  - jdk17-openjdk
+  - nodejs-lts-jod
+  - xorg-server-xvfb
+  - code
+  - npm
+environment:
+  JAVA_HOME: /usr/lib/jvm/java-17-openjdk
+sources:
+  - https://codeberg.org/mina-lang/mina.git
+tasks:
+  - build: |
+      cd mina
+      ./gradlew build --info
