@@ -1,6 +1,6 @@
 # mina
 
-[![Build status](https://badge.buildkite.com/fc749e98ce02606567678244499e97a8202999e22b0a6219fb.svg?branch=main)](https://buildkite.com/mina-lang/mina)
+[![Build status](https://builds.sr.ht/~dgregory/mina/commits/main.svg)](https://builds.sr.ht/~dgregory/mina/commits/main?)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](https://opensource.org/licenses/Apache-2.0)
 
 *mina* is a minimum viable functional programming language for the JVM.
