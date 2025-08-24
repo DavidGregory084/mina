@@ -23,8 +23,13 @@ async function main() {
       extensionTestsPath,
       launchArgs: [
         "--no-sandbox",
+        "--disable-experiments",
         "--disable-gpu-sandbox",
+        "--disable-telemetry",
+        "--disable-updates",
         "--disable-workspace-trust",
+        "--skip-welcome",
+        "--skip-release-notes",
       ],
     };
 
