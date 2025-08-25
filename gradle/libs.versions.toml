@@ -2,7 +2,7 @@
 antlr = "4.13.2"
 apacheCommonsLang = "3.18.0"
 apacheCommonsText = "1.14.0"
-asciiDoctorGradle = "4.0.4"
+asciiDoctorGradle = "4.0.5"
 asm = "9.8"
 bsp4j = "2.1.1"
 directories = "26"
