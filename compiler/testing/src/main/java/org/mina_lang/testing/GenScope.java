@@ -15,7 +15,7 @@ public record GenScope(
     MutableMap<String, Meta<Attributes>> values,
     MutableMap<String, Meta<Attributes>> types,
     MutableMap<ConstructorName, MutableMap<String, Meta<Attributes>>> fields
-) implements Scope<Attributes> {
+) implements Scope<Meta<Attributes>> {
     public GenScope() {
         this(Maps.mutable.empty(), Maps.mutable.empty(), Maps.mutable.empty());
     }

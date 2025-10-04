@@ -8,13 +8,14 @@ import org.eclipse.collections.api.stack.MutableStack;
 import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
+import org.mina_lang.common.Meta;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 public record GenEnvironment(
     MutableStack<GenScope> scopes,
     AtomicInteger localVarIndex
-) implements Environment<Attributes, GenScope> {
+) implements Environment<Meta<Attributes>, GenScope> {
     public GenEnvironment() {
         this(Stacks.mutable.of(new GenScope()), new AtomicInteger(0));
     }

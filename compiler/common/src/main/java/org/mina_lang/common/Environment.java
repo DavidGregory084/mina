@@ -28,14 +28,14 @@ public interface Environment<A, B extends Scope<A>> {
         return scopes().peek();
     }
 
-    default Optional<Meta<A>> lookupValue(String name) {
+    default Optional<A> lookupValue(String name) {
         return scopes()
                 .detectOptional(scope -> scope.hasValue(name))
                 .flatMap(scope -> scope.lookupValue(name));
     };
 
-    default <C> Optional<Meta<A>> lookupValueOrElse(String name, Meta<C> meta,
-            BiConsumer<String, Meta<C>> orElseFn) {
+    default <C> Optional<A> lookupValueOrElse(String name, C meta,
+            BiConsumer<String, C> orElseFn) {
         var valueMeta = lookupValue(name);
 
         if (valueMeta.isEmpty()) {
@@ -45,13 +45,13 @@ public interface Environment<A, B extends Scope<A>> {
         return valueMeta;
     };
 
-    default void putValue(String name, Meta<A> meta) {
+    default void putValue(String name, A meta) {
         scopes()
                 .getFirstOptional()
                 .ifPresent(scope -> scope.putValue(name, meta));
     }
 
-    default Meta<A> putValueIfAbsent(String name, Meta<A> meta) {
+    default A putValueIfAbsent(String name, A meta) {
         return lookupValue(name)
                 .orElseGet(() -> {
                     return scopes()
@@ -61,22 +61,22 @@ public interface Environment<A, B extends Scope<A>> {
                 });
     }
 
-    default void putValueIfAbsentOrElse(String name, Meta<A> proposed,
-            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
+    default void putValueIfAbsentOrElse(String name, A proposed,
+            TriConsumer<String, A, A> orElseFn) {
         var existing = putValueIfAbsent(name, proposed);
         if (existing != null) {
             orElseFn.accept(name, proposed, existing);
         }
     }
 
-    default Optional<Meta<A>> lookupType(String name) {
+    default Optional<A> lookupType(String name) {
         return scopes()
                 .detectOptional(scope -> scope.hasType(name))
                 .flatMap(scope -> scope.lookupType(name));
     };
 
-    default <C> Optional<Meta<A>> lookupTypeOrElse(String name, Meta<C> meta,
-            BiConsumer<String, Meta<C>> orElseFn) {
+    default <C> Optional<A> lookupTypeOrElse(String name, C meta,
+            BiConsumer<String, C> orElseFn) {
         var typeMeta = lookupType(name);
 
         if (typeMeta.isEmpty()) {
@@ -86,13 +86,13 @@ public interface Environment<A, B extends Scope<A>> {
         return typeMeta;
     };
 
-    default void putType(String name, Meta<A> meta) {
+    default void putType(String name, A meta) {
         scopes()
                 .getFirstOptional()
                 .ifPresent(scope -> scope.putType(name, meta));
     }
 
-    default Meta<A> putTypeIfAbsent(String name, Meta<A> meta) {
+    default A putTypeIfAbsent(String name, A meta) {
         return lookupType(name)
                 .orElseGet(() -> {
                     return scopes()
@@ -102,22 +102,22 @@ public interface Environment<A, B extends Scope<A>> {
                 });
     }
 
-    default void putTypeIfAbsentOrElse(String name, Meta<A> proposed,
-            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
+    default void putTypeIfAbsentOrElse(String name, A proposed,
+            TriConsumer<String, A, A> orElseFn) {
         var existing = putTypeIfAbsent(name, proposed);
         if (existing != null) {
             orElseFn.accept(name, proposed, existing);
         }
     }
 
-    default Optional<Meta<A>> lookupField(ConstructorName constr, String name) {
+    default Optional<A> lookupField(ConstructorName constr, String name) {
         return scopes()
                 .detectOptional(scope -> scope.hasField(constr, name))
                 .flatMap(scope -> scope.lookupField(constr, name));
     };
 
-    default <C> Optional<Meta<A>> lookupFieldOrElse(ConstructorName constr, String name, Meta<C> meta,
-            BiConsumer<String, Meta<C>> orElseFn) {
+    default <C> Optional<A> lookupFieldOrElse(ConstructorName constr, String name, C meta,
+            BiConsumer<String, C> orElseFn) {
         var fieldMeta = lookupField(constr, name);
 
         if (fieldMeta.isEmpty()) {
@@ -127,13 +127,13 @@ public interface Environment<A, B extends Scope<A>> {
         return fieldMeta;
     };
 
-    default void putField(ConstructorName constr, String name, Meta<A> meta) {
+    default void putField(ConstructorName constr, String name, A meta) {
         scopes()
                 .getFirstOptional()
                 .ifPresent(scope -> scope.putField(constr, name, meta));
     }
 
-    default Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
+    default A putFieldIfAbsent(ConstructorName constr, String name, A meta) {
         return lookupField(constr, name)
                 .orElseGet(() -> {
                     return scopes()
@@ -143,8 +143,8 @@ public interface Environment<A, B extends Scope<A>> {
                 });
     }
 
-    default void putFieldIfAbsentOrElse(ConstructorName constr, String name, Meta<A> proposed,
-            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
+    default void putFieldIfAbsentOrElse(ConstructorName constr, String name, A proposed,
+            TriConsumer<String, A, A> orElseFn) {
         var existing = putFieldIfAbsent(constr, name, proposed);
         if (existing != null) {
             orElseFn.accept(name, proposed, existing);

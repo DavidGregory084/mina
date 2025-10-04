@@ -5,6 +5,7 @@
 package org.mina_lang.codegen.jvm;
 
 import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.proto.Environment;
@@ -21,7 +22,7 @@ public class NamespaceReader {
 
     private static final ProtobufReader protobufReader = new ProtobufReader();
 
-    public static Scope<Attributes> readScope(ClassLoader classLoader, NamespaceName namespace) throws IOException {
+    public static Scope<Meta<Attributes>> readScope(ClassLoader classLoader, NamespaceName namespace) throws IOException {
         var className = Names.getInternalName(namespace) + ".class";
         try (var classData = classLoader.getResourceAsStream(className)) {
             if (classData == null) { return null; }

@@ -13,38 +13,38 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 public interface Scope<A> {
-    MutableMap<String, Meta<A>> values();
+    MutableMap<String, A> values();
 
-    MutableMap<String, Meta<A>> types();
+    MutableMap<String, A> types();
 
-    MutableMap<ConstructorName, MutableMap<String, Meta<A>>> fields();
+    MutableMap<ConstructorName, MutableMap<String, A>> fields();
 
     default boolean hasValue(String name) {
         return values().containsKey(name);
     }
 
-    default Optional<Meta<A>> lookupValue(String name) {
+    default Optional<A> lookupValue(String name) {
         return Optional.ofNullable(values().get(name));
-    };
+    }
 
-    default <B> Optional<Meta<A>> lookupValueOrElse(String name, Meta<B> meta, BiConsumer<String, Meta<B>> orElseFn) {
+    default <B> Optional<A> lookupValueOrElse(String name, B meta, BiConsumer<String, B> orElseFn) {
         var valueMeta = lookupValue(name);
         if (valueMeta.isEmpty()) {
             orElseFn.accept(name, meta);
         }
         return valueMeta;
-    };
+    }
 
-    default void putValue(String name, Meta<A> meta) {
+    default void putValue(String name, A meta) {
         values().put(name, meta);
     }
 
-    default Meta<A> putValueIfAbsent(String name, Meta<A> meta) {
+    default A putValueIfAbsent(String name, A meta) {
         return values().putIfAbsent(name, meta);
     }
 
-    default void putValueIfAbsentOrElse(String name, Meta<A> proposed,
-            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
+    default void putValueIfAbsentOrElse(String name, A proposed,
+            TriConsumer<String, A, A> orElseFn) {
         var existing = putValueIfAbsent(name, proposed);
         if (existing != null) {
             orElseFn.accept(name, proposed, existing);
@@ -55,33 +55,33 @@ public interface Scope<A> {
         return types().containsKey(name);
     }
 
-    default Optional<Meta<A>> lookupType(String name) {
+    default Optional<A> lookupType(String name) {
         return Optional.ofNullable(types().get(name));
     }
 
-    default <B> Optional<Meta<A>> lookupTypeOrElse(String name, Meta<B> meta, BiConsumer<String, Meta<B>> orElseFn) {
+    default <B> Optional<A> lookupTypeOrElse(String name, B meta, BiConsumer<String, B> orElseFn) {
         var typeMeta = lookupType(name);
         if (typeMeta.isEmpty()) {
             orElseFn.accept(name, meta);
         }
         return typeMeta;
-    };
+    }
 
-    default void putType(String name, Meta<A> meta) {
+    default void putType(String name, A meta) {
         types().put(name, meta);
     }
 
-    default Meta<A> putTypeIfAbsent(String name, Meta<A> meta) {
+    default A putTypeIfAbsent(String name, A meta) {
         return types().putIfAbsent(name, meta);
     }
 
-    default void putTypeIfAbsentOrElse(String name, Meta<A> proposed,
-            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
+    default void putTypeIfAbsentOrElse(String name, A proposed,
+            TriConsumer<String, A, A> orElseFn) {
         var existing = putTypeIfAbsent(name, proposed);
         if (existing != null) {
             orElseFn.accept(name, proposed, existing);
         }
-    };
+    }
 
     default boolean hasField(ConstructorName constr, String field) {
         return Optional.ofNullable(fields().get(constr))
@@ -89,32 +89,32 @@ public interface Scope<A> {
                 .orElse(false);
     }
 
-    default Optional<Meta<A>> lookupField(ConstructorName constr, String name) {
+    default Optional<A> lookupField(ConstructorName constr, String name) {
         return Optional.ofNullable(fields().get(constr))
                 .map(fields -> fields.get(name));
-    };
+    }
 
-    default <B> Optional<Meta<A>> lookupFieldOrElse(ConstructorName constr, String name, Meta<B> meta,
-            BiConsumer<String, Meta<B>> orElseFn) {
+    default <B> Optional<A> lookupFieldOrElse(ConstructorName constr, String name, B meta,
+            BiConsumer<String, B> orElseFn) {
         var fieldMeta = lookupField(constr, name);
         if (fieldMeta.isEmpty()) {
             orElseFn.accept(name, meta);
         }
         return fieldMeta;
-    };
+    }
 
-    default void putField(ConstructorName constr, String name, Meta<A> meta) {
+    default void putField(ConstructorName constr, String name, A meta) {
         var constrFields = fields().getIfAbsentPut(constr, Maps.mutable::empty);
         constrFields.put(name, meta);
     }
 
-    default Meta<A> putFieldIfAbsent(ConstructorName constr, String name, Meta<A> meta) {
+    default A putFieldIfAbsent(ConstructorName constr, String name, A meta) {
         var constrFields = fields().getIfAbsentPut(constr, Maps.mutable::empty);
         return constrFields.putIfAbsent(name, meta);
     }
 
-    default void putFieldIfAbsentOrElse(ConstructorName constr, String name, Meta<A> proposed,
-            TriConsumer<String, Meta<A>, Meta<A>> orElseFn) {
+    default void putFieldIfAbsentOrElse(ConstructorName constr, String name, A proposed,
+            TriConsumer<String, A, A> orElseFn) {
         var existing = putFieldIfAbsent(constr, name, proposed);
         if (existing != null) {
             orElseFn.accept(name, proposed, existing);

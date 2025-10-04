@@ -8,6 +8,7 @@ import com.google.protobuf.Empty;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.ObjectIntMaps;
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.NameVisitor;
 import org.mina_lang.common.types.SortVisitor;
@@ -21,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class ProtobufWriter {
-    public Environment toProto(Scope<org.mina_lang.common.Attributes> topLevelScope) {
+    public Environment toProto(Scope<Meta<org.mina_lang.common.Attributes>> topLevelScope) {
         var builder = Environment.newBuilder();
 
         MutableObjectIntMap<String> stringIndices = ObjectIntMaps.mutable.empty();
