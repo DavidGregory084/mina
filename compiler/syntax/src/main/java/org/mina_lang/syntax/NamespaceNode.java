@@ -58,7 +58,7 @@ public record NamespaceNode<A> (Meta<A> meta, NamespaceIdNode id, ImmutableList<
         return id().getName();
     }
 
-    public Scope<A> getScope() {
+    public Scope<Meta<A>> getScope() {
         var nsName = getName();
 
         MutableMap<String, Meta<A>> values = Maps.mutable.empty();

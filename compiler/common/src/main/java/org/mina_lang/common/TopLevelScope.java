@@ -11,5 +11,5 @@ public record TopLevelScope<A>(
     MutableMap<String, Meta<A>> values,
     MutableMap<String, Meta<A>> types,
     MutableMap<ConstructorName, MutableMap<String, Meta<A>>> fields
-) implements Scope<A> {
+) implements Scope<Meta<A>> {
 }

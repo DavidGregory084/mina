@@ -8,6 +8,7 @@ import org.eclipse.collections.api.stack.MutableStack;
 import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.common.Attributes;
 import org.mina_lang.common.Environment;
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.types.*;
 import org.mina_lang.typechecker.scopes.*;
@@ -18,7 +19,7 @@ public record TypeEnvironment(
         MutableStack<TypingScope> scopes,
         UnionFind<MonoType> typeSubstitution,
         UnionFind<Kind> kindSubstitution,
-        SortSubstitutionTransformer sortTransformer) implements Environment<Attributes, TypingScope> {
+        SortSubstitutionTransformer sortTransformer) implements Environment<Meta<Attributes>, TypingScope> {
 
     @Override
     public void popScope(Class<?> expected) {

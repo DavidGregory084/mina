@@ -29,11 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RenamingPhase extends GraphPhase<NamespaceNode<Void>, NamespaceNode<Name>> implements ImportScopePopulation<Name, ImportedNamesScope> {
     private static final Logger logger = LoggerFactory.getLogger(RenamingPhase.class);
 
-    private final Map<NamespaceName, Scope<Attributes>> classpathScopes;
+    private final Map<NamespaceName, Scope<Meta<Attributes>>> classpathScopes;
 
     public RenamingPhase(
             Graph<NamespaceName, DefaultEdge> namespaceGraph,
-            Map<NamespaceName, Scope<Attributes>> classpathScopes,
+            Map<NamespaceName, Scope<Meta<Attributes>>> classpathScopes,
             ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes,
             ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         super(namespaceGraph, namespaceNodes, scopedDiagnostics);
@@ -51,7 +51,7 @@ public class RenamingPhase extends GraphPhase<NamespaceNode<Void>, NamespaceNode
     }
 
     @Override
-    public Optional<Scope<Attributes>> getClasspathScope(NamespaceName namespaceName) {
+    public Optional<Scope<Meta<Attributes>>> getClasspathScope(NamespaceName namespaceName) {
         return Optional.ofNullable(classpathScopes.get(namespaceName));
     }
 

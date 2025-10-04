@@ -29,11 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TypecheckingPhase extends GraphPhase<NamespaceNode<Name>, NamespaceNode<Attributes>> implements ImportScopePopulation<Attributes, ImportedTypesScope> {
     private static final Logger logger = LoggerFactory.getLogger(TypecheckingPhase.class);
 
-    private final Map<NamespaceName, Scope<Attributes>> classpathScopes;
+    private final Map<NamespaceName, Scope<Meta<Attributes>>> classpathScopes;
 
     public TypecheckingPhase(
         Graph<NamespaceName, DefaultEdge> namespaceGraph,
-        Map<NamespaceName, Scope<Attributes>> classpathScopes,
+        Map<NamespaceName, Scope<Meta<Attributes>>> classpathScopes,
         ConcurrentHashMap<NamespaceName, NamespaceNode<Name>> namespaceNodes,
         ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         super(namespaceGraph, namespaceNodes, scopedDiagnostics);
@@ -51,7 +51,7 @@ public class TypecheckingPhase extends GraphPhase<NamespaceNode<Name>, Namespace
     }
 
     @Override
-    public Optional<Scope<Attributes>> getClasspathScope(NamespaceName namespaceName) {
+    public Optional<Scope<Meta<Attributes>>> getClasspathScope(NamespaceName namespaceName) {
         return Optional.ofNullable(classpathScopes.get(namespaceName));
     }
 
@@ -66,7 +66,7 @@ public class TypecheckingPhase extends GraphPhase<NamespaceNode<Name>, Namespace
     }
 
     @Override
-    public Scope<Attributes> transformScope(Scope<Attributes> scope) {
+    public Scope<Meta<Attributes>> transformScope(Scope<Meta<Attributes>> scope) {
         return scope;
     }
 

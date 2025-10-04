@@ -34,7 +34,7 @@ import static org.mina_lang.syntax.SyntaxNodes.*;
 public class ImportScopePopulationTest {
     private ImportScopePopulation<Name, ImportedNamesScope> createScopePopulator(
         Map<NamespaceName, NamespaceNode<Name>> namespaceNode,
-        Map<NamespaceName, Scope<Attributes>> classpathScope,
+        Map<NamespaceName, Scope<Meta<Attributes>>> classpathScope,
         Map<NamespaceName, NamespaceDiagnosticReporter> diagnostics) {
         return new ImportScopePopulation<>() {
             @Override
@@ -48,7 +48,7 @@ public class ImportScopePopulationTest {
             }
 
             @Override
-            public Optional<Scope<Attributes>> getClasspathScope(NamespaceName namespaceName) {
+            public Optional<Scope<Meta<Attributes>>> getClasspathScope(NamespaceName namespaceName) {
                 return Optional.ofNullable(classpathScope.get(namespaceName));
             }
 

@@ -18,7 +18,7 @@ import org.mina_lang.common.types.*;
 import java.util.Map;
 
 public class ProtobufReader {
-    public Scope<Attributes> fromProto(Environment env) {
+    public Scope<Meta<Attributes>> fromProto(Environment env) {
         var strings = new String[env.getStringsCount()];
         var names = new Name[env.getNamesCount()];
         var sorts = new Sort[env.getSortsCount()];

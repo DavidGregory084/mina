@@ -95,14 +95,14 @@ public class CodeGenerator {
         return meta.withMeta(attributes);
     }
 
-    void putTypeDeclaration(Scope<Attributes> scope, Meta<Attributes> meta) {
+    void putTypeDeclaration(Scope<Meta<Attributes>> scope, Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         scope.putType(name.localName(), meta);
         scope.putType(name.canonicalName(), meta);
         return;
     }
 
-    void putValueDeclaration(Scope<Attributes> scope, Meta<Attributes> meta) {
+    void putValueDeclaration(Scope<Meta<Attributes>> scope, Meta<Attributes> meta) {
         var name = (Named) meta.meta().name();
         scope.putValue(name.localName(), meta);
         scope.putValue(name.canonicalName(), meta);

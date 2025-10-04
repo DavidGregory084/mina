@@ -6,6 +6,7 @@ package org.mina_lang.main;
 
 import org.mina_lang.codegen.jvm.NamespaceReader;
 import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.NamespaceName;
 import org.slf4j.Logger;
@@ -17,11 +18,11 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ClasspathResolutionPhase implements ParallelPhase<NamespaceName, ConcurrentHashMap<NamespaceName, Scope<Attributes>>> {
+public class ClasspathResolutionPhase implements ParallelPhase<NamespaceName, ConcurrentHashMap<NamespaceName, Scope<Meta<Attributes>>>> {
     private static final Logger logger = LoggerFactory.getLogger(ClasspathResolutionPhase.class);
 
     private final ParallelFlux<NamespaceName> importedNamespaces;
-    private final ConcurrentHashMap<NamespaceName, Scope<Attributes>> classpathScopes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<NamespaceName, Scope<Meta<Attributes>>> classpathScopes = new ConcurrentHashMap<>();
 
     private final ClassLoader classLoader;
 
@@ -47,7 +48,7 @@ public class ClasspathResolutionPhase implements ParallelPhase<NamespaceName, Co
     }
 
     @Override
-    public ConcurrentHashMap<NamespaceName, Scope<Attributes>> transformedData() {
+    public ConcurrentHashMap<NamespaceName, Scope<Meta<Attributes>>> transformedData() {
         return classpathScopes;
     }
 }

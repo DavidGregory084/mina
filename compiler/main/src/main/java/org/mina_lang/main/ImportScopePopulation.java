@@ -20,12 +20,12 @@ import org.mina_lang.syntax.NamespaceNode;
 
 import java.util.Optional;
 
-public interface ImportScopePopulation<A, B extends Scope<A>> {
+public interface ImportScopePopulation<A, B extends Scope<Meta<A>>> {
     Optional<NamespaceNode<A>> getNamespaceNode(NamespaceName namespaceName);
 
     NamespaceDiagnosticReporter getNamespaceDiagnostics(NamespaceName namespaceName);
 
-    Optional<Scope<Attributes>> getClasspathScope(NamespaceName namespaceName);
+    Optional<Scope<Meta<Attributes>>> getClasspathScope(NamespaceName namespaceName);
 
     Named getName(Meta<A> meta);
 
@@ -136,7 +136,7 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         }
     }
 
-    default Scope<A> transformScope(Scope<Attributes> scope) {
+    default Scope<Meta<A>> transformScope(Scope<Meta<Attributes>> scope) {
         var values = scope.values().collect((key, value) -> Tuples.pair(key, transformMeta(value)));
         var types = scope.types().collect((key, value) -> Tuples.pair(key, transformMeta(value)));
         var fields = scope.fields().collect((constr, constrFields) -> {
@@ -146,7 +146,7 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         return new TopLevelScope<>(values, types, fields);
     }
 
-    private void populateQualifiedImport(Range range, Scope<A> namespaceScope, B importScope, String namespaceAlias) {
+    private void populateQualifiedImport(Range range, Scope<Meta<A>> namespaceScope, B importScope, String namespaceAlias) {
         namespaceScope.types().forEach(meta -> {
             var name = getName(meta);
             var locatedMeta = new Meta<>(range, meta.meta());
@@ -166,7 +166,7 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         Range range,
         NamespaceName namespace,
         NamespaceName importedNamespace,
-        Scope<A> namespaceScope, B importScope,
+        Scope<Meta<A>> namespaceScope, B importScope,
         String symbol, String alias) {
         var type = namespaceScope.lookupType(symbol);
         var value = namespaceScope.lookupValue(symbol);
@@ -193,7 +193,7 @@ public interface ImportScopePopulation<A, B extends Scope<A>> {
         }
     }
 
-    private void addConstructorFields(Scope<A> namespaceScope, B importScope, ConstructorName constr) {
+    private void addConstructorFields(Scope<Meta<A>> namespaceScope, B importScope, ConstructorName constr) {
         var fields = namespaceScope.fields().get(constr);
         if (fields != null) {
             fields.forEach((fieldName, meta) -> {

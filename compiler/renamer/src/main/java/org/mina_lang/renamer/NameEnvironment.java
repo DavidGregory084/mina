@@ -7,12 +7,13 @@ package org.mina_lang.renamer;
 import org.eclipse.collections.api.stack.MutableStack;
 import org.eclipse.collections.impl.factory.Stacks;
 import org.mina_lang.common.Environment;
+import org.mina_lang.common.Meta;
 import org.mina_lang.common.names.Name;
 import org.mina_lang.renamer.scopes.*;
 
 import java.util.Optional;
 
-public record NameEnvironment(MutableStack<NamingScope> scopes) implements Environment<Name, NamingScope> {
+public record NameEnvironment(MutableStack<NamingScope> scopes) implements Environment<Meta<Name>, NamingScope> {
 
     public Optional<NamespaceNamingScope> enclosingNamespace() {
         return scopes()
