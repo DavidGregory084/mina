@@ -38,7 +38,7 @@
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.38.0",
+    "@eslint/js": "^9.39.1",
     "@microsoft/vscode-file-downloader-api": "^1.0.1",
     "@tsconfig/node18": "^18.2.4",
     "@tsconfig/recommended": "^1.0.12",
@@ -51,7 +51,7 @@
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.0",
     "esbuild": "^0.25.11",
-    "eslint": "^9.38.0",
+    "eslint": "^9.39.1",
     "glob": "^11.0.3",
     "mocha": "^11.7.5",
     "mocha-junit-reporter": "^2.2.1",
