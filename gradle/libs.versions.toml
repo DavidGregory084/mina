@@ -34,7 +34,7 @@ slf4j = "2.0.17"
 spotless = "8.0.0"
 spotifyHamcrest = "1.3.2"
 toStringVerifier = "1.4.8"
-yvette = "0.1.0"
+yvette = "0.2.0"
 
 [libraries]
 antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
