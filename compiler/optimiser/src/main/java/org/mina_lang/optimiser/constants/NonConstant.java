@@ -7,4 +7,9 @@ public enum NonConstant implements Result {
     public float compare(Result other) {
         return other == NonConstant.VALUE ? 0.0F : 1.0F;
     }
+
+    @Override
+    public String toString() {
+        return "NonConstant";
+    }
 }

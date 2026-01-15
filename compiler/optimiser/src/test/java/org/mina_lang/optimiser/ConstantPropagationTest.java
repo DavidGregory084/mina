@@ -1,6 +1,12 @@
 package org.mina_lang.optimiser;
 
+import net.jqwik.api.*;
+import org.eclipse.collections.api.factory.Maps;
 import org.junit.jupiter.api.Test;
+import org.mina_lang.common.names.LocalName;
+import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.operators.UnaryOp;
+import org.mina_lang.common.types.Type;
 import org.mina_lang.ina.*;
 import org.mina_lang.ina.Boolean;
 import org.mina_lang.ina.Double;
@@ -8,64 +14,589 @@ import org.mina_lang.ina.Float;
 import org.mina_lang.ina.Long;
 import org.mina_lang.ina.String;
 import org.mina_lang.optimiser.constants.Constant;
+import org.mina_lang.optimiser.constants.NonConstant;
+import org.mina_lang.optimiser.constants.Unassigned;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class ConstantPropagationTest {
+    // Conditional expressions
     @Test
-    void shouldDeriveConstantResultForLiteralBoolean() {
+    void derivesUnassignedForIfWhenCondUnassigned() {
         var propagation = new ConstantPropagation();
-        var literal = new Boolean(false);
+        var varName = new LocalName("bool", 0);
+
+        // if bool then "true" else "false"
+        // no known assignment for bool
+        var result = propagation.analyseExpression(
+            new If(
+                Type.STRING,
+                new Reference(varName, Type.BOOLEAN),
+                new String("true"),
+                new String("false")));
+
+        assertThat(result, equalTo(Unassigned.VALUE));
+    }
+
+    @Test
+    void derivesConstantForIfWhenCondLiteralAndConsequentConstant() {
+        var propagation = new ConstantPropagation();
+
+        // if true then "true" else "false"
+        var result = propagation.analyseExpression(
+            new If(
+                Type.STRING,
+                new Boolean(true),
+                new String("true"),
+                new String("false")));
+
+        assertThat(result, equalTo(new Constant(new String("true"))));
+    }
+
+    @Test
+    void derivesConstantForIfWhenCondLiteralAndAlternativeConstant() {
+        var propagation = new ConstantPropagation();
+
+        // if false then "true" else "false"
+        var result = propagation.analyseExpression(
+            new If(
+                Type.STRING,
+                new Boolean(false),
+                new String("true"),
+                new String("false")));
+
+        assertThat(result, equalTo(new Constant(new String("false"))));
+    }
+
+    @Test
+    void derivesConstantForIfWhenCondConstantAndConsequentConstant() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new Constant(new Boolean(true))));
+
+        // if bool then "true" else "false"
+        // bool known to be constant true
+        var result = propagation.analyseExpression(
+            new If(
+                Type.STRING,
+                new Reference(varName, Type.BOOLEAN),
+                new String("true"),
+                new String("false")));
+
+        assertThat(result, equalTo(new Constant(new String("true"))));
+    }
+
+    @Test
+    void derivesConstantForIfWhenCondConstantAndAlternativeConstant() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new Constant(new Boolean(false))));
+
+        // if bool then "true" else "false"
+        // bool known to be constant false
+        var result = propagation.analyseExpression(
+            new If(
+                Type.STRING,
+                new Reference(varName, Type.BOOLEAN),
+                new String("true"),
+                new String("false")));
+
+        assertThat(result, equalTo(new Constant(new String("false"))));
+    }
+
+    @Test
+    void derivesNonConstantForIfWhenCondNonConstantAndBranchesConflict() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, NonConstant.VALUE));
+
+        // if bool then "true" else "false"
+        // bool known to be non-constant
+        var result = propagation.analyseExpression(
+            new If(
+                Type.INT,
+                new Reference(varName, Type.BOOLEAN),
+                new String("true"),
+                new String("false")));
+
+        assertThat(result, equalTo(NonConstant.VALUE));
+    }
+
+    @Test
+    void derivesConstantForBooleanNotOfConstants() {
+        var propagation = new ConstantPropagation();
+
+        // !false
+        var result = propagation.analyseExpression(
+            new UnOp(Type.INT, UnaryOp.BOOLEAN_NOT, new Boolean(false)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesConstantForBitwiseNegationOfConstants() {
+        var propagation = new ConstantPropagation();
+
+        // !false
+        var result = propagation.analyseExpression(
+            new UnOp(Type.INT, UnaryOp.BITWISE_NOT, new Int(16)));
+
+        assertThat(result, equalTo(new Constant(new Int(-17))));
+    }
+
+    @Test
+    void derivesConstantForArithmeticNegationOfConstants() {
+        var propagation = new ConstantPropagation();
+
+        // -2
+        var result = propagation.analyseExpression(
+            new UnOp(Type.INT, UnaryOp.NEGATE, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Int(-2))));
+    }
+
+    // Addition
+    @Test
+    void derivesConstantForAdditionOfConstantInt() {
+        var propagation = new ConstantPropagation();
+
+        // 2 + 2
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(2), BinaryOp.ADD, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Int(4))));
+    }
+
+    @Test
+    void derivesConstantForAdditionOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // 2L + 2L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(2L), BinaryOp.ADD, new Long(2L)));
+
+        assertThat(result, equalTo(new Constant(new Long(4L))));
+    }
+
+    @Test
+    void derivesConstantForAdditionOfConstantFloat() {
+        var propagation = new ConstantPropagation();
+
+        // 2.0F + 2.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(2.0F), BinaryOp.ADD, new Float(2.0F)));
+
+        assertThat(result, equalTo(new Constant(new Float(4.0F))));
+    }
+
+    @Test
+    void derivesConstantForAdditionOfConstantDouble() {
+        var propagation = new ConstantPropagation();
+
+        // 2.0 + 2.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(2.0), BinaryOp.ADD, new Double(2.0)));
+
+        assertThat(result, equalTo(new Constant(new Double(4.0))));
+    }
+
+    // Subtraction
+    @Test
+    void derivesConstantForSubtractionOfConstantInt() {
+        var propagation = new ConstantPropagation();
+
+        // 4 - 2
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(4), BinaryOp.SUBTRACT, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Int(2))));
+    }
+
+    @Test
+    void derivesConstantForSubtractionOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // 4L - 2L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(4), BinaryOp.SUBTRACT, new Long(2)));
+
+        assertThat(result, equalTo(new Constant(new Long(2))));
+    }
+
+    @Test
+    void derivesConstantForSubtractionOfConstantFloat() {
+        var propagation = new ConstantPropagation();
+
+        // 4.0F - 2.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(4.0F), BinaryOp.SUBTRACT, new Float(2.0F)));
+
+        assertThat(result, equalTo(new Constant(new Float(2.0F))));
+    }
+
+    @Test
+    void derivesConstantForSubtractionOfConstantDouble() {
+        var propagation = new ConstantPropagation();
+
+        // 4.0 - 2.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(4.0), BinaryOp.SUBTRACT, new Double(2.0)));
+
+        assertThat(result, equalTo(new Constant(new Double(2.0))));
+    }
+
+    // Multiplication
+    @Test
+    void derivesConstantForMultiplicationOfConstantInt() {
+        var propagation = new ConstantPropagation();
+
+        // 4 * 2
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(4), BinaryOp.MULTIPLY, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Int(8))));
+    }
+
+    @Test
+    void derivesConstantForMultiplicationOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // 4L * 2L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(4L), BinaryOp.MULTIPLY, new Long(2L)));
+
+        assertThat(result, equalTo(new Constant(new Long(8L))));
+    }
+
+    @Test
+    void derivesConstantForMultiplicationOfConstantFloat() {
+        var propagation = new ConstantPropagation();
+
+        // 4.0F * 2.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(4.0F), BinaryOp.MULTIPLY, new Float(2.0F)));
+
+        assertThat(result, equalTo(new Constant(new Float(8.0F))));
+    }
+
+    @Test
+    void derivesConstantForMultiplicationOfConstantDouble() {
+        var propagation = new ConstantPropagation();
+
+        // 4.0 * 2.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(4.0), BinaryOp.MULTIPLY, new Double(2.0)));
+
+        assertThat(result, equalTo(new Constant(new Double(8.0))));
+    }
+
+    // Division
+    @Test
+    void derivesConstantForDivisionOfConstantInt() {
+        var propagation = new ConstantPropagation();
+
+        // 8 / 2
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(8), BinaryOp.DIVIDE, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Int(4))));
+    }
+
+    @Test
+    void derivesConstantForDivisionOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // 8L / 2L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(8L), BinaryOp.DIVIDE, new Long(2L)));
+
+        assertThat(result, equalTo(new Constant(new Long(4L))));
+    }
+
+    @Test
+    void derivesConstantForDivisionOfConstantFloat() {
+        var propagation = new ConstantPropagation();
+
+        // 8.0F / 2.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(8.0F), BinaryOp.DIVIDE, new Float(2.0F)));
+
+        assertThat(result, equalTo(new Constant(new Float(4.0F))));
+    }
+
+    @Test
+    void derivesConstantForDivisionOfConstantDouble() {
+        var propagation = new ConstantPropagation();
+
+        // 8.0 / 2.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(8.0), BinaryOp.DIVIDE, new Double(2.0)));
+
+        assertThat(result, equalTo(new Constant(new Double(4.0))));
+    }
+
+    @Test
+    void derivesUnassignedForIntDivisionByZero() {
+        var propagation = new ConstantPropagation();
+
+        // 8 / 0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(8), BinaryOp.DIVIDE, new Int(0)));
+
+        assertThat(result, equalTo(Unassigned.VALUE));
+    }
+
+    // Modulus
+    @Test
+    void derivesConstantForModulusOfIntConstant() {
+        var propagation = new ConstantPropagation();
+
+        // 9 % 2
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(9), BinaryOp.MODULUS, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Int(1))));
+    }
+
+    @Test
+    void derivesConstantForModulusOfLongConstant() {
+        var propagation = new ConstantPropagation();
+
+        // 9L % 2L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(9L), BinaryOp.MODULUS, new Long(2L)));
+
+        assertThat(result, equalTo(new Constant(new Long(1))));
+    }
+
+    @Test
+    void derivesConstantForModulusOfFloatConstant() {
+        var propagation = new ConstantPropagation();
+
+        // 9.0F % 2.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(9.0F), BinaryOp.MODULUS, new Float(2.0F)));
+
+        assertThat(result, equalTo(new Constant(new Float(1.0F))));
+    }
+
+    @Test
+    void derivesConstantForModulusOfDoubleConstant() {
+        var propagation = new ConstantPropagation();
+
+        // 9.0 % 2.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(9.0), BinaryOp.MODULUS, new Double(2.0)));
+
+        assertThat(result, equalTo(new Constant(new Double(1.0))));
+    }
+
+    @Test
+    void derivesUnassignedForIntegerModulusByZero() {
+        var propagation = new ConstantPropagation();
+
+        // 9 % 0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(9), BinaryOp.MODULUS, new Int(0)));
+
+        assertThat(result, equalTo(Unassigned.VALUE));
+    }
+
+    // Left shift
+    @Test
+    void derivesConstantForLeftShiftOfIntConstantByInt() {
+        var propagation = new ConstantPropagation();
+
+        // 9 << 2
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(9), BinaryOp.SHIFT_LEFT, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Int(36))));
+    }
+
+    @Test
+    void derivesConstantForLeftShiftOfLongConstantByInt() {
+        var propagation = new ConstantPropagation();
+
+        // 9L << 2
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(9L), BinaryOp.SHIFT_LEFT, new Int(2)));
+
+        assertThat(result, equalTo(new Constant(new Long(36L))));
+    }
+
+    // Right shift
+    @Test
+    void derivesConstantForRightShiftOfIntConstantByInt() {
+        var propagation = new ConstantPropagation();
+
+        // 36 >> 1
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(36), BinaryOp.SHIFT_RIGHT, new Int(1)));
+
+        assertThat(result, equalTo(new Constant(new Int(18))));
+    }
+
+    @Test
+    void derivesConstantForRightShiftOfLongConstantByInt() {
+        var propagation = new ConstantPropagation();
+
+        // 36L >> 1
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(36L), BinaryOp.SHIFT_RIGHT, new Int(1)));
+
+        assertThat(result, equalTo(new Constant(new Long(18L))));
+    }
+
+    // Unsigned right shift
+    @Test
+    void derivesConstantForUnsignedRightShiftOfIntConstantByInt() {
+        var propagation = new ConstantPropagation();
+
+        // 36 >>> 1
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(36), BinaryOp.UNSIGNED_SHIFT_RIGHT, new Int(1)));
+
+        assertThat(result, equalTo(new Constant(new Int(18))));
+    }
+
+    @Test
+    void derivesConstantForUnsignedRightShiftOfLongConstantByInt() {
+        var propagation = new ConstantPropagation();
+
+        // 36L >>> 1
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(36L), BinaryOp.UNSIGNED_SHIFT_RIGHT, new Int(1)));
+
+        assertThat(result, equalTo(new Constant(new Long(18L))));
+    }
+
+    // Bitwise and
+    @Test
+    void derivesConstantForBitwiseAndOfConstantInt() {
+        var propagation = new ConstantPropagation();
+
+        // 37 & 1
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(37), BinaryOp.BITWISE_AND, new Int(1)));
+
+        assertThat(result, equalTo(new Constant(new Int(1))));
+    }
+
+    @Test
+    void derivesConstantForBitwiseAndOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // 37L & 1L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(37L), BinaryOp.BITWISE_AND, new Long(1L)));
+
+        assertThat(result, equalTo(new Constant(new Long(1L))));
+    }
+
+    @Test
+    void derivesConstantForBitwiseAndOfConstantBoolean() {
+        var propagation = new ConstantPropagation();
+
+        // true & false
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Boolean(true), BinaryOp.BITWISE_AND, new Boolean(false)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    // Bitwise or
+    @Test
+    void derivesConstantForBitwiseOrOfConstantInt() {
+        var propagation = new ConstantPropagation();
+
+        // 36 | 1
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(36), BinaryOp.BITWISE_OR, new Int(1)));
+
+        assertThat(result, equalTo(new Constant(new Int(37))));
+    }
+
+    @Test
+    void derivesConstantForBitwiseOrOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // 36L | 1L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(36L), BinaryOp.BITWISE_OR, new Long(1L)));
+
+        assertThat(result, equalTo(new Constant(new Long(37L))));
+    }
+
+    @Test
+    void derivesConstantForBitwiseOrOfConstantBoolean() {
+        var propagation = new ConstantPropagation();
+
+        // false | true
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Boolean(false), BinaryOp.BITWISE_OR, new Boolean(true)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    // Bitwise xor
+    @Test
+    void derivesConstantForBitwiseXorOfConstantInt() {
+        var propagation = new ConstantPropagation();
+
+        // 37 ^ 1
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(37), BinaryOp.BITWISE_XOR, new Int(1)));
+
+        assertThat(result, equalTo(new Constant(new Int(36))));
+    }
+
+    @Test
+    void derivesConstantForBitwiseXorOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // 37L ^ 1L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(37L), BinaryOp.BITWISE_XOR, new Long(1L)));
+
+        assertThat(result, equalTo(new Constant(new Long(36L))));
+    }
+
+    @Test
+    void derivesConstantForBitwiseXorOfConstantBoolean() {
+        var propagation = new ConstantPropagation();
+
+        // true ^ true
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Boolean(true), BinaryOp.BITWISE_XOR, new Boolean(true)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    // Literals and references
+    @Property
+    void derivesConstantForLiteral(@ForAll("literals") Literal literal) {
+        var propagation = new ConstantPropagation();
         var result = propagation.analyseExpression(literal);
         assertThat(result, equalTo(new Constant(literal)));
     }
 
-    @Test
-    void shouldDeriveConstantResultForLiteralChar() {
-         var propagation = new ConstantPropagation();
-         var literal = new Char('a');
-         var result = propagation.analyseExpression(literal);
-         assertThat(result, equalTo(new Constant(literal)));
+    @Property
+    void derivesConstantForReferenceWithConstantValue(@ForAll("literals") Literal literal) {
+        var varName = new LocalName("varName", 0);
+        var knownValue = new Constant(literal);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, knownValue));
+        var result = propagation.analyseExpression(new Reference(varName, literal.type()));
+        assertThat(result, equalTo(knownValue));
     }
 
-    @Test
-    void shouldDeriveConstantResultForLiteralDouble() {
-        var propagation = new ConstantPropagation();
-        var literal = new Double(1.0);
-        var result = propagation.analyseExpression(literal);
-        assertThat(result, equalTo(new Constant(literal)));
-    }
-
-    @Test
-    void shouldDeriveConstantResultForLiteralFloat() {
-        var propagation = new ConstantPropagation();
-        var literal = new Float(1.0F);
-        var result = propagation.analyseExpression(literal);
-        assertThat(result, equalTo(new Constant(literal)));
-    }
-
-    @Test
-    void shouldDeriveConstantResultForLiteralInt() {
-        var propagation = new ConstantPropagation();
-        var literal = new Int(1);
-        var result = propagation.analyseExpression(literal);
-        assertThat(result, equalTo(new Constant(literal)));
-    }
-
-    @Test
-    void shouldDeriveConstantResultForLiteralLong() {
-        var propagation = new ConstantPropagation();
-        var literal = new Long(1L);
-        var result = propagation.analyseExpression(literal);
-        assertThat(result, equalTo(new Constant(literal)));
-    }
-
-    @Test
-    void shouldDeriveConstantResultForLiteralString() {
-        var propagation = new ConstantPropagation();
-        var literal = new String("hello");
-        var result = propagation.analyseExpression(literal);
-        assertThat(result, equalTo(new Constant(literal)));
+    @Provide
+    Arbitrary<Literal> literals() {
+        return Arbitraries.oneOf(
+            Arbitraries.chars().map(Char::new),
+            Arbitraries.doubles().map(Double::new),
+            Arbitraries.floats().map(Float::new),
+            Arbitraries.integers().map(Int::new),
+            Arbitraries.longs().map(Long::new),
+            Arbitraries.strings().map(String::new)
+        );
     }
 }

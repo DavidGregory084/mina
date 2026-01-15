@@ -17,7 +17,7 @@ public class ResultTest {
     }
 
     @Property
-    void unequalConstantsAreIncomparable(@ForAll("constantValues") Result left, @ForAll("constantValues") Result right) {
+    void unequalConstantsAreIncomparable(@ForAll("constants") Result left, @ForAll("constants") Result right) {
         if (left.equals(right)) {
             assertThat(
                 Result.leastUpperBound(left, right),
@@ -30,7 +30,7 @@ public class ResultTest {
     }
 
     @Provide
-    Arbitrary<Result> results(@ForAll("constantValues") Result constant) {
+    Arbitrary<Result> results(@ForAll("constants") Result constant) {
         return Arbitraries.oneOf(
             Arbitraries.just(Unassigned.VALUE),
             Arbitraries.just(NonConstant.VALUE),
@@ -39,7 +39,7 @@ public class ResultTest {
     }
 
     @Provide
-    Arbitrary<Result> constantValues() {
+    Arbitrary<Result> constants() {
         return Arbitraries.oneOf(
             Arbitraries.chars().map(chr -> new Constant(new org.mina_lang.ina.Char(chr))),
             Arbitraries.doubles().map(dbl -> new Constant(new org.mina_lang.ina.Double(dbl))),

@@ -28,6 +28,7 @@ public enum ExpectedOperandType {
 
     public MonoType[] validTypes() {
         return switch (this) {
+            // TODO: Figure out whether this is supposed to include BOOLEAN
             case NUMERIC -> new MonoType[] { Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE, Type.BOOLEAN };
             case INTEGRAL -> new MonoType[] { Type.INT, Type.LONG };
             case INTEGER -> new MonoType[] { Type.INT };
