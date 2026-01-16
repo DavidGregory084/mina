@@ -1,3 +1,7 @@
+/*
+ * SPDX-FileCopyrightText:  © 2026 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.optimiser;
 
 import net.jqwik.api.*;
@@ -121,6 +125,24 @@ public class ConstantPropagationTest {
     }
 
     @Test
+    void derivesConstantForIfWhenCondNonConstantAndBranchesAreEqual() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, NonConstant.VALUE));
+
+        // if bool then "true" else "true"
+        // bool known to be non-constant
+        var result = propagation.analyseExpression(
+            new If(
+                Type.INT,
+                new Reference(varName, Type.BOOLEAN),
+                new String("true"),
+                new String("true")));
+
+        assertThat(result, equalTo(new Constant(new String("true"))));
+    }
+
+    // Boolean not
+    @Test
     void derivesConstantForBooleanNotOfConstants() {
         var propagation = new ConstantPropagation();
 
@@ -131,11 +153,12 @@ public class ConstantPropagationTest {
         assertThat(result, equalTo(new Constant(new Boolean(true))));
     }
 
+    // Bitwise not
     @Test
-    void derivesConstantForBitwiseNegationOfConstants() {
+    void derivesConstantForBitwiseNotOfConstantInt() {
         var propagation = new ConstantPropagation();
 
-        // !false
+        // ~16
         var result = propagation.analyseExpression(
             new UnOp(Type.INT, UnaryOp.BITWISE_NOT, new Int(16)));
 
@@ -143,7 +166,19 @@ public class ConstantPropagationTest {
     }
 
     @Test
-    void derivesConstantForArithmeticNegationOfConstants() {
+    void derivesConstantForBitwiseNotOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // ~16L
+        var result = propagation.analyseExpression(
+            new UnOp(Type.LONG, UnaryOp.BITWISE_NOT, new Long(16L)));
+
+        assertThat(result, equalTo(new Constant(new Long(-17L))));
+    }
+
+    // Negation
+    @Test
+    void derivesConstantForNegationOfConstantInt() {
         var propagation = new ConstantPropagation();
 
         // -2
@@ -151,6 +186,39 @@ public class ConstantPropagationTest {
             new UnOp(Type.INT, UnaryOp.NEGATE, new Int(2)));
 
         assertThat(result, equalTo(new Constant(new Int(-2))));
+    }
+
+    @Test
+    void derivesConstantForNegationOfConstantLong() {
+        var propagation = new ConstantPropagation();
+
+        // -2
+        var result = propagation.analyseExpression(
+            new UnOp(Type.LONG, UnaryOp.NEGATE, new Long(2L)));
+
+        assertThat(result, equalTo(new Constant(new Long(-2L))));
+    }
+
+    @Test
+    void derivesConstantForNegationOfConstantFloat() {
+        var propagation = new ConstantPropagation();
+
+        // -2.0F
+        var result = propagation.analyseExpression(
+            new UnOp(Type.FLOAT, UnaryOp.NEGATE, new Float(2.0F)));
+
+        assertThat(result, equalTo(new Constant(new Float(-2.0F))));
+    }
+
+    @Test
+    void derivesConstantForNegationOfConstantDouble() {
+        var propagation = new ConstantPropagation();
+
+        // -2.0
+        var result = propagation.analyseExpression(
+            new UnOp(Type.DOUBLE, UnaryOp.NEGATE, new Double(2.0)));
+
+        assertThat(result, equalTo(new Constant(new Double(-2.0))));
     }
 
     // Addition
@@ -571,6 +639,234 @@ public class ConstantPropagationTest {
         assertThat(result, equalTo(new Constant(new Boolean(false))));
     }
 
+    // Less than
+    @Test
+    void derivesBooleanConstantForLessThanOfConstantInts() {
+        var propagation = new ConstantPropagation();
+
+        // 37 < 5
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(37), BinaryOp.LESS_THAN, new Int(5)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    @Test
+    void derivesBooleanConstantForLessThanOfConstantLongs() {
+        var propagation = new ConstantPropagation();
+
+        // 37L < 5L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(37L), BinaryOp.LESS_THAN, new Long(5L)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    @Test
+    void derivesBooleanConstantForLessThanOfConstantFloats() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0F < 5.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(37.0F), BinaryOp.LESS_THAN, new Float(5.0F)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    @Test
+    void derivesBooleanConstantForLessThanOfConstantDoubles() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0 < 5.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(37.0), BinaryOp.LESS_THAN, new Double(5.0)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    // Less than or equal
+    @Test
+    void derivesBooleanConstantForLessOrEqualThanOfConstantInts() {
+        var propagation = new ConstantPropagation();
+
+        // 37 <= 37
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(37), BinaryOp.LESS_THAN_EQUAL, new Int(37)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForLessThanOrEqualOfConstantLongs() {
+        var propagation = new ConstantPropagation();
+
+        // 37L <= 37L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(37L), BinaryOp.LESS_THAN_EQUAL, new Long(37L)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForLessThanOrEqualOfConstantFloats() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0F <= 37.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(37.0F), BinaryOp.LESS_THAN_EQUAL, new Float(37.0F)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForLessThanOrEqualOfConstantDoubles() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0 <= 37.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(37.0), BinaryOp.LESS_THAN_EQUAL, new Double(37.0)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    // Greater than
+    @Test
+    void derivesBooleanConstantForGreaterThanOfConstantInts() {
+        var propagation = new ConstantPropagation();
+
+        // 37 > 5
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(37), BinaryOp.GREATER_THAN, new Int(5)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForGreaterThanOfConstantLongs() {
+        var propagation = new ConstantPropagation();
+
+        // 37L < 5L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(37L), BinaryOp.GREATER_THAN, new Long(5L)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForGreaterThanOfConstantFloats() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0F < 5.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(37.0F), BinaryOp.GREATER_THAN, new Float(5.0F)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForGreaterThanOfConstantDoubles() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0 < 5.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(37.0), BinaryOp.GREATER_THAN, new Double(5.0)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    // Greater than or equal
+    @Test
+    void derivesBooleanConstantForGreaterThanOrEqualOfConstantInts() {
+        var propagation = new ConstantPropagation();
+
+        // 37 >= 37
+        var result = propagation.analyseExpression(
+            new BinOp(Type.INT, new Int(37), BinaryOp.GREATER_THAN_EQUAL, new Int(37)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForGreaterThanOrEqualOfConstantLongs() {
+        var propagation = new ConstantPropagation();
+
+        // 37L >= 37L
+        var result = propagation.analyseExpression(
+            new BinOp(Type.LONG, new Long(37L), BinaryOp.GREATER_THAN_EQUAL, new Long(37L)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForGreaterThanOrEqualOfConstantFloats() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0F <= 37.0F
+        var result = propagation.analyseExpression(
+            new BinOp(Type.FLOAT, new Float(37.0F), BinaryOp.GREATER_THAN_EQUAL, new Float(37.0F)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesBooleanConstantForGreaterThanOrEqualOfConstantDoubles() {
+        var propagation = new ConstantPropagation();
+
+        // 37.0 <= 37.0
+        var result = propagation.analyseExpression(
+            new BinOp(Type.DOUBLE, new Double(37.0), BinaryOp.GREATER_THAN_EQUAL, new Double(37.0)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    // Boolean and
+    @Test
+    void derivesConstantForShortCircuitingBooleanAnd() {
+        var propagation = new ConstantPropagation();
+        var varName = new LocalName("varName", 0);
+
+        // false && varName
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Boolean(false), BinaryOp.BOOLEAN_AND, new Reference(varName, Type.BOOLEAN)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    @Test
+    void derivesConstantForBooleanAndOfConstants() {
+        var propagation = new ConstantPropagation();
+
+        // true && false
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Boolean(true), BinaryOp.BOOLEAN_AND, new Boolean(false)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    // Boolean or
+    @Test
+    void derivesConstantForShortCircuitingBooleanOr() {
+        var propagation = new ConstantPropagation();
+        var varName = new LocalName("varName", 0);
+
+        // true || varName
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Boolean(true), BinaryOp.BOOLEAN_OR, new Reference(varName, Type.BOOLEAN)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesConstantForBooleanOrOfConstants() {
+        var propagation = new ConstantPropagation();
+
+        // false || true
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Boolean(false), BinaryOp.BOOLEAN_OR, new Boolean(true)));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
     // Literals and references
     @Property
     void derivesConstantForLiteral(@ForAll("literals") Literal literal) {
@@ -586,6 +882,14 @@ public class ConstantPropagationTest {
         var propagation = new ConstantPropagation(Maps.mutable.of(varName, knownValue));
         var result = propagation.analyseExpression(new Reference(varName, literal.type()));
         assertThat(result, equalTo(knownValue));
+    }
+
+    @Property
+    void derivesUnassignedForReferenceWithUnknownValue(@ForAll("literals") Literal literal) {
+        var varName = new LocalName("varName", 0);
+        var propagation = new ConstantPropagation();
+        var result = propagation.analyseExpression(new Reference(varName, literal.type()));
+        assertThat(result, equalTo(Unassigned.VALUE));
     }
 
     @Provide

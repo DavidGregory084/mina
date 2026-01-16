@@ -10,6 +10,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.model.ObjectFactory;
@@ -35,15 +36,13 @@ import java.io.UncheckedIOException;
 public abstract class MinaCompile extends AbstractCompile implements HasCompileOptions {
 
     private CompileOptions compileOptions;
-    private ConfigurableFileCollection minaCompilerClasspath;
+    private FileCollection minaCompilerClasspath;
     private FileOperations fileOperations;
     private Deleter deleter;
 
     @Inject
-    public MinaCompile(Project project, FileOperations fileOperations, Deleter deleter) {
+    public MinaCompile(FileOperations fileOperations, Deleter deleter) {
         this.compileOptions = getObjectFactory().newInstance(CompileOptions.class);
-        Configuration minacConfig = project.getConfigurations().getByName(MinaBasePlugin.MINAC_CONFIGURATION_NAME);
-        this.minaCompilerClasspath = getObjectFactory().fileCollection().from(minacConfig.getAsFileTree());
         this.fileOperations = fileOperations;
         this.deleter = deleter;
     }
@@ -54,6 +53,10 @@ public abstract class MinaCompile extends AbstractCompile implements HasCompileO
     @Classpath
     public FileCollection getMinaCompilerClasspath() {
         return minaCompilerClasspath;
+    }
+
+    public void setMinaCompilerClasspath(FileCollection minaCompilerClasspath) {
+        this.minaCompilerClasspath = minaCompilerClasspath;
     }
 
     @Nested

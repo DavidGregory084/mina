@@ -42,7 +42,7 @@ spotless {
         encoding("UTF-8")
         target("*.gradle.kts")
         ktfmt().kotlinlangStyle()
-        indentWithSpaces()
+        leadingTabsToSpaces()
         trimTrailingWhitespace()
         endWithNewline()
     }

@@ -43,7 +43,7 @@ spotless {
         formatAnnotations()
         importOrder("", "javax|java", "\\#") // IntelliJ import order
         removeUnusedImports()
-        indentWithSpaces()
+        leadingTabsToSpaces()
         trimTrailingWhitespace()
         endWithNewline()
     }

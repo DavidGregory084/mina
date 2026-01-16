@@ -76,7 +76,7 @@ public class InaNodePrinter implements InaNodeFolder<Doc> {
 
     public InaNodePrinter(int indent) {
         this.indent = indent;
-        this.namePrinter = new NamePrinter();
+        this.namePrinter = new NamePrinter(true);
         this.typePrinter = new TypePrinter(indent);
     }
 
