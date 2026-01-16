@@ -7,10 +7,12 @@ package org.mina_lang.main;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.mina_lang.common.Attributes;
+import org.mina_lang.common.names.LocalName;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.common.names.SyntheticNameSupply;
 import org.mina_lang.ina.InaNodePrinter;
 import org.mina_lang.ina.Namespace;
+import org.mina_lang.optimiser.ConstantPropagation;
 import org.mina_lang.optimiser.Lower;
 import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
@@ -39,6 +41,17 @@ public class OptimiserPhase extends GraphPhase<NamespaceNode<Attributes>, Namesp
         var lower = new Lower(nameSupply);
         var lowered = lower.lower(typecheckedNode);
         logger.info(lowered.accept(printer).render());
+        var constants = new ConstantPropagation();
+        constants.analyseDeclarations(lowered.declarations());
+        constants.getEnvironment().entrySet().forEach(constant -> {
+            logger.info(
+                "{} -> {}",
+                constant.getKey() instanceof LocalName local
+                    ? local.name() + "@" + local.index()
+                    : constant.getKey().canonicalName(),
+                constant.getValue()
+            );
+        });
         return Mono.just(lowered);
     }
 }

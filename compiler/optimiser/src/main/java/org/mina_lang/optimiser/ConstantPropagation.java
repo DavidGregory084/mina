@@ -1,7 +1,12 @@
+/*
+ * SPDX-FileCopyrightText:  © 2026 David Gregory
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.mina_lang.optimiser;
 
-import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
+import org.eclipse.collections.impl.factory.Multimaps;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.ina.*;
@@ -9,10 +14,7 @@ import org.mina_lang.ina.Boolean;
 import org.mina_lang.ina.Double;
 import org.mina_lang.ina.Float;
 import org.mina_lang.ina.Long;
-import org.mina_lang.optimiser.constants.Constant;
-import org.mina_lang.optimiser.constants.NonConstant;
-import org.mina_lang.optimiser.constants.Result;
-import org.mina_lang.optimiser.constants.Unassigned;
+import org.mina_lang.optimiser.constants.*;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -23,47 +25,77 @@ public class ConstantPropagation {
     private final Map<Named, Result> environment;
     private final Queue<Named> worklist;
     private final Map<Named, Expression> letBodies;
-    private final Map<Named, ImmutableList<Named>> occurrences;
+    private final MutableSetMultimap<Named, Named> occurrences;
     private final Map<Named, ImmutableList<Param>> funParams;
+    private final FreeVariablesFolder freeVarsFolder;
+    private long envState;
 
     ConstantPropagation(Map<Named, Result> environment) {
         this.environment = environment;
         this.worklist = new ArrayDeque<>();
         this.letBodies = new HashMap<>();
-        this.occurrences = new HashMap<>();
+        this.occurrences = Multimaps.mutable.set.empty();
         this.funParams = new HashMap<>();
+        this.freeVarsFolder = new FreeVariablesFolder();
+        this.envState = 0L;
     }
 
     public ConstantPropagation() {
         this(new HashMap<>());
     }
 
-    private void putResult(Named name, Result newValue) {
-        environment.compute(name, (n, existingValue) -> {
-            return (existingValue != null)
-                ? Result.leastUpperBound(existingValue, newValue)
-                : newValue;
+    public Map<Named, Result> getEnvironment() {
+        return environment;
+    }
+
+    private Result putResult(Named name, Result newValue) {
+        return environment.compute(name, (n, existingValue) -> {
+            if (existingValue == null) {
+                // We have information about this key for the first time
+                envState++;
+                return newValue;
+            } else {
+                if (newValue.compare(existingValue) > 0.0) {
+                    // We gained more information about this key
+                    envState++;
+                }
+
+                return Result.leastUpperBound(existingValue, newValue);
+            }
         });
     }
 
-    void analyseDeclarations(ImmutableList<Declaration> declarations) {
-        var funDecls = declarations.select(d -> d instanceof Let let);
+    public void analyseDeclarations(ImmutableList<Declaration> declarations) {
+        var letDecls = declarations.select(d -> d instanceof Let);
 
-        // Initialise the worklist
-        funDecls.forEach(funDecl -> {
+        letDecls.forEach(funDecl -> {
             var let = (Let) funDecl;
+
+            // Use free variables within the declaration to build occurrence info
+            var freeVars = funDecl.accept(freeVarsFolder);
+            freeVars.forEach(freeVar -> occurrences.put(freeVar, funDecl.name()));
+
+            // Save declaration bodies so we can revisit them while processing
             if (let.body() instanceof Lambda lambda) {
                 funParams.put(let.name(), lambda.params());
                 letBodies.put(let.name(), lambda.body());
+                lambda.params().forEach(param -> putResult(param.name(), NonConstant.VALUE));
             } else {
                 letBodies.put(let.name(), let.body());
             }
+
+            // Initialise the worklist
             worklist.add(let.name());
         });
 
         Named funName;
         while ((funName = worklist.poll()) != null) {
-
+            var initialResult = environment.get(funName);
+            var newResult = putResult(funName, analyseExpression(letBodies.get(funName)));
+            if (newResult.compare(initialResult) > 0.0) {
+                var funOccurrences = occurrences.get(funName);
+                worklist.addAll(funOccurrences);
+            }
         }
     }
 
@@ -73,7 +105,7 @@ public class ConstantPropagation {
             if (condValue == Unassigned.VALUE) {
                 return condValue;
             } else if (condValue instanceof Constant constant &&
-                constant.value() instanceof Boolean bool)  {
+                constant.value() instanceof Boolean bool) {
                 return bool.value()
                     ? analyseExpression(ifExpr.consequent())
                     : analyseExpression(ifExpr.alternative());
@@ -82,13 +114,23 @@ public class ConstantPropagation {
                 var alternative = analyseExpression(ifExpr.alternative());
                 return Result.leastUpperBound(consequent, alternative);
             }
+        } else if (expr instanceof Match match) {
+            var scrutineeValue = analyseExpression(match.scrutinee());
+            if (scrutineeValue == Unassigned.VALUE) {
+                return scrutineeValue;
+            } else {
+                return match.cases()
+                    .collect(cse -> {
+                        analysePattern(cse.pattern());
+                        return analyseExpression(cse.consequent());
+                    })
+                    .stream().reduce(Unassigned.VALUE, Result::leastUpperBound);
+            }
         } else if (expr instanceof Block block) {
             for (var localBinding : block.bindings()) {
                 if (localBinding instanceof Join join) {
-                    funParams.put(localBinding.name(), join.params());
                     putResult(localBinding.name(), analyseExpression(join.body()));
                 } else if (localBinding.body() instanceof Lambda lambda) {
-                    funParams.put(localBinding.name(), lambda.params());
                     putResult(localBinding.name(), analyseExpression(lambda.body()));
                 } else {
                     putResult(localBinding.name(), analyseExpression(localBinding.body()));
@@ -96,25 +138,44 @@ public class ConstantPropagation {
             }
             return analyseExpression(block.result());
         } else if (expr instanceof Lambda lambda) {
-            // Pessimistically assume that we don't know how this lambda will be called
+            // Pessimistically assume that we can't know how this lambda will be called
             lambda.params().forEach(param -> putResult(param.name(), NonConstant.VALUE));
             analyseExpression(lambda.body());
             return NonConstant.VALUE;
         } else if (expr instanceof Apply apply) {
-            ImmutableList<Param> appliedParams = Lists.immutable.empty();
-            if (apply.expr() instanceof Reference ref && funParams.containsKey(ref.name())) {
-                appliedParams = funParams.get(ref.name());
-            } else if (apply.expr() instanceof Lambda lambda) {
-                appliedParams = lambda.params();
-            }
-            for (var pair : appliedParams.zip(apply.args())) {
-                var argValue = analyseExpression(pair.getTwo());
-                putResult(pair.getOne().name(), argValue);
+            analyseExpression(apply.expr());
+
+            if (apply.expr() instanceof Lambda) {
+                // We are applying an unknown lambda
+                return NonConstant.VALUE;
+            } else if (apply.expr() instanceof Reference ref && funParams.containsKey(ref.name())) {
+                // This is a known function
+                putResult(ref.name(), Unassigned.VALUE);
+
+                var initialEnvState = envState;
+                analyseFunParams(funParams.get(ref.name()), apply.args());
+                // If we gained more information about this function's
+                // parameters, add the function to the worklist
+                if (envState > initialEnvState) {
+                    worklist.add(ref.name());
+                }
+
+                // Return the environment's mapping for this function
+                return environment.get(ref.name());
+            } else {
+                // We don't know what this is, but we can look at the argument
+                // expressions to find information about other variables
+                apply.args().forEach(this::analyseExpression);
+                return Unassigned.VALUE;
             }
         } else if (expr instanceof BinOp binOp) {
             return analyseBinOp(binOp);
         } else if (expr instanceof UnOp unOp) {
             return analyseUnOp(unOp);
+        } else if (expr instanceof Box box) {
+            return analyseExpression(box.value());
+        } else if (expr instanceof Unbox unbox) {
+            return analyseExpression(unbox.value());
         } else if (expr instanceof Reference reference) {
             return environment.getOrDefault(reference.name(), Unassigned.VALUE);
         } else if (expr instanceof Literal literal) {
@@ -123,6 +184,24 @@ public class ConstantPropagation {
 
         // If in doubt, assume non-constant
         return NonConstant.VALUE;
+    }
+
+    void analyseFunParams(ImmutableList<Param> appliedParams, ImmutableList<Value> appliedArgs) {
+        for (var pair : appliedParams.zip(appliedArgs)) {
+            var argValue = analyseExpression(pair.getTwo());
+            putResult(pair.getOne().name(), argValue);
+        }
+    }
+
+    void analysePattern(Pattern pattern) {
+        if (pattern instanceof ConstructorPattern constr) {
+            constr.fields().forEach(field -> analysePattern(field.pattern()));
+        } else if (pattern instanceof AliasPattern alias) {
+            putResult(alias.alias(), NonConstant.VALUE);
+            analysePattern(alias.pattern());
+        } else if (pattern instanceof IdPattern id) {
+            putResult(id.name(), NonConstant.VALUE);
+        }
     }
 
     Result analyseUnOp(UnOp unOp) {
@@ -171,27 +250,19 @@ public class ConstantPropagation {
         var leftOperand = analyseExpression(binOp.left());
         var rightOperand = analyseExpression(binOp.right());
         if (leftOperand instanceof Constant left) {
-            if (rightOperand instanceof Constant right) {
-                return evaluateBinOp(binOp.operator(), left, right);
-            } else if ( // false && ...
-               left.value() instanceof Boolean bool && !bool.value() && binOp.operator().equals(BinaryOp.BOOLEAN_AND)) {
+            if ( // false && ...
+                left.value() instanceof Boolean bool && !bool.value() && binOp.operator().equals(BinaryOp.BOOLEAN_AND)) {
                 return leftOperand;
             } else if ( // true || ...
                 left.value() instanceof Boolean bool && bool.value() && binOp.operator().equals(BinaryOp.BOOLEAN_OR)) {
                 return leftOperand;
+            } else if (rightOperand instanceof Constant right) {
+                return evaluateBinOp(binOp.operator(), left, right);
             } else {
                 return rightOperand;
             }
-        } else if (rightOperand instanceof Constant right) {
-            if ( // ... && false
-                right.value() instanceof Boolean bool && !bool.value() && binOp.operator().equals(BinaryOp.BOOLEAN_AND)) {
-                return rightOperand;
-            } else if ( // ... || true
-                right.value() instanceof Boolean bool && bool.value() && binOp.operator().equals(BinaryOp.BOOLEAN_OR)) {
-                return rightOperand;
-            } else {
-                return leftOperand;
-            }
+        } else if (rightOperand instanceof Constant) {
+            return leftOperand;
         } else {
             return Result.leastUpperBound(leftOperand, rightOperand);
         }

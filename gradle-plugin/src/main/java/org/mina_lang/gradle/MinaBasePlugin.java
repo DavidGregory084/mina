@@ -82,7 +82,10 @@ public class MinaBasePlugin implements Plugin<Project> {
     }
 
     private void configureCompileDefaults(Project project) {
+        Configuration minacConfig = project.getConfigurations().getByName(MINAC_CONFIGURATION_NAME);
+        FileCollection minacClasspath = objectFactory.fileCollection().from(minacConfig.getAsFileTree());
         project.getTasks().withType(MinaCompile.class).configureEach(compile -> {
+            compile.setMinaCompilerClasspath(minacClasspath);
         });
     }
 

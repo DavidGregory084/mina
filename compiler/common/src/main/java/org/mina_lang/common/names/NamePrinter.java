@@ -9,6 +9,16 @@ import com.opencastsoftware.prettier4j.Doc;
 public class NamePrinter implements NameFolder<Doc> {
     private static final Doc QUESTION = Doc.text("?");
 
+    private final boolean showIndices;
+
+    public NamePrinter() {
+        this(false);
+    }
+
+    public NamePrinter(boolean showIndices) {
+        this.showIndices = showIndices;
+    }
+
     @Override
     public Doc visitNameless(Nameless nameless) {
         return Doc.empty();
@@ -26,7 +36,11 @@ public class NamePrinter implements NameFolder<Doc> {
 
     @Override
     public Doc visitLocalName(LocalName local) {
-        return Doc.text(local.name());
+        return Doc.text(
+            showIndices
+                ? local.name() + "@" + local.index()
+                : local.name()
+        );
     }
 
     @Override
