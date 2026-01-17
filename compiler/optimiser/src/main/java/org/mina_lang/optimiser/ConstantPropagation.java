@@ -66,7 +66,15 @@ public class ConstantPropagation {
     }
 
     public void analyseDeclarations(ImmutableList<Declaration> declarations) {
+        var dataDecls = declarations.select(d -> d instanceof Data);
         var letDecls = declarations.select(d -> d instanceof Let);
+
+        dataDecls.forEach(dataDecl -> {
+            var data = (Data) dataDecl;
+            data.constructors().forEach(constr -> {
+                putResult(constr.name(), NonConstant.VALUE);
+            });
+        });
 
         letDecls.forEach(funDecl -> {
             var let = (Let) funDecl;
@@ -79,7 +87,9 @@ public class ConstantPropagation {
             if (let.body() instanceof Lambda lambda) {
                 funParams.put(let.name(), lambda.params());
                 letBodies.put(let.name(), lambda.body());
-                lambda.params().forEach(param -> putResult(param.name(), NonConstant.VALUE));
+                lambda.params().forEach(param -> {
+                    putResult(param.name(), NonConstant.VALUE);
+                });
             } else {
                 letBodies.put(let.name(), let.body());
             }
@@ -90,7 +100,7 @@ public class ConstantPropagation {
 
         Named funName;
         while ((funName = worklist.poll()) != null) {
-            var initialResult = environment.get(funName);
+            var initialResult = environment.getOrDefault(funName, Unassigned.VALUE);
             var newResult = putResult(funName, analyseExpression(letBodies.get(funName)));
             if (newResult.compare(initialResult) > 0.0) {
                 var funOccurrences = occurrences.get(funName);
@@ -162,6 +172,9 @@ public class ConstantPropagation {
 
                 // Return the environment's mapping for this function
                 return environment.get(ref.name());
+            } else if (apply.expr() instanceof Reference ref) {
+                // A constructor or a function from another namespace
+                return environment.getOrDefault(ref.name(), Unassigned.VALUE);
             } else {
                 // We don't know what this is, but we can look at the argument
                 // expressions to find information about other variables
