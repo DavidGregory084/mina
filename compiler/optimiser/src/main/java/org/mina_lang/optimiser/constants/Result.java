@@ -4,7 +4,7 @@
  */
 package org.mina_lang.optimiser.constants;
 
-public sealed interface Result permits Constant, NonConstant, Unassigned {
+public sealed interface Result permits Constant, KnownConstructor, NonConstant, Unassigned {
     float compare(Result other);
 
     static Result leastUpperBound(Result l, Result r) {

@@ -5,11 +5,18 @@
 package org.mina_lang.optimiser.constants;
 
 import net.jqwik.api.*;
+import org.eclipse.collections.impl.factory.Lists;
+import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.names.DataName;
+import org.mina_lang.common.names.NamespaceName;
+import org.mina_lang.common.names.QualifiedName;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class ResultTest {
+    NamespaceName namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+
     @Property
     void unassignedIsLeast(@ForAll("results") Result result) {
         assertThat(Result.leastUpperBound(result, Unassigned.VALUE), equalTo(result));
@@ -50,7 +57,13 @@ public class ResultTest {
             Arbitraries.floats().map(flt -> new Constant(new org.mina_lang.ina.Float(flt))),
             Arbitraries.integers().map(intgr -> new Constant(new org.mina_lang.ina.Int(intgr))),
             Arbitraries.longs().map(lng -> new Constant(new org.mina_lang.ina.Long(lng))),
-            Arbitraries.strings().map(string -> new Constant(new org.mina_lang.ina.String(string)))
+            Arbitraries.strings().map(string -> new Constant(new org.mina_lang.ina.String(string))),
+            Arbitraries.strings().ofMinLength(3).ofMaxLength(5).tuple2()
+                .map(tuple -> {
+                    var dataName = new DataName(new QualifiedName(namespaceName, tuple.get1()));
+                    var constrName = new ConstructorName(dataName, new QualifiedName(namespaceName, tuple.get2()));
+                    return new KnownConstructor(constrName);
+                })
         );
     }
 }

@@ -72,7 +72,7 @@ public class ConstantPropagation {
         dataDecls.forEach(dataDecl -> {
             var data = (Data) dataDecl;
             data.constructors().forEach(constr -> {
-                putResult(constr.name(), NonConstant.VALUE);
+                putResult(constr.name(), new KnownConstructor(constr.name()));
             });
         });
 
@@ -88,6 +88,7 @@ public class ConstantPropagation {
                 funParams.put(let.name(), lambda.params());
                 letBodies.put(let.name(), lambda.body());
                 lambda.params().forEach(param -> {
+                    // Assume that top-level functions can be called with any arguments
                     putResult(param.name(), NonConstant.VALUE);
                 });
             } else {
@@ -103,6 +104,8 @@ public class ConstantPropagation {
             var initialResult = environment.getOrDefault(funName, Unassigned.VALUE);
             var newResult = putResult(funName, analyseExpression(letBodies.get(funName)));
             if (newResult.compare(initialResult) > 0.0) {
+                // If we gained more information about this function's
+                // result, add its callsites to the worklist
                 var funOccurrences = occurrences.get(funName);
                 worklist.addAll(funOccurrences);
             }
@@ -206,15 +209,19 @@ public class ConstantPropagation {
         }
     }
 
-    void analysePattern(Pattern pattern) {
+    Result analysePattern(Pattern pattern) {
         if (pattern instanceof ConstructorPattern constr) {
             constr.fields().forEach(field -> analysePattern(field.pattern()));
+            return new KnownConstructor(constr.name());
         } else if (pattern instanceof AliasPattern alias) {
-            putResult(alias.alias(), NonConstant.VALUE);
-            analysePattern(alias.pattern());
+            return putResult(alias.alias(), analysePattern(alias.pattern()));
+        } else if (pattern instanceof LiteralPattern literal) {;
+            return new Constant(literal.literal());
         } else if (pattern instanceof IdPattern id) {
-            putResult(id.name(), NonConstant.VALUE);
+            return putResult(id.name(), Unassigned.VALUE);
         }
+
+        return NonConstant.VALUE;
     }
 
     Result analyseUnOp(UnOp unOp) {

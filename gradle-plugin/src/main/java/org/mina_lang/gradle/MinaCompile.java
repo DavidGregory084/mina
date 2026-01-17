@@ -5,12 +5,8 @@
 package org.mina_lang.gradle;
 
 import org.gradle.api.NonNullApi;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
-import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.model.ObjectFactory;

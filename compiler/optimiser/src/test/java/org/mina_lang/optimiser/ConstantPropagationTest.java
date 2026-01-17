@@ -6,11 +6,14 @@ package org.mina_lang.optimiser;
 
 import net.jqwik.api.*;
 import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.impl.factory.Lists;
 import org.junit.jupiter.api.Test;
-import org.mina_lang.common.names.LocalName;
+import org.mina_lang.common.names.*;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
 import org.mina_lang.common.types.Type;
+import org.mina_lang.common.types.TypeConstructor;
+import org.mina_lang.common.types.TypeKind;
 import org.mina_lang.ina.*;
 import org.mina_lang.ina.Boolean;
 import org.mina_lang.ina.Double;
@@ -18,6 +21,7 @@ import org.mina_lang.ina.Float;
 import org.mina_lang.ina.Long;
 import org.mina_lang.ina.String;
 import org.mina_lang.optimiser.constants.Constant;
+import org.mina_lang.optimiser.constants.KnownConstructor;
 import org.mina_lang.optimiser.constants.NonConstant;
 import org.mina_lang.optimiser.constants.Unassigned;
 
@@ -865,6 +869,56 @@ public class ConstantPropagationTest {
             new BinOp(Type.BOOLEAN, new Boolean(false), BinaryOp.BOOLEAN_OR, new Boolean(true)));
 
         assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    // Patterns
+    @Test
+    void derivesUnassignedForIdentifierPattern() {
+        var propagation = new ConstantPropagation();
+        var idName = new LocalName("bool", 0);
+
+        // bool
+        propagation.analysePattern(new IdPattern(idName, Type.BOOLEAN));
+
+        assertThat(propagation.getEnvironment().get(idName), equalTo(Unassigned.VALUE));
+    }
+
+    @Test
+    void derivesUnderlyingForAliasPattern() {
+        var propagation = new ConstantPropagation();
+        var literal = new Boolean(true);
+        var alias = new LocalName("bool", 0);
+
+        // bool @ true
+        propagation.analysePattern(new AliasPattern(alias, Type.BOOLEAN, new LiteralPattern(literal)));
+
+        assertThat(propagation.getEnvironment().get(alias), equalTo(new Constant(literal)));
+    }
+
+    @Test
+    void derivesKnownConstructorForConstructorPattern() {
+        var propagation = new ConstantPropagation();
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+        var dataName = new DataName(new QualifiedName(namespaceName, "List"));
+        var constrName = new ConstructorName(dataName, new QualifiedName(namespaceName, "Nil"));
+
+        // Nil {}
+        var result = propagation.analysePattern(
+            new ConstructorPattern(
+                constrName,
+                new TypeConstructor(constrName.name(), TypeKind.INSTANCE),
+                Lists.immutable.empty()));
+
+        assertThat(result, equalTo(new KnownConstructor(constrName)));
+    }
+
+    @Property
+    void derivesConstantForLiteralPattern(@ForAll("literals") Literal literal) {
+        var propagation = new ConstantPropagation();
+
+        var result = propagation.analysePattern(new LiteralPattern(literal));
+
+        assertThat(result, equalTo(new Constant(literal)));
     }
 
     // Literals and references
