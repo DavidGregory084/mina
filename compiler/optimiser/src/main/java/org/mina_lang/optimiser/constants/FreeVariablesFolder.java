@@ -11,12 +11,20 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
+import org.mina_lang.common.types.QuantifiedType;
 import org.mina_lang.common.types.Type;
 import org.mina_lang.common.types.TypeVar;
 import org.mina_lang.ina.InaNodeFolder;
 
 public class FreeVariablesFolder implements InaNodeFolder<ImmutableSet<Named>> {
     MutableSet<Name> boundVariables = Sets.mutable.empty();
+
+    private Type getUnderlyingType(Type type) {
+        while (type instanceof QuantifiedType quant) {
+            type = quant.body();
+        }
+        return type;
+    }
 
     @Override
     public ImmutableSet<Named> visitNamespace(NamespaceName name, ImmutableList<ImmutableSet<Named>> declarations) {
@@ -40,7 +48,7 @@ public class FreeVariablesFolder implements InaNodeFolder<ImmutableSet<Named>> {
 
     @Override
     public ImmutableSet<Named> visitLet(LetName name, Type type, ImmutableSet<Named> body) {
-        return Type.isFunction(type) ? body.newWith(name) : body;
+        return Type.isFunction(getUnderlyingType(type)) ? body.newWith(name) : body;
     }
 
     @Override

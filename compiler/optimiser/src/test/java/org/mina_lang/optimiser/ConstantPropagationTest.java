@@ -11,9 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
-import org.mina_lang.common.types.Type;
-import org.mina_lang.common.types.TypeConstructor;
-import org.mina_lang.common.types.TypeKind;
+import org.mina_lang.common.types.*;
 import org.mina_lang.ina.*;
 import org.mina_lang.ina.Boolean;
 import org.mina_lang.ina.Double;
@@ -143,6 +141,79 @@ public class ConstantPropagationTest {
                 new String("true")));
 
         assertThat(result, equalTo(new Constant(new String("true"))));
+    }
+
+    @Test
+    void derivesUnassignedForMatchWhenScrutineeUnassigned() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation();
+
+        // match bool with { case true -> false; case false -> true }
+        // no known assignment for bool
+        var result = propagation.analyseExpression(
+            new Match(
+                Type.INT,
+                new Reference(varName, Type.BOOLEAN),
+                Lists.immutable.of(
+                    new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),
+                    new Case(new LiteralPattern(new Boolean(false)), new Boolean(true)))));
+
+        assertThat(result, equalTo(Unassigned.VALUE));
+    }
+
+    @Test
+    void derivesConstantForConstantMatchCases() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, NonConstant.VALUE));
+
+        // match bool with { case true -> true; case false -> true }
+        // bool known to be non-constant
+        var result = propagation.analyseExpression(
+            new Match(
+                Type.INT,
+                new Reference(varName, Type.BOOLEAN),
+                Lists.immutable.of(
+                    new Case(new LiteralPattern(new Boolean(true)), new Boolean(true)),
+                    new Case(new LiteralPattern(new Boolean(false)), new Boolean(true)))));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    @Test
+    void derivesNonConstantForNonConstantMatchCases() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, NonConstant.VALUE));
+
+        // match bool with { case true -> false; case false -> true }
+        // bool known to be non-constant
+        var result = propagation.analyseExpression(
+            new Match(
+                Type.INT,
+                new Reference(varName, Type.BOOLEAN),
+                Lists.immutable.of(
+                    new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),
+                    new Case(new LiteralPattern(new Boolean(false)), new Boolean(true)))));
+
+        assertThat(result, equalTo(NonConstant.VALUE));
+    }
+
+    // Lambda
+    @Test
+    void derivesNonConstantForLambdaAndParams() {
+        var firstParam = new LocalName("x", 1);
+        var secondParam = new LocalName("y", 2);
+        var propagation = new ConstantPropagation();
+
+        // (x: Int, y: Int) -> x
+        var result = propagation.analyseExpression(
+            new Lambda(
+                Type.INT,
+                Lists.immutable.of(new Param(firstParam, Type.INT), new Param(secondParam, Type.INT)),
+                new Reference(firstParam, Type.INT)));
+
+        assertThat(result, equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(firstParam), equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(secondParam), equalTo(NonConstant.VALUE));
     }
 
     // Boolean not
@@ -944,6 +1015,40 @@ public class ConstantPropagationTest {
         var propagation = new ConstantPropagation();
         var result = propagation.analyseExpression(new Reference(varName, literal.type()));
         assertThat(result, equalTo(Unassigned.VALUE));
+    }
+
+    @Test
+    void derivesNonConstantForReferenceToFunction() {
+        var varName = new LocalName("const", 0);
+        var propagation = new ConstantPropagation();
+        var result = propagation.analyseExpression(new Reference(varName, Type.function(Type.INT, Type.INT)));
+        assertThat(result, equalTo(NonConstant.VALUE));
+    }
+
+    @Test
+    void derivesNonConstantForReferenceToPolymorphicFunction() {
+        var varName = new LocalName("const", 0);
+        var propagation = new ConstantPropagation();
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+        var tyVarB = new ForAllVar("B", TypeKind.INSTANCE);
+        var funTy = Type.function(tyVarA, tyVarB, tyVarA);
+        var polyFunTy = new QuantifiedType(Lists.immutable.of(tyVarA, tyVarB), funTy, TypeKind.INSTANCE);
+        var result = propagation.analyseExpression(new Reference(varName, polyFunTy));
+        assertThat(result, equalTo(NonConstant.VALUE));
+    }
+
+    @Property
+    void derivesUnderlyingForBox(@ForAll("literals") Literal literal) {
+        var propagation = new ConstantPropagation();
+        var result = propagation.analyseExpression(new Box(literal));
+        assertThat(result, equalTo(new Constant(literal)));
+    }
+
+    @Property
+    void derivesUnderlyingForUnbox(@ForAll("literals") Literal literal) {
+        var propagation = new ConstantPropagation();
+        var result = propagation.analyseExpression(new Unbox(literal));
+        assertThat(result, equalTo(new Constant(literal)));
     }
 
     @Provide

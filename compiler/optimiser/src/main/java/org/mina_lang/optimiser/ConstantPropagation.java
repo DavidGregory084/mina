@@ -9,6 +9,8 @@ import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.operators.BinaryOp;
+import org.mina_lang.common.types.QuantifiedType;
+import org.mina_lang.common.types.Type;
 import org.mina_lang.ina.*;
 import org.mina_lang.ina.Boolean;
 import org.mina_lang.ina.Double;
@@ -112,6 +114,13 @@ public class ConstantPropagation {
         }
     }
 
+    Type getUnderlyingType(Type type) {
+        while (type instanceof QuantifiedType quant) {
+            type = quant.body();
+        }
+        return type;
+    }
+
     Result analyseExpression(Expression expr) {
         if (expr instanceof If ifExpr) {
             var condValue = analyseExpression(ifExpr.condition());
@@ -140,16 +149,31 @@ public class ConstantPropagation {
                     .stream().reduce(Unassigned.VALUE, Result::leastUpperBound);
             }
         } else if (expr instanceof Block block) {
-            for (var localBinding : block.bindings()) {
-                if (localBinding instanceof Join join) {
-                    putResult(localBinding.name(), analyseExpression(join.body()));
-                } else if (localBinding.body() instanceof Lambda lambda) {
-                    putResult(localBinding.name(), analyseExpression(lambda.body()));
+            Result result;
+            var previousState = envState;
+
+            while (true) {
+                result = analyseExpression(block.result());
+
+                for (var localBinding : block.bindings()) {
+                    if (localBinding instanceof Join join) {
+                        putResult(localBinding.name(), analyseExpression(join.body()));
+                    } else if (localBinding.body() instanceof Lambda lambda) {
+                        putResult(localBinding.name(), analyseExpression(lambda.body()));
+                    } else {
+                        putResult(localBinding.name(), analyseExpression(localBinding.body()));
+                    }
+                }
+
+                // Iterate until we stop finding new info
+                if (envState > previousState) {
+                    previousState = envState;
                 } else {
-                    putResult(localBinding.name(), analyseExpression(localBinding.body()));
+                    break;
                 }
             }
-            return analyseExpression(block.result());
+
+            return result;
         } else if (expr instanceof Lambda lambda) {
             // Pessimistically assume that we can't know how this lambda will be called
             lambda.params().forEach(param -> putResult(param.name(), NonConstant.VALUE));
@@ -193,7 +217,9 @@ public class ConstantPropagation {
         } else if (expr instanceof Unbox unbox) {
             return analyseExpression(unbox.value());
         } else if (expr instanceof Reference reference) {
-            return environment.getOrDefault(reference.name(), Unassigned.VALUE);
+            return Type.isFunction(getUnderlyingType(reference.type()))
+                ? NonConstant.VALUE // Make no assumptions about functions passed as values
+                : environment.getOrDefault(reference.name(), Unassigned.VALUE);
         } else if (expr instanceof Literal literal) {
             return new Constant(literal);
         }
