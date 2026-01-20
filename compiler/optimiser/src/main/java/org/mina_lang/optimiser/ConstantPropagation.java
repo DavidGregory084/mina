@@ -32,14 +32,29 @@ public class ConstantPropagation {
     private final FreeVariablesFolder freeVarsFolder;
     private long envState;
 
-    ConstantPropagation(Map<Named, Result> environment) {
+    ConstantPropagation(
+        Map<Named, Result> environment,
+        Queue<Named> worklist,
+        Map<Named, Expression> letBodies,
+        MutableSetMultimap<Named, Named> occurrences,
+        Map<Named, ImmutableList<Param>> funParams
+    ) {
         this.environment = environment;
-        this.worklist = new ArrayDeque<>();
-        this.letBodies = new HashMap<>();
-        this.occurrences = Multimaps.mutable.set.empty();
-        this.funParams = new HashMap<>();
+        this.worklist = worklist;
+        this.letBodies = letBodies;
+        this.occurrences = occurrences;
+        this.funParams = funParams;
         this.freeVarsFolder = new FreeVariablesFolder();
         this.envState = 0L;
+    }
+
+    ConstantPropagation(Map<Named, Result> environment) {
+        this(
+            environment,
+            new ArrayDeque<>(),
+            new HashMap<>(),
+            Multimaps.mutable.set.empty(),
+            new HashMap<>());
     }
 
     public ConstantPropagation() {

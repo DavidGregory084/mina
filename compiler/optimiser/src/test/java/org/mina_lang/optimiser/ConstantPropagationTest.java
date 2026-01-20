@@ -6,7 +6,9 @@ package org.mina_lang.optimiser;
 
 import net.jqwik.api.*;
 import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Multimaps;
 import org.junit.jupiter.api.Test;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.operators.BinaryOp;
@@ -18,12 +20,13 @@ import org.mina_lang.ina.Double;
 import org.mina_lang.ina.Float;
 import org.mina_lang.ina.Long;
 import org.mina_lang.ina.String;
-import org.mina_lang.optimiser.constants.Constant;
-import org.mina_lang.optimiser.constants.KnownConstructor;
-import org.mina_lang.optimiser.constants.NonConstant;
-import org.mina_lang.optimiser.constants.Unassigned;
+import org.mina_lang.optimiser.constants.*;
+
+import java.util.ArrayDeque;
+import java.util.HashMap;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 
 public class ConstantPropagationTest {
@@ -214,6 +217,64 @@ public class ConstantPropagationTest {
         assertThat(result, equalTo(NonConstant.VALUE));
         assertThat(propagation.getEnvironment().get(firstParam), equalTo(NonConstant.VALUE));
         assertThat(propagation.getEnvironment().get(secondParam), equalTo(NonConstant.VALUE));
+    }
+
+    // Application
+    @Test
+    void derivesConstantForApplicationOfConstantFunc() {
+        var funName = new LocalName("one", 0);
+        var funTy = Type.function(Type.INT);
+        var constant = new Constant(new Int(1));
+
+        var propagation = new ConstantPropagation(Maps.mutable.of(funName, constant));
+
+        // one()
+        // one known to be constant 1
+        var result = propagation.analyseExpression(
+            new Apply(
+                Type.INT,
+                new Reference(funName, funTy),
+                Lists.immutable.empty()));
+
+        assertThat(result, equalTo(constant));
+    }
+
+    @Test
+    void collectsInformationAboutFuncArguments() {
+        var funName = new LocalName("const", 0);
+        var firstParam = new LocalName("x", 1);
+        var secondParam = new LocalName("y", 2);
+        var funTy = Type.function(Type.INT, Type.INT, Type.INT);
+        var constOne = new Constant(new Int(1));
+        var constTwo = new Constant(new Int(2));
+
+        var worklist = new ArrayDeque<Named>();
+        var environment = Maps.mutable.<Named, Result>empty();
+        var funParams = Maps.mutable.<Named, ImmutableList<Param>>of(
+            funName, Lists.immutable.of(
+                new Param(firstParam, Type.INT),
+                new Param(secondParam, Type.INT)));
+
+        var propagation = new ConstantPropagation(
+            environment,
+            worklist,
+            new HashMap<>(),
+            Multimaps.mutable.set.empty(),
+            funParams
+        );
+
+        // const(1, 2)
+        // no known assignment for arguments x and y
+        var result = propagation.analyseExpression(
+            new Apply(
+                Type.INT,
+                new Reference(funName, funTy),
+                Lists.immutable.of(new Int(1), new Int(2))));
+
+        assertThat(result, equalTo(Unassigned.VALUE)); // We don't know about the function body yet
+        assertThat(propagation.getEnvironment().get(firstParam), equalTo(constOne));
+        assertThat(propagation.getEnvironment().get(secondParam), equalTo(constTwo));
+        assertThat(worklist, contains(funName));
     }
 
     // Boolean not
