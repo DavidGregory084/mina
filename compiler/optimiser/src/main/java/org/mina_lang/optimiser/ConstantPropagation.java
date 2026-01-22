@@ -172,8 +172,10 @@ public class ConstantPropagation {
 
                 for (var localBinding : block.bindings()) {
                     if (localBinding instanceof Join join) {
+                        funParams.computeIfAbsent(join.name(), (k) -> join.params());
                         putResult(localBinding.name(), analyseExpression(join.body()));
                     } else if (localBinding.body() instanceof Lambda lambda) {
+                        funParams.computeIfAbsent(localBinding.name(), (k) -> lambda.params());
                         putResult(localBinding.name(), analyseExpression(lambda.body()));
                     } else {
                         putResult(localBinding.name(), analyseExpression(localBinding.body()));
@@ -195,20 +197,19 @@ public class ConstantPropagation {
             analyseExpression(lambda.body());
             return NonConstant.VALUE;
         } else if (expr instanceof Apply apply) {
-            analyseExpression(apply.expr());
-
-            if (apply.expr() instanceof Lambda) {
-                // We are applying an unknown lambda
-                return NonConstant.VALUE;
+            if (apply.expr() instanceof Lambda lambda) {
+                // This is a lambda that is immediately applied
+                analyseFunParams(lambda.params(), apply.args());
+                return analyseExpression(lambda.body());
             } else if (apply.expr() instanceof Reference ref && funParams.containsKey(ref.name())) {
                 // This is a known function
                 putResult(ref.name(), Unassigned.VALUE);
 
                 var initialEnvState = envState;
                 analyseFunParams(funParams.get(ref.name()), apply.args());
-                // If we gained more information about this function's
+                // If we gained more information about a top-level function's
                 // parameters, add the function to the worklist
-                if (envState > initialEnvState) {
+                if (envState > initialEnvState && letBodies.containsKey(ref.name())) {
                     worklist.add(ref.name());
                 }
 
@@ -221,7 +222,7 @@ public class ConstantPropagation {
                 // We don't know what this is, but we can look at the argument
                 // expressions to find information about other variables
                 apply.args().forEach(this::analyseExpression);
-                return Unassigned.VALUE;
+                return analyseExpression(apply.expr());
             }
         } else if (expr instanceof BinOp binOp) {
             return analyseBinOp(binOp);

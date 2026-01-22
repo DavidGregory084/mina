@@ -26,8 +26,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 
 public class ConstantPropagationTest {
     // Conditional expressions
@@ -240,28 +239,74 @@ public class ConstantPropagationTest {
     }
 
     @Test
-    void collectsInformationAboutFuncArguments() {
+    void derivesConstantForRedexWithConstantArg() {
+        var funTy = Type.function(Type.INT, Type.INT);
+        var paramName = new LocalName("x", 1);
+        var constantArg = new Constant(new Int(1));
+        var constantResult = new Constant(new Int(2));
+
+        var propagation = new ConstantPropagation();
+
+        // (x -> x + 1)(1)
+        var result = propagation.analyseExpression(
+            new Apply(
+                Type.INT,
+                new Lambda(
+                    funTy,
+                    Lists.immutable.of(new Param(paramName, Type.INT)),
+                    new BinOp(Type.INT, new Reference(paramName, Type.INT), BinaryOp.ADD, new Int(1))),
+                Lists.immutable.of(new Int(1))));
+
+        assertThat(result, equalTo(constantResult));
+        assertThat(propagation.getEnvironment().get(paramName), equalTo(constantArg));
+    }
+
+    @Test
+    void derivesNonConstantForRedexWithNonConstantArg() {
+        var funTy = Type.function(Type.INT, Type.INT);
+        var paramName = new LocalName("x", 1);
+        var varName = new LocalName("num", 0);
+
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, NonConstant.VALUE));
+
+        // (x -> x + 1)(num)
+        var result = propagation.analyseExpression(
+            new Apply(
+                Type.INT,
+                new Lambda(
+                    funTy,
+                    Lists.immutable.of(new Param(paramName, Type.INT)),
+                    new BinOp(Type.INT, new Reference(paramName, Type.INT), BinaryOp.ADD, new Int(1))),
+                Lists.immutable.of(new Reference(varName, Type.INT))));
+
+        assertThat(result, equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(paramName), equalTo(NonConstant.VALUE));
+    }
+
+    @Test
+    void doesntAddUnknownFunctionToWorklist() {
         var funName = new LocalName("const", 0);
-        var firstParam = new LocalName("x", 1);
-        var secondParam = new LocalName("y", 2);
+        var xParam = new LocalName("x", 1);
+        var yParam = new LocalName("y", 2);
         var funTy = Type.function(Type.INT, Type.INT, Type.INT);
-        var constOne = new Constant(new Int(1));
-        var constTwo = new Constant(new Int(2));
 
         var worklist = new ArrayDeque<Named>();
         var environment = Maps.mutable.<Named, Result>empty();
         var funParams = Maps.mutable.<Named, ImmutableList<Param>>of(
             funName, Lists.immutable.of(
-                new Param(firstParam, Type.INT),
-                new Param(secondParam, Type.INT)));
+                new Param(xParam, Type.INT),
+                new Param(yParam, Type.INT)));
 
         var propagation = new ConstantPropagation(
             environment,
             worklist,
-            new HashMap<>(),
+            new HashMap<>(), // the body of this function is unknown
             Multimaps.mutable.set.empty(),
             funParams
         );
+
+        var constOne = new Constant(new Int(1));
+        var constTwo = new Constant(new Int(2));
 
         // const(1, 2)
         // no known assignment for arguments x and y
@@ -272,9 +317,206 @@ public class ConstantPropagationTest {
                 Lists.immutable.of(new Int(1), new Int(2))));
 
         assertThat(result, equalTo(Unassigned.VALUE)); // We don't know about the function body yet
-        assertThat(propagation.getEnvironment().get(firstParam), equalTo(constOne));
-        assertThat(propagation.getEnvironment().get(secondParam), equalTo(constTwo));
-        assertThat(worklist, contains(funName));
+        assertThat(propagation.getEnvironment().get(xParam), equalTo(constOne));
+        assertThat(propagation.getEnvironment().get(yParam), equalTo(constTwo));
+        assertThat(worklist, is(empty()));
+    }
+
+    @Test
+    void addsKnownFunctionToWorklist() {
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+        var constQn = new QualifiedName(namespaceName, "const");
+        var constName = new LetName(constQn);
+        var xParam = new LocalName("x", 1);
+        var yParam = new LocalName("y", 2);
+        var funTy = Type.function(Type.INT, Type.INT, Type.INT);
+        var constBody = new Lambda(
+            funTy,
+            Lists.immutable.of(new Param(xParam, Type.INT), new Param(yParam, Type.INT)),
+            new Reference(xParam, Type.INT));
+
+        var worklist = new ArrayDeque<Named>();
+        var environment = Maps.mutable.<Named, Result>empty();
+        var letBodies = Maps.mutable.<Named, Expression>of(constName, constBody); // We know the definition of "const"
+        var funParams = Maps.mutable.<Named, ImmutableList<Param>>of(
+            constName, Lists.immutable.of(
+                new Param(xParam, Type.INT),
+                new Param(yParam, Type.INT)));
+
+        var propagation = new ConstantPropagation(
+            environment,
+            worklist,
+            letBodies,
+            Multimaps.mutable.set.empty(),
+            funParams
+        );
+
+        var constOne = new Constant(new Int(1));
+        var constTwo = new Constant(new Int(2));
+
+        // const(1, 2)
+        // no known assignment for arguments x and y
+        var result = propagation.analyseExpression(
+            new Apply(
+                Type.INT,
+                new Reference(constName, funTy),
+                Lists.immutable.of(new Int(1), new Int(2))));
+
+        assertThat(result, equalTo(Unassigned.VALUE)); // We don't know about the function body yet
+        assertThat(propagation.getEnvironment().get(xParam), equalTo(constOne));
+        assertThat(propagation.getEnvironment().get(yParam), equalTo(constTwo));
+        assertThat(worklist, contains(constName)); // The body of the function is queued for processing
+    }
+
+    @Test
+    void derivesNonConstantResultForTopLevelLetCalledWithConstantArgs() {
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+        var constQn = new QualifiedName(namespaceName, "const");
+        var constName = new LetName(constQn);
+        var oneQn = new QualifiedName(namespaceName, "one");
+        var oneName = new LetName(oneQn);
+
+        var xParam = new LocalName("x", 1);
+        var yParam = new LocalName("y", 2);
+        var funTy = Type.function(Type.INT, Type.INT, Type.INT);
+
+        var propagation = new ConstantPropagation();
+
+        propagation.analyseDeclarations(Lists.immutable.of(
+            // let const = (x: Int, y: Int) -> x
+            new Let(constName, funTy, new Lambda(
+                Type.INT,
+                Lists.immutable.of(new Param(xParam, Type.INT), new Param(yParam, Type.INT)),
+                new Reference(xParam, Type.INT))),
+            // let one = const(1, 2)
+            new Let(oneName, Type.INT, new Apply(
+                Type.INT,
+                new Reference(constName, Type.INT),
+                Lists.immutable.of(new Int(1), new Int(2))))
+        ));
+
+        assertThat(propagation.getEnvironment().get(constName), equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(xParam), equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(yParam), equalTo(NonConstant.VALUE));
+    }
+
+    @Test
+    void derivesNonConstantResultForTopLevelLetCalledWithConflictingConstantArgs() {
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+        var constQn = new QualifiedName(namespaceName, "const");
+        var constName = new LetName(constQn);
+        var oneQn = new QualifiedName(namespaceName, "one");
+        var oneName = new LetName(oneQn);
+        var twoQn = new QualifiedName(namespaceName, "two");
+        var twoName = new LetName(twoQn);
+
+        var xParam = new LocalName("x", 1);
+        var yParam = new LocalName("y", 2);
+        var funTy = Type.function(Type.INT, Type.INT, Type.INT);
+
+        var propagation = new ConstantPropagation();
+
+        propagation.analyseDeclarations(Lists.immutable.of(
+            // let const = (x: Int, y: Int) -> x
+            new Let(constName, funTy, new Lambda(
+                Type.INT,
+                Lists.immutable.of(new Param(xParam, Type.INT), new Param(yParam, Type.INT)),
+                new Reference(xParam, Type.INT))),
+            // let one = const(1, 2)
+            new Let(oneName, Type.INT, new Apply(
+                Type.INT,
+                new Reference(constName, Type.INT),
+                Lists.immutable.of(new Int(1), new Int(2)))),
+            // let two = const(2, 3)
+            new Let(twoName, Type.INT, new Apply(
+                Type.INT,
+                new Reference(constName, Type.INT),
+                Lists.immutable.of(new Int(2), new Int(3))))
+        ));
+
+        assertThat(propagation.getEnvironment().get(constName), equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(xParam), equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(yParam), equalTo(NonConstant.VALUE));
+    }
+
+    // Blocks
+    @Test
+    void derivesConstantResultForLocalLetCalledWithConstantArgs() {
+        var constName = new LocalName("const", 0);
+        var oneName = new LocalName("one", 1);
+
+        var xParam = new LocalName("x", 1);
+        var yParam = new LocalName("y", 2);
+        var funTy = Type.function(Type.INT, Type.INT, Type.INT);
+
+        var propagation = new ConstantPropagation();
+        var constOne = new Constant(new Int(1));
+        var constTwo = new Constant(new Int(2));
+
+        var result = propagation.analyseExpression(new Block(
+            Type.INT,
+            // {
+            Lists.immutable.of(
+                // let const = (x: Int, y: Int) -> x
+                new LetAssign(constName, funTy, new Lambda(
+                    Type.INT,
+                    Lists.immutable.of(new Param(xParam, Type.INT), new Param(yParam, Type.INT)),
+                    new Reference(xParam, Type.INT))),
+                // let one = const(1, 2)
+                new LetAssign(oneName, Type.INT, new Apply(
+                    Type.INT,
+                    new Reference(constName, Type.INT),
+                    Lists.immutable.of(new Int(1), new Int(2))))),
+            // one + 1
+            new BinOp(Type.INT, new Reference(oneName, Type.INT), BinaryOp.ADD, new Int(1))
+            // }
+        ));
+
+        assertThat(result, equalTo(constTwo));
+        assertThat(propagation.getEnvironment().get(constName), equalTo(constOne));
+        assertThat(propagation.getEnvironment().get(xParam), equalTo(constOne));
+        assertThat(propagation.getEnvironment().get(yParam), equalTo(constTwo));
+    }
+
+    @Test
+    void derivesNonConstantResultForLocalLetCalledWithConflictingConstantArgs() {
+        var constName = new LocalName("const", 0);
+        var oneName = new LocalName("one", 1);
+        var twoName = new LocalName("two", 2);
+
+        var xParam = new LocalName("x", 1);
+        var yParam = new LocalName("y", 2);
+        var funTy = Type.function(Type.INT, Type.INT, Type.INT);
+
+        var propagation = new ConstantPropagation();
+
+        propagation.analyseExpression(new Block(
+            Type.INT,
+            // {
+            Lists.immutable.of(
+                // let const = (x: Int, y: Int) -> x
+                new LetAssign(constName, funTy, new Lambda(
+                    Type.INT,
+                    Lists.immutable.of(new Param(xParam, Type.INT), new Param(yParam, Type.INT)),
+                    new Reference(xParam, Type.INT))),
+                // let one = const(1, 2)
+                new LetAssign(oneName, Type.INT, new Apply(
+                    Type.INT,
+                    new Reference(constName, Type.INT),
+                    Lists.immutable.of(new Int(1), new Int(2)))),
+                // let two = const(2, 3)
+                new LetAssign(twoName, Type.INT, new Apply(
+                    Type.INT,
+                    new Reference(constName, Type.INT),
+                    Lists.immutable.of(new Int(2), new Int(3))))),
+            // two + 1
+            new BinOp(Type.INT, new Reference(twoName, Type.INT), BinaryOp.ADD, new Int(1))
+            // }
+        ));
+
+        assertThat(propagation.getEnvironment().get(constName), equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(xParam), equalTo(NonConstant.VALUE));
+        assertThat(propagation.getEnvironment().get(yParam), equalTo(NonConstant.VALUE));
     }
 
     // Boolean not
@@ -1001,6 +1243,56 @@ public class ConstantPropagationTest {
             new BinOp(Type.BOOLEAN, new Boolean(false), BinaryOp.BOOLEAN_OR, new Boolean(true)));
 
         assertThat(result, equalTo(new Constant(new Boolean(true))));
+    }
+
+    // Equals
+    @Property
+    void derivesConstantForEqualsOfLiterals(@ForAll("literals") Literal left, @ForAll("literals") Literal right) {
+        var propagation = new ConstantPropagation();
+
+        // e.g. 1 == 1, 1 == 3, ...
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, left, BinaryOp.EQUAL, right));
+
+        assertThat(result, equalTo(new Constant(new Boolean(left.equals(right)))));
+    }
+
+    @Property
+    void derivesConstantForEqualsOfConstantVariables(@ForAll("literals") Literal left, @ForAll("literals") Literal right) {
+        var leftName = new LocalName("left", 0);
+        var rightName = new LocalName("right", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(leftName, new Constant(left), rightName, new Constant(right)));
+
+        // left == right
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Reference(leftName, left.type()), BinaryOp.EQUAL, new Reference(rightName, right.type())));
+
+        assertThat(result, equalTo(new Constant(new Boolean(left.equals(right)))));
+    }
+
+    // Not equals
+    @Property
+    void derivesConstantForNotEqualsOfLiterals(@ForAll("literals") Literal left, @ForAll("literals") Literal right) {
+        var propagation = new ConstantPropagation();
+
+        // e.g. 1 != 1, 1 != 3, ...
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, left, BinaryOp.NOT_EQUAL, right));
+
+        assertThat(result, equalTo(new Constant(new Boolean(!left.equals(right)))));
+    }
+
+    @Property
+    void derivesConstantForNotEqualsOfConstantVariables(@ForAll("literals") Literal left, @ForAll("literals") Literal right) {
+        var leftName = new LocalName("left", 0);
+        var rightName = new LocalName("right", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(leftName, new Constant(left), rightName, new Constant(right)));
+
+        // left != right
+        var result = propagation.analyseExpression(
+            new BinOp(Type.BOOLEAN, new Reference(leftName, left.type()), BinaryOp.NOT_EQUAL, new Reference(rightName, right.type())));
+
+        assertThat(result, equalTo(new Constant(new Boolean(!left.equals(right)))));
     }
 
     // Patterns
