@@ -4,6 +4,7 @@
  */
 package org.mina_lang.optimiser;
 
+import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
@@ -80,6 +81,157 @@ public class ConstantPropagation {
                 return Result.leastUpperBound(existingValue, newValue);
             }
         });
+    }
+
+    public Namespace optimiseNamespace(Namespace namespace) {
+        return new Namespace(namespace.name(), optimiseDeclarations(namespace.declarations()));
+    }
+
+    ImmutableList<Declaration> optimiseDeclarations(ImmutableList<Declaration> declarations) {
+        analyseDeclarations(declarations);
+        return declarations.collect(this::optimiseDeclaration);
+    }
+
+    Declaration optimiseDeclaration(Declaration declaration) {
+        if (declaration instanceof Data data) {
+            return data;
+        } else if (declaration instanceof Let let) {
+            return new Let(let.name(), let.type(), optimiseExpression(let.body()));
+        }
+
+        return declaration;
+    }
+
+    Expression optimiseExpression(Expression expr) {
+        if (expr instanceof Apply apply) {
+            if (apply.expr() instanceof Reference ref &&
+                environment.get(ref.name()) instanceof Constant constant) {
+                return constant.value();
+            } else {
+                return new Apply(
+                    apply.type(),
+                    optimiseValue(apply.expr()),
+                    apply.args().collect(this::optimiseValue));
+            }
+        } else if (expr instanceof BinOp binOp) {
+            var leftExpr = analyseExpression(binOp.left());
+            var rightExpr = analyseExpression(binOp.right());
+            if (leftExpr instanceof Constant left &&
+                rightExpr instanceof Constant right &&
+                evaluateBinOp(binOp, left, right) instanceof Constant constant) {
+                return constant.value();
+            } else {
+                return new BinOp(
+                    binOp.type(),
+                    optimiseValue(binOp.left()),
+                    binOp.operator(),
+                    optimiseValue(binOp.right()));
+            }
+        } else if (expr instanceof Block block) {
+            var bindings = block.bindings().flatCollect(this::optimiseBinding);
+            var result = optimiseExpression(block.result());
+            return bindings.isEmpty() ? result : new Block(block.type(), bindings, result);
+        } else if (expr instanceof If ifExpr) {
+            var cond = analyseExpression(ifExpr.condition());
+            if (cond instanceof Constant constant &&
+                constant.value() instanceof Boolean bool) {
+                return bool.value()
+                    ? optimiseExpression(ifExpr.consequent())
+                    : optimiseExpression(ifExpr.alternative());
+            } else {
+                return new If(
+                    ifExpr.type(),
+                    optimiseValue(ifExpr.condition()),
+                    optimiseExpression(ifExpr.consequent()),
+                    optimiseExpression(ifExpr.alternative()));
+            }
+        } else if (expr instanceof Match match) {
+            var scrutinee = analyseExpression(match.scrutinee());
+            if (scrutinee instanceof Constant constant) {
+                var matchingCase = match.cases().detect(cse -> {
+                    var result = analysePattern(cse.pattern());
+                    var isMatchingConstant = constant.equals(result);
+                    var isUnknown = result == Unassigned.VALUE;
+                    return isMatchingConstant || isUnknown;
+                });
+                return matchingCase != null
+                    ? matchingCase.consequent()
+                    : new Match(
+                        match.type(),
+                        optimiseValue(match.scrutinee()),
+                        match.cases().collect(this::optimiseCase));
+            } else if (scrutinee instanceof KnownConstructor known) {
+                var matchingCases = match.cases().select(cse -> {
+                    var result = analysePattern(cse.pattern());
+                    var isMatchingConstructor = known.equals(result);
+                    var isUnknown = result == Unassigned.VALUE;
+                    return isMatchingConstructor || isUnknown;
+                });
+                return matchingCases.size() == 1
+                    ? matchingCases.getFirst().consequent()
+                    : new Match(
+                        match.type(),
+                        optimiseValue(match.scrutinee()),
+                        match.cases().collect(this::optimiseCase));
+            } else {
+                return new Match(
+                    match.type(),
+                    optimiseValue(match.scrutinee()),
+                    match.cases().collect(this::optimiseCase));
+            }
+        } else if (expr instanceof UnOp unOp) {
+            var result = analyseExpression(unOp.operand());
+            if (result instanceof Constant constant) {
+                return constant.value();
+            } else {
+                return new UnOp(unOp.type(), unOp.operator(), optimiseValue(unOp.operand()));
+            }
+        } else if (expr instanceof Value value) {
+            return optimiseValue(value);
+        }
+
+        return expr;
+    }
+
+    ImmutableList<LocalBinding> optimiseBinding(LocalBinding binding) {
+        if (environment.get(binding.name()) instanceof Constant constant) {
+            // This binding is constant, so it can be removed and inlined
+            return Lists.immutable.empty();
+        } else if (binding instanceof Join join) {
+            return Lists.immutable.of(
+                new Join(join.name(), join.type(), join.params(), optimiseExpression(join.body())));
+        } else if (binding instanceof LetAssign let) {
+            return Lists.immutable.of(
+                new LetAssign(let.name(), let.type(), optimiseExpression(let.body())));
+        }
+
+        return Lists.immutable.of(binding);
+    }
+
+    Case optimiseCase(Case cse) {
+        return new Case(cse.pattern(), optimiseExpression(cse.consequent()));
+    }
+
+    Value optimiseValue(Value value) {
+        if (value instanceof Box box) {
+            return new Box(optimiseValue(box.value()));
+        } else if (value instanceof Unbox unbox) {
+            return new Unbox(optimiseValue(unbox.value()));
+        } else if (value instanceof Lambda lambda) {
+            return new Lambda(lambda.type(), lambda.params(), optimiseExpression(lambda.body()));
+        } else if (value instanceof Literal literal) {
+            return literal;
+        } else if (value instanceof Reference reference) {
+            var result = environment.get(reference.name());
+            if (result instanceof Constant constant) {
+                return constant.value();
+            } else if (result instanceof KnownConstructor known) {
+            } else {
+                return reference;
+            }
+        }
+
+        return value;
     }
 
     public void analyseDeclarations(ImmutableList<Declaration> declarations) {
@@ -319,7 +471,7 @@ public class ConstantPropagation {
                 left.value() instanceof Boolean bool && bool.value() && binOp.operator().equals(BinaryOp.BOOLEAN_OR)) {
                 return leftOperand;
             } else if (rightOperand instanceof Constant right) {
-                return evaluateBinOp(binOp.operator(), left, right);
+                return evaluateBinOp(binOp, left, right);
             } else {
                 return rightOperand;
             }
@@ -330,8 +482,8 @@ public class ConstantPropagation {
         }
     }
 
-    Result evaluateBinOp(BinaryOp operator, Constant left, Constant right) {
-        return switch (operator) {
+    Result evaluateBinOp(BinOp binOp, Constant left, Constant right) {
+        return switch (binOp.operator()) {
             case MULTIPLY -> {
                 if (left.value() instanceof Int l && right.value() instanceof Int r) {
                     yield new Constant(new Int(l.value() * r.value()));
@@ -343,7 +495,7 @@ public class ConstantPropagation {
                     yield new Constant(new Double(l.value() * r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case DIVIDE -> {
@@ -358,7 +510,7 @@ public class ConstantPropagation {
                         yield new Constant(new Double(l.value() / r.value()));
                     } else {
                         // Unexpected operand types
-                        yield NonConstant.VALUE;
+                        throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                     }
                 } catch (ArithmeticException e) {
                     yield Unassigned.VALUE;
@@ -376,7 +528,7 @@ public class ConstantPropagation {
                         yield new Constant(new Double(l.value() % r.value()));
                     } else {
                         // Unexpected operand types
-                        yield NonConstant.VALUE;
+                        throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                     }
                 } catch (ArithmeticException e) {
                     yield Unassigned.VALUE;
@@ -393,7 +545,7 @@ public class ConstantPropagation {
                     yield new Constant(new Double(l.value() + r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case SUBTRACT -> {
@@ -407,7 +559,7 @@ public class ConstantPropagation {
                     yield new Constant(new Double(l.value() - r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case SHIFT_LEFT -> {
@@ -417,7 +569,7 @@ public class ConstantPropagation {
                     yield new Constant(new Long(l.value() << r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case SHIFT_RIGHT -> {
@@ -427,7 +579,7 @@ public class ConstantPropagation {
                     yield new Constant(new Long(l.value() >> r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case UNSIGNED_SHIFT_RIGHT -> {
@@ -437,7 +589,7 @@ public class ConstantPropagation {
                     yield new Constant(new Long(l.value() >>> r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case BITWISE_AND -> {
@@ -449,7 +601,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() & r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case BITWISE_OR -> {
@@ -461,7 +613,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() | r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case BITWISE_XOR -> {
@@ -473,7 +625,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() ^ r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case LESS_THAN -> {
@@ -487,7 +639,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() < r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case LESS_THAN_EQUAL -> {
@@ -501,7 +653,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() <= r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case GREATER_THAN -> {
@@ -515,7 +667,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() > r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case GREATER_THAN_EQUAL -> {
@@ -529,7 +681,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() >= r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case BOOLEAN_AND -> {
@@ -537,7 +689,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() && r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case BOOLEAN_OR -> {
@@ -545,7 +697,7 @@ public class ConstantPropagation {
                     yield new Constant(new Boolean(l.value() || r.value()));
                 } else {
                     // Unexpected operand types
-                    yield NonConstant.VALUE;
+                    throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                 }
             }
             case EQUAL -> {

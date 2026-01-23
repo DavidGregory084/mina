@@ -212,15 +212,15 @@ public class Main {
 
                         var renamingPhase = new RenamingPhase(namespaceGraph, classpathScopes, parsedNodes, scopedDiagnostics);
 
-                        var typecheckingPhase = Phase.andThen(renamingPhase, renamedNodes -> {
-                            return new TypecheckingPhase(namespaceGraph, classpathScopes, renamedNodes, scopedDiagnostics);
-                        });
+                        return renamingPhase.runPhase().flatMap(renamedNodes -> {
+                            var typecheckingPhase = new TypecheckingPhase(namespaceGraph, classpathScopes, renamedNodes, scopedDiagnostics);
 
-                        // For now, we just run the optimiser alongside codegen, since codegen uses unoptimised trees
-                        return Phase.runMono(typecheckingPhase).flatMap(typecheckedNodes -> {
-                            var optimiserPhase = new OptimiserPhase(namespaceGraph, typecheckedNodes, scopedDiagnostics);
-                            var codegenPhase = new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
-                            return optimiserPhase.runPhase().and(codegenPhase.runPhase());
+                            // For now, we just run the optimiser alongside codegen, since codegen uses unoptimised trees
+                            return typecheckingPhase.runPhase().flatMap(typecheckedNodes -> {
+                                var optimiserPhase = new OptimiserPhase(namespaceGraph, typecheckedNodes, scopedDiagnostics);
+                                var codegenPhase = new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
+                                return optimiserPhase.runPhase().and(codegenPhase.runPhase());
+                            });
                         });
                     });
                 }, classLoader -> {

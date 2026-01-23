@@ -40,9 +40,10 @@ public class OptimiserPhase extends GraphPhase<NamespaceNode<Attributes>, Namesp
         var nameSupply = new SyntheticNameSupply();
         var lower = new Lower(nameSupply);
         var lowered = lower.lower(typecheckedNode);
-        logger.info(lowered.accept(printer).render());
+        logger.info("Before folding:\n{}", lowered.accept(printer).render());
         var constants = new ConstantPropagation();
-        constants.analyseDeclarations(lowered.declarations());
+        var constantFolded = constants.optimiseNamespace(lowered);
+        logger.info("After folding:\n{}", constantFolded.accept(printer).render());
         constants.getEnvironment().entrySet().forEach(constant -> {
             logger.info(
                 "{} -> {}",
@@ -52,6 +53,6 @@ public class OptimiserPhase extends GraphPhase<NamespaceNode<Attributes>, Namesp
                 constant.getValue()
             );
         });
-        return Mono.just(lowered);
+        return Mono.just(constantFolded);
     }
 }
