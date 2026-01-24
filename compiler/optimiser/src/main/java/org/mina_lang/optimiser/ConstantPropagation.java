@@ -107,6 +107,12 @@ public class ConstantPropagation {
             if (apply.expr() instanceof Reference ref &&
                 environment.get(ref.name()) instanceof Constant constant) {
                 return constant.value();
+            } else if (apply.expr() instanceof Reference ref &&
+                environment.get(ref.name()) instanceof ConstantConstructor constant) {
+                return new Apply(
+                    apply.type(),
+                    new Reference(constant.constructor(), apply.type()),
+                    Lists.immutable.empty());
             } else {
                 return new Apply(
                     apply.type(),
@@ -151,7 +157,7 @@ public class ConstantPropagation {
                 var matchingCase = match.cases().detect(cse -> {
                     var result = analysePattern(cse.pattern());
                     var isMatchingConstant = constant.equals(result);
-                    var isUnknown = result == Unassigned.VALUE;
+                    var isUnknown = result == Unknown.VALUE;
                     return isMatchingConstant || isUnknown;
                 });
                 return matchingCase != null
@@ -160,13 +166,8 @@ public class ConstantPropagation {
                         match.type(),
                         optimiseValue(match.scrutinee()),
                         match.cases().collect(this::optimiseCase));
-            } else if (scrutinee instanceof KnownConstructor known) {
-                var matchingCases = match.cases().select(cse -> {
-                    var result = analysePattern(cse.pattern());
-                    var isMatchingConstructor = known.equals(result);
-                    var isUnknown = result == Unassigned.VALUE;
-                    return isMatchingConstructor || isUnknown;
-                });
+            } else if (scrutinee instanceof ConstructorResult known) {
+                var matchingCases = matchingCases(match.cases(), known);
                 return matchingCases.size() == 1
                     ? matchingCases.getFirst().consequent()
                     : new Match(
@@ -194,8 +195,11 @@ public class ConstantPropagation {
     }
 
     ImmutableList<LocalBinding> optimiseBinding(LocalBinding binding) {
-        if (environment.get(binding.name()) instanceof Constant constant) {
+        if (environment.get(binding.name()) instanceof Constant) {
             // This binding is constant, so it can be removed and inlined
+            return Lists.immutable.empty();
+        } else if (environment.get(binding.name()) instanceof ConstantConstructor && funParams.containsKey(binding.name())) {
+            // This binding is a constant function, so it can be removed and inlined
             return Lists.immutable.empty();
         } else if (binding instanceof Join join) {
             return Lists.immutable.of(
@@ -225,7 +229,6 @@ public class ConstantPropagation {
             var result = environment.get(reference.name());
             if (result instanceof Constant constant) {
                 return constant.value();
-            } else if (result instanceof KnownConstructor known) {
             } else {
                 return reference;
             }
@@ -241,7 +244,11 @@ public class ConstantPropagation {
         dataDecls.forEach(dataDecl -> {
             var data = (Data) dataDecl;
             data.constructors().forEach(constr -> {
-                putResult(constr.name(), new KnownConstructor(constr.name()));
+                if (constr.fields().isEmpty()) {
+                    putResult(constr.name(), new ConstantConstructor(constr.name()));
+                } else {
+                    putResult(constr.name(), new KnownConstructor(constr.name()));
+                }
             });
         });
 
@@ -270,7 +277,7 @@ public class ConstantPropagation {
 
         Named funName;
         while ((funName = worklist.poll()) != null) {
-            var initialResult = environment.getOrDefault(funName, Unassigned.VALUE);
+            var initialResult = environment.getOrDefault(funName, Unknown.VALUE);
             var newResult = putResult(funName, analyseExpression(letBodies.get(funName)));
             if (newResult.compare(initialResult) > 0.0) {
                 // If we gained more information about this function's
@@ -291,7 +298,7 @@ public class ConstantPropagation {
     Result analyseExpression(Expression expr) {
         if (expr instanceof If ifExpr) {
             var condValue = analyseExpression(ifExpr.condition());
-            if (condValue == Unassigned.VALUE) {
+            if (condValue == Unknown.VALUE) {
                 return condValue;
             } else if (condValue instanceof Constant constant &&
                 constant.value() instanceof Boolean bool) {
@@ -305,15 +312,20 @@ public class ConstantPropagation {
             }
         } else if (expr instanceof Match match) {
             var scrutineeValue = analyseExpression(match.scrutinee());
-            if (scrutineeValue == Unassigned.VALUE) {
+            if (scrutineeValue == Unknown.VALUE) {
                 return scrutineeValue;
+            } else if (scrutineeValue instanceof Constant constant) {
+                var matchingCase = matchingCase(match.cases(), constant);
+                return matchingCase != null
+                    ? analyseExpression(matchingCase.consequent())
+                    : analyseCases(match.cases());
+            } else if (scrutineeValue instanceof ConstructorResult known) {
+                var matchingCases = matchingCases(match.cases(), known);
+                return matchingCases.size() == 1
+                    ? analyseExpression(matchingCases.getFirst().consequent())
+                    : analyseCases(matchingCases);
             } else {
-                return match.cases()
-                    .collect(cse -> {
-                        analysePattern(cse.pattern());
-                        return analyseExpression(cse.consequent());
-                    })
-                    .stream().reduce(Unassigned.VALUE, Result::leastUpperBound);
+                return analyseCases(match.cases());
             }
         } else if (expr instanceof Block block) {
             Result result;
@@ -355,7 +367,7 @@ public class ConstantPropagation {
                 return analyseExpression(lambda.body());
             } else if (apply.expr() instanceof Reference ref && funParams.containsKey(ref.name())) {
                 // This is a known function
-                putResult(ref.name(), Unassigned.VALUE);
+                putResult(ref.name(), Unknown.VALUE);
 
                 var initialEnvState = envState;
                 analyseFunParams(funParams.get(ref.name()), apply.args());
@@ -369,7 +381,7 @@ public class ConstantPropagation {
                 return environment.get(ref.name());
             } else if (apply.expr() instanceof Reference ref) {
                 // A constructor or a function from another namespace
-                return environment.getOrDefault(ref.name(), Unassigned.VALUE);
+                return environment.getOrDefault(ref.name(), Unknown.VALUE);
             } else {
                 // We don't know what this is, but we can look at the argument
                 // expressions to find information about other variables
@@ -387,7 +399,7 @@ public class ConstantPropagation {
         } else if (expr instanceof Reference reference) {
             return Type.isFunction(getUnderlyingType(reference.type()))
                 ? NonConstant.VALUE // Make no assumptions about functions passed as values
-                : environment.getOrDefault(reference.name(), Unassigned.VALUE);
+                : environment.getOrDefault(reference.name(), Unknown.VALUE);
         } else if (expr instanceof Literal literal) {
             return new Constant(literal);
         }
@@ -412,10 +424,36 @@ public class ConstantPropagation {
         } else if (pattern instanceof LiteralPattern literal) {;
             return new Constant(literal.literal());
         } else if (pattern instanceof IdPattern id) {
-            return putResult(id.name(), Unassigned.VALUE);
+            return putResult(id.name(), Unknown.VALUE);
         }
 
         return NonConstant.VALUE;
+    }
+
+    Case matchingCase(ImmutableList<Case> cases, Constant constant) {
+        return cases.detect(cse -> {
+            var result = analysePattern(cse.pattern());
+            var isMatchingConstant = constant.equals(result);
+            var isUnknown = result == Unknown.VALUE;
+            return isMatchingConstant || isUnknown;
+        });
+    }
+
+    ImmutableList<Case> matchingCases(ImmutableList<Case> cases, ConstructorResult known) {
+        return cases.select(cse -> {
+            var result = analysePattern(cse.pattern());
+            var isMatchingConstructor = result instanceof ConstructorResult constr
+                && known.constructor().equals(constr.constructor());
+            var isUnknown = result == Unknown.VALUE;
+            return isMatchingConstructor || isUnknown;
+        });
+    }
+
+    Result analyseCases(ImmutableList<Case> cases) {
+        return cases.collect(cse -> {
+            analysePattern(cse.pattern());
+            return analyseExpression(cse.consequent());
+        }).stream().reduce(Unknown.VALUE, Result::leastUpperBound);
     }
 
     Result analyseUnOp(UnOp unOp) {
@@ -513,7 +551,7 @@ public class ConstantPropagation {
                         throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                     }
                 } catch (ArithmeticException e) {
-                    yield Unassigned.VALUE;
+                    yield Unknown.VALUE;
                 }
             }
             case MODULUS -> {
@@ -531,7 +569,7 @@ public class ConstantPropagation {
                         throw new IllegalStateException("Mismatched operand types in binary operation: " + binOp);
                     }
                 } catch (ArithmeticException e) {
-                    yield Unassigned.VALUE;
+                    yield Unknown.VALUE;
                 }
             }
             case ADD -> {

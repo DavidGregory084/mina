@@ -18,8 +18,8 @@ public class ResultTest {
     NamespaceName namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
 
     @Property
-    void unassignedIsLeast(@ForAll("results") Result result) {
-        assertThat(Result.leastUpperBound(result, Unassigned.VALUE), equalTo(result));
+    void unknownIsLeast(@ForAll("results") Result result) {
+        assertThat(Result.leastUpperBound(result, Unknown.VALUE), equalTo(result));
     }
 
     @Property
@@ -43,7 +43,7 @@ public class ResultTest {
     @Provide
     Arbitrary<Result> results(@ForAll("constants") Result constant) {
         return Arbitraries.oneOf(
-            Arbitraries.just(Unassigned.VALUE),
+            Arbitraries.just(Unknown.VALUE),
             Arbitraries.just(NonConstant.VALUE),
             Arbitraries.just(constant)
         );
@@ -63,6 +63,12 @@ public class ResultTest {
                     var dataName = new DataName(new QualifiedName(namespaceName, tuple.get1()));
                     var constrName = new ConstructorName(dataName, new QualifiedName(namespaceName, tuple.get2()));
                     return new KnownConstructor(constrName);
+                }),
+            Arbitraries.strings().ofMinLength(3).ofMaxLength(5).tuple2()
+                .map(tuple -> {
+                    var dataName = new DataName(new QualifiedName(namespaceName, tuple.get1()));
+                    var constrName = new ConstructorName(dataName, new QualifiedName(namespaceName, tuple.get2()));
+                    return new ConstantConstructor(constrName);
                 })
         );
     }

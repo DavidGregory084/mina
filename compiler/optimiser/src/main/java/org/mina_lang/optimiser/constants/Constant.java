@@ -11,10 +11,15 @@ public record Constant(Literal value) implements Result {
     public float compare(Result other) {
         return
             // constant is greater than ⊥
-            other == Unassigned.VALUE ? 1.0F :
+            other == Unknown.VALUE ? 1.0F :
             // constant is less than ⊤
             other == NonConstant.VALUE ? -1.0F :
-            // if the same constant equal otherwise incomparable
+            // if exactly the same constant equal otherwise incomparable
             other.equals(this) ? 0.0F : Float.NaN;
+    }
+
+    @Override
+    public String toString() {
+        return "Constant[" + value + "]";
     }
 }

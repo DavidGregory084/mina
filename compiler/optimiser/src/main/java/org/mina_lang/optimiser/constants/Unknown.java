@@ -4,16 +4,16 @@
  */
 package org.mina_lang.optimiser.constants;
 
-public enum Unassigned implements Result {
+public enum Unknown implements Result {
     VALUE;
 
     @Override
     public float compare(Result other) {
-        return other == Unassigned.VALUE ? 0.0F : -1.0F;
+        return other == Unknown.VALUE ? 0.0F : -1.0F;
     }
 
     @Override
     public String toString() {
-        return "Unassigned";
+        return "Unknown";
     }
 }

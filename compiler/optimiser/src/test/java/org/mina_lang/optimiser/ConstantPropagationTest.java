@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.*;
 public class ConstantPropagationTest {
     // Conditional expressions
     @Test
-    void derivesUnassignedForIfWhenCondUnassigned() {
+    void derivesUnknownForIfWhenCondUnknown() {
         var propagation = new ConstantPropagation();
         var varName = new LocalName("bool", 0);
 
@@ -44,7 +44,7 @@ public class ConstantPropagationTest {
                 new String("true"),
                 new String("false")));
 
-        assertThat(result, equalTo(Unassigned.VALUE));
+        assertThat(result, equalTo(Unknown.VALUE));
     }
 
     @Test
@@ -146,7 +146,7 @@ public class ConstantPropagationTest {
     }
 
     @Test
-    void derivesUnassignedForMatchWhenScrutineeUnassigned() {
+    void derivesUnknownForMatchWhenScrutineeUnknown() {
         var varName = new LocalName("bool", 0);
         var propagation = new ConstantPropagation();
 
@@ -160,7 +160,7 @@ public class ConstantPropagationTest {
                     new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),
                     new Case(new LiteralPattern(new Boolean(false)), new Boolean(true)))));
 
-        assertThat(result, equalTo(Unassigned.VALUE));
+        assertThat(result, equalTo(Unknown.VALUE));
     }
 
     @Test
@@ -316,7 +316,7 @@ public class ConstantPropagationTest {
                 new Reference(funName, funTy),
                 Lists.immutable.of(new Int(1), new Int(2))));
 
-        assertThat(result, equalTo(Unassigned.VALUE)); // We don't know about the function body yet
+        assertThat(result, equalTo(Unknown.VALUE)); // We don't know about the function body yet
         assertThat(propagation.getEnvironment().get(xParam), equalTo(constOne));
         assertThat(propagation.getEnvironment().get(yParam), equalTo(constTwo));
         assertThat(worklist, is(empty()));
@@ -362,7 +362,7 @@ public class ConstantPropagationTest {
                 new Reference(constName, funTy),
                 Lists.immutable.of(new Int(1), new Int(2))));
 
-        assertThat(result, equalTo(Unassigned.VALUE)); // We don't know about the function body yet
+        assertThat(result, equalTo(Unknown.VALUE)); // We don't know about the function body yet
         assertThat(propagation.getEnvironment().get(xParam), equalTo(constOne));
         assertThat(propagation.getEnvironment().get(yParam), equalTo(constTwo));
         assertThat(worklist, contains(constName)); // The body of the function is queued for processing
@@ -780,14 +780,14 @@ public class ConstantPropagationTest {
     }
 
     @Test
-    void derivesUnassignedForIntDivisionByZero() {
+    void derivesUnknownForIntDivisionByZero() {
         var propagation = new ConstantPropagation();
 
         // 8 / 0
         var result = propagation.analyseExpression(
             new BinOp(Type.INT, new Int(8), BinaryOp.DIVIDE, new Int(0)));
 
-        assertThat(result, equalTo(Unassigned.VALUE));
+        assertThat(result, equalTo(Unknown.VALUE));
     }
 
     // Modulus
@@ -836,14 +836,14 @@ public class ConstantPropagationTest {
     }
 
     @Test
-    void derivesUnassignedForIntegerModulusByZero() {
+    void derivesUnknownForIntegerModulusByZero() {
         var propagation = new ConstantPropagation();
 
         // 9 % 0
         var result = propagation.analyseExpression(
             new BinOp(Type.INT, new Int(9), BinaryOp.MODULUS, new Int(0)));
 
-        assertThat(result, equalTo(Unassigned.VALUE));
+        assertThat(result, equalTo(Unknown.VALUE));
     }
 
     // Left shift
@@ -1297,14 +1297,14 @@ public class ConstantPropagationTest {
 
     // Patterns
     @Test
-    void derivesUnassignedForIdentifierPattern() {
+    void derivesUnknownForIdentifierPattern() {
         var propagation = new ConstantPropagation();
         var idName = new LocalName("bool", 0);
 
         // bool
         propagation.analysePattern(new IdPattern(idName, Type.BOOLEAN));
 
-        assertThat(propagation.getEnvironment().get(idName), equalTo(Unassigned.VALUE));
+        assertThat(propagation.getEnvironment().get(idName), equalTo(Unknown.VALUE));
     }
 
     @Test
@@ -1363,11 +1363,11 @@ public class ConstantPropagationTest {
     }
 
     @Property
-    void derivesUnassignedForReferenceWithUnknownValue(@ForAll("literals") Literal literal) {
+    void derivesUnknownForReferenceWithUnknownValue(@ForAll("literals") Literal literal) {
         var varName = new LocalName("varName", 0);
         var propagation = new ConstantPropagation();
         var result = propagation.analyseExpression(new Reference(varName, literal.type()));
-        assertThat(result, equalTo(Unassigned.VALUE));
+        assertThat(result, equalTo(Unknown.VALUE));
     }
 
     @Test
