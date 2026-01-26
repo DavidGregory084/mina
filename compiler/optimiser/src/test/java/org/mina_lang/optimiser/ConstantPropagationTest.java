@@ -29,6 +29,226 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 public class ConstantPropagationTest {
+    // Specialisation -------------------------------
+
+    // Conditional expressions
+    @Test
+    void usesConsequentWhenIfConditionLiteralTrue() {
+        var propagation = new ConstantPropagation();
+
+        // if true then "true" else "false"
+        var result = propagation.optimiseExpression(
+            new If(
+                Type.STRING,
+                new Boolean(true),
+                new String("true"),
+                new String("false")));
+
+        // "true"
+        assertThat(result, equalTo(new String("true")));
+    }
+
+    @Test
+    void usesConsequentWhenIfConditionConstantTrue() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new Constant(new Boolean(true))));
+
+        // if bool then "true" else "false"
+        // bool known to be constant true
+        var result = propagation.optimiseExpression(
+            new If(
+                Type.STRING,
+                new Reference(varName, Type.BOOLEAN),
+                new String("true"),
+                new String("false")));
+
+        // "true"
+        assertThat(result, equalTo(new String("true")));
+    }
+
+    @Test
+    void usesAlternativeWhenIfConditionLiteralFalse() {
+        var propagation = new ConstantPropagation();
+
+        // if false then "true" else "false"
+        var result = propagation.optimiseExpression(
+            new If(
+                Type.STRING,
+                new Boolean(false),
+                new String("true"),
+                new String("false")));
+
+        // "false"
+        assertThat(result, equalTo(new String("false")));
+    }
+
+    @Test
+    void usesAlternativeWhenIfConditionConstantFalse() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new Constant(new Boolean(false))));
+
+        // if bool then "true" else "false"
+        // bool known to be constant false
+        var result = propagation.optimiseExpression(
+            new If(
+                Type.STRING,
+                new Reference(varName, Type.BOOLEAN),
+                new String("true"),
+                new String("false")));
+
+        // "false"
+        assertThat(result, equalTo(new String("false")));
+    }
+
+    @Test
+    void retainsIfWhenConditionUnknown() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation();
+
+        // if bool then "true" else "false"
+        // no known assignment for bool
+        var ifNode = new If(
+            Type.STRING,
+            new Reference(varName, Type.BOOLEAN),
+            new String("true"),
+            new String("false"));
+
+        var result = propagation.optimiseExpression(ifNode);
+
+        // if bool then "true" else "false"
+        assertThat(result, equalTo(ifNode));
+    }
+
+    @Test
+    void retainsIfWhenConditionNonConstant() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, NonConstant.VALUE));
+
+        // if bool then "true" else "false"
+        // bool known to be non-constant
+        var ifNode = new If(
+            Type.STRING,
+            new Reference(varName, Type.BOOLEAN),
+            new String("true"),
+            new String("false"));
+
+        var result = propagation.optimiseExpression(ifNode);
+
+        // if bool then "true" else "false"
+        assertThat(result, equalTo(ifNode));
+    }
+
+    @Test
+    void usesMatchingCaseWhenScrutineeConstant() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new Constant(new Boolean(true))));
+
+        // match bool with { case true -> false; case false -> true }
+        // bool known to be constant true
+        var result = propagation.optimiseExpression(
+            new Match(
+                Type.BOOLEAN,
+                new Reference(varName, Type.BOOLEAN),
+                Lists.immutable.of(
+                    new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),
+                    new Case(new LiteralPattern(new Boolean(false)), new Boolean(true)))));
+
+        assertThat(result, equalTo(new Boolean(false)));
+    }
+
+    @Test
+    void usesMatchingCaseWhenScrutineeKnownConstructor() {
+        var varName = new LocalName("list", 0);
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+        var listName = new DataName(new QualifiedName(namespaceName, "List"));
+        var nilName = new ConstructorName(listName, new QualifiedName(namespaceName, "Nil"));
+        var consName = new ConstructorName(listName, new QualifiedName(namespaceName, "Cons"));
+        var listIntType = new TypeApply(
+            new TypeConstructor(listName.name(), new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE)),
+            Lists.immutable.of(Type.INT), TypeKind.INSTANCE);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new ConstantConstructor(nilName)));
+
+        // match list with { case Nil {} -> true; case Cons {} -> false }
+        // list known to be Nil
+        var matchNode = new Match(
+            Type.BOOLEAN,
+            new Reference(varName, Type.BOOLEAN),
+            Lists.immutable.of(
+                new Case(new ConstructorPattern(nilName, listIntType, Lists.immutable.empty()), new Boolean(true)),
+                new Case(new ConstructorPattern(consName, listIntType, Lists.immutable.empty()), new Boolean(false))));
+
+        var result = propagation.optimiseExpression(matchNode);
+
+        assertThat(result, equalTo(matchNode.cases().getFirst().consequent()));
+    }
+
+    @Test
+    void usesMatchingCasesWhenScrutineeKnownConstructorAndMultipleCasesMatch() {
+        var varName = new LocalName("list", 0);
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+
+        var listName = new DataName(new QualifiedName(namespaceName, "List"));
+        var nilName = new ConstructorName(listName, new QualifiedName(namespaceName, "Nil"));
+        var consName = new ConstructorName(listName, new QualifiedName(namespaceName, "Cons"));
+        var tailName = new FieldName(consName, "tail");
+
+        // List[Int]
+        var listIntType = new TypeApply(
+            new TypeConstructor(listName.name(), new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE)),
+            Lists.immutable.of(Type.INT), TypeKind.INSTANCE);
+
+        // Nil {}
+        var nilPattern = new ConstructorPattern(nilName, listIntType, Lists.immutable.empty());
+        // Cons {}
+        var consPattern = new ConstructorPattern(consName, listIntType, Lists.immutable.empty());
+        // Cons { tail: Nil {} }
+        var consTailNilPattern = new ConstructorPattern(consName, listIntType, Lists.immutable.of(new FieldPattern(tailName, listIntType, nilPattern)));
+
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new KnownConstructor(consName)));
+
+        // match list with { case Nil {} -> true; case Cons { tail: Nil {} } -> true; case Cons {} -> false }
+        // list known to be Cons
+        var matchNode = new Match(
+            Type.BOOLEAN,
+            new Reference(varName, listIntType),
+            Lists.immutable.of(
+                new Case(nilPattern, new Boolean(true)),
+                new Case(consTailNilPattern, new Boolean(true)),
+                new Case(consPattern, new Boolean(false))));
+
+        var result = propagation.optimiseExpression(matchNode);
+
+        // match list with { case Cons { tail: Nil {} } -> true; case Cons {} -> false }
+        assertThat(result, equalTo(
+            new Match(
+                Type.BOOLEAN,
+                new Reference(varName, listIntType),
+                Lists.immutable.of(
+                    new Case(consTailNilPattern, new Boolean(true)),
+                    new Case(consPattern, new Boolean(false))))));
+    }
+
+    @Test
+    void retainsMatchWhenScrutineeUnknown() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation();
+
+        // match bool with { case true -> false; case false -> true }
+        // no known assignment for bool
+        var matchNode = new Match(
+            Type.BOOLEAN,
+            new Reference(varName, Type.BOOLEAN),
+            Lists.immutable.of(
+                new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),
+                new Case(new LiteralPattern(new Boolean(false)), new Boolean(true))));
+
+        var result = propagation.optimiseExpression(matchNode);
+
+        assertThat(result, equalTo(matchNode));
+    }
+
+    // Analysis -------------------------------------
+
     // Conditional expressions
     @Test
     void derivesUnknownForIfWhenCondUnknown() {
@@ -120,7 +340,7 @@ public class ConstantPropagationTest {
         // bool known to be non-constant
         var result = propagation.analyseExpression(
             new If(
-                Type.INT,
+                Type.STRING,
                 new Reference(varName, Type.BOOLEAN),
                 new String("true"),
                 new String("false")));
@@ -137,7 +357,7 @@ public class ConstantPropagationTest {
         // bool known to be non-constant
         var result = propagation.analyseExpression(
             new If(
-                Type.INT,
+                Type.STRING,
                 new Reference(varName, Type.BOOLEAN),
                 new String("true"),
                 new String("true")));
@@ -154,13 +374,56 @@ public class ConstantPropagationTest {
         // no known assignment for bool
         var result = propagation.analyseExpression(
             new Match(
-                Type.INT,
+                Type.BOOLEAN,
                 new Reference(varName, Type.BOOLEAN),
                 Lists.immutable.of(
                     new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),
                     new Case(new LiteralPattern(new Boolean(false)), new Boolean(true)))));
 
         assertThat(result, equalTo(Unknown.VALUE));
+    }
+
+    @Test
+    void derivesConstantForMatchingCaseWhenScrutineeConstant() {
+        var varName = new LocalName("bool", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new Constant(new Boolean(true))));
+
+        // match bool with { case true -> false; case false -> true }
+        // no known assignment for bool
+        var result = propagation.analyseExpression(
+            new Match(
+                Type.BOOLEAN,
+                new Reference(varName, Type.BOOLEAN),
+                Lists.immutable.of(
+                    new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),
+                    new Case(new LiteralPattern(new Boolean(false)), new Boolean(true)))));
+
+        assertThat(result, equalTo(new Constant(new Boolean(false))));
+    }
+
+    @Test
+    void derivesConstantForMatchingCaseWhenScrutineeKnownConstructor() {
+        var varName = new LocalName("list", 0);
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+        var listName = new DataName(new QualifiedName(namespaceName, "List"));
+        var nilName = new ConstructorName(listName, new QualifiedName(namespaceName, "Nil"));
+        var consName = new ConstructorName(listName, new QualifiedName(namespaceName, "Cons"));
+        var listIntType = new TypeApply(
+            new TypeConstructor(listName.name(), new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE)),
+            Lists.immutable.of(Type.INT), TypeKind.INSTANCE);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new KnownConstructor(nilName)));
+
+        // match list with { case Nil {} -> true; case Cons {} -> false }
+        // no known assignment for list
+        var result = propagation.analyseExpression(
+            new Match(
+                Type.BOOLEAN,
+                new Reference(varName, listIntType),
+                Lists.immutable.of(
+                    new Case(new ConstructorPattern(nilName, listIntType, Lists.immutable.empty()), new Boolean(true)),
+                    new Case(new ConstructorPattern(consName, listIntType, Lists.immutable.empty()), new Boolean(false)))));
+
+        assertThat(result, equalTo(new Constant(new Boolean(true))));
     }
 
     @Test
@@ -172,7 +435,7 @@ public class ConstantPropagationTest {
         // bool known to be non-constant
         var result = propagation.analyseExpression(
             new Match(
-                Type.INT,
+                Type.BOOLEAN,
                 new Reference(varName, Type.BOOLEAN),
                 Lists.immutable.of(
                     new Case(new LiteralPattern(new Boolean(true)), new Boolean(true)),
@@ -190,7 +453,7 @@ public class ConstantPropagationTest {
         // bool known to be non-constant
         var result = propagation.analyseExpression(
             new Match(
-                Type.INT,
+                Type.BOOLEAN,
                 new Reference(varName, Type.BOOLEAN),
                 Lists.immutable.of(
                     new Case(new LiteralPattern(new Boolean(true)), new Boolean(false)),

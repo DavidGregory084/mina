@@ -40,6 +40,43 @@ public class ResultTest {
         }
     }
 
+    @Property
+    void knownConstructorGreaterThanConstantConstructor(@ForAll("constructorNames") ConstructorName constrName) {
+        var knownConstructor = new KnownConstructor(constrName);
+        var constantConstructor = new ConstantConstructor(constrName);
+        assertThat(Result.leastUpperBound(knownConstructor, constantConstructor), equalTo(knownConstructor));
+        assertThat(Result.leastUpperBound(constantConstructor, knownConstructor), equalTo(knownConstructor));
+    }
+
+    @Property
+    void knownConstructorForSameConstructorsEqual(@ForAll("constructorNames") ConstructorName constrName) {
+        var known = new KnownConstructor(constrName);
+        assertThat(Result.leastUpperBound(known, known), equalTo(known));
+    }
+
+    @Property
+    void constantConstructorForSameConstructorsEqual(@ForAll("constructorNames") ConstructorName constrName) {
+        var constant = new ConstantConstructor(constrName);
+        assertThat(Result.leastUpperBound(constant, constant), equalTo(constant));
+    }
+
+    @Property
+    void constructorResultsForDifferentConstructorsIncomparable(
+        @ForAll("constructorNames") ConstructorName leftConstr,
+        @ForAll("constructorNames") ConstructorName rightConstr
+    ) {
+        var leftKnown = new KnownConstructor(leftConstr);
+        var rightKnown = new KnownConstructor(rightConstr);
+        var leftConstant = new ConstantConstructor(leftConstr);
+        var rightConstant = new ConstantConstructor(rightConstr);
+        if (!leftConstr.equals(rightConstr)) {
+            assertThat(Result.leastUpperBound(leftKnown, rightKnown), equalTo(NonConstant.VALUE));
+            assertThat(Result.leastUpperBound(leftConstant, rightKnown), equalTo(NonConstant.VALUE));
+            assertThat(Result.leastUpperBound(leftKnown, rightConstant), equalTo(NonConstant.VALUE));
+            assertThat(Result.leastUpperBound(leftConstant, rightConstant), equalTo(NonConstant.VALUE));
+        }
+    }
+
     @Provide
     Arbitrary<Result> results(@ForAll("constants") Result constant) {
         return Arbitraries.oneOf(
@@ -47,6 +84,16 @@ public class ResultTest {
             Arbitraries.just(NonConstant.VALUE),
             Arbitraries.just(constant)
         );
+    }
+
+    @Provide
+    Arbitrary<ConstructorName> constructorNames() {
+        return Arbitraries.strings()
+            .ofMinLength(3).ofMaxLength(5).tuple2()
+            .map(tuple -> {
+                var dataName = new DataName(new QualifiedName(namespaceName, tuple.get1()));
+                return new ConstructorName(dataName, new QualifiedName(namespaceName, tuple.get2()));
+            });
     }
 
     @Provide
@@ -58,18 +105,8 @@ public class ResultTest {
             Arbitraries.integers().map(intgr -> new Constant(new org.mina_lang.ina.Int(intgr))),
             Arbitraries.longs().map(lng -> new Constant(new org.mina_lang.ina.Long(lng))),
             Arbitraries.strings().map(string -> new Constant(new org.mina_lang.ina.String(string))),
-            Arbitraries.strings().ofMinLength(3).ofMaxLength(5).tuple2()
-                .map(tuple -> {
-                    var dataName = new DataName(new QualifiedName(namespaceName, tuple.get1()));
-                    var constrName = new ConstructorName(dataName, new QualifiedName(namespaceName, tuple.get2()));
-                    return new KnownConstructor(constrName);
-                }),
-            Arbitraries.strings().ofMinLength(3).ofMaxLength(5).tuple2()
-                .map(tuple -> {
-                    var dataName = new DataName(new QualifiedName(namespaceName, tuple.get1()));
-                    var constrName = new ConstructorName(dataName, new QualifiedName(namespaceName, tuple.get2()));
-                    return new ConstantConstructor(constrName);
-                })
+            constructorNames().map(KnownConstructor::new),
+            constructorNames().map(ConstantConstructor::new)
         );
     }
 }

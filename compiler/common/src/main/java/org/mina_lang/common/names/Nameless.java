@@ -16,4 +16,10 @@ public enum Nameless implements Name {
     public <A> A accept(NameFolder<A> visitor) {
         return visitor.visitNameless(this);
     }
+
+
+    @Override
+    public String toString() {
+        return "Nameless";
+    }
 }

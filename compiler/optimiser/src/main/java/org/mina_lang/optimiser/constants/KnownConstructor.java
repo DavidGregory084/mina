@@ -19,9 +19,4 @@ public record KnownConstructor(ConstructorName constructor) implements Construct
             // if exactly the same known constructor equal otherwise incomparable
             other.equals(this) ? 0.0F : Float.NaN;
     }
-
-    @Override
-    public String toString() {
-        return "KnownConstructor[" + constructor().canonicalName() + "]";
-    }
 }

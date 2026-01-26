@@ -18,4 +18,9 @@ public enum Unit implements Literal {
     public <A> A accept(InaNodeFolder<A> visitor) {
         return visitor.visitUnit();
     }
+
+    @Override
+    public java.lang.String toString() {
+        return "Unit";
+    }
 }

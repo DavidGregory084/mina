@@ -17,9 +17,4 @@ public record Constant(Literal value) implements Result {
             // if exactly the same constant equal otherwise incomparable
             other.equals(this) ? 0.0F : Float.NaN;
     }
-
-    @Override
-    public String toString() {
-        return "Constant[" + value + "]";
-    }
 }

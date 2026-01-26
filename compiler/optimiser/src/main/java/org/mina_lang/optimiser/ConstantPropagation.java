@@ -120,11 +120,8 @@ public class ConstantPropagation {
                     apply.args().collect(this::optimiseValue));
             }
         } else if (expr instanceof BinOp binOp) {
-            var leftExpr = analyseExpression(binOp.left());
-            var rightExpr = analyseExpression(binOp.right());
-            if (leftExpr instanceof Constant left &&
-                rightExpr instanceof Constant right &&
-                evaluateBinOp(binOp, left, right) instanceof Constant constant) {
+            var result = analyseBinOp(binOp);
+            if (result instanceof Constant constant) {
                 return constant.value();
             } else {
                 return new BinOp(
@@ -154,18 +151,13 @@ public class ConstantPropagation {
         } else if (expr instanceof Match match) {
             var scrutinee = analyseExpression(match.scrutinee());
             if (scrutinee instanceof Constant constant) {
-                var matchingCase = match.cases().detect(cse -> {
-                    var result = analysePattern(cse.pattern());
-                    var isMatchingConstant = constant.equals(result);
-                    var isUnknown = result == Unknown.VALUE;
-                    return isMatchingConstant || isUnknown;
-                });
+                var matchingCase = matchingCase(match.cases(), constant);
                 return matchingCase != null
                     ? matchingCase.consequent()
                     : new Match(
                         match.type(),
                         optimiseValue(match.scrutinee()),
-                        match.cases().collect(this::optimiseCase));
+                        Lists.immutable.empty());
             } else if (scrutinee instanceof ConstructorResult known) {
                 var matchingCases = matchingCases(match.cases(), known);
                 return matchingCases.size() == 1
@@ -173,7 +165,7 @@ public class ConstantPropagation {
                     : new Match(
                         match.type(),
                         optimiseValue(match.scrutinee()),
-                        match.cases().collect(this::optimiseCase));
+                        matchingCases.collect(this::optimiseCase));
             } else {
                 return new Match(
                     match.type(),
@@ -181,7 +173,7 @@ public class ConstantPropagation {
                     match.cases().collect(this::optimiseCase));
             }
         } else if (expr instanceof UnOp unOp) {
-            var result = analyseExpression(unOp.operand());
+            var result = analyseUnOp(unOp);
             if (result instanceof Constant constant) {
                 return constant.value();
             } else {
@@ -238,10 +230,9 @@ public class ConstantPropagation {
     }
 
     public void analyseDeclarations(ImmutableList<Declaration> declarations) {
-        var dataDecls = declarations.select(d -> d instanceof Data);
-        var letDecls = declarations.select(d -> d instanceof Let);
+        var partitioned = declarations.partition(d -> d instanceof Data);
 
-        dataDecls.forEach(dataDecl -> {
+        partitioned.getSelected().forEach(dataDecl -> {
             var data = (Data) dataDecl;
             data.constructors().forEach(constr -> {
                 if (constr.fields().isEmpty()) {
@@ -252,7 +243,7 @@ public class ConstantPropagation {
             });
         });
 
-        letDecls.forEach(funDecl -> {
+        partitioned.getRejected().forEach(funDecl -> {
             var let = (Let) funDecl;
 
             // Use free variables within the declaration to build occurrence info
@@ -288,7 +279,7 @@ public class ConstantPropagation {
         }
     }
 
-    Type getUnderlyingType(Type type) {
+    private Type getUnderlyingType(Type type) {
         while (type instanceof QuantifiedType quant) {
             type = quant.body();
         }
@@ -318,7 +309,7 @@ public class ConstantPropagation {
                 var matchingCase = matchingCase(match.cases(), constant);
                 return matchingCase != null
                     ? analyseExpression(matchingCase.consequent())
-                    : analyseCases(match.cases());
+                    : Unknown.VALUE;
             } else if (scrutineeValue instanceof ConstructorResult known) {
                 var matchingCases = matchingCases(match.cases(), known);
                 return matchingCases.size() == 1

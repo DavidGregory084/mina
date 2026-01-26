@@ -19,9 +19,4 @@ public record ConstantConstructor(ConstructorName constructor) implements Constr
             // if exactly the same constant constructor equal otherwise incomparable
             other.equals(this) ? 0.0F : Float.NaN;
     }
-
-    @Override
-    public String toString() {
-        return "ConstantConstructor[" + constructor().canonicalName() + "]";
-    }
 }

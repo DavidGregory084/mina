@@ -21,4 +21,9 @@ public enum TypeKind implements Kind {
     public Kind accept(KindTransformer visitor) {
         return visitor.visitTypeKind(INSTANCE);
     }
+
+    @Override
+    public String toString() {
+        return "TypeKind";
+    }
 }
