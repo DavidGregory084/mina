@@ -10,6 +10,9 @@ import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.junit.jupiter.api.Test;
+import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.TopLevelScope;
 import org.mina_lang.common.names.*;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.operators.UnaryOp;
@@ -163,10 +166,21 @@ public class ConstantPropagationTest {
         var listName = new DataName(new QualifiedName(namespaceName, "List"));
         var nilName = new ConstructorName(listName, new QualifiedName(namespaceName, "Nil"));
         var consName = new ConstructorName(listName, new QualifiedName(namespaceName, "Cons"));
+
+        var listType = new TypeConstructor(listName.name(), new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+
         var listIntType = new TypeApply(
-            new TypeConstructor(listName.name(), new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE)),
+            listType,
             Lists.immutable.of(Type.INT), TypeKind.INSTANCE);
-        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new ConstantConstructor(nilName)));
+
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+
+        var nilType = new QuantifiedType(
+            Lists.immutable.of(tyVarA),
+            Type.function(new TypeApply(listType, Lists.immutable.of(tyVarA), TypeKind.INSTANCE)),
+            TypeKind.INSTANCE);
+
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new ConstantConstructor(nilName, nilType)));
 
         // match list with { case Nil {} -> true; case Cons {} -> false }
         // list known to be Nil
@@ -245,6 +259,80 @@ public class ConstantPropagationTest {
         var result = propagation.optimiseExpression(matchNode);
 
         assertThat(result, equalTo(matchNode));
+    }
+
+    // Blocks
+
+    // Lambda
+
+
+    // Application
+    @Test
+    void usesConstantValueWhenFunctionKnownConstant() {
+        var varName = new LocalName("constOne", 0);
+        var propagation = new ConstantPropagation(Maps.mutable.of(varName, new Constant(new Int(1))));
+
+        // constOne()
+        // constOne known to produce constant 1
+        var result = propagation.optimiseExpression(new Apply(
+            Type.INT,
+            new Reference(varName, Type.function(Type.INT)),
+            Lists.immutable.empty()));
+
+        // 1
+        assertThat(result, equalTo(new Int(1)));
+    }
+
+    @Test
+    void usesConstructorApplicationWhenFunctionConstantConstructor() {
+        var varName = new LocalName("nil", 0);
+
+        var namespaceName = new NamespaceName(Lists.immutable.of("Mina", "Test"), "Constants");
+        var listName = new DataName(new QualifiedName(namespaceName, "List"));
+        var nilName = new ConstructorName(listName, new QualifiedName(namespaceName, "Nil"));
+
+        // List: * -> *
+        var listType = new TypeConstructor(listName.name(), new HigherKind(TypeKind.INSTANCE, TypeKind.INSTANCE));
+        // A
+        var tyVarA = new ForAllVar("A", TypeKind.INSTANCE);
+
+        // [A] { () -> List[A] }
+        var nilType = new QuantifiedType(
+            Lists.immutable.of(tyVarA),
+            Type.function(new TypeApply(listType, Lists.immutable.of(tyVarA), TypeKind.INSTANCE)),
+            TypeKind.INSTANCE);
+
+        var scope = new TopLevelScope<Attributes>(
+            Maps.mutable.empty(),
+            Maps.mutable.empty(),
+            Maps.mutable.empty());
+
+        scope.putValue(nilName.canonicalName(), Meta.of(nilName, nilType));
+
+        var propagation = new ConstantPropagation(
+            OptEnvironment.withScope(scope),
+            Maps.mutable.of(varName, new ConstantConstructor(nilName, nilType)));
+
+        // List[Int]
+        var listIntType = new TypeApply(listType, Lists.immutable.of(Type.INT), TypeKind.INSTANCE);
+
+        // nil()
+        // nil known to produce constant Nil()
+        var result = propagation.optimiseExpression(new Apply(
+            listIntType,
+            new Reference(varName, Type.function(listIntType)),
+            Lists.immutable.empty()));
+
+        // Nil()
+        assertThat(result, equalTo(new Apply(
+            listIntType,
+            new Reference(nilName, nilType),
+            Lists.immutable.empty())));
+    }
+
+    @Test
+    void retainsFunctionOtherwiseOptimisingArguments() {
+
     }
 
     // Analysis -------------------------------------
@@ -561,6 +649,7 @@ public class ConstantPropagationTest {
                 new Param(yParam, Type.INT)));
 
         var propagation = new ConstantPropagation(
+            OptEnvironment.empty(),
             environment,
             worklist,
             new HashMap<>(), // the body of this function is unknown
@@ -607,6 +696,7 @@ public class ConstantPropagationTest {
                 new Param(yParam, Type.INT)));
 
         var propagation = new ConstantPropagation(
+            OptEnvironment.empty(),
             environment,
             worklist,
             letBodies,

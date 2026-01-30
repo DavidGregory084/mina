@@ -8,6 +8,10 @@ import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
+import org.mina_lang.common.Attributes;
+import org.mina_lang.common.Environment;
+import org.mina_lang.common.Meta;
+import org.mina_lang.common.Scope;
 import org.mina_lang.common.names.Named;
 import org.mina_lang.common.operators.BinaryOp;
 import org.mina_lang.common.types.QuantifiedType;
@@ -25,6 +29,7 @@ import java.util.Map;
 import java.util.Queue;
 
 public class ConstantPropagation {
+    private final Environment<Meta<Attributes>, ? extends Scope<Meta<Attributes>>> typeEnvironment;
     private final Map<Named, Result> environment;
     private final Queue<Named> worklist;
     private final Map<Named, Expression> letBodies;
@@ -34,12 +39,14 @@ public class ConstantPropagation {
     private long envState;
 
     ConstantPropagation(
+        Environment<Meta<Attributes>, ? extends Scope<Meta<Attributes>>> typeEnvironment,
         Map<Named, Result> environment,
         Queue<Named> worklist,
         Map<Named, Expression> letBodies,
         MutableSetMultimap<Named, Named> occurrences,
         Map<Named, ImmutableList<Param>> funParams
     ) {
+        this.typeEnvironment = typeEnvironment;
         this.environment = environment;
         this.worklist = worklist;
         this.letBodies = letBodies;
@@ -49,13 +56,24 @@ public class ConstantPropagation {
         this.envState = 0L;
     }
 
-    ConstantPropagation(Map<Named, Result> environment) {
+    ConstantPropagation(
+        Environment<Meta<Attributes>, ? extends Scope<Meta<Attributes>>> typeEnvironment,
+        Map<Named, Result> environment) {
         this(
+            typeEnvironment,
             environment,
             new ArrayDeque<>(),
             new HashMap<>(),
             Multimaps.mutable.set.empty(),
             new HashMap<>());
+    }
+
+    public ConstantPropagation(Environment<Meta<Attributes>, ? extends Scope<Meta<Attributes>>> typeEnvironment) {
+        this(typeEnvironment, new HashMap<>());
+    }
+
+    ConstantPropagation(Map<Named, Result> environment) {
+        this(OptEnvironment.empty(), environment);
     }
 
     public ConstantPropagation() {
@@ -103,38 +121,7 @@ public class ConstantPropagation {
     }
 
     Expression optimiseExpression(Expression expr) {
-        if (expr instanceof Apply apply) {
-            if (apply.expr() instanceof Reference ref &&
-                environment.get(ref.name()) instanceof Constant constant) {
-                return constant.value();
-            } else if (apply.expr() instanceof Reference ref &&
-                environment.get(ref.name()) instanceof ConstantConstructor constant) {
-                return new Apply(
-                    apply.type(),
-                    new Reference(constant.constructor(), apply.type()),
-                    Lists.immutable.empty());
-            } else {
-                return new Apply(
-                    apply.type(),
-                    optimiseValue(apply.expr()),
-                    apply.args().collect(this::optimiseValue));
-            }
-        } else if (expr instanceof BinOp binOp) {
-            var result = analyseBinOp(binOp);
-            if (result instanceof Constant constant) {
-                return constant.value();
-            } else {
-                return new BinOp(
-                    binOp.type(),
-                    optimiseValue(binOp.left()),
-                    binOp.operator(),
-                    optimiseValue(binOp.right()));
-            }
-        } else if (expr instanceof Block block) {
-            var bindings = block.bindings().flatCollect(this::optimiseBinding);
-            var result = optimiseExpression(block.result());
-            return bindings.isEmpty() ? result : new Block(block.type(), bindings, result);
-        } else if (expr instanceof If ifExpr) {
+        if (expr instanceof If ifExpr) {
             var cond = analyseExpression(ifExpr.condition());
             if (cond instanceof Constant constant &&
                 constant.value() instanceof Boolean bool) {
@@ -160,17 +147,51 @@ public class ConstantPropagation {
                         Lists.immutable.empty());
             } else if (scrutinee instanceof ConstructorResult known) {
                 var matchingCases = matchingCases(match.cases(), known);
-                return matchingCases.size() == 1
-                    ? matchingCases.getFirst().consequent()
-                    : new Match(
-                        match.type(),
-                        optimiseValue(match.scrutinee()),
-                        matchingCases.collect(this::optimiseCase));
+                return new Match(
+                    match.type(),
+                    optimiseValue(match.scrutinee()),
+                    matchingCases.collect(this::optimiseCase));
             } else {
                 return new Match(
                     match.type(),
                     optimiseValue(match.scrutinee()),
                     match.cases().collect(this::optimiseCase));
+            }
+        } else if (expr instanceof Block block) {
+            var bindings = block.bindings().flatCollect(this::optimiseBinding);
+            var result = optimiseExpression(block.result());
+            return bindings.isEmpty() ? result : new Block(block.type(), bindings, result);
+        } else if (expr instanceof Lambda lambda) {
+            return new Lambda(
+                lambda.type(),
+                lambda.params(),
+                optimiseExpression(lambda.body()));
+        } else if (expr instanceof Apply apply) {
+            if (apply.expr() instanceof Reference ref &&
+                environment.get(ref.name()) instanceof Constant constant) {
+                return constant.value();
+            } else if (apply.expr() instanceof Reference ref &&
+                environment.get(ref.name()) instanceof ConstantConstructor constant) {
+                return new Apply(
+                    apply.type(),
+                    new Reference(constant.constructor(), constant.type()),
+                    Lists.immutable.empty());
+            } else {
+                return new Apply(
+                    apply.type(),
+                    optimiseValue(apply.expr()),
+                    apply.args().collect(this::optimiseValue));
+            }
+        } else if (expr instanceof BinOp binOp) {
+            var result = analyseBinOp(binOp);
+            if (result instanceof Constant constant) {
+                return constant.value();
+            } else {
+                return new BinOp(
+                    binOp.type(),
+                    optimiseValue(binOp.left()),
+                    binOp.operator(),
+                    optimiseValue(binOp.right()));
             }
         } else if (expr instanceof UnOp unOp) {
             var result = analyseUnOp(unOp);
@@ -236,7 +257,10 @@ public class ConstantPropagation {
             var data = (Data) dataDecl;
             data.constructors().forEach(constr -> {
                 if (constr.fields().isEmpty()) {
-                    putResult(constr.name(), new ConstantConstructor(constr.name()));
+                    var constructorName = constr.name().canonicalName();
+                    var constructorMeta = typeEnvironment.lookupValue(constructorName).orElseThrow();
+                    var constructorType = (Type) constructorMeta.meta().sort();
+                    putResult(constr.name(), new ConstantConstructor(constr.name(), constructorType));
                 } else {
                     putResult(constr.name(), new KnownConstructor(constr.name()));
                 }

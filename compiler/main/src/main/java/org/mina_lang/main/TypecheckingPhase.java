@@ -30,6 +30,7 @@ public class TypecheckingPhase extends GraphPhase<NamespaceNode<Name>, Namespace
     private static final Logger logger = LoggerFactory.getLogger(TypecheckingPhase.class);
 
     private final Map<NamespaceName, Scope<Meta<Attributes>>> classpathScopes;
+    private final ConcurrentHashMap<NamespaceName, TypeEnvironment> typeEnvironments;
 
     public TypecheckingPhase(
         Graph<NamespaceName, DefaultEdge> namespaceGraph,
@@ -38,6 +39,7 @@ public class TypecheckingPhase extends GraphPhase<NamespaceNode<Name>, Namespace
         ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
         super(namespaceGraph, namespaceNodes, scopedDiagnostics);
         this.classpathScopes = classpathScopes;
+        this.typeEnvironments = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -81,9 +83,15 @@ public class TypecheckingPhase extends GraphPhase<NamespaceNode<Name>, Namespace
                 var typeEnvironment = TypeEnvironment.withBuiltInTypes();
                 typeEnvironment.pushScope(importScope);
                 var typechecker = new Typechecker(nsDiagnostics, typeEnvironment);
-                return typechecker.typecheck(renamedNode);
+                var result = typechecker.typecheck(renamedNode);
+                typeEnvironments.put(nsName, typechecker.getEnvironment());
+                return result;
             });
 
         return Mono.justOrEmpty(typecheckedNode);
+    }
+
+    public ConcurrentHashMap<NamespaceName, TypeEnvironment> getTypeEnvironments() {
+        return typeEnvironments;
     }
 }

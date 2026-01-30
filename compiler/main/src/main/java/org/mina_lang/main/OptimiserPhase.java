@@ -16,6 +16,7 @@ import org.mina_lang.optimiser.ConstantPropagation;
 import org.mina_lang.optimiser.Lower;
 import org.mina_lang.parser.ANTLRDiagnosticReporter;
 import org.mina_lang.syntax.NamespaceNode;
+import org.mina_lang.typechecker.TypeEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -26,11 +27,15 @@ public class OptimiserPhase extends GraphPhase<NamespaceNode<Attributes>, Namesp
     private static final Logger logger = LoggerFactory.getLogger(OptimiserPhase.class);
     private static final InaNodePrinter printer = new InaNodePrinter();
 
+    private ConcurrentHashMap<NamespaceName, TypeEnvironment> typeEnvironments;
+
     public OptimiserPhase(
         Graph<NamespaceName, DefaultEdge> namespaceGraph,
         ConcurrentHashMap<NamespaceName, NamespaceNode<Attributes>> namespaceNodes,
-        ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics) {
+        ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics,
+        ConcurrentHashMap<NamespaceName, TypeEnvironment> typeEnvironments) {
         super(namespaceGraph, namespaceNodes, scopedDiagnostics);
+        this.typeEnvironments = typeEnvironments;
     }
 
     @Override
@@ -41,7 +46,7 @@ public class OptimiserPhase extends GraphPhase<NamespaceNode<Attributes>, Namesp
         var lower = new Lower(nameSupply);
         var lowered = lower.lower(typecheckedNode);
         logger.info("Before folding:\n{}", lowered.accept(printer).render());
-        var constants = new ConstantPropagation();
+        var constants = new ConstantPropagation(typeEnvironments.get(nsName));
         var constantFolded = constants.optimiseNamespace(lowered);
         logger.info("After folding:\n{}", constantFolded.accept(printer).render());
         constants.getEnvironment().entrySet().forEach(constant -> {

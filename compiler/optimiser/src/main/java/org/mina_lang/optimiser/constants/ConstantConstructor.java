@@ -5,8 +5,9 @@
 package org.mina_lang.optimiser.constants;
 
 import org.mina_lang.common.names.ConstructorName;
+import org.mina_lang.common.types.Type;
 
-public record ConstantConstructor(ConstructorName constructor) implements ConstructorResult {
+public record ConstantConstructor(ConstructorName constructor, Type type) implements ConstructorResult {
     @Override
     public float compare(Result other) {
         return

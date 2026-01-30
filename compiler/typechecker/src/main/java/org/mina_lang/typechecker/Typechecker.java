@@ -689,11 +689,10 @@ public class Typechecker {
     }
 
     NamespaceNode<Attributes> inferNamespace(NamespaceNode<Name> namespace) {
-        return withScope(populateTopLevel(namespace), () -> {
-            var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
-            var inferredDecls = namespace.declarationGroups().collect(this::inferDeclarationGroup);
-            return new NamespaceNode<>(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
-        });
+        environment.pushScope(populateTopLevel(namespace));
+        var updatedMeta = updateMetaWith(namespace.meta(), Type.NAMESPACE);
+        var inferredDecls = namespace.declarationGroups().collect(this::inferDeclarationGroup);
+        return new NamespaceNode<>(updatedMeta, namespace.id(), namespace.imports(), inferredDecls);
     }
 
     ImmutableList<DeclarationNode<Attributes>> inferDeclarationGroup(

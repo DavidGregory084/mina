@@ -217,7 +217,7 @@ public class Main {
 
                             // For now, we just run the optimiser alongside codegen, since codegen uses unoptimised trees
                             return typecheckingPhase.runPhase().flatMap(typecheckedNodes -> {
-                                var optimiserPhase = new OptimiserPhase(namespaceGraph, typecheckedNodes, scopedDiagnostics);
+                                var optimiserPhase = new OptimiserPhase(namespaceGraph, typecheckedNodes, scopedDiagnostics, typecheckingPhase.getTypeEnvironments());
                                 var codegenPhase = new CodegenPhase(destinationPath, typecheckedNodes, scopedDiagnostics);
                                 return optimiserPhase.runPhase().and(codegenPhase.runPhase());
                             });
