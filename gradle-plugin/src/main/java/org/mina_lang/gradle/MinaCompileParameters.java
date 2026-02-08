@@ -14,5 +14,7 @@ public interface MinaCompileParameters extends WorkParameters {
     Property<MinaCompileOptions> getMinaCompileOptions();
     ConfigurableFileCollection getClasspath();
     DirectoryProperty getDestinationDirectory();
+    Property<Boolean> getReportingEnabled();
+    DirectoryProperty getReportDirectory();
     ConfigurableFileCollection getSourceFiles();
 }

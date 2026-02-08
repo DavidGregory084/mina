@@ -55,6 +55,7 @@ testing {
                             dependsOn(":compiler:mina-compiler-optimiser:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-jvm:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-main:publishToMavenLocal")
+                            dependsOn(":compiler:mina-compiler-reporting:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler-proto:publishToMavenLocal")
                             dependsOn(":compiler:mina-compiler:publishToMavenLocal")
                             dependsOn(":mina-runtime:publishToMavenLocal")

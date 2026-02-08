@@ -7,9 +7,7 @@ package org.mina_lang.gradle;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.file.*;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.internal.tasks.DefaultSourceSet;
 import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
@@ -21,6 +19,8 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.plugins.jvm.internal.JvmLanguageUtilities;
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.reporting.DirectoryReport;
+import org.gradle.api.reporting.ReportingExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.AbstractCompile;
@@ -82,8 +82,17 @@ public class MinaBasePlugin implements Plugin<Project> {
     }
 
     private void configureCompileDefaults(Project project) {
+        ReportingExtension reporting = project.getExtensions().getByType(ReportingExtension.class);
         project.getTasks().withType(MinaCompile.class).configureEach(compile -> {
+            configureReportingDefaults(reporting, compile);
         });
+    }
+
+    private void configureReportingDefaults(ReportingExtension reporting, MinaCompile compile) {
+        Provider<Directory> minaReportsDir = reporting.getBaseDirectory().dir("mina");
+        DirectoryReport htmlReport = compile.getReports().getHtml();
+        htmlReport.getOutputLocation().convention(minaReportsDir);
+        htmlReport.getRequired().convention(true);
     }
 
     private void configureSourceSetDefaults(Project project) {

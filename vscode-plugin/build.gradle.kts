@@ -78,6 +78,7 @@ val npmBuild by
         dependsOn(":compiler:mina-compiler-proto:publish")
         dependsOn(":compiler:mina-compiler-jvm:publish")
         dependsOn(":compiler:mina-compiler-main:publish")
+        dependsOn(":compiler:mina-compiler-reporting:publish")
         dependsOn(":mina-lang-server:publish")
         dependsOn(tasks.npmInstall)
         npmCommand.set(

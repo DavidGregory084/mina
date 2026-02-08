@@ -1,0 +1,11 @@
+{{<layout}}
+    {{$title}} - Overview{{/title}}
+    {{$content}}
+        <h1>Mina Compilation Report</h1>
+        <ol class="namespace-list">
+            {{#namespaces}}
+                <li><a href="{{value}}">{{key.canonicalName}}</a></li>
+            {{/namespaces}}
+        </ol>
+    {{/content}}
+{{/layout}}

@@ -36,6 +36,10 @@ project(":compiler:renamer").name = "mina-compiler-renamer"
 include("compiler:typechecker")
 project(":compiler:typechecker").name = "mina-compiler-typechecker"
 
+// Reporting
+include("compiler:reporting")
+project(":compiler:reporting").name = "mina-compiler-reporting"
+
 // Compiler main
 include("compiler:main")
 project(":compiler:main").name = "mina-compiler-main"

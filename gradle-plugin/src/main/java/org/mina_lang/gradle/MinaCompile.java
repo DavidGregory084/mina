@@ -4,6 +4,8 @@
  */
 package org.mina_lang.gradle;
 
+import groovy.lang.Closure;
+import org.gradle.api.Action;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -14,14 +16,17 @@ import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
+import org.gradle.api.reporting.Reporting;
 import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.api.tasks.compile.CompileOptions;
 import org.gradle.api.tasks.compile.ForkOptions;
+import org.gradle.internal.Describables;
 import org.gradle.internal.execution.history.OutputsCleaner;
 import org.gradle.internal.file.Deleter;
 import org.gradle.internal.file.FileType;
 import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.util.internal.ClosureBackedAction;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 
@@ -32,18 +37,20 @@ import java.io.UncheckedIOException;
 
 @CacheableTask
 @NonNullApi
-public abstract class MinaCompile extends AbstractCompile implements HasCompileOptions {
+public abstract class MinaCompile extends AbstractCompile implements HasCompileOptions, Reporting<MinaCompileReportContainer> {
 
-    private CompileOptions compileOptions;
-    private ConfigurableFileCollection minaCompilerClasspath;
-    private FileOperations fileOperations;
-    private Deleter deleter;
+    private final CompileOptions compileOptions;
+    private final ConfigurableFileCollection minaCompilerClasspath;
+    private final MinaCompileReportContainer reports;
+    private final FileOperations fileOperations;
+    private final Deleter deleter;
 
     @Inject
     public MinaCompile(Project project, FileOperations fileOperations, Deleter deleter) {
         this.compileOptions = getObjectFactory().newInstance(CompileOptions.class);
         Configuration minacConfig = project.getConfigurations().getByName(MinaBasePlugin.MINAC_CONFIGURATION_NAME);
         this.minaCompilerClasspath = getObjectFactory().fileCollection().from(minacConfig.getAsFileTree());
+        this.reports = getObjectFactory().newInstance(DefaultMinaCompileReportContainer.class, Describables.quoted("Task", getIdentityPath()));
         this.fileOperations = fileOperations;
         this.deleter = deleter;
     }
@@ -70,6 +77,23 @@ public abstract class MinaCompile extends AbstractCompile implements HasCompileO
     @Inject
     public abstract WorkerExecutor getWorkerExecutor();
 
+    @Nested
+    @Override
+    public MinaCompileReportContainer getReports() {
+        return reports;
+    }
+
+    @Override
+    public MinaCompileReportContainer reports(Closure closure) {
+        return reports(new ClosureBackedAction<MinaCompileReportContainer>(closure));
+    }
+
+    @Override
+    public MinaCompileReportContainer reports(Action<? super MinaCompileReportContainer> configureAction) {
+        configureAction.execute(reports);
+        return reports;
+    }
+
     @Override
     @SkipWhenEmpty
     @IgnoreEmptyDirectories
@@ -82,26 +106,30 @@ public abstract class MinaCompile extends AbstractCompile implements HasCompileO
     private void cleanupStaleOutputFiles() {
         var classFilesPattern = fileOperations.patternSet()
             .include("**/*.class");
+        var reportFilesPattern = fileOperations.patternSet()
+            .include("**/*.html");
 
-        var filesToDelete = getDestinationDirectory()
-            .getAsFileTree()
-            .matching(classFilesPattern)
-            .getFiles();
+        var classFiles = getDestinationDirectory().getAsFileTree().matching(classFilesPattern);
+        var reportFiles = getReports().getHtml().getOutputLocation().getAsFileTree().matching(reportFilesPattern);
+
+        var filesToDelete = classFiles.plus(reportFiles).getFiles();
 
         var destinationDir = getDestinationDirectory().getAsFile().get();
+        var reportsDir = getReports().getHtml().getOutputLocation().getAsFile().get();
 
-        var prefix = destinationDir.getAbsolutePath() + File.separator;
+        var classFilesPrefix = destinationDir.getAbsolutePath() + File.separator;
+        var reportFilesPrefix = reportsDir.getAbsolutePath() + File.separator;
 
         OutputsCleaner outputsCleaner = new OutputsCleaner(
             deleter,
-            // Only delete files in the destination dir
-            file -> file.getAbsolutePath().startsWith(prefix),
-            // Don't delete the destination dir itself
-            dir -> !destinationDir.equals(dir)
+            // Only delete files in the destination and compile report dirs
+            file -> file.getAbsolutePath().startsWith(classFilesPrefix) || file.getAbsolutePath().startsWith(reportFilesPrefix),
+            // Don't delete the destination or report directories
+            dir -> !(destinationDir.equals(dir) || reportsDir.equals(dir))
         );
 
         try {
-            for (File fileToDelete: filesToDelete) {
+            for (File fileToDelete : filesToDelete) {
                 if (fileToDelete.isFile()) {
                     outputsCleaner.cleanupOutput(fileToDelete, FileType.RegularFile);
                 }
@@ -134,6 +162,8 @@ public abstract class MinaCompile extends AbstractCompile implements HasCompileO
             params.getCompilerClassName().set("org.mina_lang.cli.MinaCommandLine");
             params.getMinaCompileOptions().set(getMinaCompileOptions());
             params.getDestinationDirectory().set(getDestinationDirectory());
+            params.getReportingEnabled().set(getReports().getHtml().getRequired());
+            params.getReportDirectory().set(getReports().getHtml().getOutputLocation());
             params.getClasspath().from(getClasspath());
             params.getSourceFiles().from(getSource());
         });

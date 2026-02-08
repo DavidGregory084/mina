@@ -11,6 +11,8 @@ import org.mina_lang.gradle.MinaCompilationException;
 import org.mina_lang.gradle.MinaCompileParameters;
 import org.mina_lang.gradle.diagnostics.MinaProblemReporter;
 import org.mina_lang.main.Main;
+import org.mina_lang.reporting.HtmlReportGenerator;
+import org.mina_lang.reporting.NoOpReportGenerator;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +30,14 @@ public class MinaApiCompiler implements MinaCompiler {
     @Override
     public void compile(MinaCompileParameters compileParameters) throws IOException {
         var problemReporter = new MinaProblemReporter(problems);
-        var compiler = new Main(problemReporter);
+
+        var reportDir = compileParameters
+            .getReportDirectory().get()
+            .getAsFile().toPath();
+
+        var compiler = compileParameters.getReportingEnabled().get()
+            ? new Main(problemReporter, new HtmlReportGenerator(reportDir))
+            : new Main(problemReporter, NoOpReportGenerator.INSTANCE);
 
         var classpath = Failable.stream(compileParameters.getClasspath().getFiles())
             .map(file -> file.toURI().toURL())

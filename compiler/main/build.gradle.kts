@@ -33,6 +33,9 @@ dependencies {
     // JVM Bytecode Generation
     implementation(project(":compiler:mina-compiler-jvm"))
 
+    // Compilation Reports
+    api(project(":compiler:mina-compiler-reporting"))
+
     // Graph Data Structures
     implementation(libs.jgrapht)
     implementation(libs.jgraphtIo)

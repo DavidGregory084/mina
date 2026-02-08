@@ -18,6 +18,8 @@ import org.jgrapht.nio.dot.DOTExporter;
 import org.mina_lang.common.diagnostics.BaseDiagnosticCollector;
 import org.mina_lang.common.names.NamespaceName;
 import org.mina_lang.parser.ANTLRDiagnosticReporter;
+import org.mina_lang.reporting.NoOpReportGenerator;
+import org.mina_lang.reporting.ReportGenerator;
 import org.mina_lang.syntax.NamespaceNode;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -48,6 +50,7 @@ public class Main {
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private BaseDiagnosticCollector mainCollector;
+    private ReportGenerator reporting;
 
     private ConcurrentHashMap<NamespaceName, NamespaceNode<Void>> namespaceNodes;
     private ConcurrentHashMap<NamespaceName, ANTLRDiagnosticReporter> scopedDiagnostics;
@@ -55,7 +58,12 @@ public class Main {
     private DOTExporter<NamespaceName, DefaultEdge> dotExporter = new DOTExporter<>();
 
     public Main(BaseDiagnosticCollector diagnostics) {
+        this(diagnostics, NoOpReportGenerator.INSTANCE);
+    }
+
+    public Main(BaseDiagnosticCollector diagnostics, ReportGenerator reporting) {
         this.mainCollector = diagnostics;
+        this.reporting = reporting;
         this.namespaceNodes = new ConcurrentHashMap<>();
         this.scopedDiagnostics = new ConcurrentHashMap<>();
         dotExporter.setVertexAttributeProvider(nsName -> Maps.mutable.of(
@@ -188,6 +196,8 @@ public class Main {
         });
 
         checkForImportCycles(namespaceGraph);
+
+        reporting.reportNamespaceGraph(namespaceGraph);
 
         return namespaceGraph;
     }
